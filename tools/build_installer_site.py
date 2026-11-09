@@ -21,7 +21,50 @@ BOARDS = {
     's3-devkit': {'chip': 'ESP32-S3', 'label': 'ESP32-S3 DevKitC-1'},
 }
 ALLOWED_BRANCH = re.compile(r'^(main|lab/[A-Za-z0-9._/-]{1,110})$')
-SHA = re.compile(r'^[a-f0-9]{40}
+SHA = re.compile(r'^[a-f0-9]{40}$')
+
+NOTES_PATH = Path(__file__).resolve().with_name('firmware_build_notes.json')
+
+
+def load_build_notes(path: Path = NOTES_PATH) -> dict:
+    """Curated, SHA-pinned labels; never guess feature parity from build age."""
+    data = json.loads(path.read_text(encoding='utf-8'))
+    if data.get('schema') != 1 or not isinstance(data.get('builds'), dict):
+        raise ValueError('invalid firmware_build_notes.json schema')
+    notes = data['builds']
+    for commit, entry in notes.items():
+        if not SHA.fullmatch(commit) or not isinstance(entry, dict):
+            raise ValueError('invalid commit in build note catalog')
+        for field, limit in (('title', 110), ('version', 40), ('summary', 600)):
+            value = entry.get(field)
+            if not isinstance(value, str) or not value.strip() or len(value) > limit:
+                raise ValueError(f'invalid build note {commit[:8]} {field}')
+        features = entry.get('highlights', [])
+        if (not isinstance(features, list) or len(features) > 7
+            or not all(isinstance(f, str) and 0 < len(f) <= 260 for f in features)):
+            raise ValueError(f'invalid highlights in build note {commit[:8]}')
+    return notes
+
+
+def describe_build(sha: str, branch: str, board: str, notes: dict) -> dict:
+    """Known SHAs get exact features. Unknown SHAs never inherit old notes."""
+    if sha in notes:
+        note = notes[sha]
+        return {'title': note['title'], 'version_label': note['version'],
+                'summary': note['summary'], 'highlights': list(note['highlights']),
+                'notes_verified_for_sha': True}
+    label = {
+        'lab/drone-rid-profiles-': 'Drone Remote ID LAB (review exact changes)',
+        'lab/rf-fixtures-reporting-': 'RF Detection LAB (review exact changes)',
+        'lab/esp32c5-waveshare-touch-': 'C5 Touchscreen LAB (review exact changes)',
+    }
+    title = next((name for prefix, name in label.items() if branch.startswith(prefix)),
+                 'Uncatalogued LAB firmware (review changes)')
+    return {'title': title, 'version_label': 'Unspecified LAB',
+            'summary': 'No SHA-specific feature notes have been reviewed for this build. '
+                       'Use its source branch and CI run to verify changes before flashing.',
+            'highlights': [], 'notes_verified_for_sha': False}
+
 
 def sha256(data: bytes) -> str:
     return hashlib.sha256(data).hexdigest()
@@ -143,49 +186,7 @@ if __name__=='__main__':
     p.add_argument('--output',type=Path,required=True)
     args=p.parse_args()
     build(args.sources,args.output)
-)
 
-NOTES_PATH = Path(__file__).resolve().with_name('firmware_build_notes.json')
-
-
-def load_build_notes(path: Path = NOTES_PATH) -> dict:
-    """Curated, SHA-pinned labels; never guess feature parity from build age."""
-    data = json.loads(path.read_text(encoding='utf-8'))
-    if data.get('schema') != 1 or not isinstance(data.get('builds'), dict):
-        raise ValueError('invalid firmware_build_notes.json schema')
-    notes = data['builds']
-    for commit, entry in notes.items():
-        if not SHA.fullmatch(commit) or not isinstance(entry, dict):
-            raise ValueError('invalid commit in build note catalog')
-        for field, limit in (('title', 110), ('version', 40), ('summary', 600)):
-            value = entry.get(field)
-            if not isinstance(value, str) or not value.strip() or len(value) > limit:
-                raise ValueError(f'invalid build note {commit[:8]} {field}')
-        features = entry.get('highlights', [])
-        if (not isinstance(features, list) or len(features) > 7
-            or not all(isinstance(f, str) and 0 < len(f) <= 260 for f in features)):
-            raise ValueError(f'invalid highlights in build note {commit[:8]}')
-    return notes
-
-
-def describe_build(sha: str, branch: str, board: str, notes: dict) -> dict:
-    """Known SHAs get exact features. Unknown SHAs never inherit old notes."""
-    if sha in notes:
-        note = notes[sha]
-        return {'title': note['title'], 'version_label': note['version'],
-                'summary': note['summary'], 'highlights': list(note['highlights']),
-                'notes_verified_for_sha': True}
-    label = {
-        'lab/drone-rid-profiles-': 'Drone Remote ID LAB (review exact changes)',
-        'lab/rf-fixtures-reporting-': 'RF Detection LAB (review exact changes)',
-        'lab/esp32c5-waveshare-touch-': 'C5 Touchscreen LAB (review exact changes)',
-    }
-    title = next((name for prefix, name in label.items() if branch.startswith(prefix)),
-                 'Uncatalogued LAB firmware (review changes)')
-    return {'title': title, 'version_label': 'Unspecified LAB',
-            'summary': 'No SHA-specific feature notes have been reviewed for this build. '
-                       'Use its source branch and CI run to verify changes before flashing.',
-            'highlights': [], 'notes_verified_for_sha': False}
 
 
 def sha256(data: bytes) -> str:
