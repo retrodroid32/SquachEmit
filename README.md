@@ -208,3 +208,11 @@ operator data, old location time-of-hour and invalid Basic ID type.
 No real drone hardware or private RF protocol is cloned. See
 [the drone LAB validation guide](docs/DRONE-LAB.md) for exact capability
 boundaries, especially BLE5 and NAN, which remain offline-only fixtures.
+
+## CYD 3.2-inch ST7798 SquachEmit LAB target
+
+New ESP32-2432S032R / E32R32P 3.2-inch ST7798/ST7789-compatible
+resistive-touch target, matching the SquachWatch 'cyd32-st7798' pinout.
+240x320 UI with RUN/STOP/SUITE, NVS touch calibration and 49 scenarios.
+115200 baud serial. Flashing replaces SquachWatch on the same physical
+board; use another CYD as receiver. Details: docs/CYD32-LAB.md.

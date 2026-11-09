@@ -68,3 +68,30 @@ jobs:
           name: squachemit-waveshare-c5-28-firmware-unverified
           path: dist/c5/*
           if-no-files-found: error
+
+  firmware-cyd32-st7798:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: pip install platformio
+      - name: Compile CYD 3.2 ST7798 ESP32-WROOM firmware
+        run: |
+          set -euo pipefail
+          pio run -e cyd32-st7798
+          cp "$(find "$HOME/.platformio/packages/framework-arduinoespressif32/tools/partitions" -name boot_app0.bin -print -quit)" .pio/build/cyd32-st7798/ota_init.bin
+          test "$(stat -c%s .pio/build/cyd32-st7798/ota_init.bin)" -eq 8192
+          test -s .pio/build/cyd32-st7798/firmware.bin
+          test -s .pio/build/cyd32-st7798/bootloader.bin
+          test -s .pio/build/cyd32-st7798/partitions.bin
+      - uses: actions/upload-artifact@v4
+        with:
+          name: squachemit-cyd32-st7798-firmware-unverified
+          path: |
+            .pio/build/cyd32-st7798/firmware.bin
+            .pio/build/cyd32-st7798/bootloader.bin
+            .pio/build/cyd32-st7798/partitions.bin
+            .pio/build/cyd32-st7798/ota_init.bin
+          if-no-files-found: error
