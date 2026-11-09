@@ -1,0 +1,58 @@
+{
+  "schema": 1,
+  "builds": {
+    "fb57b628ce6a2539cb0940127763744e47be19bf": {
+      "title": "Drone Remote ID Profiles (49 tests)",
+      "version": "v0.4.0 LAB",
+      "summary": "Adds 10 synthetic DJI, Autel and Parrot Remote ID profiles, generic BLE4 Remote ID, Wi-Fi beacon formats, and negative/partial-data cases. Does not clone actual aircraft radios.",
+      "highlights": [
+        "DJI Mini, Air, Mavic, Phantom and Matrice; Autel EVO II, EVO Max and EVO Lite; Parrot ANAFI and ANAFI USA test labels.",
+        "49 selectable scenarios, including synthetic BLE Remote ID and 2.4 GHz Wi-Fi Remote ID beacon tests.",
+        "New invalid, shortened, old-location and missing-operator test cases.",
+        "BLE5 coded/extended and Wi-Fi NAN are offline-only fixtures, not live radio transmissions."
+      ]
+    },
+    "6c08d0de80c0206a08ba99eaab4c324400a35bff": {
+      "title": "RF Test Matrix + S3 Packaging (31 tests)",
+      "version": "v0.3.0 LAB",
+      "summary": "Contains the same 31 on-air detection scenarios as e5cf01bf. Improves the ESP32-S3 firmware artifact packaging for browser installation; no new C5 RF tests compared with e5cf01bf.",
+      "highlights": [
+        "2.4 GHz Wi-Fi channel 1, 6 and 11 detection and benign-negative controls.",
+        "Additional BLE iBeacon identity and malformed/near-match detection cases.",
+        "Per-CYD accuracy scoring and paired serial evidence capture.",
+        "Complete S3 flash parts now built for future browser installer support."
+      ]
+    },
+    "e5cf01bf40a796f50750b37b1777da0273da92f1": {
+      "title": "RF Test Matrix (31 tests)",
+      "version": "v0.3.0 LAB",
+      "summary": "Initial expansion from 22 to 31 RF scenarios with Wi-Fi channel-specific tests, additional BLE negative controls and per-CYD verification tools.",
+      "highlights": [
+        "Wi-Fi channel 6/11 AXON, FLOCK and benign AP test profiles.",
+        "Second iBeacon identity and malformed iBeacon, Remote ID UUID and Meta UUID negatives.",
+        "Independent offline Remote ID/iBeacon checks.",
+        "Separate SquachWatch 2.8 and 3.2 accuracy reports and paired USB serial evidence."
+      ]
+    },
+    "2d6e9f3f29b51b30d1b5731bc7b220e7d020312f": {
+      "title": "C5 Touchscreen Baseline (22 tests)",
+      "version": "v0.2.0 DEV",
+      "summary": "Initial ESP32-C5 Waveshare 2.8-inch touchscreen support with 22 synthetic BLE and Wi-Fi RF scenarios; no later channel matrix or drone-model profile expansion.",
+      "highlights": [
+        "Waveshare C5 ST7789 display and CST3530 touch GUI.",
+        "Original 22 opt-in RF detection test cases.",
+        "BLE Remote ID generic, iBeacon, tracker and Wi-Fi SSID test scenarios."
+      ]
+    },
+    "ee7295ac58d3e159036fae76b964644a202d9838": {
+      "title": "ESP32-S3 Baseline (22 tests)",
+      "version": "v0.1.0",
+      "summary": "Original ESP32-S3 22-case bounded BLE and Wi-Fi lab transmitter, before the channel-specific and drone-model profile expansions.",
+      "highlights": [
+        "Original BLE tracker, iBeacon, generic Remote ID and Wi-Fi SSID detection tests.",
+        "Serial RUN / SUITE / STOP control; no RF transmission on boot.",
+        "No C5 display support or new model-specific Remote ID test profiles."
+      ]
+    }
+  }
+}
