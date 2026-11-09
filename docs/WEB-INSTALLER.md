@@ -109,3 +109,23 @@ bootloader offset 0x1000.
 The published labels for the original C5 and S3 firmware remain
 unchanged; the 3.2-inch firmware must have its own SHA-based notes and
 appears only in the corresponding ESP32 board picker.
+
+## Serial test console baud-rate selector
+
+The console exposes a **SERIAL BAUD RATE** selector with preset speeds
+9,600 / 57,600 / 115,200 / 230,400 / 460,800 / 921,600 / 1,000,000 /
+2,000,000 / 3,000,000 and a custom integer rate (300 through 4,000,000).
+Its default is 115,200 for all SquachEmit firmware targets (ESP32-C5,
+ESP32-S3, and the 3.2-inch classic ESP32). The established SquachWatch CYD
+serial diagnostic console may run at 2,000,000. These are firmware baud
+settings, not determined automatically by a board dropdown.
+
+The browser passes the selected rate to Web Serial's
+`port.open({baudRate})`. The rate input is locked while a port is
+connecting or connected and becomes editable after disconnect. Invalid
+custom values are rejected before the OS port picker opens, and an
+unsupported baud value produces a visible connection error. The console
+reports its connected speed and includes it in the exported raw truth log.
+
+The firmware installer is unaffected; this change does not modify
+ESP Web Tools manifests, firmware, or on-air behavior.

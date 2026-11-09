@@ -47,8 +47,29 @@
       </section>
       <section class="panel console-panel" aria-labelledby="consoleTitle">
         <div class="panel-header"><div><div class="micro-label">02 / DEVICE CONTROL</div><h2 id="consoleTitle">SERIAL TEST CONSOLE</h2></div><div class="state" id="serialState">DISCONNECTED</div></div>
+        <div class="serial-baud-settings">
+          <label for="baudRate" class="field-label serial-baud-label">SERIAL BAUD RATE</label>
+          <div class="serial-baud-row">
+            <select id="baudRate" aria-label="Serial baud rate">
+              <option value="9600">9,600</option>
+              <option value="57600">57,600</option>
+              <option value="115200" selected>115,200 · SquachEmit (default)</option>
+              <option value="230400">230,400</option>
+              <option value="460800">460,800</option>
+              <option value="921600">921,600</option>
+              <option value="1000000">1,000,000</option>
+              <option value="2000000">2,000,000 · SquachWatch CYD</option>
+              <option value="3000000">3,000,000</option>
+              <option value="custom">Custom…</option>
+            </select>
+            <input id="customBaud" type="number" min="300" max="4000000" step="1"
+                   inputmode="numeric" aria-label="Custom serial baud rate"
+                   placeholder="Custom baud (300–4,000,000)" value="115200" hidden disabled />
+          </div>
+          <div id="baudHint" class="build-hint">Select the baud rate before connecting. Disconnect to change it.</div>
+        </div>
         <div class="console-controls"><button type="button" id="connect" class="subtle-button">CONNECT SERIAL</button><button type="button" id="disconnect" class="subtle-button" disabled>DISCONNECT</button><button type="button" id="clear" class="subtle-button">CLEAR LOG</button></div>
-        <pre id="serialLog" tabindex="0" aria-label="Serial output" aria-live="off">SquachEmit serial console // 115200 baud\nConnect your device, then send HELP or LIST.\n</pre>
+        <pre id="serialLog" tabindex="0" aria-label="Serial output" aria-live="off">SquachEmit serial console // default 115200 baud\nChoose the device baud rate, connect, then send HELP or LIST.\n</pre>
         <div class="command-grid">
           <button type="button" data-cmd="HELP" disabled>HELP</button>
           <button type="button" data-cmd="LIST" disabled>LIST</button>

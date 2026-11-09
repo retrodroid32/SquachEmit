@@ -3,7 +3,7 @@
   const params = new URLSearchParams(location.search);
   const lab = params.get('lab') === '1';
   const el = id => document.getElementById(id);
-  const ui = Object.fromEntries(['board','build','buildDetails','confirm','notice','channelBadge','enterLab','exitLab','installArea','installLocked','installButton','downloadBin','serialState','connect','disconnect','serialLog','command','commandForm','send','clear','saveLog'].map(k => [k,el(k)]));
+  const ui = Object.fromEntries(['board','build','buildDetails','confirm','notice','channelBadge','enterLab','exitLab','installArea','installLocked','installButton','downloadBin','serialState','connect','disconnect','serialLog','command','commandForm','send','clear','saveLog','baudRate','customBaud','baudHint'].map(k => [k,el(k)]));
   let catalog = { builds: [] }, visible = [], selected = null;
   ui.channelBadge.textContent = lab ? 'LAB CHANNEL · UNVERIFIED' : 'PRODUCTION';
   ui.channelBadge.classList.toggle('lab', lab);
@@ -109,8 +109,32 @@
 
   // Serial console. All serial operations originate from explicit user gestures;
   // it never starts or resumes the transmitter when the page opens.
-  let port = null, reader = null, reading = null, writer = null;
+  let port = null, reader = null, reading = null, writer = null, connecting = false;
+  let activeBaudRate = null;
+  const MIN_BAUD = 300, MAX_BAUD = 4000000;
   const encoder = new TextEncoder(), decoder = new TextDecoder();
+
+  function requestedBaudRate() {
+    const value = ui.baudRate.value === 'custom' ? ui.customBaud.value : ui.baudRate.value;
+    const numeric = Number(value);
+    if (!Number.isSafeInteger(numeric) || numeric < MIN_BAUD || numeric > MAX_BAUD ||
+        String(value).trim() === '') {
+      throw new Error('Enter a whole-number baud rate between 300 and 4,000,000.');
+    }
+    return numeric;
+  }
+  function updateBaudControls() {
+    const locked = !!port || connecting;
+    const custom = ui.baudRate.value === 'custom';
+    ui.baudRate.disabled = locked;
+    ui.customBaud.hidden = !custom;
+    ui.customBaud.disabled = locked || !custom;
+    ui.baudHint.textContent = locked
+      ? 'Disconnect before changing the baud rate.'
+      : 'SquachEmit uses 115,200. SquachWatch CYD typically uses 2,000,000. Choose a rate before connecting.';
+  }
+  ui.baudRate.addEventListener('change', updateBaudControls);
+  updateBaudControls();
   let log = '';
   function append(data) {
     if (!data) return;
@@ -120,10 +144,13 @@
     ui.serialLog.scrollTop = ui.serialLog.scrollHeight;
   }
   function setState(connected) {
-    ui.serialState.textContent = connected ? 'CONNECTED' : 'DISCONNECTED';
+    ui.serialState.textContent = connected
+      ? `CONNECTED · ${activeBaudRate.toLocaleString('en-US')} BAUD`
+      : (connecting ? 'CONNECTING' : 'DISCONNECTED');
     ui.serialState.classList.toggle('connected', connected);
-    ui.connect.disabled = connected;
+    ui.connect.disabled = connected || connecting;
     ui.disconnect.disabled = !connected;
+    updateBaudControls();
     ui.command.disabled = !connected;
     ui.send.disabled = !connected;
     document.querySelectorAll('[data-cmd]').forEach(b=>b.disabled=!connected);
@@ -140,21 +167,40 @@
     finally { try {r.releaseLock();} catch (_) {} if(reader===r) reader=null; }
   }
   async function disconnect() {
-    const p=port;port=null;setState(false);
+    const p=port;port=null;activeBaudRate=null;setState(false);
     try { if(reader) await reader.cancel(); } catch (_) {}
     try { if(reading) await reading; } catch (_) {}
     try { if(writer) {writer.releaseLock();writer=null;} } catch (_) {}
     try { if(p) await p.close(); } catch (e) {append(`[port close: ${e.message}]\n`);}
   }
   ui.connect.addEventListener('click', async()=>{
-    if (!('serial' in navigator) || !window.isSecureContext) {append('Web Serial unavailable. Use desktop Chrome or Edge over HTTPS.\n');return;}
+    if (port || connecting) return;
+    if (!('serial' in navigator) || !window.isSecureContext) {
+      append('Web Serial unavailable. Use desktop Chrome or Edge over HTTPS.\n');
+      return;
+    }
+    let baudRate;
+    try { baudRate = requestedBaudRate(); }
+    catch (e) { append(`[serial baud: ${e.message}]\n`); return; }
+
+    // Freeze the chosen speed during the OS port picker and connection.
+    connecting = true;
+    setState(false);
     try {
-      port=await navigator.serial.requestPort();
-      await port.open({baudRate:115200});
+      port = await navigator.serial.requestPort();
+      await port.open({baudRate});
+      activeBaudRate = baudRate;
+      connecting = false;
       setState(true);
-      append('\n[serial connected at 115200 baud; type HELP]\n');
+      append(`\n[serial connected at ${baudRate.toLocaleString('en-US')} baud; type HELP]\n`);
       reading=monitorLoop(port);
-    } catch(e) {append(`[serial connect: ${e.message}]\n`);if(port) await disconnect();}
+    } catch(e) {
+      append(`[serial connect: ${e.message}]\n`);
+      if(port) await disconnect();
+    } finally {
+      connecting = false;
+      if (!port) setState(false);
+    }
   });
   ui.disconnect.addEventListener('click',disconnect);
   async function send(cmd) {
