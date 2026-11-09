@@ -24,10 +24,10 @@ constexpr uint16_t VAPOR_PURPLE=0xBB5F, GREEN=0x07E0, AMBER=0xFD20;
 constexpr uint16_t WHITE=0xFFFF, MUTED=0x73CC, FACE=0x1003;
 constexpr uint16_t FUR_DARK=0x38C0, FUR_MAIN=0x5941, FUR_LIGHT=0x9326;
 constexpr uint16_t SKIN=0xF60F, RED=0xF800;
-constexpr uint8_t FILTERS=4;
+constexpr uint8_t kFilterTabCount=4;
 
 enum class Filter : uint8_t { All, Drone, Ble, Wifi };
-constexpr const char* TAB_NAMES[FILTERS] = {"ALL","DRONE","BLE","WIFI"};
+constexpr const char* TAB_NAMES[kFilterTabCount] = {"ALL","DRONE","BLE","WIFI"};
 constexpr const char* MASCOT_LINES[] = {
   "LAB MODE. NO SECRETS.",
   "49 CASES. PICK ONE.",
@@ -201,7 +201,7 @@ void timerPatch(uint32_t seconds){
 }
 
 void drawTabs(){
-  for(uint8_t i=0;i<FILTERS;i++){
+  for(uint8_t i=0;i<kFilterTabCount;i++){
     const int x=5+i*79, width=74;
     const bool chosen=(uint8_t)filter==i;
     tft.fillRoundRect(x,TAB_Y,width,TAB_H,4,chosen?PURPLE:TASKBAR);
@@ -284,7 +284,7 @@ void calibrationScreen(){
 Cyd32UiAction tap(int x,int y){
   if(y>=TAB_Y && y<TAB_Y+TAB_H){
     uint8_t tab=(uint8_t)(x/79);
-    if(tab<FILTERS){
+    if(tab<kFilterTabCount){
       filter=(Filter)tab;
       page=0;
       selectFirstPageRow();
