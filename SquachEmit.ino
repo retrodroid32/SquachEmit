@@ -6,5 +6,4 @@
 #error "Compile this sketch with -DSQE_WAVESHARE_C5=1 for the Waveshare ESP32-C5."
 #endif
 #include <NimBLEDevice.h>
-#include <Adafruit_GFX.h>
 #include <Board_IO.h>
