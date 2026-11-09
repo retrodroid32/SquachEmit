@@ -5,6 +5,7 @@
   const el = id => document.getElementById(id);
   const ui = Object.fromEntries(['board','build','buildDetails','confirm','notice','channelBadge','enterLab','exitLab','installArea','installLocked','installButton','downloadBin','serialState','connect','disconnect','serialLog','command','commandForm','send','clear','saveLog'].map(k => [k,el(k)]));
   let catalog = { builds: [] }, visible = [], selected = null;
+  let integrityVerified = false, verificationRequest = 0;
   ui.channelBadge.textContent = lab ? 'LAB CHANNEL · UNVERIFIED' : 'PRODUCTION';
   ui.channelBadge.classList.toggle('lab', lab);
   ui.enterLab.hidden = lab;
@@ -24,8 +25,10 @@
     selectBuild();
   }
   function selectBuild() {
+    const token = ++verificationRequest;
     selected = visible.find(x => x.id === ui.build.value) || null;
-    ui.confirm.disabled = !selected;
+    integrityVerified = false;
+    ui.confirm.disabled = true;
     ui.confirm.checked = false;
     if (!selected) {
       txt(ui.buildDetails, 'Choose a firmware build above. No device is modified until you explicitly connect and approve flashing.');
@@ -37,25 +40,83 @@
         `SOURCE: ${selected.branch}`,
         `BUILD: ${selected.created_at.replace('T',' ').slice(0,19)} UTC`,
         `SHA256: ${selected.sha256}`,
+        'INTEGRITY: checking all four firmware segments before allowing flash...',
         'Installation uses bootloader, partitions, OTA selection and application. Existing user data may change.'
       ];
       txt(ui.buildDetails, fragments.join('\n'));
       ui.buildDetails.style.whiteSpace = 'pre-line';
     }
     updateInstall();
+    if (selected) void verifyIntegrity(selected, token);
   }
   function updateInstall() {
-    const allowed = !!selected && ui.confirm.checked;
+    const allowed = !!selected && integrityVerified && ui.confirm.checked;
     ui.installArea.hidden = !allowed;
     ui.installLocked.hidden = allowed;
-    ui.downloadBin.hidden = !selected;
+    ui.downloadBin.hidden = !selected || !integrityVerified;
     if (selected) {
-      ui.installButton.setAttribute('manifest', `./${selected.manifest}`);
+      ui.installButton.setAttribute('manifest', allowed ? `./${selected.manifest}` : './manifest-unavailable.json');
       ui.downloadBin.href = `./${selected.application}`;
       ui.downloadBin.download = `${selected.id}.bin`;
     } else ui.installButton.setAttribute('manifest','./manifest-unavailable.json');
     if (allowed) txt(ui.installLocked, '');
   }
+
+  // Validate the exact four published firmware segments and ESP Web Tools
+  // offsets before exposing either install or download controls. This catches
+  // truncated/mismatched Pages assets, but is not a signature or device test.
+  async function verifyIntegrity(entry, token) {
+    try {
+      if (!window.isSecureContext || !crypto?.subtle)
+        throw Error('SHA-256 Web Crypto requires a secure HTTPS browser');
+      if (!/^lab\/(?:c5|s3)-[a-f0-9]{8}\/manifest\.json$/.test(entry.manifest))
+        throw Error('Unsafe or malformed firmware manifest path');
+      if (!Array.isArray(entry.segments) || entry.segments.length !== 4)
+        throw Error('Build is missing its four required segment checksums');
+      const folder = entry.manifest.slice(0, entry.manifest.lastIndexOf('/') + 1);
+      const names = ['bootloader.bin','partitions.bin','otadata.bin','application.bin'];
+      if (entry.segments.some((s,i) => s.name !== names[i] ||
+          s.path !== folder + s.name || !Number.isSafeInteger(s.offset) || s.offset < 0 ||
+          !Number.isSafeInteger(s.bytes) || s.bytes <= 0 ||
+          !/^[a-f0-9]{64}$/.test(s.sha256)))
+        throw Error('Unsafe or inconsistent firmware segment metadata');
+      const manifestResponse = await fetch('./' + entry.manifest, {cache:'no-store'});
+      if (!manifestResponse.ok) throw Error('Cannot load installer manifest: HTTP ' + manifestResponse.status);
+      const manifest = await manifestResponse.json();
+      const build = manifest.builds?.[0];
+      if (build?.chipFamily !== entry.chipFamily || !Array.isArray(build.parts) ||
+          build.parts.length !== entry.segments.length)
+        throw Error('Manifest chip family or partition count mismatch');
+      for (const segment of entry.segments) {
+        if (token !== verificationRequest) return;
+        if (!build.parts.some(p => p.path === segment.name && p.offset === segment.offset))
+          throw Error('Manifest offset mismatch for ' + segment.name);
+        const response = await fetch('./' + segment.path, {cache:'no-store'});
+        if (!response.ok) throw Error('Cannot fetch ' + segment.name + ': HTTP ' + response.status);
+        const bytes = await response.arrayBuffer();
+        if (bytes.byteLength !== segment.bytes)
+          throw Error('Size mismatch for ' + segment.name);
+        const hash = Array.from(new Uint8Array(await crypto.subtle.digest('SHA-256', bytes)))
+          .map(byte => byte.toString(16).padStart(2,'0')).join('');
+        if (hash !== segment.sha256)
+          throw Error('SHA-256 mismatch for ' + segment.name);
+      }
+      if (token !== verificationRequest || selected?.id !== entry.id) return;
+      integrityVerified = true;
+      ui.confirm.disabled = false;
+      ui.buildDetails.textContent += '\nINTEGRITY: all four firmware segments passed SHA-256 and offset checks.';
+      updateInstall();
+    } catch (error) {
+      if (token !== verificationRequest || selected?.id !== entry.id) return;
+      integrityVerified = false;
+      ui.confirm.checked = false;
+      ui.confirm.disabled = true;
+      ui.buildDetails.textContent += '\nINTEGRITY FAILED: ' + error.message + '. Flashing disabled.';
+      notice('Firmware validation failed: ' + error.message + '. Do not flash this build.', 'error');
+      updateInstall();
+    }
+  }
+
   async function loadCatalog() {
     try {
       const response = await fetch('./catalog.json', {cache:'no-store'});

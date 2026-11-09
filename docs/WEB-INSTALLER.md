@@ -57,3 +57,13 @@ GitHub Actions**. This is a one-time repository-owner setting; it cannot be
 performed by the GitHub file-edit actions in this assistant environment.
 
 Use HTTPS; Web Serial cannot run from arbitrary local files (`file://`).
+
+## SHA-256 browser integrity gate (proposed LAB change)
+
+Every successful CI build has a four-part manifest and per-segment SHA-256
+and exact byte lengths. Before enabling the install button, the browser
+fetches the manifest, verifies chip family and all four offsets, then
+hashes every binary segment using Web Crypto. Missing, truncated, stale or
+mismatched files disable flashing and downloading that build. This is a
+transfer-integrity test, not cryptographic signing or proof the displayed
+board matches the PCB; user board confirmation is still mandatory.
