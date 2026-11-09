@@ -53,6 +53,31 @@
         "Serial RUN / SUITE / STOP control; no RF transmission on boot.",
         "No C5 display support or new model-specific Remote ID test profiles."
       ]
+    },
+    "2774856ec2c0f852eb87b1ec99dfcb910aadca7e": {
+      "title": "CYD 3.2 ST7798 Emitter (49 tests)",
+      "version": "v0.4.0 LAB / CYD3.2",
+      "summary": "First SquachEmit build for ESP32-2432S032R 3.2-inch ST7798-compatible resistive CYD. Adds on-screen RF scenario control, persistent touch calibration, and all 49 synthetic Remote ID / RF test cases. Replaces SquachWatch on the flashed device.",
+      "highlights": [
+        "Supports owner's 3.2-inch ESP32-WROOM-32 CYD ST7798-compatible TFT, XPT2046 touch, and GPIO27 backlight.",
+        "49 controlled on-air tests including 10 synthetic DJI/Autel/Parrot drone Remote ID lab profiles.",
+        "On-device PREV/NEXT, RUN/STOP/SUITE and five-point touch calibration saved in a separate NVS namespace.",
+        "Uses 115200 baud SquachEmit serial and classic ESP32 2.4GHz Wi-Fi/BLE4 hardware.",
+        "Flashing overwrites SquachWatch on this physical CYD; use a second CYD receiver."
+      ]
+    },
+    "471699cb08ad7e458b4d56a11e1f5ef265d54ed5": {
+      "title": "CYD 3.2 ST7798 Smooth UI (49 tests)",
+      "version": "v0.4.0 LAB / CYD3.2 r2",
+      "summary": "Updated SquachEmit 3.2-inch CYD ST7798/XPT2046 firmware: 49 RF test cases, onboard UI and persistent touch calibration. Redraws only the running countdown instead of refreshing the entire screen each second; prevents a blocking calibration from extending RF transmissions. Replaces SquachWatch on the flashed board.",
+      "highlights": [
+        "ESP32-2432S032R 3.2-inch ST7798/ST7789-compatible TFT, XPT2046 touch, GPIO27 backlight and classic ESP32 4MB flash.",
+        "49 synthetic BLE/Wi-Fi tests including DJI Mini/Air/Mavic/Phantom/Matrice, Autel EVO and Parrot ANAFI Remote ID profiles.",
+        "New touchscreen PREV/NEXT, RUN/STOP/SUITE, persistent five-point calibration and CALTOUCH serial recovery.",
+        "Reduced screen flicker: running countdown updates only its small timer region instead of clearing the entire display.",
+        "Touch calibration is blocked during active RF or suite mode, so a wizard cannot extend timed emissions.",
+        "Flashing replaces the SquachWatch app on this board; use a separate device to receive test signals."
+      ]
     }
   }
 }

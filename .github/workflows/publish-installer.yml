@@ -5,6 +5,7 @@ on:
     paths:
       - 'web-installer/**'
       - 'tools/build_installer_site.py'
+      - 'tools/firmware_build_notes.json'
       - '.github/workflows/publish-installer.yml'
       - '.github/workflows/ci.yml'
   workflow_run:
@@ -56,7 +57,7 @@ jobs:
           runs=api(f'repos/{repo}/actions/workflows/ci.yml/runs?per_page=100&status=success')['workflow_runs']
           sources=[]
           seen=set()
-          counts={'c5-waveshare-28':0,'s3-devkit':0}
+          counts={'c5-waveshare-28':0,'s3-devkit':0,'cyd32-st7798':0}
           for run in runs:
               if run['conclusion']!='success' or run.get('event')!='push':
                   continue
@@ -67,6 +68,10 @@ jobs:
                   board='s3-devkit'
                   artifact='squachemit-esp32s3-firmware-unverified'
                   limit=1
+              elif branch.startswith('lab/cyd32-st7798-'):
+                  board='cyd32-st7798'
+                  artifact='squachemit-cyd32-st7798-firmware-unverified'
+                  limit=2
               elif branch.startswith('lab/'):
                   board='c5-waveshare-28'
                   artifact='squachemit-waveshare-c5-28-firmware-unverified'
@@ -84,10 +89,10 @@ jobs:
                   directory=root/f'{board}-{sha[:8]}'
                   directory.mkdir(exist_ok=True)
                   subprocess.run(['gh','run','download',str(run['id']),'-R',repo,'-n',artifact,'-D',str(directory)],check=True)
-                  required = (['bootloader.bin','partitions.bin','firmware.bin','ota_init.bin']
-                              if board=='s3-devkit' else
-                              ['SquachEmit.ino.bootloader.bin','SquachEmit.ino.partitions.bin',
-                               'SquachEmit.ino.bin','SquachEmit.ino.merged.bin'])
+                  required = (['SquachEmit.ino.bootloader.bin','SquachEmit.ino.partitions.bin',
+                               'SquachEmit.ino.bin','SquachEmit.ino.merged.bin']
+                              if board=='c5-waveshare-28' else
+                              ['bootloader.bin','partitions.bin','firmware.bin','ota_init.bin'])
                   missing=[name for name in required if not (directory/name).is_file()]
                   if missing:
                       print(f'::warning::Skipping legacy run {run["id"]}: missing {missing}')
