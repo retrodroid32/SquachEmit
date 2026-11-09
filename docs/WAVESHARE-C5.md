@@ -34,7 +34,7 @@ From a clean clone in a terminal with Arduino CLI installed:
 arduino-cli core update-index --additional-urls https://espressif.github.io/arduino-esp32/package_esp32_index.json
 arduino-cli core install esp32:esp32@3.3.12 --additional-urls https://espressif.github.io/arduino-esp32/package_esp32_index.json
 arduino-cli lib install "NimBLE-Arduino@2.5.1"
-arduino-cli compile --fqbn "esp32:esp32:esp32c5:FlashSize=16M,PSRAM=enabled" --build-property "build.extra_flags=-DSQE_WAVESHARE_C5=1 -I$(Get-Location)/include" --libraries "$(Get-Location)/lib" .
+arduino-cli compile --fqbn "esp32:esp32:esp32c5:FlashSize=16M,PSRAM=enabled,PartitionScheme=app3M_fat9M_16MB" --build-property "build.extra_flags=-DSQE_WAVESHARE_C5=1 -I$(Get-Location)/include" --libraries "$(Get-Location)/lib" .
 ```
 
 For first installation, use Arduino CLI's board-specific upload operation
