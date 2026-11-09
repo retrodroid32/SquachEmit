@@ -1,7 +1,6 @@
-# SquachEmit — ESP32-S3 detection test transmitter
+# SquachEmit — ESP32-S3 / ESP32-C5 detection test transmitter
 
-**Status: v0.1.0 source-only prototype — host fixture tests pass; on-device
-compile, actual RF emission, and SquachWatch hardware detections require validation.**
+**Status: v0.2.0 development. ESP32-S3 baseline retained, Waveshare ESP32-C5 2.8-inch GUI lab target added. Physical RF/hardware verification is required before a production release.**
 
 A **separate** laboratory companion to [retrodroid32/SquachWatch-CYD](https://github.com/retrodroid32/SquachWatch-CYD).
 SquachEmit emits bounded, synthetic BLE advertisements and ordinary Wi-Fi
@@ -12,6 +11,28 @@ on its own. **It does not install anything into SquachWatch.**
 The goal is to measure **signature-level** detection, missed hits, wrong
 classifications, false positives on negative controls, and latency — without
 pretending that a synthetic beacon proves a physical camera/drone is there.
+
+## ESP32-C5 Waveshare touchscreen — experimental board
+
+The `waveshare-esp32c5-touch-28` PlatformIO environment is a **separate**
+build target for the Waveshare **ESP32-C5-Touch-LCD-2.8**: ST7789 240x320,
+CST3530 capacitive touch, CH32V003 backlight/reset I/O expander. This
+**is not the XPT2046 resistive-touch RockBase/ZLX/LCDWiki model.**
+
+Its touchscreen provides scenario selection, PREV/NEXT, RUN, STOP and SUITE.
+Boot is radio-silent, and the existing USB serial command interface is kept.
+The new target uses Arduino-ESP32 3.3.12 and a custom PlatformIO board
+definition. **It has not been physically tested yet.**
+
+```bash
+pio run -e waveshare-esp32c5-touch-28
+pio run -e waveshare-esp32c5-touch-28 -t upload
+pio device monitor -b 115200
+```
+
+See [Waveshare C5 setup, pinout, and validation](docs/WAVESHARE-C5.md).
+Confirm your actual PCB marking before flashing; the Amazon product page
+alone did not provide a verifiable schematic. **Never flash S3 firmware to C5.**
 
 ## Hardware
 
