@@ -26,6 +26,16 @@ const Scenario kScenarios[] = {
   {"WIFI-HACKER-PINE", Kind::WifiAp, "HACKER", "Wi-Fi Pineapple SSID pattern", 0, "Pineapple_SQE"},
   {"WIFI-HACKER-PWN", Kind::WifiAp, "HACKER", "Deauther management SSID pattern; no attacks", 0, "pwned-SQE-TEST"},
   {"WIFI-NEG", Kind::WifiAp, "NONE", "Ordinary WPA2 SoftAP; negative control", 0, "SQE-BENIGN"},
+  // LAB channel test variants: Wi-Fi code 0 means legacy CH1; otherwise CH1..11.
+  {"BLE-IBEACON-V2", Kind::BleManufacturer, "IBEACON", "Second synthetic iBeacon UUID/major/minor identity", 76, nullptr},
+  {"BLE-NEG-IBEACON-SHORT", Kind::BleAppleNegative, "NONE", "Truncated Apple iBeacon structure; reject as incomplete", 76, nullptr},
+  {"BLE-NEG-DRONE-UUID", Kind::BleUuid, "NONE", "OpenDroneID UUID as service list only; NOT Remote ID data", 65530, nullptr},
+  {"BLE-NEG-META-ADJ", Kind::BleUuid, "NONE", "Adjacent non-Meta service UUID should not classify", 64862, nullptr},
+  {"WIFI-AXON-CH6", Kind::WifiAp, "AXON", "Controlled Axon SSID on Wi-Fi channel 6", 6, "AB2-SQE-TEST"},
+  {"WIFI-AXON-CH11", Kind::WifiAp, "AXON", "Controlled Axon SSID on Wi-Fi channel 11", 11, "AB2-SQE-TEST"},
+  {"WIFI-FLOCK-CH6", Kind::WifiAp, "FLOCK", "Controlled Flock SSID on Wi-Fi channel 6", 6, "FLOCK-SQE-TEST"},
+  {"WIFI-NEG-CH6", Kind::WifiAp, "NONE", "Benign WPA2 AP on Wi-Fi channel 6", 6, "SQE-BENIGN"},
+  {"WIFI-NEG-CH11", Kind::WifiAp, "NONE", "Benign WPA2 AP on Wi-Fi channel 11", 11, "SQE-BENIGN"},
 };
 const size_t kScenarioCount = sizeof(kScenarios) / sizeof(kScenarios[0]);
 const Scenario* findScenario(const char* id) {

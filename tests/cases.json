@@ -196,5 +196,86 @@
     "description": "Ordinary WPA2 SoftAP; negative control",
     "code": 0,
     "text": "SQE-BENIGN"
+  },
+  {
+    "id": "BLE-IBEACON-V2",
+    "carrier": "BLE",
+    "kind": "BleManufacturer",
+    "expected": "IBEACON",
+    "description": "Second synthetic iBeacon UUID/major/minor identity",
+    "code": 76,
+    "text": null
+  },
+  {
+    "id": "BLE-NEG-IBEACON-SHORT",
+    "carrier": "BLE",
+    "kind": "BleAppleNegative",
+    "expected": "NONE",
+    "description": "Truncated Apple iBeacon structure; reject as incomplete",
+    "code": 76,
+    "text": null
+  },
+  {
+    "id": "BLE-NEG-DRONE-UUID",
+    "carrier": "BLE",
+    "kind": "BleUuid",
+    "expected": "NONE",
+    "description": "OpenDroneID UUID as service list only; NOT Remote ID data",
+    "code": 65530,
+    "text": null
+  },
+  {
+    "id": "BLE-NEG-META-ADJ",
+    "carrier": "BLE",
+    "kind": "BleUuid",
+    "expected": "NONE",
+    "description": "Adjacent non-Meta service UUID should not classify",
+    "code": 64862,
+    "text": null
+  },
+  {
+    "id": "WIFI-AXON-CH6",
+    "carrier": "WIFI",
+    "kind": "WifiAp",
+    "expected": "AXON",
+    "description": "Controlled Axon SSID on Wi-Fi channel 6",
+    "code": 6,
+    "text": "AB2-SQE-TEST"
+  },
+  {
+    "id": "WIFI-AXON-CH11",
+    "carrier": "WIFI",
+    "kind": "WifiAp",
+    "expected": "AXON",
+    "description": "Controlled Axon SSID on Wi-Fi channel 11",
+    "code": 11,
+    "text": "AB2-SQE-TEST"
+  },
+  {
+    "id": "WIFI-FLOCK-CH6",
+    "carrier": "WIFI",
+    "kind": "WifiAp",
+    "expected": "FLOCK",
+    "description": "Controlled Flock SSID on Wi-Fi channel 6",
+    "code": 6,
+    "text": "FLOCK-SQE-TEST"
+  },
+  {
+    "id": "WIFI-NEG-CH6",
+    "carrier": "WIFI",
+    "kind": "WifiAp",
+    "expected": "NONE",
+    "description": "Benign WPA2 AP on Wi-Fi channel 6",
+    "code": 6,
+    "text": "SQE-BENIGN"
+  },
+  {
+    "id": "WIFI-NEG-CH11",
+    "carrier": "WIFI",
+    "kind": "WifiAp",
+    "expected": "NONE",
+    "description": "Benign WPA2 AP on Wi-Fi channel 11",
+    "code": 11,
+    "text": "SQE-BENIGN"
   }
 ]
