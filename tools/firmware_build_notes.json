@@ -53,6 +53,18 @@
         "Serial RUN / SUITE / STOP control; no RF transmission on boot.",
         "No C5 display support or new model-specific Remote ID test profiles."
       ]
+    },
+    "2774856ec2c0f852eb87b1ec99dfcb910aadca7e": {
+      "title": "CYD 3.2 ST7798 Emitter (49 tests)",
+      "version": "v0.4.0 LAB / CYD3.2",
+      "summary": "First SquachEmit build for ESP32-2432S032R 3.2-inch ST7798-compatible resistive CYD. Adds on-screen RF scenario control, persistent touch calibration, and all 49 synthetic Remote ID / RF test cases. Replaces SquachWatch on the flashed device.",
+      "highlights": [
+        "Supports owner's 3.2-inch ESP32-WROOM-32 CYD ST7798-compatible TFT, XPT2046 touch, and GPIO27 backlight.",
+        "49 controlled on-air tests including 10 synthetic DJI/Autel/Parrot drone Remote ID lab profiles.",
+        "On-device PREV/NEXT, RUN/STOP/SUITE and five-point touch calibration saved in a separate NVS namespace.",
+        "Uses 115200 baud SquachEmit serial and classic ESP32 2.4GHz Wi-Fi/BLE4 hardware.",
+        "Flashing overwrites SquachWatch on this physical CYD; use a second CYD receiver."
+      ]
     }
   }
 }

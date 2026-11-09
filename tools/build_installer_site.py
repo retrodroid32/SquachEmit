@@ -58,6 +58,7 @@ def describe_build(sha: str, branch: str, board: str, notes: dict) -> dict:
         'lab/drone-rid-profiles-': 'Drone Remote ID LAB (review exact changes)',
         'lab/rf-fixtures-reporting-': 'RF Detection LAB (review exact changes)',
         'lab/esp32c5-waveshare-touch-': 'C5 Touchscreen LAB (review exact changes)',
+        'lab/cyd32-st7798-': 'CYD 3.2 ST7798 LAB (review exact changes)',
     }
     title = next((name for prefix, name in label.items() if branch.startswith(prefix)),
                  'Uncatalogued LAB firmware (review changes)')
