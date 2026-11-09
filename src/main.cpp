@@ -1,5 +1,6 @@
 #include <Arduino.h>
 #include <WiFi.h>
+#include <esp_wifi.h>
 #include <NimBLEDevice.h>
 #include "scenarios.h"
 #if defined(SQE_WAVESHARE_C5)
@@ -17,6 +18,7 @@ static constexpr uint32_t kRemoteRotationMs = 1300;
 static constexpr uint32_t kSuiteGapMs = 2400;
 
 static NimBLEAdvertising* g_adv = nullptr;
+static bool g_wifiVendorIE = false;
 static bool g_bleInit = false;
 static const Scenario* g_active = nullptr;
 static uint32_t g_started = 0;
@@ -31,7 +33,7 @@ static String g_line;
 
 static void truth(const char* event, const Scenario* s, const char* status = "ok") {
   // Existing keys remain stable for the serial truth consumer. 0 = BLE.
-  const bool wifi = s && s->kind == Kind::WifiAp;
+  const bool wifi = s && (s->kind == Kind::WifiAp || s->kind == Kind::WifiRemoteId);
   const unsigned channel = wifi ? (s->code ? (unsigned)s->code : 1u) : 0u;
   Serial.printf("TRUTH,{\"event\":\"%s\",\"seq\":%lu,\"ms\":%lu,\"id\":\"%s\",\"expected\":\"%s\",\"status\":\"%s\",\"carrier\":\"%s\",\"channel\":%u}\n",
                 event, (unsigned long)g_caseNumber, (unsigned long)millis(),
@@ -57,42 +59,108 @@ static void put32(uint8_t* p, int32_t v) {
 
 // Exact 25-byte message layout mirrored by SquachWatch remote_id.cpp and
 // test/emitter_roundtrip_test.cpp; all coordinates/IDs are synthetic.
-static void remoteFrame(uint8_t which, uint8_t* body27) {
+static bool scenarioIs(const Scenario* s, const char* id) {
+  return s && strcmp(s->id, id) == 0;
+}
+
+// Synthetic ASTM F3411 test geometry, matched to the SquachWatch legacy
+// decoder. Each model profile has a distinctly FAKE serial and a Self-ID
+// description. This does not clone actual DJI/Autel/Parrot hardware or RF.
+static void remoteFrame(uint8_t which, uint8_t* body27, const Scenario* s) {
   memset(body27, 0, 27);
-  body27[0] = 0x0D; // ASTM OpenDroneID application code
-  body27[1] = which + 1; // counter
+  body27[0] = 0x0D; // OpenDroneID application code
+  body27[1] = which + 1;
   uint8_t* m = body27 + 2;
   switch (which) {
-    case 0:
-      m[0] = 0x02; m[1] = 0x12;
-      memcpy(m + 2, "SQUACHEMIT-TEST-0001", 20);
+    case 0: {
+      m[0] = 0x02; m[1] = scenarioIs(s, "RID-BAD-SERIAL") ? 0xF2 : 0x12;
+      // Intentionally invalid IDType F is still transport-recognizable.
+      const char* serial = (s && s->kind == Kind::BleRemoteId && s->text)
+        ? s->text : "SQUACHEMIT-TEST-0001";
+      strncpy(reinterpret_cast<char*>(m + 2), serial, 20);
       break;
+    }
     case 1:
       m[0] = 0x12;
-      put32(m + 5, 407128000);  // synthetic aircraft 40.7128
-      put32(m + 9, -740060000); // synthetic aircraft -74.0060
-      m[15] = 0xC0; m[16] = 0x08; // 120m = (120+1000)*2 = 2240
+      put32(m + 5, 407128000);  // fixed synthetic test aircraft coordinate
+      put32(m + 9, -740060000);
+      m[15] = 0xC0; m[16] = 0x08; // 120 m, encoded as 2240
+      // Location TimeStamp: tenths of seconds after the UTC hour.
+      // There is no RTC/GPS in the emitter: use "unknown" except in the
+      // explicitly stale fixture (0.1 seconds after the top of an hour).
+      if (!scenarioIs(s, "BLE-DRONE")) {
+        m[21] = scenarioIs(s, "RID-STALE-LOC") ? 1 : 0xFF;
+        m[22] = scenarioIs(s, "RID-STALE-LOC") ? 0 : 0xFF;
+      }
       break;
     case 2:
       m[0] = 0x42;
-      put32(m + 2, 407580000);  // synthetic operator 40.7580
-      put32(m + 6, -739855000); // synthetic operator -73.9855
+      put32(m + 2, 407580000);  // synthetic operator differs from aircraft
+      put32(m + 6, -739855000);
       break;
+    case 3: {
+      m[0] = 0x32; // Self-ID message, protocol version 2
+      m[1] = 0;    // text description
+      const char* label = s ? s->id : "GENERIC";
+      char description[24] = {0};
+      snprintf(description, sizeof(description), "LAB %s", label);
+      memcpy(m + 2, description, strnlen(description, 23));
+      break;
+    }
+    default: break;
   }
 }
 
-static bool advertiseRemote(uint8_t part) {
+static bool advertiseRemote(uint8_t part, const Scenario* s) {
   if (!g_adv || !g_bleInit) return false;
   g_adv->stop();
   uint8_t body[27];
-  remoteFrame(part, body);
+  remoteFrame(part, body, s);
   NimBLEAdvertisementData data;
-  // Do NOT add flags or a name: legacy OpenDroneID fills all 31 bytes.
-  if (!data.setServiceData(NimBLEUUID((uint16_t)0xFFFA), body, sizeof(body))) return false;
-  const auto packet = data.getPayload();
-  if (packet.size() != 31u) return false;
+  // Do not add flags or a name: the legacy service data fills all 31 bytes.
+  if (!data.setServiceData(NimBLEUUID((uint16_t)0xFFFA), body, sizeof(body)))
+    return false;
+  if (data.getPayload().size() != 31u) return false;
   if (!g_adv->setAdvertisementData(data)) return false;
   return g_adv->start();
+}
+
+static bool advertiseRemoteNegative(const Scenario* s) {
+  uint8_t body[27];
+  remoteFrame(0, body, s);
+  const bool wrongApp = scenarioIs(s, "RID-NEG-APP");
+  if (wrongApp) body[0] = 0x0E;
+  const size_t length = wrongApp ? sizeof(body) : sizeof(body) - 1u;
+  NimBLEAdvertisementData data;
+  if (!data.setServiceData(NimBLEUUID((uint16_t)0xFFFA), body, length))
+    return false;
+  if (!g_adv->setAdvertisementData(data)) return false;
+  return g_adv->start();
+}
+
+// Standard esp_wifi_set_vendor_ie inserts a self-contained vendor IE into
+// ordinary SoftAP beacons. This is not arbitrary management-frame injection.
+// Byte-for-byte follows SquachWatch's RemoteId::isWifiBeacon test fixture.
+static bool startWifiRemote(const Scenario* s) {
+  const uint8_t channel = s->code ? static_cast<uint8_t>(s->code) : 6;
+  if (channel < 1 || channel > 11) return false;
+  WiFi.mode(WIFI_AP);
+  if (!WiFi.softAP(s->text ? s->text : "SQE-RID-LAB",
+                   "SquachLab2026!", channel, false, 1)) return false;
+  uint8_t body[27];
+  remoteFrame(0, body, s);
+  uint8_t ie[35] = {0xDD, 33, 0xFA, 0x0B, 0xBC, 0x0D, 0x01,
+                    0xF2, 25, 1};
+  if (scenarioIs(s, "RID-WIFI-PARROT")) {
+    ie[2] = 0x90; ie[3] = 0x3A; ie[4] = 0xE6;
+  }
+  memcpy(ie + 10, body + 2, 25);
+  const esp_err_t err = esp_wifi_set_vendor_ie(
+      true, WIFI_VND_IE_TYPE_BEACON, WIFI_VND_IE_ID_0, ie);
+  g_wifiVendorIE = err == ESP_OK;
+  if (!g_wifiVendorIE)
+    Serial.printf("ERROR,WIFI_RID_IE,%d\n", (int)err);
+  return g_wifiVendorIE;
 }
 
 static bool advertiseBle(const Scenario* s) {
@@ -102,8 +170,10 @@ static bool advertiseBle(const Scenario* s) {
   if (s->kind == Kind::BleRemoteId) {
     g_remotePart = 0;
     g_lastRotation = millis();
-    return advertiseRemote(0);
+    return advertiseRemote(0, s);
   }
+  if (s->kind == Kind::BleRemoteNegative)
+    return advertiseRemoteNegative(s);
   NimBLEAdvertisementData data;
   data.setFlags(0x06);
   bool ok = false;
@@ -129,7 +199,8 @@ static bool advertiseBle(const Scenario* s) {
         // Test fixture, not a complete real AirTag state machine.
         const uint8_t payload[] = {0x4C, 0x00, 0x12, 0x19, 0x01, 0x02};
         ok = data.setManufacturerData(payload, sizeof(payload));
-      } else if (strcmp(s->id, "BLE-IBEACON") == 0) {
+      } else if (strcmp(s->id, "BLE-IBEACON") == 0 ||
+                 strcmp(s->id, "BLE-IBEACON-V2") == 0) {
         // 25-byte mfg data: Apple CID, iBeacon marker, 16-byte UUID,
         // big-endian major/minor and signed measured power.
         uint8_t payload[25] = {
@@ -159,6 +230,11 @@ static bool advertiseBle(const Scenario* s) {
 
 static void stopTx() {
   if (g_adv && g_bleInit) g_adv->stop();
+  if (g_wifiVendorIE) {
+    esp_wifi_set_vendor_ie(false, WIFI_VND_IE_TYPE_BEACON,
+                           WIFI_VND_IE_ID_0, nullptr);
+    g_wifiVendorIE = false;
+  }
   if (WiFi.getMode() != WIFI_OFF) {
     WiFi.softAPdisconnect(true);
     WiFi.mode(WIFI_OFF);
@@ -191,6 +267,8 @@ static bool startScenario(const Scenario* s, uint32_t duration = kDefaultMs) {
     const uint8_t channel = s->code ? static_cast<uint8_t>(s->code) : 1;
     if (channel >= 1 && channel <= 11)
       ok = WiFi.softAP(s->text, "SquachLab2026!", channel, false, 1);
+  } else if (s->kind == Kind::WifiRemoteId) {
+    ok = startWifiRemote(s);
   } else {
     ok = advertiseBle(s);
   }
@@ -204,7 +282,7 @@ static bool startScenario(const Scenario* s, uint32_t duration = kDefaultMs) {
   g_duration = duration;
   truth("BEGIN", s);
   Serial.printf("INFO,%s,%s,%s\n", s->id, s->expected, s->description);
-  if (s->kind == Kind::WifiAp)
+  if (s->kind == Kind::WifiAp || s->kind == Kind::WifiRemoteId)
     Serial.printf("RADIO,CHANNEL,%u\n", s->code ? (unsigned)s->code : 1u);
   return true;
 }
@@ -212,18 +290,21 @@ static bool startScenario(const Scenario* s, uint32_t duration = kDefaultMs) {
 static void listCases() {
   for (size_t i = 0; i < kScenarioCount; ++i)
     Serial.printf("CASE,%s,%s,%s,%s\n", kScenarios[i].id,
-                  kScenarios[i].kind == Kind::WifiAp ? "WIFI" : "BLE",
+                  (kScenarios[i].kind == Kind::WifiAp ||
+                   kScenarios[i].kind == Kind::WifiRemoteId) ? "WIFI" : "BLE",
                   kScenarios[i].expected, kScenarios[i].description);
 }
 
 static void help() {
-  Serial.println("SquachEmit 0.3.0-LAB | 115200 8N1 | all RF tests time-limited");
+  Serial.println("SquachEmit 0.4.0-LAB | 115200 8N1 | all RF tests time-limited");
   Serial.println("HELP                  commands");
   Serial.println("LIST                  show all supported cases");
   Serial.println("RUN <ID> [seconds]    transmit for 3..30 seconds (default 12)");
   Serial.println("SUITE                 run each case with 2.4s off-air gaps");
   Serial.println("STOP                  stop current case/suite immediately");
   Serial.println("STATUS                show current case and time remaining");
+  Serial.println("Remote ID profiles are synthetic; no genuine vendor serials or flight links.");
+  Serial.println("BLE5 extended/coded PHY and Wi-Fi NAN: OFFLINE FIXTURES ONLY.");
   Serial.println("Single 2.4GHz radio: BLE and Wi-Fi scenarios are exclusive.");
 }
 
@@ -278,10 +359,10 @@ void setup() {
   while (!Serial && millis() - t0 < 1800) delay(10);
   WiFi.mode(WIFI_OFF);
   #if defined(SQE_WAVESHARE_C5)
-  Serial.println("BOOT,SquachEmit,0.3.0-LAB,ESP32-C5-Waveshare-2.8");
+  Serial.println("BOOT,SquachEmit,0.4.0-LAB,ESP32-C5-Waveshare-2.8");
   c5UiBegin();
 #else
-  Serial.println("BOOT,SquachEmit,0.3.0-LAB,ESP32-S3");
+  Serial.println("BOOT,SquachEmit,0.4.0-LAB,ESP32-S3");
 #endif
   help();
 }
@@ -297,9 +378,11 @@ void loop() {
   }
   const uint32_t now = millis();
   if (g_active && g_active->kind == Kind::BleRemoteId && now - g_lastRotation >= kRemoteRotationMs) {
-    g_remotePart = (g_remotePart + 1) % 3;
+    const uint8_t parts = scenarioIs(g_active, "BLE-DRONE") ? 3 :
+                          scenarioIs(g_active, "RID-NO-OPERATOR") ? 2 : 4;
+    g_remotePart = (g_remotePart + 1) % parts;
     g_lastRotation = now;
-    if (!advertiseRemote(g_remotePart)) {
+    if (!advertiseRemote(g_remotePart, g_active)) {
       finish("remote_rotation_failed");
       g_suite = false;
     }
