@@ -7,7 +7,7 @@
 #endif
 #include <string.h>
 
-// SquachEmit v0.1.0: bounded, explicit lab emissions; no unattended RF flood.
+// SquachEmit v0.3.0 LAB: bounded, explicit lab emissions; no unattended RF flood.
 // In every test the expected label is a *detector classification*, not a
 // claim the actual product named by that classification is present.
 static constexpr uint32_t kDefaultMs = 12000;
@@ -30,9 +30,13 @@ static uint32_t g_suiteAt = 0;
 static String g_line;
 
 static void truth(const char* event, const Scenario* s, const char* status = "ok") {
-  Serial.printf("TRUTH,{\"event\":\"%s\",\"seq\":%lu,\"ms\":%lu,\"id\":\"%s\",\"expected\":\"%s\",\"status\":\"%s\"}\n",
+  // Existing keys remain stable for the serial truth consumer. 0 = BLE.
+  const bool wifi = s && s->kind == Kind::WifiAp;
+  const unsigned channel = wifi ? (s->code ? (unsigned)s->code : 1u) : 0u;
+  Serial.printf("TRUTH,{\"event\":\"%s\",\"seq\":%lu,\"ms\":%lu,\"id\":\"%s\",\"expected\":\"%s\",\"status\":\"%s\",\"carrier\":\"%s\",\"channel\":%u}\n",
                 event, (unsigned long)g_caseNumber, (unsigned long)millis(),
-                s ? s->id : "", s ? s->expected : "NONE", status);
+                s ? s->id : "", s ? s->expected : "NONE", status,
+                wifi ? "WIFI" : "BLE", channel);
 }
 
 static bool beginBle() {
@@ -111,8 +115,12 @@ static bool advertiseBle(const Scenario* s) {
       ok = data.setName(s->text);
       break;
     case Kind::BleAppleNegative: {
-      const uint8_t payload[] = {0x4C, 0x00, 0x01, 0x10, 0x00, 0x00};
-      ok = data.setManufacturerData(payload, sizeof(payload));
+      // A truncated iBeacon signature must not be classified as a full iBeacon.
+      const uint8_t shortPayload[] = {0x4C, 0x00, 0x02, 0x15, 0x01, 0x02};
+      const uint8_t normalPayload[] = {0x4C, 0x00, 0x01, 0x10, 0x00, 0x00};
+      const bool shortId = strcmp(s->id, "BLE-NEG-IBEACON-SHORT") == 0;
+      ok = shortId ? data.setManufacturerData(shortPayload, sizeof(shortPayload))
+                   : data.setManufacturerData(normalPayload, sizeof(normalPayload));
       break;
     }
     case Kind::BleManufacturer: {
@@ -124,12 +132,16 @@ static bool advertiseBle(const Scenario* s) {
       } else if (strcmp(s->id, "BLE-IBEACON") == 0) {
         // 25-byte mfg data: Apple CID, iBeacon marker, 16-byte UUID,
         // big-endian major/minor and signed measured power.
-        const uint8_t payload[25] = {
+        uint8_t payload[25] = {
           0x4C, 0x00, 0x02, 0x15,
           0x53, 0x51, 0x55, 0x41, 0x43, 0x48, 0x45, 0x4D,
           0x49, 0x54, 0x2D, 0x54, 0x45, 0x53, 0x54, 0x21,
           0x00, 0x01, 0x00, 0x02, 0xC5
         };
+        if (strcmp(s->id, "BLE-IBEACON-V2") == 0) {
+          // Same valid iBeacon structure, independent UUID + major/minor.
+          payload[19] ^= 0x01; payload[21] = 0x03; payload[23] = 0x04;
+        }
         ok = data.setManufacturerData(payload, sizeof(payload));
       } else {
         const uint8_t payload[] = {(uint8_t)(s->code & 0xFF),
@@ -175,7 +187,10 @@ static bool startScenario(const Scenario* s, uint32_t duration = kDefaultMs) {
   if (s->kind == Kind::WifiAp) {
     // One ordinary WPA2 SoftAP. No spoofed BSSIDs or attacks.
     WiFi.mode(WIFI_AP);
-    ok = WiFi.softAP(s->text, "SquachLab2026!", 1, false, 1);
+    // Channel 0 is the legacy channel-1 profile; explicit 1..11 for LAB.
+    const uint8_t channel = s->code ? static_cast<uint8_t>(s->code) : 1;
+    if (channel >= 1 && channel <= 11)
+      ok = WiFi.softAP(s->text, "SquachLab2026!", channel, false, 1);
   } else {
     ok = advertiseBle(s);
   }
@@ -189,6 +204,8 @@ static bool startScenario(const Scenario* s, uint32_t duration = kDefaultMs) {
   g_duration = duration;
   truth("BEGIN", s);
   Serial.printf("INFO,%s,%s,%s\n", s->id, s->expected, s->description);
+  if (s->kind == Kind::WifiAp)
+    Serial.printf("RADIO,CHANNEL,%u\n", s->code ? (unsigned)s->code : 1u);
   return true;
 }
 
@@ -200,7 +217,7 @@ static void listCases() {
 }
 
 static void help() {
-  Serial.println("SquachEmit 0.1.0 | 115200 8N1 | all RF tests time-limited");
+  Serial.println("SquachEmit 0.3.0-LAB | 115200 8N1 | all RF tests time-limited");
   Serial.println("HELP                  commands");
   Serial.println("LIST                  show all supported cases");
   Serial.println("RUN <ID> [seconds]    transmit for 3..30 seconds (default 12)");
@@ -261,10 +278,10 @@ void setup() {
   while (!Serial && millis() - t0 < 1800) delay(10);
   WiFi.mode(WIFI_OFF);
   #if defined(SQE_WAVESHARE_C5)
-  Serial.println("BOOT,SquachEmit,0.2.0-DEV,ESP32-C5-Waveshare-2.8");
+  Serial.println("BOOT,SquachEmit,0.3.0-LAB,ESP32-C5-Waveshare-2.8");
   c5UiBegin();
 #else
-  Serial.println("BOOT,SquachEmit,0.1.0,ESP32-S3");
+  Serial.println("BOOT,SquachEmit,0.3.0-LAB,ESP32-S3");
 #endif
   help();
 }
