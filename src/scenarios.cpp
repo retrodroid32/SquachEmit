@@ -36,6 +36,25 @@ const Scenario kScenarios[] = {
   {"WIFI-FLOCK-CH6", Kind::WifiAp, "FLOCK", "Controlled Flock SSID on Wi-Fi channel 6", 6, "FLOCK-SQE-TEST"},
   {"WIFI-NEG-CH6", Kind::WifiAp, "NONE", "Benign WPA2 AP on Wi-Fi channel 6", 6, "SQE-BENIGN"},
   {"WIFI-NEG-CH11", Kind::WifiAp, "NONE", "Benign WPA2 AP on Wi-Fi channel 11", 11, "SQE-BENIGN"},
+  // Synthetic Remote ID family/model profiles; not vendor radio impersonation.
+  {"RID-DJI-MINI", Kind::BleRemoteId, "DRONE", "LAB DJI Mini Remote ID profile (synthetic, not real aircraft)", 0, "SQE-DJI-MINI-LAB01"},
+  {"RID-DJI-AIR", Kind::BleRemoteId, "DRONE", "LAB DJI Air Remote ID profile (synthetic, not real aircraft)", 0, "SQE-DJI-AIR-LAB001"},
+  {"RID-DJI-MAVIC", Kind::BleRemoteId, "DRONE", "LAB DJI Mavic Remote ID profile (synthetic, not real aircraft)", 0, "SQE-DJI-MAVIC-LAB1"},
+  {"RID-DJI-PHANTOM", Kind::BleRemoteId, "DRONE", "LAB DJI Phantom Remote ID profile (synthetic, not real aircraft)", 0, "SQE-DJI-PHANTOM-L1"},
+  {"RID-DJI-MATRICE", Kind::BleRemoteId, "DRONE", "LAB DJI Matrice Remote ID profile (synthetic, not real aircraft)", 0, "SQE-DJI-MATRICE-L1"},
+  {"RID-AUTEL-EVO2", Kind::BleRemoteId, "DRONE", "LAB Autel EVO II Remote ID profile (synthetic, not real aircraft)", 0, "SQE-AUTEL-EVO2-L1"},
+  {"RID-AUTEL-EVOMAX", Kind::BleRemoteId, "DRONE", "LAB Autel EVO Max Remote ID profile (synthetic, not real aircraft)", 0, "SQE-AUTEL-MAX-L01"},
+  {"RID-AUTEL-EVOLITE", Kind::BleRemoteId, "DRONE", "LAB Autel EVO Lite Remote ID profile (synthetic, not real aircraft)", 0, "SQE-AUTEL-LITE-L1"},
+  {"RID-PARROT-ANAFI", Kind::BleRemoteId, "DRONE", "LAB Parrot ANAFI Remote ID profile (synthetic, not real aircraft)", 0, "SQE-PARROT-ANAFI1"},
+  {"RID-PARROT-ANAFIUSA", Kind::BleRemoteId, "DRONE", "LAB Parrot ANAFI USA Remote ID profile (synthetic, not real aircraft)", 0, "SQE-PARROT-USA-L01"},
+  {"RID-GENERIC-BLE4", Kind::BleRemoteId, "DRONE", "Generic BLE4 Remote ID test profile with Self ID", 0, "SQE-GENERIC-BLE4-L1"},
+  {"RID-WIFI-BEACON", Kind::WifiRemoteId, "DRONE", "2.4GHz Wi-Fi beacon with ASTM Remote ID vendor IE", 6, "SQE-RID-GENERIC"},
+  {"RID-WIFI-PARROT", Kind::WifiRemoteId, "DRONE", "2.4GHz Wi-Fi beacon with Parrot Remote ID vendor IE", 6, "SQE-RID-PARROT"},
+  {"RID-NEG-APP", Kind::BleRemoteNegative, "NONE", "BLE Remote ID UUID with wrong application code", 1, nullptr},
+  {"RID-NEG-SHORT", Kind::BleRemoteNegative, "NONE", "BLE Remote ID service data one byte too short", 2, nullptr},
+  {"RID-NO-OPERATOR", Kind::BleRemoteId, "DRONE", "Valid Basic+Location; omit System/operator data", 0, "SQE-NO-OP-LAB00001"},
+  {"RID-STALE-LOC", Kind::BleRemoteId, "DRONE", "Valid Remote ID with old location time-of-hour (not a receiver clock test)", 0, "SQE-STALE-LOC-LAB1"},
+  {"RID-BAD-SERIAL", Kind::BleRemoteId, "DRONE", "Valid Remote ID transport with invalid synthetic Basic ID text", 0, "SQE-BAD-SERIAL-LAB"},
 };
 const size_t kScenarioCount = sizeof(kScenarios) / sizeof(kScenarios[0]);
 const Scenario* findScenario(const char* id) {

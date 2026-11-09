@@ -277,5 +277,167 @@
     "description": "Benign WPA2 AP on Wi-Fi channel 11",
     "code": 11,
     "text": "SQE-BENIGN"
+  },
+  {
+    "id": "RID-DJI-MINI",
+    "carrier": "BLE",
+    "kind": "BleRemoteId",
+    "expected": "DRONE",
+    "description": "LAB DJI Mini Remote ID profile (synthetic, not real aircraft)",
+    "code": 0,
+    "text": "SQE-DJI-MINI-LAB01"
+  },
+  {
+    "id": "RID-DJI-AIR",
+    "carrier": "BLE",
+    "kind": "BleRemoteId",
+    "expected": "DRONE",
+    "description": "LAB DJI Air Remote ID profile (synthetic, not real aircraft)",
+    "code": 0,
+    "text": "SQE-DJI-AIR-LAB001"
+  },
+  {
+    "id": "RID-DJI-MAVIC",
+    "carrier": "BLE",
+    "kind": "BleRemoteId",
+    "expected": "DRONE",
+    "description": "LAB DJI Mavic Remote ID profile (synthetic, not real aircraft)",
+    "code": 0,
+    "text": "SQE-DJI-MAVIC-LAB1"
+  },
+  {
+    "id": "RID-DJI-PHANTOM",
+    "carrier": "BLE",
+    "kind": "BleRemoteId",
+    "expected": "DRONE",
+    "description": "LAB DJI Phantom Remote ID profile (synthetic, not real aircraft)",
+    "code": 0,
+    "text": "SQE-DJI-PHANTOM-L1"
+  },
+  {
+    "id": "RID-DJI-MATRICE",
+    "carrier": "BLE",
+    "kind": "BleRemoteId",
+    "expected": "DRONE",
+    "description": "LAB DJI Matrice Remote ID profile (synthetic, not real aircraft)",
+    "code": 0,
+    "text": "SQE-DJI-MATRICE-L1"
+  },
+  {
+    "id": "RID-AUTEL-EVO2",
+    "carrier": "BLE",
+    "kind": "BleRemoteId",
+    "expected": "DRONE",
+    "description": "LAB Autel EVO II Remote ID profile (synthetic, not real aircraft)",
+    "code": 0,
+    "text": "SQE-AUTEL-EVO2-L1"
+  },
+  {
+    "id": "RID-AUTEL-EVOMAX",
+    "carrier": "BLE",
+    "kind": "BleRemoteId",
+    "expected": "DRONE",
+    "description": "LAB Autel EVO Max Remote ID profile (synthetic, not real aircraft)",
+    "code": 0,
+    "text": "SQE-AUTEL-MAX-L01"
+  },
+  {
+    "id": "RID-AUTEL-EVOLITE",
+    "carrier": "BLE",
+    "kind": "BleRemoteId",
+    "expected": "DRONE",
+    "description": "LAB Autel EVO Lite Remote ID profile (synthetic, not real aircraft)",
+    "code": 0,
+    "text": "SQE-AUTEL-LITE-L1"
+  },
+  {
+    "id": "RID-PARROT-ANAFI",
+    "carrier": "BLE",
+    "kind": "BleRemoteId",
+    "expected": "DRONE",
+    "description": "LAB Parrot ANAFI Remote ID profile (synthetic, not real aircraft)",
+    "code": 0,
+    "text": "SQE-PARROT-ANAFI1"
+  },
+  {
+    "id": "RID-PARROT-ANAFIUSA",
+    "carrier": "BLE",
+    "kind": "BleRemoteId",
+    "expected": "DRONE",
+    "description": "LAB Parrot ANAFI USA Remote ID profile (synthetic, not real aircraft)",
+    "code": 0,
+    "text": "SQE-PARROT-USA-L01"
+  },
+  {
+    "id": "RID-GENERIC-BLE4",
+    "carrier": "BLE",
+    "kind": "BleRemoteId",
+    "expected": "DRONE",
+    "description": "Generic BLE4 Remote ID test profile with Self ID",
+    "code": 0,
+    "text": "SQE-GENERIC-BLE4-L1"
+  },
+  {
+    "id": "RID-WIFI-BEACON",
+    "carrier": "WIFI",
+    "kind": "WifiRemoteId",
+    "expected": "DRONE",
+    "description": "2.4GHz Wi-Fi beacon with ASTM Remote ID vendor IE",
+    "code": 6,
+    "text": "SQE-RID-GENERIC"
+  },
+  {
+    "id": "RID-WIFI-PARROT",
+    "carrier": "WIFI",
+    "kind": "WifiRemoteId",
+    "expected": "DRONE",
+    "description": "2.4GHz Wi-Fi beacon with Parrot Remote ID vendor IE",
+    "code": 6,
+    "text": "SQE-RID-PARROT"
+  },
+  {
+    "id": "RID-NEG-APP",
+    "carrier": "BLE",
+    "kind": "BleRemoteNegative",
+    "expected": "NONE",
+    "description": "BLE Remote ID UUID with wrong application code",
+    "code": 1,
+    "text": null
+  },
+  {
+    "id": "RID-NEG-SHORT",
+    "carrier": "BLE",
+    "kind": "BleRemoteNegative",
+    "expected": "NONE",
+    "description": "BLE Remote ID service data one byte too short",
+    "code": 2,
+    "text": null
+  },
+  {
+    "id": "RID-NO-OPERATOR",
+    "carrier": "BLE",
+    "kind": "BleRemoteId",
+    "expected": "DRONE",
+    "description": "Valid Basic+Location; omit System/operator data",
+    "code": 0,
+    "text": "SQE-NO-OP-LAB00001"
+  },
+  {
+    "id": "RID-STALE-LOC",
+    "carrier": "BLE",
+    "kind": "BleRemoteId",
+    "expected": "DRONE",
+    "description": "Valid Remote ID with old location time-of-hour (not a receiver clock test)",
+    "code": 0,
+    "text": "SQE-STALE-LOC-LAB1"
+  },
+  {
+    "id": "RID-BAD-SERIAL",
+    "carrier": "BLE",
+    "kind": "BleRemoteId",
+    "expected": "DRONE",
+    "description": "Valid Remote ID transport with invalid synthetic Basic ID text",
+    "code": 0,
+    "text": "SQE-BAD-SERIAL-LAB"
   }
 ]
