@@ -78,6 +78,19 @@
         "Touch calibration is blocked during active RF or suite mode, so a wizard cannot extend timed emissions.",
         "Flashing replaces the SquachWatch app on this board; use a separate device to receive test signals."
       ]
+    },
+    "ee151f1005834ad6bc8bfa23db64d48feb55c5e5": {
+      "title": "CYD 3.2 SquachWare R3 (49 tests)",
+      "version": "v0.4.0 SquachWare R3 LAB",
+      "summary": "Major 320×240 ST7798/XPT2046 UI redesign: separate full Squachy home screen and test library, original large Sasquatch avatar, status/speech bubble, RF ON/OFF indicators, filterable test lists and targeted countdown redraw. Same 49 opt-in synthetic BLE/Wi-Fi tests. Hardware appearance and touch are not yet verified.",
+      "highlights": [
+        "New Squachy home screen inspired by the SquachWatch/SquachWare appearance, with RF OFF/ON badge and original large Sasquatch figure.",
+        "Separate test library with ALL/DRONE/BLE/WIFI filters, four readable rows per page, HOME/PREV/NEXT/RUN or STOP.",
+        "RUN, STOP and SUITE remain available on the home screen; no unattended RF transmission on boot.",
+        "Same 49 synthetic drone/BLE/Wi-Fi lab scenarios as the older 3.2 emitter; RF protocols and transmitter power unchanged.",
+        "Touch calibration retained in dedicated sqemit32/touchland key, using 115200 baud for CALTOUCH recovery.",
+        "Flashing this target replaces SquachWatch on the 3.2-inch CYD. Use a second board to observe detections."
+      ]
     }
   }
 }
