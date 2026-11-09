@@ -33,7 +33,7 @@ class Cyd32InstallerLayoutTests(unittest.TestCase):
                 (input_dir / name).write_bytes(data)
             src = {
                 "board": "cyd32-st7798",
-                "sha": "2774856ec2c0f852eb87b1ec99dfcb910aadca7e",
+                "sha": "471699cb08ad7e458b4d56a11e1f5ef265d54ed5",
                 "branch": "lab/cyd32-st7798-emitter-20261109",
                 "channel": "lab", "run_id": 42,
                 "created_at": "2026-11-09T19:58:00Z",
@@ -43,8 +43,8 @@ class Cyd32InstallerLayoutTests(unittest.TestCase):
             build = site.load_source(src, output)
             self.assertEqual(build["board"], "cyd32-st7798")
             self.assertEqual(build["chipFamily"], "ESP32")
-            self.assertEqual(build["title"], "CYD 3.2 ST7798 Emitter (49 tests)")
-            self.assertEqual(build["id"], "lab-cyd32-2774856e")
+            self.assertEqual(build["title"], "CYD 3.2 ST7798 Smooth UI (49 tests)")
+            self.assertEqual(build["id"], "lab-cyd32-471699cb")
             self.assertTrue((output / build["application"]).exists())
             manifest = json.loads((output / build["manifest"]).read_text())
             parts = manifest["builds"][0]["parts"]
@@ -54,7 +54,7 @@ class Cyd32InstallerLayoutTests(unittest.TestCase):
             self.assertEqual([part["path"] for part in parts],
                              ["bootloader.bin","partitions.bin","otadata.bin",
                               "application.bin"])
-            self.assertEqual((output / "lab/cyd32-2774856e/bootloader.bin").read_bytes(), boot)
+            self.assertEqual((output / "lab/cyd32-471699cb/bootloader.bin").read_bytes(), boot)
 
     def test_bad_board_rejected_without_giving_s3_firmware(self):
         with self.assertRaises(ValueError):

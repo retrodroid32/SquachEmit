@@ -71,16 +71,16 @@ builds.push({
 });
 builds.push({
   ...builds[0],
-  id: 'lab-cyd32-2774856e',
+  id: 'lab-cyd32-471699cb',
   board: 'cyd32-st7798',
-  sha: '2774856ec2c0f852eb87b1ec99dfcb910aadca7e',
-  short_sha: '2774856e',
-  title: notes['2774856ec2c0f852eb87b1ec99dfcb910aadca7e'].title,
-  version_label: notes['2774856ec2c0f852eb87b1ec99dfcb910aadca7e'].version,
-  summary: notes['2774856ec2c0f852eb87b1ec99dfcb910aadca7e'].summary,
-  highlights: notes['2774856ec2c0f852eb87b1ec99dfcb910aadca7e'].highlights,
-  manifest: 'lab/cyd32-2774856e/manifest.json',
-  application: 'lab/cyd32-2774856e/application.bin'
+  sha: '471699cb08ad7e458b4d56a11e1f5ef265d54ed5',
+  short_sha: '471699cb',
+  title: notes['471699cb08ad7e458b4d56a11e1f5ef265d54ed5'].title,
+  version_label: notes['471699cb08ad7e458b4d56a11e1f5ef265d54ed5'].version,
+  summary: notes['471699cb08ad7e458b4d56a11e1f5ef265d54ed5'].summary,
+  highlights: notes['471699cb08ad7e458b4d56a11e1f5ef265d54ed5'].highlights,
+  manifest: 'lab/cyd32-471699cb/manifest.json',
+  application: 'lab/cyd32-471699cb/application.bin'
 });
 let fetches = 0;
 const context = {
@@ -122,10 +122,10 @@ setImmediate(() => {
   elements.board.value = 'cyd32-st7798';
   elements.board.handlers.change();
   assert.equal(elements.build.children.length, 2); // placeholder + CYD
-  elements.build.value = 'lab-cyd32-2774856e';
+  elements.build.value = 'lab-cyd32-471699cb';
   elements.build.handlers.change();
   assert.ok(elements.buildDetails.textContent.includes('ST7798'));
-  assert.ok(elements.buildDetails.textContent.includes('2774856e'));
+  assert.ok(elements.buildDetails.textContent.includes('471699cb'));
   assert.ok(elements.buildDetails.textContent.includes('REPLACES SQUACHWATCH'));
   assert.ok(elements.buildDetails.textContent.includes('ESP32-2432S032R'));
   assert.equal(elements.confirm.checked, false);
