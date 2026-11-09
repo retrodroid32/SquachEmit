@@ -21,13 +21,14 @@ CST3530 capacitive touch, CH32V003 backlight/reset I/O expander. This
 
 Its touchscreen provides scenario selection, PREV/NEXT, RUN, STOP and SUITE.
 Boot is radio-silent, and the existing USB serial command interface is kept.
-The new target uses Arduino-ESP32 3.3.12 and a custom PlatformIO board
-definition. **It has not been physically tested yet.**
+The new target uses Arduino-ESP32 3.3.12 through Arduino CLI. The custom PlatformIO board definition is retained for future use but PlatformIO 8.0.0 cannot currently compile the C5 Arduino core. **It has not been physically tested yet.**
 
 ```bash
-pio run -e waveshare-esp32c5-touch-28
-pio run -e waveshare-esp32c5-touch-28 -t upload
-pio device monitor -b 115200
+# Firmware CI uses Arduino CLI and the official ESP32-C5 core v3.3.12.
+# See docs/WAVESHARE-C5.md for setup and flashing.
+arduino-cli compile --fqbn "esp32:esp32:esp32c5:FlashSize=16M,PSRAM=enabled" \
+  --build-property "build.extra_flags=-DSQE_WAVESHARE_C5=1 -DARDUINO_USB_CDC_ON_BOOT=1 -I$PWD/include" \
+  --libraries "$PWD/lib" .
 ```
 
 See [Waveshare C5 setup, pinout, and validation](docs/WAVESHARE-C5.md).
