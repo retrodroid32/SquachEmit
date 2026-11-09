@@ -69,6 +69,19 @@ builds.push({
   summary: 'No SHA-specific feature notes have been reviewed for this build.',
   highlights: [], notes_verified_for_sha: false
 });
+builds.push({
+  ...builds[0],
+  id: 'lab-cyd32-2774856e',
+  board: 'cyd32-st7798',
+  sha: '2774856ec2c0f852eb87b1ec99dfcb910aadca7e',
+  short_sha: '2774856e',
+  title: notes['2774856ec2c0f852eb87b1ec99dfcb910aadca7e'].title,
+  version_label: notes['2774856ec2c0f852eb87b1ec99dfcb910aadca7e'].version,
+  summary: notes['2774856ec2c0f852eb87b1ec99dfcb910aadca7e'].summary,
+  highlights: notes['2774856ec2c0f852eb87b1ec99dfcb910aadca7e'].highlights,
+  manifest: 'lab/cyd32-2774856e/manifest.json',
+  application: 'lab/cyd32-2774856e/application.bin'
+});
 let fetches = 0;
 const context = {
   document,
@@ -105,5 +118,16 @@ setImmediate(() => {
             elements.buildDetails.textContent.includes('no SHA-specific') ||
             elements.buildDetails.textContent.includes('no reviewed'));
   assert.equal(elements.confirm.checked, false);
-  console.log('Installer build dropdown / features / future-SHA fallback: PASS');
+  // Switch board; only the 3.2-inch ESP32 build must be visible.
+  elements.board.value = 'cyd32-st7798';
+  elements.board.handlers.change();
+  assert.equal(elements.build.children.length, 2); // placeholder + CYD
+  elements.build.value = 'lab-cyd32-2774856e';
+  elements.build.handlers.change();
+  assert.ok(elements.buildDetails.textContent.includes('ST7798'));
+  assert.ok(elements.buildDetails.textContent.includes('2774856e'));
+  assert.ok(elements.buildDetails.textContent.includes('REPLACES SQUACHWATCH'));
+  assert.ok(elements.buildDetails.textContent.includes('ESP32-2432S032R'));
+  assert.equal(elements.confirm.checked, false);
+  console.log('Installer build dropdown / C5 / CYD3.2 warning / SHA fallback: PASS');
 });
