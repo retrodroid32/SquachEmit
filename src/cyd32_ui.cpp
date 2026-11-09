@@ -6,124 +6,192 @@
 #include <Preferences.h>
 #include <string.h>
 
-// SquachEmit's original LCD renderer, independently inspired by the
-// SquachWatch-CYD SQUACHWARE aesthetic and Pwnagotchi's state-driven faces.
-// No GPLv3 Pwnagotchi implementation or asset is copied.
-//
-// The ESP32-2432S032R has a 320x240 landscape TFT and classic ESP32 RAM.
-// Avoid full-frame buffers: repaint the chrome only for real UI changes,
-// and patch only the seconds field while emitting.
+// SquachEmit CYD 3.2: a two-screen original UI based on the visual language
+// of SquachWatch / SquachWare. No SquachWatch GPL drawing implementation
+// or Pwnagotchi GPL artwork/source is included. All pixels drawn directly
+// to the ST7798-compatible 320x240 TFT (no PSRAM/full-frame buffer).
 namespace {
-constexpr int16_t W=320, H=240;
-constexpr int16_t TAB_Y=82, TAB_H=21, LIST_Y=108, ROW_HEIGHT_PX=25;
-constexpr int16_t ROW_GAP=2, ROWS=3, NAV_Y=190, NAV_H=20;
-constexpr int16_t BUTTON_Y=214, BUTTON_H=25;
-constexpr uint16_t BG=0x0801, TASKBAR=0x0803, PURPLE=0xAC1F;
-constexpr uint16_t CYAN=0x07FF, PINK=0xF96F, VAPOR_PINK=0xFB99;
-constexpr uint16_t VAPOR_PURPLE=0xBB5F, GREEN=0x07E0, AMBER=0xFD20;
-constexpr uint16_t WHITE=0xFFFF, MUTED=0x73CC, FACE=0x1003;
-constexpr uint16_t FUR_DARK=0x38C0, FUR_MAIN=0x5941, FUR_LIGHT=0x9326;
-constexpr uint16_t SKIN=0xF60F, RED=0xF800;
-constexpr uint8_t kFilterTabCount=4;
+constexpr int16_t kWidth=320, kHeight=240;
+constexpr int16_t kTitleHeight=17, kButtonsY=211, kButtonH=28;
+constexpr int16_t kTabsY=48, kTabsH=26;
+constexpr int16_t kRowsY=82, kRowH=26, kRowGap=3, kRowsPerPage=4;
+constexpr uint16_t kBg=0x0801, kChrome=0x0803, kPurple=0xAC1F;
+constexpr uint16_t kCyan=0x07FF, kPink=0xF96F, kVaporPink=0xFB99;
+constexpr uint16_t kVaporPurple=0xBB5F, kGreen=0x07E0, kGold=0xFFD2;
+constexpr uint16_t kWhite=0xFFFF, kMuted=0x73CC, kPanel=0x1003;
+constexpr uint16_t kInk=0x1801, kFurDark=0x38C0, kFur=0x5941;
+constexpr uint16_t kFurLight=0x9326, kSkin=0xF60F;
+constexpr uint8_t kTabCount=4;
+constexpr const char* kTabNames[kTabCount]={"ALL","DRONE","BLE","WIFI"};
 
+enum class Screen : uint8_t { Home, Library };
 enum class Filter : uint8_t { All, Drone, Ble, Wifi };
-constexpr const char* TAB_NAMES[kFilterTabCount] = {"ALL","DRONE","BLE","WIFI"};
-constexpr const char* MASCOT_LINES[] = {
-  "LAB MODE. NO SECRETS.",
-  "49 CASES. PICK ONE.",
-  "LET'S TEST THAT.",
-  "VERIFY THE RECEIVER."
-};
-
-TFT_eSPI tft;
+TFT_eSPI lcd;
 Preferences prefs;
-bool ready=false,calibrated=false,dirty=true,wasPressed=false,oldSuite=false;
-size_t selected=0,page=0;
+Screen screen=Screen::Home;
 Filter filter=Filter::All;
-uint32_t lastPoll=0,lastPress=0;
-uint32_t lastTimerSeconds=UINT32_MAX;
-uint8_t mascotLine=0;
-char lastActiveId[54]={0};
+size_t selected=0, page=0;
+bool ready=false, calibrated=false, redraw=true, wasPressed=false, previousSuite=false;
+uint32_t lastPoll=0, lastPress=0, lastCount=UINT32_MAX;
+uint8_t idleLine=0;
+char previousActive[56]={0};
 
-uint16_t mix565(uint16_t a,uint16_t b,uint16_t t){
-  const uint16_t ar=(a>>11)&31,ag=(a>>5)&63,ab=a&31;
-  const uint16_t br=(b>>11)&31,bg=(b>>5)&63,bb=b&31;
-  return ((ar+((int)br-(int)ar)*t/255)<<11) |
-         ((ag+((int)bg-(int)ag)*t/255)<<5) |
-          (ab+((int)bb-(int)ab)*t/255);
+// Color blending is only used for the 2-pixel title strip on page changes.
+// Radio-driven countdown updates never recompute a screen gradient.
+uint16_t blend(uint16_t a,uint16_t b,uint8_t fraction){
+  const int ar=(a>>11)&31,ag=(a>>5)&63,ab=a&31;
+  const int br=(b>>11)&31,bg=(b>>5)&63,bb=b&31;
+  const int r=ar+(br-ar)*fraction/255;
+  const int g=ag+(bg-ag)*fraction/255;
+  const int bl=ab+(bb-ab)*fraction/255;
+  return (uint16_t)((r<<11)|(g<<5)|bl);
 }
-
-void text(int16_t x,int16_t y,const char* s,uint16_t fg,uint8_t font=1){
-  tft.setTextFont(font);
-  tft.setTextSize(1);
-  tft.setTextColor(fg);
-  tft.setCursor(x,y);
-  if(s)tft.print(s);
+void label(int x,int y,const char* s,uint16_t color,uint8_t font=1){
+  lcd.setTextFont(font);
+  lcd.setTextColor(color);
+  lcd.setTextSize(1);
+  lcd.setCursor(x,y);
+  if(s)lcd.print(s);
 }
-
-void fitText(int16_t x,int16_t y,const char* value,int16_t width,
-             uint16_t fg,uint8_t font=1){
-  if(!value)return;
-  tft.setTextFont(font);
-  char buf[70]={0};
-  strncpy(buf,value,sizeof(buf)-1);
-  while(buf[0] && tft.textWidth(buf)>width){
-    const size_t len=strlen(buf);
-    buf[len-1]='\0';
+void clipped(int x,int y,const char* s,int maxW,uint16_t color,uint8_t font=2){
+  if(!s)return;
+  lcd.setTextFont(font);
+  char cut[58]={0};
+  strncpy(cut,s,sizeof(cut)-1);
+  while(cut[0] && lcd.textWidth(cut)>maxW)
+    cut[strlen(cut)-1]='\0';
+  label(x,y,cut,color,font);
+}
+void titleBar(){
+  for(int x=0;x<kWidth;++x){
+    const uint16_t c=(x<kWidth/2)
+      ?blend(kPurple,kCyan,(uint8_t)(x*255/(kWidth/2)))
+      :blend(kCyan,kPink,(uint8_t)((x-kWidth/2)*255/(kWidth/2)));
+    lcd.drawFastVLine(x,0,3,c);
   }
-  if(buf[0])text(x,y,buf,fg,font);
+  lcd.fillRect(0,3,kWidth,kTitleHeight-3,kChrome);
+  lcd.drawFastHLine(0,kTitleHeight-1,kWidth,kPurple);
+  label(9,5,"SQUACHEMIT",kWhite,2);
+  label(188,6,"SQUACHWARE  /  LAB",kCyan);
 }
-
-void gradientTitle(){
-  // SquachWatch's vaporwave purple -> cyan -> pink accent ribbon.
-  for(int16_t x=0;x<W;x++){
-    const uint16_t color=x<W/2
-      ?mix565(PURPLE,CYAN,(uint16_t)(x*255/(W/2)))
-      :mix565(CYAN,PINK,(uint16_t)((x-W/2)*255/(W/2)));
-    tft.drawFastVLine(x,0,3,color);
+void smallPill(int x,int y,int w,const char* s,uint16_t edge,bool filled=false){
+  lcd.fillRoundRect(x,y,w,19,4,filled?0x2825:kBg);
+  lcd.drawRoundRect(x,y,w,19,4,edge);
+  const int tw=(int)strlen(s)*6;
+  label(x+(w-tw)/2,y+6,s,filled?kWhite:edge);
+}
+void actionButton(int x,int y,int w,const char* s,uint16_t edge,bool highlighted=false){
+  lcd.fillRoundRect(x,y,w,kButtonH,5,highlighted?0x3027:kBg);
+  lcd.drawRoundRect(x,y,w,kButtonH,5,edge);
+  const int length=(int)strlen(s)*6;
+  label(x+(w-length)/2,y+10,s,highlighted?kWhite:edge);
+}
+void bigSquachy(bool emitting,bool suite){
+  // Original character drawing deliberately scales up the face and body,
+  // rather than placing a tiny generic bear icon in a cluttered toolbar.
+  const int x=62, y=83;
+  lcd.fillEllipse(x,y+72,58,8,0x2004); // ground shadow
+  // Boots and body. Shaggy outline makes the silhouette visibly Sasquatch.
+  lcd.fillRoundRect(x-25,y+12,50,69,18,kInk);
+  lcd.fillRoundRect(x-22,y+11,44,66,16,kFur);
+  lcd.fillRoundRect(x-35,y+28,18,49,9,kInk);
+  lcd.fillRoundRect(x+17,y+28,18,49,9,kInk);
+  lcd.fillRoundRect(x-33,y+27,14,46,7,kFurDark);
+  lcd.fillRoundRect(x+19,y+27,14,46,7,kFurDark);
+  lcd.fillRoundRect(x-20,y+62,18,31,8,kInk);
+  lcd.fillRoundRect(x+2,y+62,18,31,8,kInk);
+  lcd.fillRoundRect(x-18,y+63,14,27,6,kFurDark);
+  lcd.fillRoundRect(x+4,y+63,14,27,6,kFurDark);
+  lcd.fillRoundRect(x-24,y+85,22,10,5,kFur);
+  lcd.fillRoundRect(x+2,y+85,22,10,5,kFur);
+  // Raised hair tuft and outer head.
+  lcd.fillTriangle(x-16,y-34,x-8,y-51,x+1,y-35,kInk);
+  lcd.fillTriangle(x-12,y-31,x-7,y-45,x+1,y-29,kFurLight);
+  lcd.fillRoundRect(x-29,y-37,58,61,20,kInk);
+  lcd.fillRoundRect(x-26,y-35,52,55,18,kFur);
+  lcd.fillCircle(x-26,y-9,9,kInk);
+  lcd.fillCircle(x+26,y-9,9,kInk);
+  lcd.fillCircle(x-26,y-9,6,kFurDark);
+  lcd.fillCircle(x+26,y-9,6,kFurDark);
+  lcd.fillRoundRect(x-20,y-18,40,31,12,kSkin);
+  lcd.fillRoundRect(x-16,y-19,32,11,5,kFurLight);
+  // Eyes and brows.
+  lcd.drawFastHLine(x-17,y-15,13,kInk);
+  lcd.drawFastHLine(x+4,y-15,13,kInk);
+  lcd.fillCircle(x-10,y-10,4,kWhite);
+  lcd.fillCircle(x+10,y-10,4,kWhite);
+  lcd.fillCircle(x-10,y-9,2,kInk);
+  lcd.fillCircle(x+10,y-9,2,kInk);
+  lcd.fillRoundRect(x-5,y+1,10,4,2,kFurDark);
+  const uint16_t mood=emitting?kPink:(suite?kGold:kCyan);
+  if(emitting){
+    lcd.drawCircle(x,y+8,5,kInk);
+    lcd.fillCircle(x,y+8,2,mood);
+    lcd.drawLine(x-18,y-20,x-6,y-18,mood);
+    lcd.drawLine(x+6,y-18,x+18,y-20,mood);
+  } else if(suite){
+    lcd.drawFastHLine(x-10,y+9,20,kInk);
+    lcd.drawPixel(x-10,y+8,mood);
+    lcd.drawPixel(x+10,y+8,mood);
+  } else {
+    lcd.drawLine(x-10,y+7,x,y+11,kInk);
+    lcd.drawLine(x,y+11,x+10,y+7,kInk);
   }
-  tft.fillRect(0,3,W,18,TASKBAR);
-  tft.drawFastHLine(0,20,W,PURPLE);
-  text(9,4,"SQUACH",VAPOR_PINK,2);
-  text(79,4,"EMIT",CYAN,2);
-  text(220,7,"RF / LAB  v0.4",MUTED);
+  // Purple ground with contrasting highlights.
+  lcd.drawFastHLine(6,191,113,kPurple);
+  lcd.drawFastHLine(20,192,84,kVaporPurple);
+  label(21,196,emitting?"SQUACHY : ON AIR":suite?"SQUACHY : SUITE":"SQUACHY : READY",
+        mood);
 }
-
-void mascot(int16_t x,int16_t y,bool onAir,bool suite){
-  // Original tiny vector Squachy; no sprites/full-frame allocations.
-  const uint16_t mood=onAir?PINK:suite?AMBER:CYAN;
-  tft.fillRoundRect(x,y+17,48,36,12,FUR_DARK);
-  tft.fillRoundRect(x+5,y+17,38,37,12,FUR_MAIN);
-  tft.drawRoundRect(x+4,y+16,40,38,12,FUR_LIGHT);
-  tft.fillCircle(x+4,y+17,8,FUR_DARK);
-  tft.fillCircle(x+44,y+17,8,FUR_DARK);
-  tft.fillRoundRect(x+8,y,33,36,14,FUR_LIGHT);
-  tft.fillRoundRect(x+11,y+3,27,30,12,FUR_MAIN);
-  tft.fillRoundRect(x+13,y+13,23,18,8,SKIN);
-  tft.fillCircle(x+18,y+15,3,WHITE);
-  tft.fillCircle(x+31,y+15,3,WHITE);
-  tft.fillCircle(x+18,y+15,1,FUR_DARK);
-  tft.fillCircle(x+31,y+15,1,FUR_DARK);
-  tft.drawFastHLine(x+21,y+21,7,FUR_DARK);
-  if(onAir){
-    tft.drawLine(x+21,y+26,x+28,y+26,mood);
-    tft.drawLine(x+21,y+26,x+24,y+29,mood);
-    tft.drawLine(x+24,y+29,x+28,y+26,mood);
+void bubble(int x,int y,int w,int h,uint16_t border){
+  lcd.fillRoundRect(x,y,w,h,8,kPanel);
+  lcd.drawRoundRect(x,y,w,h,8,border);
+  lcd.fillTriangle(x,y+24,x-11,y+34,x,y+43,kPanel);
+  lcd.drawLine(x,y+24,x-11,y+34,border);
+  lcd.drawLine(x-11,y+34,x,y+43,border);
+}
+void countdownOnly(uint32_t count){
+  // Small background patch only; no full-screen flicker every second.
+  lcd.fillRect(262,111,42,21,kPanel);
+  char buf[16];
+  snprintf(buf,sizeof(buf),"%lus",(unsigned long)count);
+  label(265,111,buf,kPink,2);
+}
+void homeScreen(const char* active,uint32_t remaining,bool suite){
+  const bool emitting=active&&*active;
+  lcd.fillScreen(kBg);
+  titleBar();
+  smallPill(9,23,89,emitting?"RF ON / TEST":suite?"SUITE ACTIVE":"RF OFF / IDLE",
+            emitting?kPink: (suite?kGold:kGreen));
+  smallPill(109,23,92,"49 LAB CASES",kVaporPurple);
+  smallPill(214,23,97,"ESP32 / 2.4G",kCyan);
+  bigSquachy(emitting,suite);
+  bubble(132,47,179,102,emitting?kPink:kPurple);
+  label(144,56,emitting?"TRANSMITTING":suite?"TEST SEQUENCE":"READY FOR A TEST",
+        emitting?kPink: (suite?kGold:kCyan),2);
+  lcd.drawFastHLine(144,77,157,kVaporPurple);
+  if(emitting) {
+    clipped(144,85,active,157,kWhite,2);
+    label(144,115,"TIME LEFT",kMuted);
+    countdownOnly((remaining+999)/1000);
   }else if(suite){
-    tft.drawFastHLine(x+20,y+26,9,mood);
-    tft.drawPixel(x+20,y+27,mood);
-    tft.drawPixel(x+28,y+27,mood);
+    label(144,85,"AUTOMATED SUITE",kWhite,2);
+    label(144,115,"NEXT TEST LOADING",kMuted);
   }else{
-    tft.drawLine(x+20,y+25,x+25,y+28,FUR_DARK);
-    tft.drawLine(x+25,y+28,x+30,y+25,FUR_DARK);
+    const Scenario* s=selected<kScenarioCount?&kScenarios[selected]:nullptr;
+    clipped(144,85,s?s->id:"CHOOSE A CASE",157,kWhite,2);
+    label(144,114,"TAP TO CHANGE TEST",kMuted);
   }
-  tft.drawCircle(x+24,y+24,21,mood);
+  lcd.fillRoundRect(132,156,179,43,5,kPanel);
+  lcd.drawRoundRect(132,156,179,43,5,kPurple);
+  label(143,164,"SELECTED LAB PROFILE",kVaporPink);
+  const Scenario* chosen=selected<kScenarioCount?&kScenarios[selected]:nullptr;
+  clipped(142,177,chosen?chosen->description:"NO TEST",160,kWhite,1);
+  actionButton(5,kButtonsY,74,"TESTS",kCyan,true);
+  actionButton(84,kButtonsY,73,"RUN",kGreen);
+  actionButton(162,kButtonsY,73,"STOP",kPink);
+  actionButton(240,kButtonsY,75,"SUITE",kVaporPurple);
 }
-
-const Scenario* activeCase(const char* id){
-  return (id && *id) ? findScenario(id) : nullptr;
-}
-
 bool matches(size_t index){
   const Scenario& s=kScenarios[index];
   const bool wifi=s.kind==Kind::WifiAp || s.kind==Kind::WifiRemoteId;
@@ -131,304 +199,220 @@ bool matches(size_t index){
     case Filter::All:return true;
     case Filter::Wifi:return wifi;
     case Filter::Ble:return !wifi;
-    case Filter::Drone:
-      return strcmp(s.expected,"DRONE")==0 ||
-             strncmp(s.id,"RID-",4)==0 ||
-             strstr(s.id,"DRONE")!=nullptr;
+    case Filter::Drone:return strcmp(s.expected,"DRONE")==0 ||
+                             strstr(s.id,"DRONE")!=nullptr ||
+                             strncmp(s.id,"RID-",4)==0;
   }
   return true;
 }
-
-size_t matchCount(){
+size_t totalMatches(){
   size_t count=0;
   for(size_t i=0;i<kScenarioCount;++i)if(matches(i))++count;
   return count;
 }
-
-const Scenario* filteredAt(size_t rank,size_t* rawIndex=nullptr){
+const Scenario* atRank(size_t rank,size_t* sourceIndex=nullptr){
   for(size_t i=0;i<kScenarioCount;++i){
     if(!matches(i))continue;
-    if(rank==0){
-      if(rawIndex)*rawIndex=i;
+    if(!rank){
+      if(sourceIndex)*sourceIndex=i;
       return &kScenarios[i];
     }
     --rank;
   }
   return nullptr;
 }
-
-void selectFirstPageRow(){
+void firstSelected(){
   size_t idx=0;
-  if(filteredAt(page*ROWS,&idx))selected=idx;
+  if(atRank(page*kRowsPerPage,&idx))selected=idx;
 }
-
-void statusBubble(const char* active,uint32_t remaining,bool suite){
-  const bool onAir=active && active[0];
-  tft.fillRoundRect(77,25,237,53,8,FACE);
-  tft.drawRoundRect(77,25,237,53,8,onAir?PINK:VAPOR_PURPLE);
-  tft.fillTriangle(77,53,67,61,77,65,FACE);
-  tft.drawLine(77,53,67,61,onAir?PINK:VAPOR_PURPLE);
-  tft.drawLine(67,61,77,65,onAir?PINK:VAPOR_PURPLE);
-  mascot(11,26,onAir,suite);
-  text(87,30,onAir?"SQUACHY / ON AIR":suite?"SQUACHY / SUITE":"SQUACHY / IDLE",
-       onAir?PINK:suite?AMBER:CYAN);
-  tft.drawFastHLine(87,44,216,PURPLE);
-  if(onAir){
-    fitText(87,49,active,172,WHITE,2);
-    text(87,67,"KEEP YOUR RECEIVER READY",MUTED);
-  }else if(suite){
-    text(87,50,"RUNNING THE LAB SUITE",WHITE,2);
-    text(87,67,"WAIT FOR NEXT CASE...",MUTED);
-  }else{
-    text(87,49,MASCOT_LINES[mascotLine%4],WHITE,2);
-    const Scenario* s=&kScenarios[selected];
-    fitText(87,67,s->description,210,MUTED);
-  }
-  if(onAir){
-    tft.fillRect(262,48,46,18,FACE);
-    char timer[16];
-    snprintf(timer,sizeof(timer),"%lus",(unsigned long)((remaining+999)/1000));
-    text(270,51,timer,PINK,2);
-  }
-}
-
-void timerPatch(uint32_t seconds){
-  // Patch just the countdown text so the LCD does not blink every second.
-  tft.fillRect(262,48,46,18,FACE);
-  char timer[16];
-  snprintf(timer,sizeof(timer),"%lus",(unsigned long)seconds);
-  text(270,51,timer,PINK,2);
-}
-
-void drawTabs(){
-  for(uint8_t i=0;i<kFilterTabCount;i++){
-    const int x=5+i*79, width=74;
+void libraryScreen(const char* active,bool suite){
+  lcd.fillScreen(kBg);
+  titleBar();
+  label(9,23,"TEST LIBRARY",kCyan,2);
+  char count[28];
+  snprintf(count,sizeof(count),"%u / 49", (unsigned)totalMatches());
+  label(253,29,count,kVaporPink);
+  for(uint8_t i=0;i<kTabCount;++i){
+    const int x=5+79*i;
     const bool chosen=(uint8_t)filter==i;
-    tft.fillRoundRect(x,TAB_Y,width,TAB_H,4,chosen?PURPLE:TASKBAR);
-    tft.drawRoundRect(x,TAB_Y,width,TAB_H,4,chosen?CYAN:VAPOR_PURPLE);
-    const int len=strlen(TAB_NAMES[i]);
-    text(x+(width-len*6)/2,TAB_Y+7,TAB_NAMES[i],chosen?WHITE:CYAN);
+    smallPill(x,kTabsY,74,kTabNames[i],chosen?kCyan:kPurple,chosen);
   }
-}
-
-void drawList(){
-  for(int row=0;row<ROWS;row++){
-    const int y=LIST_Y+row*(ROW_HEIGHT_PX+ROW_GAP);
-    const size_t rank=page*ROWS+(size_t)row;
-    size_t raw=0;
-    const Scenario* s=filteredAt(rank,&raw);
-    const bool chosen=s && raw==selected;
-    tft.fillRoundRect(6,y,W-12,ROW_HEIGHT_PX,4,chosen?0x2806:FACE);
-    tft.drawRoundRect(6,y,W-12,ROW_HEIGHT_PX,4,chosen?PINK:0x5A8C);
+  for(size_t row=0;row<kRowsPerPage;++row){
+    const int y=kRowsY+(int)row*(kRowH+kRowGap);
+    const size_t rank=page*kRowsPerPage+row;
+    size_t rawIndex=0;
+    const Scenario* s=atRank(rank,&rawIndex);
+    const bool chosen=s&&rawIndex==selected;
+    lcd.fillRoundRect(6,y,308,kRowH,4,chosen?0x2825:kPanel);
+    lcd.drawRoundRect(6,y,308,kRowH,4,chosen?kPink:kPurple);
     if(!s)continue;
-    if(chosen)tft.fillRect(8,y+5,3,ROW_HEIGHT_PX-10,CYAN);
-    char no[9];
-    snprintf(no,sizeof(no),"%02u",(unsigned)(rank+1));
-    text(15,y+8,no,chosen?VAPOR_PINK:MUTED);
-    fitText(36,y+4,s->id,213,chosen?WHITE:CYAN,2);
-    const uint16_t accent=!strcmp(s->expected,"NONE")?GREEN:
-                          !strcmp(s->expected,"DRONE")?VAPOR_PURPLE:AMBER;
-    text(256,y+8,s->expected,accent);
+    if(chosen)lcd.fillRect(8,y+4,3,kRowH-8,kCyan);
+    char number[10];
+    snprintf(number,sizeof(number),"%02u",(unsigned)(rank+1));
+    label(17,y+8,number,kMuted);
+    clipped(39,y+4,s->id,208,chosen?kWhite:kCyan,2);
+    const uint16_t kindColor=!strcmp(s->expected,"NONE")?kGreen:
+                            !strcmp(s->expected,"DRONE")?kVaporPink:kGold;
+    clipped(254,y+8,s->expected,53,kindColor,1);
   }
+  const size_t countAll=totalMatches();
+  const size_t pages=(countAll+kRowsPerPage-1)/kRowsPerPage;
+  char pagesText[46];
+  snprintf(pagesText,sizeof(pagesText),"PAGE %u/%u   %s",
+           (unsigned)(page+1),(unsigned)(pages?pages:1),
+           active?"ON AIR":suite?"SUITE":"RF OFF");
+  label(13,200,pagesText,active?kPink:kMuted);
+  actionButton(5,kButtonsY,74,"HOME",kVaporPurple);
+  actionButton(84,kButtonsY,73,"< PREV",kCyan);
+  actionButton(162,kButtonsY,73,"NEXT >",kCyan);
+  actionButton(240,kButtonsY,75,(active&&*active)?"STOP":"RUN",
+               (active&&*active)?kPink:kGreen,true);
 }
-
-void button(int x,int y,int width,int height,const char* label,
-            uint16_t edge,bool emphasized=false){
-  const uint16_t fill=emphasized?0x2827:TASKBAR;
-  tft.fillRoundRect(x,y,width,height,5,fill);
-  tft.drawRoundRect(x,y,width,height,5,edge);
-  const int16_t tw=(int16_t)strlen(label)*6;
-  text(x+(width-tw)/2,y+(height-8)/2,label,emphasized?WHITE:edge);
-}
-
-void drawNav(){
-  const size_t total=matchCount();
-  const size_t pages=(total+ROWS-1)/ROWS;
-  button(6,NAV_Y,85,NAV_H,"< PREV",VAPOR_PURPLE);
-  char middle[35];
-  snprintf(middle,sizeof(middle),"%u / %u  (%u CASES)",
-           (unsigned)(page+1),(unsigned)(pages?pages:1),(unsigned)total);
-  text(104,NAV_Y+7,middle,MUTED);
-  button(230,NAV_Y,84,NAV_H,"NEXT >",VAPOR_PURPLE);
-}
-
-void drawActions(){
-  button(6,BUTTON_Y,100,BUTTON_H,"RUN",CYAN,true);
-  button(110,BUTTON_Y,100,BUTTON_H,"STOP",PINK);
-  button(214,BUTTON_Y,100,BUTTON_H,"SUITE",VAPOR_PURPLE);
-}
-
-void render(const char* active,uint32_t remaining,bool suite){
-  tft.fillScreen(BG);
-  gradientTitle();
-  statusBubble(active,remaining,suite);
-  drawTabs();
-  drawList();
-  drawNav();
-  drawActions();
-}
-
 void calibrationScreen(){
-  tft.fillScreen(BG);
-  gradientTitle();
-  mascot(18,59,false,false);
-  text(91,38,"WELCOME TO THE LAB",CYAN,2);
-  text(91,60,"TOUCH SETUP REQUIRED",PINK);
-  tft.drawRoundRect(12,110,296,85,6,PURPLE);
-  text(28,123,"TAP TO START CALIBRATION",WHITE,2);
-  text(28,149,"FOLLOW THE 5 TOUCH TARGETS",CYAN);
-  text(28,169,"SERIAL: 115200 BAUD",MUTED);
-  text(28,208,"NO RF ON BOOT",GREEN);
+  lcd.fillScreen(kBg);
+  titleBar();
+  label(25,34,"WELCOME TO SQUACHEMIT",kCyan,2);
+  lcd.drawRoundRect(14,70,292,113,9,kPurple);
+  label(39,88,"FIRST BOOT / TOUCH SETUP",kVaporPink,2);
+  label(40,123,"TAP TO CALIBRATE",kWhite,2);
+  label(40,152,"FOLLOW THE FIVE TARGETS",kCyan);
+  label(27,201,"115200 BAUD  /  RF OFF ON BOOT",kGreen);
 }
-
-Cyd32UiAction tap(int x,int y){
-  if(y>=TAB_Y && y<TAB_Y+TAB_H){
-    uint8_t tab=(uint8_t)(x/79);
-    if(tab<kFilterTabCount){
-      filter=(Filter)tab;
-      page=0;
-      selectFirstPageRow();
-    }
-    return Cyd32UiAction::None;
-  }
-  if(y>=LIST_Y && y<LIST_Y+ROWS*(ROW_HEIGHT_PX+ROW_GAP)){
-    const size_t row=(size_t)((y-LIST_Y)/(ROW_HEIGHT_PX+ROW_GAP));
-    if(row<ROWS){
-      size_t raw=0;
-      if(filteredAt(page*ROWS+row,&raw))selected=raw;
-    }
-    return Cyd32UiAction::None;
-  }
-  if(y>=NAV_Y && y<NAV_Y+NAV_H){
-    const size_t pages=(matchCount()+ROWS-1)/ROWS;
-    if(x<94 && page>0)--page;
-    else if(x>=228 && page+1<pages)++page;
-    selectFirstPageRow();
-    return Cyd32UiAction::None;
-  }
-  if(y>=BUTTON_Y){
-    if(x<108)return Cyd32UiAction::Run;
-    if(x<212)return Cyd32UiAction::Stop;
-    return Cyd32UiAction::Suite;
-  }
-  if(y>=24 && y<=80 && x<76){
-    mascotLine=(mascotLine+1)%4;
-    return Cyd32UiAction::None;
-  }
-  return Cyd32UiAction::None;
-}
-
-bool saveCal(const uint16_t data[5]){
+bool storeCalibration(uint16_t data[5]){
   if(!prefs.begin("sqemit32",false)){
     Serial.println("WARN,CYD32_TOUCH_NVS_WRITE_FAILED");
     return false;
   }
-  const bool ok=prefs.putBytes("touchland",data,10)==10;
+  const bool saved=prefs.putBytes("touchland",data,10)==10;
   prefs.end();
-  if(!ok)Serial.println("WARN,CYD32_TOUCH_NVS_WRITE_FAILED");
-  return ok;
+  if(!saved)Serial.println("WARN,CYD32_TOUCH_NVS_WRITE_FAILED");
+  return saved;
 }
-
-bool loadCal(){
+bool loadCalibration(){
   if(!prefs.begin("sqemit32",true))return false;
   uint16_t data[5]={0};
-  const bool ok=prefs.getBytesLength("touchland")==10 &&
-                prefs.getBytes("touchland",data,10)==10;
+  const bool present=prefs.getBytesLength("touchland")==10 &&
+                     prefs.getBytes("touchland",data,10)==10;
   prefs.end();
-  if(ok)tft.setTouch(data);
-  return ok;
+  if(present)lcd.setTouch(data);
+  return present;
 }
-
-void startCal(){
-  // Blocking TFT_eSPI wizard is entered only from idle, never during an
-  // active transmission or a running suite.
+void calibrationWizard(){
+  // TFT_eSPI wizard is blocking and NEVER entered during RF or suite.
   uint16_t data[5]={0};
-  tft.fillScreen(BG);
-  text(22,16,"SQUACHWARE / TOUCH SETUP",CYAN,2);
-  tft.calibrateTouch(data,WHITE,BG,15);
-  tft.setTouch(data);
-  saveCal(data);
+  lcd.fillScreen(kBg);
+  label(18,20,"SQUACHWARE / TOUCH CALIBRATION",kCyan,2);
+  lcd.calibrateTouch(data,kWhite,kBg,15);
+  lcd.setTouch(data);
+  storeCalibration(data);
   calibrated=true;
   wasPressed=true;
-  dirty=true;
+  redraw=true;
   Serial.println("CYD32,TOUCH,CALIBRATED_LANDSCAPE");
 }
-
+Cyd32UiAction touchHome(int x,int y,bool active){
+  if(y>=kButtonsY){
+    if(x<82){screen=Screen::Library;page=0;firstSelected();return Cyd32UiAction::None;}
+    if(x<160)return Cyd32UiAction::Run;
+    if(x<239)return Cyd32UiAction::Stop;
+    return Cyd32UiAction::Suite;
+  }
+  if((x>=125&&y>=47&&y<=200) || (x<125&&y>=48&&y<198)){
+    screen=Screen::Library;
+    page=0;firstSelected();
+  }
+  return Cyd32UiAction::None;
+}
+Cyd32UiAction touchLibrary(int x,int y,bool active){
+  if(y>=kTabsY&&y<kTabsY+kTabsH){
+    uint8_t tab=(uint8_t)(x/79);
+    if(tab<kTabCount){
+      filter=(Filter)tab;page=0;firstSelected();
+    }
+    return Cyd32UiAction::None;
+  }
+  if(y>=kRowsY&&y<kRowsY+kRowsPerPage*(kRowH+kRowGap)){
+    const size_t row=(size_t)((y-kRowsY)/(kRowH+kRowGap));
+    size_t rawIndex=0;
+    if(row<kRowsPerPage && atRank(page*kRowsPerPage+row,&rawIndex))
+      selected=rawIndex;
+    return Cyd32UiAction::None;
+  }
+  if(y>=kButtonsY){
+    if(x<82){screen=Screen::Home;return Cyd32UiAction::None;}
+    if(x<160){if(page>0){--page;firstSelected();}return Cyd32UiAction::None;}
+    if(x<239){
+      if((page+1)*kRowsPerPage<totalMatches()){++page;firstSelected();}
+      return Cyd32UiAction::None;
+    }
+    return active?Cyd32UiAction::Stop:Cyd32UiAction::Run;
+  }
+  return Cyd32UiAction::None;
+}
 } // namespace
 
 void cyd32UiBegin(){
   pinMode(TFT_BL,OUTPUT);
   digitalWrite(TFT_BL,LOW);
-  tft.init();
-  tft.setRotation(1); // 320x240 landscape, separate touchland calibration
-  tft.fillScreen(BG);
+  lcd.init();
+  lcd.setRotation(1); // 320x240 ST7798-compatible landscape
+  lcd.fillScreen(kBg);
   digitalWrite(TFT_BL,HIGH);
-  calibrated=loadCal();
-  ready=true;
-  dirty=true;
-  Serial.println(calibrated?"CYD32,SQUACHWARE_UI,LANDSCAPE_TOUCH_SAVED":
-                             "CYD32,SQUACHWARE_UI,LANDSCAPE_TOUCH_SETUP");
+  calibrated=loadCalibration();
+  ready=true;redraw=true;
+  Serial.println(calibrated?"CYD32,SQUACHWARE_HOME,LANDSCAPE_TOUCH_SAVED":
+                             "CYD32,SQUACHWARE_HOME,LANDSCAPE_TOUCH_SETUP");
 }
-
 const Scenario* cyd32UiSelection(){
   return selected<kScenarioCount?&kScenarios[selected]:nullptr;
 }
-
 void cyd32UiResetCalibration(){
   if(prefs.begin("sqemit32",false)){
     prefs.remove("touchland");
     prefs.end();
   }
-  calibrated=false;
-  wasPressed=false;
-  dirty=true;
+  calibrated=false;wasPressed=false;redraw=true;
   Serial.println("CYD32,TOUCH,RESET_LANDSCAPE;TAP_TO_CALIBRATE");
 }
-
 Cyd32UiAction cyd32UiTick(const char* active,uint32_t remaining,bool suite){
   if(!ready)return Cyd32UiAction::None;
   const uint32_t now=millis();
   const char* name=active?active:"";
-  if(strcmp(name,lastActiveId) || suite!=oldSuite){
-    strncpy(lastActiveId,name,sizeof(lastActiveId)-1);
-    lastActiveId[sizeof(lastActiveId)-1]='\0';
-    oldSuite=suite;
-    dirty=true;
+  if(strcmp(name,previousActive)!=0 || suite!=previousSuite){
+    strncpy(previousActive,name,sizeof(previousActive)-1);
+    previousActive[sizeof(previousActive)-1]='\0';
+    previousSuite=suite;
+    redraw=true;
   }
-  if(dirty){
-    if(calibrated)render(active,remaining,suite);
-    else calibrationScreen();
-    lastTimerSeconds=(active&&*active)?((remaining+999)/1000):UINT32_MAX;
-    dirty=false;
-  }else if(calibrated&&active&&*active){
-    const uint32_t seconds=(remaining+999)/1000;
-    if(seconds!=lastTimerSeconds){
-      timerPatch(seconds);
-      lastTimerSeconds=seconds;
-    }
+  if(redraw){
+    if(!calibrated)calibrationScreen();
+    else if(screen==Screen::Home)homeScreen(active,remaining,suite);
+    else libraryScreen(active,suite);
+    lastCount=(active&&*active)?((remaining+999)/1000):UINT32_MAX;
+    redraw=false;
+  }else if(calibrated&&screen==Screen::Home&&active&&*active){
+    const uint32_t count=(remaining+999)/1000;
+    if(count!=lastCount){countdownOnly(count);lastCount=count;}
   }
-
-  if(now-lastPoll<55)return Cyd32UiAction::None;
+  if(now-lastPoll<50)return Cyd32UiAction::None;
   lastPoll=now;
   if(!calibrated){
-    // Don't start a blocking touch calibration that would extend RF airtime.
     if((active&&*active)||suite)return Cyd32UiAction::None;
-    uint16_t rx=0,ry=0;
-    const bool pressed=tft.getTouchRaw(&rx,&ry);
-    if(pressed && !wasPressed && now-lastPress>400){
-      lastPress=now;
-      startCal();
+    uint16_t rawX=0,rawY=0;
+    const bool pressed=lcd.getTouchRaw(&rawX,&rawY);
+    if(pressed&&!wasPressed&&now-lastPress>350){
+      lastPress=now;calibrationWizard();
     }
     wasPressed=pressed;
     return Cyd32UiAction::None;
   }
   uint16_t x=0,y=0;
-  const bool pressed=tft.getTouch(&x,&y,450);
+  const bool pressed=lcd.getTouch(&x,&y,450);
   Cyd32UiAction action=Cyd32UiAction::None;
-  if(pressed && !wasPressed && now-lastPress>=240 && x<W && y<H){
-    action=tap(x,y);
-    lastPress=now;
-    dirty=true;
+  if(pressed&&!wasPressed&&now-lastPress>=220&&x<kWidth&&y<kHeight){
+    action=screen==Screen::Home ? touchHome(x,y,active&&*active)
+                                : touchLibrary(x,y,active&&*active);
+    lastPress=now;redraw=true;
   }
   wasPressed=pressed;
   return action;
