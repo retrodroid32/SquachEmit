@@ -370,7 +370,7 @@ void setup() {
   Serial.println("BOOT,SquachEmit,0.4.0-LAB,ESP32-C5-Waveshare-2.8");
   c5UiBegin();
 #elif defined(SQE_CYD32)
-  Serial.println("BOOT,SquachEmit,0.4.0-LAB,ESP32-2432S032R-ST7798");
+  Serial.println("BOOT,SquachEmit,0.4.0-SQUACHWARE-R3-LAB,ESP32-2432S032R-ST7798");
   cyd32UiBegin();
 #else
   Serial.println("BOOT,SquachEmit,0.4.0-LAB,ESP32-S3");

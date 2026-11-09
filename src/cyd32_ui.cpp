@@ -72,7 +72,7 @@ void titleBar(){
   lcd.fillRect(0,3,kWidth,kTitleHeight-3,kChrome);
   lcd.drawFastHLine(0,kTitleHeight-1,kWidth,kPurple);
   label(9,5,"SQUACHEMIT",kWhite,2);
-  label(188,6,"SQUACHWARE  /  LAB",kCyan);
+  label(226,6,"SQUACHWARE R3",kCyan);
 }
 void smallPill(int x,int y,int w,const char* s,uint16_t edge,bool filled=false){
   lcd.fillRoundRect(x,y,w,19,4,filled?0x2825:kBg);
