@@ -186,3 +186,13 @@ Compared on 2026-11-08 against SquachWatch-CYD's `include/state.h`,
 The fork's signature table can change; revisit the catalog for new firmware.
 This project is independent; it is not affiliated with any of the product
 manufacturers named in SquachWatch's detector signatures.
+
+## LAB 0.3.0: reproducible RF validation (not yet hardware verified)
+
+Adds 31 bounded scenarios, selected 2.4GHz Wi-Fi channels 1/6/11 and
+additional BLE positive/negative controls. Offline Marauder-inspired
+protocol checks and per-CYD repeated-trial scoring are described in
+[the LAB expansion guide](docs/LAB-EXPANSION.md).
+
+No attacks, 5GHz or unattended RF are enabled; firmware CI builds are
+still unverified until tested on SquachWatch 2.8 and 3.2 hardware.
