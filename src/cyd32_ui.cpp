@@ -15,7 +15,7 @@
 // and patch only the seconds field while emitting.
 namespace {
 constexpr int16_t W=320, H=240;
-constexpr int16_t TAB_Y=82, TAB_H=21, LIST_Y=108, LIST_H=25;
+constexpr int16_t TAB_Y=82, TAB_H=21, LIST_Y=108, ROW_HEIGHT_PX=25;
 constexpr int16_t ROW_GAP=2, ROWS=3, NAV_Y=190, NAV_H=20;
 constexpr int16_t BUTTON_Y=214, BUTTON_H=25;
 constexpr uint16_t BG=0x0801, TASKBAR=0x0803, PURPLE=0xAC1F;
@@ -213,15 +213,15 @@ void drawTabs(){
 
 void drawList(){
   for(int row=0;row<ROWS;row++){
-    const int y=LIST_Y+row*(LIST_H+ROW_GAP);
+    const int y=LIST_Y+row*(ROW_HEIGHT_PX+ROW_GAP);
     const size_t rank=page*ROWS+(size_t)row;
     size_t raw=0;
     const Scenario* s=filteredAt(rank,&raw);
     const bool chosen=s && raw==selected;
-    tft.fillRoundRect(6,y,W-12,LIST_H,4,chosen?0x2806:FACE);
-    tft.drawRoundRect(6,y,W-12,LIST_H,4,chosen?PINK:0x5A8C);
+    tft.fillRoundRect(6,y,W-12,ROW_HEIGHT_PX,4,chosen?0x2806:FACE);
+    tft.drawRoundRect(6,y,W-12,ROW_HEIGHT_PX,4,chosen?PINK:0x5A8C);
     if(!s)continue;
-    if(chosen)tft.fillRect(8,y+5,3,LIST_H-10,CYAN);
+    if(chosen)tft.fillRect(8,y+5,3,ROW_HEIGHT_PX-10,CYAN);
     char no[9];
     snprintf(no,sizeof(no),"%02u",(unsigned)(rank+1));
     text(15,y+8,no,chosen?VAPOR_PINK:MUTED);
@@ -291,8 +291,8 @@ Cyd32UiAction tap(int x,int y){
     }
     return Cyd32UiAction::None;
   }
-  if(y>=LIST_Y && y<LIST_Y+ROWS*(LIST_H+ROW_GAP)){
-    const size_t row=(size_t)((y-LIST_Y)/(LIST_H+ROW_GAP));
+  if(y>=LIST_Y && y<LIST_Y+ROWS*(ROW_HEIGHT_PX+ROW_GAP)){
+    const size_t row=(size_t)((y-LIST_Y)/(ROW_HEIGHT_PX+ROW_GAP));
     if(row<ROWS){
       size_t raw=0;
       if(filteredAt(page*ROWS+row,&raw))selected=raw;
