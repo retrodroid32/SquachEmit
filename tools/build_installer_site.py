@@ -114,7 +114,14 @@ def load_source(src: dict, output: Path) -> dict:
             'short_sha':short,'branch':src['branch'],'created_at':created_at,
             'run_id':src['run_id'],'manifest':str(folder/'manifest.json'),
             'application':str(folder/'application.bin'),'sha256':sha256(app),
-            'bytes':len(app), 'chipFamily':BOARDS[board]['chip']}
+            'bytes':len(app), 'chipFamily':BOARDS[board]['chip'],
+            # Each installer segment gets its own independently checked hash.
+            # The site verifies these before exposing the flashing button.
+            'segments': [
+                {'name':name, 'path':str(folder / name), 'offset':off,
+                 'sha256':sha256(data), 'bytes':len(data)}
+                for name, off, data in parts
+            ]}
 
 
 def build(source_manifest: Path, output: Path) -> dict:
