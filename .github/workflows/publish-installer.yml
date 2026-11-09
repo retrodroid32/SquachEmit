@@ -84,6 +84,14 @@ jobs:
                   directory=root/f'{board}-{sha[:8]}'
                   directory.mkdir(exist_ok=True)
                   subprocess.run(['gh','run','download',str(run['id']),'-R',repo,'-n',artifact,'-D',str(directory)],check=True)
+                  required = (['bootloader.bin','partitions.bin','firmware.bin','ota_init.bin']
+                              if board=='s3-devkit' else
+                              ['SquachEmit.ino.bootloader.bin','SquachEmit.ino.partitions.bin',
+                               'SquachEmit.ino.bin','SquachEmit.ino.merged.bin'])
+                  missing=[name for name in required if not (directory/name).is_file()]
+                  if missing:
+                      print(f'::warning::Skipping legacy run {run["id"]}: missing {missing}')
+                      continue
               except subprocess.CalledProcessError as e:
                   print(f'::warning::Could not download run {run["id"]}: {e}',file=sys.stderr)
                   continue
