@@ -21,9 +21,22 @@ jobs:
         with:
           python-version: '3.12'
       - run: pip install platformio
-      - run: pio run -e esp32-s3-devkitc-1
+      - name: Build S3 LAB firmware and stage all flash parts
+        run: |
+          set -euo pipefail
+          pio run -e esp32-s3-devkitc-1
+          BOOT_APP0="$(find "$HOME/.platformio/packages/framework-arduinoespressif32/tools/partitions" -name boot_app0.bin -print -quit)"
+          test -n "$BOOT_APP0"
+          cp "$BOOT_APP0" .pio/build/esp32-s3-devkitc-1/ota_init.bin
+          test "$(stat -c%s .pio/build/esp32-s3-devkitc-1/ota_init.bin)" -eq 8192
+          test -s .pio/build/esp32-s3-devkitc-1/bootloader.bin
+          test -s .pio/build/esp32-s3-devkitc-1/partitions.bin
       - uses: actions/upload-artifact@v4
         with:
           name: squachemit-esp32s3-firmware-unverified
-          path: .pio/build/esp32-s3-devkitc-1/firmware.bin
+          path: |
+            .pio/build/esp32-s3-devkitc-1/firmware.bin
+            .pio/build/esp32-s3-devkitc-1/bootloader.bin
+            .pio/build/esp32-s3-devkitc-1/partitions.bin
+            .pio/build/esp32-s3-devkitc-1/ota_init.bin
           if-no-files-found: error

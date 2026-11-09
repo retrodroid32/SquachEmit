@@ -1,0 +1,59 @@
+# SquachEmit browser installer and RF LAB console
+
+## URL
+
+When GitHub Pages has been enabled in **Settings → Pages → Source: GitHub Actions**:
+
+- Production: `https://retrodroid32.github.io/SquachEmit/` (empty until real hardware approval)
+- Unverified lab: `https://retrodroid32.github.io/SquachEmit/?lab=1`
+
+The lab channel shows up to three recent successful C5 lab builds and the latest
+successful S3 baseline with SHA/CI provenance. Firmware binaries and manifests
+are copied into the Pages artifact (same origin, without GitHub API CORS/login).
+The `esp-web-tools` installer recognizes ESP32-C5 and ESP32-S3 and refuses a
+mismatched chip family, but it **cannot** distinguish different display/touch
+boards built around the same ESP32-C5. A mandatory board confirmation is shown.
+
+The in-browser serial console sends `HELP`, `LIST`, `RUN`, `STATUS`, `STOP`,
+`SUITE` over Web Serial at 115200 and supports exporting the actual truth log.
+Disconnect the console before flashing and reconnect afterward.
+
+## How CI publishes LAB builds
+
+`SquachEmit CI` keeps the S3 and C5 build jobs independent. The S3 job uploads
+bootloader, partition table, OTA-selection bytes and application; the C5 job
+already produces a complete Arduino-CLI package on its separate unmerged lab
+branch. `.github/workflows/publish-installer.yml` runs on successful CI
+completion, main-site changes, or manual dispatch. It reads only successful
+run artifacts from this repository, for the baseline `main` S3 and allowed
+`lab/**` branch C5 profiles. Downloaded files are **data**, never executed.
+
+`tools/build_installer_site.py` validates the chip header, partition table,
+relevant offsets (C5 bootloader is 0x2000), OTA data and application content,
+then emits per-build ESP Web Tools manifests and SHA256 checksums. The default
+site has no fake stable release: production becomes available only with a
+separate hardware-approved release pipeline in future work.
+
+The site workflow deploys from the default `main` branch; **it does not merge
+or release any C5 lab branch**, and changes nothing in SquachWatch-CYD.
+
+## Hardware validation
+
+1. Confirm Waveshare ST7789 / CST3530 / CH32V003 board identity.
+2. Confirm normal USB data cable, Chrome/Edge Web Serial, the correct C5/S3
+   chip family shown by the installer, and take a backup before initial flash.
+3. Flash one LAB build. Check boot, screen, touch, RUN/STOP and output timeout.
+4. Connect the terminal, send `LIST` and a single `RUN BLE-META-UUID 12`.
+5. Observe actual detections on SquachWatch 2.8 and 3.2 separately, including
+   `WIFI-AXON`, `BLE-NEG-UUID`, and the suite. Record false positives/negatives.
+6. Do not merge the C5 LAB PR or label it hardware verified without explicit
+   approval after these physical tests.
+
+## Publishing prerequisite
+
+If GitHub Pages is not enabled, `actions/deploy-pages` cannot publish.
+In the repo, open **Settings → Pages → Build and deployment → Source:
+GitHub Actions**. This is a one-time repository-owner setting; it cannot be
+performed by the GitHub file-edit actions in this assistant environment.
+
+Use HTTPS; Web Serial cannot run from arbitrary local files (`file://`).
