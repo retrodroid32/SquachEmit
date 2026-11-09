@@ -11,7 +11,7 @@ const ids = [
   'board', 'build', 'buildDetails', 'confirm', 'notice', 'channelBadge',
   'enterLab', 'exitLab', 'installArea', 'installLocked', 'installButton',
   'downloadBin', 'serialState', 'connect', 'disconnect', 'serialLog',
-  'command', 'commandForm', 'send', 'clear', 'saveLog'
+  'command', 'commandForm', 'send', 'clear', 'saveLog', 'baudRate', 'customBaud', 'baudHint'
 ];
 
 class Element {
@@ -36,6 +36,8 @@ class Element {
   setAttribute(name, value) { this[name] = value; }
 }
 const elements = Object.fromEntries(ids.map(id => [id, new Element(id)]));
+elements.baudRate.value = '115200';
+elements.customBaud.value = '115200';
 const document = {
   getElementById(id) { return elements[id]; },
   createElement() { return new Element('option'); },

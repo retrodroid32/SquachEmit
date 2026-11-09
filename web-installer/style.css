@@ -5,3 +5,12 @@
 .build-hint{font-size:11px;color:var(--muted);line-height:1.5;margin:7px 0 3px}
 #build{font-size:13px;line-height:1.45;text-overflow:ellipsis}
 #buildDetails{white-space:pre-line;line-height:1.7}
+
+/* Serial baud rate belongs to the console only, never to flash manifests. */
+.serial-baud-settings{margin:-8px 0 16px}
+.serial-baud-label{margin:0 0 8px}
+.serial-baud-row{display:flex;flex-wrap:wrap;gap:8px}
+.serial-baud-row select{flex:1 1 205px;width:auto;min-width:0}
+.serial-baud-row input{flex:1 1 165px;min-width:0;min-height:45px;padding:12px 13px;
+  border:1px solid #37516a;border-radius:8px;background:#091320;color:white}
+#baudHint{margin:7px 0 0}
