@@ -35,6 +35,9 @@ class DroneProfileTests(unittest.TestCase):
     def test_nan_hash_positive_negative(self):
         self.assertTrue(wifi_nan_remote_id(self.frame("RID-WIFI-NAN-LAB")))
         self.assertFalse(wifi_nan_remote_id(self.frame("RID-WIFI-NAN-NEG")))
+        broken = bytearray(self.frame("RID-WIFI-NAN-LAB"))
+        broken[27] ^= 1
+        self.assertFalse(wifi_nan_remote_id(bytes(broken)))
 
     def test_stale_location_and_missing_operator_not_falsely_none(self):
         self.assertEqual(self.v["RID-NO-OPERATOR"]["expected"], "DRONE")

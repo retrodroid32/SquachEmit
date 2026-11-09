@@ -60,9 +60,12 @@ def beacon_remote_id(frame: bytes) -> dict | None:
 
 
 def wifi_nan_remote_id(frame: bytes) -> bool:
-    return (len(frame) >= 36 and frame[0] == 0xd0 and
+    # Match the receiver's NAN Public Action header and service-hash walk:
+    # the hash is in a separate attribute, not necessarily adjacent to OUI.
+    return (len(frame) >= 36 and (frame[0] & 0xFC) == 0xD0 and
             frame[4:10] == bytes.fromhex("516f9a010000") and
-            bytes.fromhex("506f9a138869199d9209") in frame[24:])
+            frame[24:30] == bytes.fromhex("0409506f9a13") and
+            bytes.fromhex("8869199d9209") in frame[30:])
 
 
 def parse_ibeacon_mfg(data: bytes) -> dict | None:
