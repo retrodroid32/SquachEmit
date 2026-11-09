@@ -5,6 +5,8 @@
 #include "scenarios.h"
 #if defined(SQE_WAVESHARE_C5)
 #include "c5_ui.h"
+#elif defined(SQE_CYD32)
+#include "cyd32_ui.h"
 #endif
 #include <string.h>
 
@@ -306,6 +308,9 @@ static void help() {
   Serial.println("Remote ID profiles are synthetic; no genuine vendor serials or flight links.");
   Serial.println("BLE5 extended/coded PHY and Wi-Fi NAN: OFFLINE FIXTURES ONLY.");
   Serial.println("Single 2.4GHz radio: BLE and Wi-Fi scenarios are exclusive.");
+#if defined(SQE_CYD32)
+  Serial.println("CALTOUCH             reset touchscreen fit, then tap to calibrate");
+#endif
 }
 
 static void command(String cmd) {
@@ -314,6 +319,9 @@ static void command(String cmd) {
   if (cmd.equalsIgnoreCase("HELP") || cmd == "?") { help(); return; }
   if (cmd.equalsIgnoreCase("LIST")) { listCases(); return; }
   if (cmd.equalsIgnoreCase("STOP")) { cancelAll(); return; }
+#if defined(SQE_CYD32)
+  if (cmd.equalsIgnoreCase("CALTOUCH")) { cyd32UiResetCalibration(); return; }
+#endif
   if (cmd.equalsIgnoreCase("STATUS")) {
     const uint32_t now = millis();
     const uint32_t left = g_active ? (g_duration > now - g_started ? g_duration - (now - g_started) : 0) : 0;
@@ -361,6 +369,9 @@ void setup() {
   #if defined(SQE_WAVESHARE_C5)
   Serial.println("BOOT,SquachEmit,0.4.0-LAB,ESP32-C5-Waveshare-2.8");
   c5UiBegin();
+#elif defined(SQE_CYD32)
+  Serial.println("BOOT,SquachEmit,0.4.0-LAB,ESP32-2432S032R-ST7798");
+  cyd32UiBegin();
 #else
   Serial.println("BOOT,SquachEmit,0.4.0-LAB,ESP32-S3");
 #endif
@@ -400,10 +411,28 @@ void loop() {
       Serial.println("STATE,SUITE_ABORTED");
     }
   }
-#if defined(SQE_WAVESHARE_C5)
+#if defined(SQE_WAVESHARE_C5) || defined(SQE_CYD32)
   const uint32_t current = millis();
   const uint32_t remaining = (g_active && g_duration > current-g_started)
     ? g_duration-(current-g_started) : 0;
+#if defined(SQE_CYD32)
+  const Cyd32UiAction action = cyd32UiTick(
+      g_active ? g_active->id : nullptr, remaining, g_suite);
+  switch(action) {
+    case Cyd32UiAction::Run: {
+      const Scenario* chosen = cyd32UiSelection();
+      if(chosen){g_suite=false;startScenario(chosen);}
+      break;
+    }
+    case Cyd32UiAction::Stop: cancelAll(); break;
+    case Cyd32UiAction::Suite:
+      cancelAll();
+      g_suite=true;g_suiteNext=0;g_suiteAt=millis();
+      Serial.println("STATE,SUITE_START");
+      break;
+    default: break;
+  }
+#else
   switch(c5UiTick(g_active ? g_active->id : nullptr,remaining,g_suite)){
     case C5UiAction::Run: {
       const Scenario* selected=c5UiSelection();
@@ -418,6 +447,7 @@ void loop() {
       break;
     default: break;
   }
+#endif
 #endif
   delay(5);
 }
