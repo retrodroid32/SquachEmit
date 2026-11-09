@@ -13,6 +13,22 @@ The goal is to measure **signature-level** detection, missed hits, wrong
 classifications, false positives on negative controls, and latency — without
 pretending that a synthetic beacon proves a physical camera/drone is there.
 
+## Web installer and LAB console
+
+The [SquachEmit web installer](https://retrodroid32.github.io/SquachEmit/?lab=1)
+(available after enabling **Settings → Pages → Source: GitHub Actions**)
+uses ESP Web Tools to flash compiled, unverified LAB builds with chip-family
+verification, build SHA, and same-origin binary manifests. Its serial console
+supports `LIST`, `RUN`, `STOP`, `SUITE`, `STATUS` and exporting emitter
+truth logs. Use desktop Chrome/Edge and a USB data cable; disconnect the
+console before flashing.
+
+LAB builds are imported from successful CI artifacts on `main` (S3)
+and `lab/**` (Waveshare C5). No project branches are merged. The installer
+keeps multiple C5 lab builds for comparison, and publishes no production
+releases until hardware approval. See [web installer documentation](docs/WEB-INSTALLER.md).
+**Waveshare capacitive-touch C5 boards and resistive-touch C5 boards are different.**
+
 ## Hardware
 
 - One **ESP32-S3 development board** with usable onboard 2.4 GHz antenna and USB data cable.
