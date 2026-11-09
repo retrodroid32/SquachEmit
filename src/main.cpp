@@ -2,6 +2,9 @@
 #include <WiFi.h>
 #include <NimBLEDevice.h>
 #include "scenarios.h"
+#if defined(SQE_WAVESHARE_C5)
+#include "c5_ui.h"
+#endif
 #include <string.h>
 
 // SquachEmit v0.1.0: bounded, explicit lab emissions; no unattended RF flood.
@@ -257,7 +260,12 @@ void setup() {
   const uint32_t t0 = millis();
   while (!Serial && millis() - t0 < 1800) delay(10);
   WiFi.mode(WIFI_OFF);
+  #if defined(SQE_WAVESHARE_C5)
+  Serial.println("BOOT,SquachEmit,0.2.0-DEV,ESP32-C5-Waveshare-2.8");
+  c5UiBegin();
+#else
   Serial.println("BOOT,SquachEmit,0.1.0,ESP32-S3");
+#endif
   help();
 }
 
@@ -292,5 +300,24 @@ void loop() {
       Serial.println("STATE,SUITE_ABORTED");
     }
   }
+#if defined(SQE_WAVESHARE_C5)
+  const uint32_t current = millis();
+  const uint32_t remaining = (g_active && g_duration > current-g_started)
+    ? g_duration-(current-g_started) : 0;
+  switch(c5UiTick(g_active ? g_active->id : nullptr,remaining,g_suite)){
+    case C5UiAction::Run: {
+      const Scenario* selected=c5UiSelection();
+      if(selected){g_suite=false;startScenario(selected);}
+      break;
+    }
+    case C5UiAction::Stop: cancelAll(); break;
+    case C5UiAction::Suite:
+      cancelAll();
+      g_suite=true;g_suiteNext=0;g_suiteAt=millis();
+      Serial.println("STATE,SUITE_START");
+      break;
+    default: break;
+  }
+#endif
   delay(5);
 }
