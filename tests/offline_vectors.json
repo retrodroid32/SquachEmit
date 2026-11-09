@@ -1,0 +1,146 @@
+[
+  {
+    "id": "OUI-FLOCK-OWN",
+    "class": "WIFI_OUI",
+    "expected": "FLOCK",
+    "frame_hex": "80000000ffffffffffffb41e52000001b41e52000001000000000000000000006400010000075351452d4c4142",
+    "notes": "Flock-owned MA-L, high OUI evidence; *offline-only*",
+    "rf_transmitted": false
+  },
+  {
+    "id": "OUI-ALPR",
+    "class": "WIFI_OUI",
+    "expected": "ALPR",
+    "frame_hex": "80000000ffffffffffff00047d00000100047d000001000000000000000000006400010000075351452d4c4142",
+    "notes": "Motorola Solutions MA-L; offline-only",
+    "rf_transmitted": false
+  },
+  {
+    "id": "OUI-CAMERA",
+    "class": "WIFI_OUI",
+    "expected": "CAMERA",
+    "frame_hex": "80000000ffffffffffff00408c00000100408c000001000000000000000000006400010000075351452d4c4142",
+    "notes": "Axis MA-L; offline-only",
+    "rf_transmitted": false
+  },
+  {
+    "id": "OUI-RING",
+    "class": "WIFI_OUI",
+    "expected": "RING",
+    "frame_hex": "80000000ffffffffffffac9fc3000001ac9fc3000001000000000000000000006400010000075351452d4c4142",
+    "notes": "Ring MA-L; offline-only",
+    "rf_transmitted": false
+  },
+  {
+    "id": "OUI-DRONE",
+    "class": "WIFI_OUI",
+    "expected": "DRONE",
+    "frame_hex": "80000000ffffffffffff04a85a00000104a85a000001000000000000000000006400010000075351452d4c4142",
+    "notes": "DJI MA-L; offline-only",
+    "rf_transmitted": false
+  },
+  {
+    "id": "OUI-AUTEL-28",
+    "class": "WIFI_OUI",
+    "expected": "DRONE",
+    "frame_hex": "80000000ffffffffffffec5bcde00001ec5bcde00001000000000000000000006400010000075351452d4c4142",
+    "notes": "Autel 28-bit registration fourth high nibble E",
+    "rf_transmitted": false
+  },
+  {
+    "id": "OUI-AUTEL-NEIGHBOR",
+    "class": "WIFI_OUI",
+    "expected": "NONE",
+    "frame_hex": "80000000ffffffffffffec5bcdd00001ec5bcdd00001000000000000000000006400010000075351452d4c4142",
+    "notes": "Same 24-bit prefix; different fourth high nibble D must NOT match",
+    "rf_transmitted": false
+  },
+  {
+    "id": "OUI-SONOS-NEG",
+    "class": "WIFI_OUI",
+    "expected": "NONE",
+    "frame_hex": "80000000ffffffffffff000e58000001000e58000001000000000000000000006400010000075351452d4c4142",
+    "notes": "Regression guard: removed incorrect ALPR Sonos prefix",
+    "rf_transmitted": false
+  },
+  {
+    "id": "FLOCK-WILDCARD",
+    "class": "WIFI_PROBE",
+    "expected": "FLOCK",
+    "frame_hex": "40000000ffffffffffff00037f000001ffffffffffff00000000",
+    "notes": "Qualcomm source + wildcard probe => FLOCK MED",
+    "rf_transmitted": false
+  },
+  {
+    "id": "FLOCK-WILDCARD-NEG",
+    "class": "WIFI_PROBE",
+    "expected": "NONE",
+    "frame_hex": "40000000ffffffffffff02aabb000001ffffffffffff00000000",
+    "notes": "Wildcard probe without a Flock-associated prefix",
+    "rf_transmitted": false
+  },
+  {
+    "id": "DEAUTH-ONE",
+    "class": "WIFI_DEAUTH",
+    "expected": "NONE",
+    "frame_hex": "c0000000ffffffffffff02aabb00000102aabb00000100000300",
+    "notes": "One deauth frame is normal; MUST NOT trigger flood threshold",
+    "rf_transmitted": false
+  },
+  {
+    "id": "EVILTWIN-PAIR-1",
+    "class": "WIFI_EVILTWIN_SEQUENCE",
+    "expected": "SEQUENCE_ONLY",
+    "frame_hex": "80000000ffffffffffff02aabb00000102aabb0000010000000000000000000064000100000c5351452d5457494e2d4c4142",
+    "notes": "Two BSSIDs with same SSID, conflicting protection; assert only after both",
+    "rf_transmitted": false
+  },
+  {
+    "id": "EVILTWIN-PAIR-2",
+    "class": "WIFI_EVILTWIN_SEQUENCE",
+    "expected": "SEQUENCE_ONLY",
+    "frame_hex": "80000000ffffffffffff02ccdd00000202ccdd0000020000000000000000000064001100000c5351452d5457494e2d4c4142",
+    "notes": "Two BSSIDs with same SSID, conflicting protection; assert only after both",
+    "rf_transmitted": false
+  },
+  {
+    "id": "PWNAGOTCHI-BEACON",
+    "class": "WIFI_PWNAGOTCHI",
+    "expected": "HACKER",
+    "frame_hex": "80000000ffffffffffff02bbaa00000102bbaa000001000000000000000000006400010000075351452d4c4142dd307b226e616d65223a227371652d6c6162222c2270776e645f746f74223a322c2276657273696f6e223a2274657374227d",
+    "notes": "Synthetic vendor IE with pwnd_tot; offline-only",
+    "rf_transmitted": false
+  },
+  {
+    "id": "RID-WIFI-BEACON",
+    "class": "WIFI_REMOTEID",
+    "expected": "DRONE",
+    "frame_hex": "80000000ffffffffffff02aabb00000102aabb000001000000000000000000006400010000075351452d4c4142dd21fa0bbc0d01f219010212535155414348454d49542d544553542d30303031000000",
+    "notes": "Synthetic ASTM Remote ID Wi-Fi beacon vendor IE; offline-only",
+    "rf_transmitted": false
+  },
+  {
+    "id": "RID-WIFI-PARROT",
+    "class": "WIFI_REMOTEID",
+    "expected": "DRONE",
+    "frame_hex": "80000000ffffffffffff02aabb00000102aabb000001000000000000000000006400010000075351452d4c4142dd21903ae60d01f219010212535155414348454d49542d544553542d30303031000000",
+    "notes": "Synthetic ASTM Remote ID Wi-Fi beacon vendor IE; offline-only",
+    "rf_transmitted": false
+  },
+  {
+    "id": "RID-WIFI-BAD-PACK",
+    "class": "WIFI_REMOTEID",
+    "expected": "NONE",
+    "frame_hex": "80000000ffffffffffff02aabb00000102aabb000001000000000000000000006400010000075351452d4c4142dd21fa0bbc0d01f218010212535155414348454d49542d544553542d30303031000000",
+    "notes": "Invalid message size, must not count as Remote ID",
+    "rf_transmitted": false
+  },
+  {
+    "id": "RID-WIFI-NAN",
+    "class": "WIFI_REMOTEID",
+    "expected": "DRONE",
+    "frame_hex": "d0000000516f9a01000002aabb00000102aabb00000100000409506f9a138869199d9209",
+    "notes": "OpenDroneID NAN public-action service hash; offline-only",
+    "rf_transmitted": false
+  }
+]

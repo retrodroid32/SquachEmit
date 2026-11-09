@@ -1,0 +1,200 @@
+[
+  {
+    "id": "BLE-FLOCK-MFG",
+    "carrier": "BLE",
+    "kind": "BleManufacturer",
+    "expected": "FLOCK",
+    "description": "Flock supplier company ID 0x09C8",
+    "code": 2504,
+    "text": null
+  },
+  {
+    "id": "BLE-FLOCK-NAME",
+    "carrier": "BLE",
+    "kind": "BleName",
+    "expected": "FLOCK",
+    "description": "Synthetic Penguin battery name",
+    "code": 0,
+    "text": "Penguin-0123456789"
+  },
+  {
+    "id": "BLE-META-UUID",
+    "carrier": "BLE",
+    "kind": "BleUuid",
+    "expected": "META",
+    "description": "Ray-Ban Meta service UUID",
+    "code": 64863,
+    "text": null
+  },
+  {
+    "id": "BLE-META-MFG",
+    "carrier": "BLE",
+    "kind": "BleManufacturer",
+    "expected": "META",
+    "description": "Meta company ID",
+    "code": 427,
+    "text": null
+  },
+  {
+    "id": "BLE-SKIMMER",
+    "carrier": "BLE",
+    "kind": "BleName",
+    "expected": "SKIMMER",
+    "description": "HC-05-like BLE name; NOT Bluetooth Classic",
+    "code": 0,
+    "text": "HC-05"
+  },
+  {
+    "id": "BLE-RAVEN",
+    "carrier": "BLE",
+    "kind": "BleUuid",
+    "expected": "RAVEN",
+    "description": "Raven service UUID",
+    "code": 12544,
+    "text": null
+  },
+  {
+    "id": "BLE-AIRTAG",
+    "carrier": "BLE",
+    "kind": "BleManufacturer",
+    "expected": "AIRTAG",
+    "description": "Synthetic Apple Find My pattern",
+    "code": 76,
+    "text": null
+  },
+  {
+    "id": "BLE-DRONE",
+    "carrier": "BLE",
+    "kind": "BleRemoteId",
+    "expected": "DRONE",
+    "description": "Three synthetic OpenDroneID Basic/Location/System frames",
+    "code": 65530,
+    "text": null
+  },
+  {
+    "id": "BLE-SAMSUNG",
+    "carrier": "BLE",
+    "kind": "BleUuid",
+    "expected": "SAMSUNG_TAG",
+    "description": "Samsung SmartTag service UUID",
+    "code": 64858,
+    "text": null
+  },
+  {
+    "id": "BLE-GOOGLE",
+    "carrier": "BLE",
+    "kind": "BleUuid",
+    "expected": "GOOGLE_TAG",
+    "description": "Google Eddystone/FMDN shared UUID",
+    "code": 65194,
+    "text": null
+  },
+  {
+    "id": "BLE-TILE",
+    "carrier": "BLE",
+    "kind": "BleUuid",
+    "expected": "TILE",
+    "description": "Tile service UUID",
+    "code": 65261,
+    "text": null
+  },
+  {
+    "id": "BLE-HACKER-UUID",
+    "carrier": "BLE",
+    "kind": "BleUuid",
+    "expected": "HACKER",
+    "description": "Flipper signature UUID",
+    "code": 12417,
+    "text": null
+  },
+  {
+    "id": "BLE-HACKER-MFG",
+    "carrier": "BLE",
+    "kind": "BleManufacturer",
+    "expected": "HACKER",
+    "description": "Flipper company ID",
+    "code": 3625,
+    "text": null
+  },
+  {
+    "id": "BLE-IBEACON",
+    "carrier": "BLE",
+    "kind": "BleManufacturer",
+    "expected": "IBEACON",
+    "description": "Synthetic iBeacon; enable IBEACON in SquachWatch first",
+    "code": 76,
+    "text": null
+  },
+  {
+    "id": "BLE-NEG-APPLE",
+    "carrier": "BLE",
+    "kind": "BleAppleNegative",
+    "expected": "NONE",
+    "description": "Apple company ID without Find My/iBeacon structure",
+    "code": 76,
+    "text": null
+  },
+  {
+    "id": "BLE-NEG-UUID",
+    "carrier": "BLE",
+    "kind": "BleUuid",
+    "expected": "NONE",
+    "description": "Unknown service UUID",
+    "code": 42919,
+    "text": null
+  },
+  {
+    "id": "BLE-NEG-NAME",
+    "carrier": "BLE",
+    "kind": "BleName",
+    "expected": "NONE",
+    "description": "Ordinary BLE device name",
+    "code": 0,
+    "text": "SQE-BENIGN"
+  },
+  {
+    "id": "WIFI-AXON",
+    "carrier": "WIFI",
+    "kind": "WifiAp",
+    "expected": "AXON",
+    "description": "Body-camera pairing SSID prefix",
+    "code": 0,
+    "text": "AB2-SQE-TEST"
+  },
+  {
+    "id": "WIFI-FLOCK",
+    "carrier": "WIFI",
+    "kind": "WifiAp",
+    "expected": "FLOCK",
+    "description": "Flock test SSID prefix",
+    "code": 0,
+    "text": "FLOCK-SQE-TEST"
+  },
+  {
+    "id": "WIFI-HACKER-PINE",
+    "carrier": "WIFI",
+    "kind": "WifiAp",
+    "expected": "HACKER",
+    "description": "Wi-Fi Pineapple SSID pattern",
+    "code": 0,
+    "text": "Pineapple_SQE"
+  },
+  {
+    "id": "WIFI-HACKER-PWN",
+    "carrier": "WIFI",
+    "kind": "WifiAp",
+    "expected": "HACKER",
+    "description": "Deauther management SSID pattern; no attacks",
+    "code": 0,
+    "text": "pwned-SQE-TEST"
+  },
+  {
+    "id": "WIFI-NEG",
+    "carrier": "WIFI",
+    "kind": "WifiAp",
+    "expected": "NONE",
+    "description": "Ordinary WPA2 SoftAP; negative control",
+    "code": 0,
+    "text": "SQE-BENIGN"
+  }
+]

@@ -1,0 +1,10 @@
+.pio/
+.vscode/
+__pycache__/
+*.pyc
+capture-*.log
+tests/report.md
+*.bin
+*.elf
+*.map
+.DS_Store
