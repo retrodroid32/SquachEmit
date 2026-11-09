@@ -43,3 +43,40 @@ SquachWatch's recognizable color vocabulary and appearance.
    proves compilation only, not visible hardware correctness.
 
 No PR merging, releases, tags or SquachWatch firmware changes.
+
+## Redesign R3 — separate Squachy Home and Test Library
+
+The first redesign remained crowded: the character, four category tabs,
+case rows, a speech bubble and navigation all competed for 240 vertical
+pixels. This revision is intentionally a **two-screen interface**:
+
+**Home** (starts at boot): 17px SquachWare vaporwave titlebar, real
+RF OFF/ON status pill, enlarged original hand-drawn Sasquatch silhouette,
+speech/active test card, separate profile summary, and four large bottom
+buttons: TESTS, RUN, STOP, SUITE. Tapping Squachy or the bubble opens the
+test library. This is much closer to the dominant Squachy/home-screen
+composition of SquachWatch than the old compact administrative list.
+
+**Library**: 4 filters ALL/DRONE/BLE/WIFI, four large item rows per page,
+prominent pink selected row, visible expected class, and bottom
+HOME / PREV / NEXT / RUN (or STOP when emitting). A full page is redrawn
+only for navigation or radio-state changes, and on Home the remaining
+seconds update within a small text rectangle.
+
+The same `sqemit32/touchland` calibration still works. No partition,
+serial protocol, RF fixture or transmitter power change is introduced.
+All new art is original drawn C++ primitives, not GPL code copied from
+SquachWatch or Pwnagotchi.
+
+### Verifying R3
+
+1. First boot should open a **large Squachy home**, not a grid of test
+   buttons. RF pill must say OFF / IDLE and no emissions should start.
+2. Touch TESTS, change filters, scroll multiple pages and select a test;
+   touch HOME and verify the selected ID appears in Squachy's speech card.
+3. RUN should show the ON AIR status and seconds; the latter must update
+   without flickering or repainting the mascot.
+4. STOP and the automatic timeout should return to RF OFF / IDLE.
+   Verify SUITE and STOP can be operated from Home.
+5. Compare actual detector results on a separate SquachWatch CYD.
+6. Validate touch after power cycle and use CALTOUCH at 115200 if needed.
