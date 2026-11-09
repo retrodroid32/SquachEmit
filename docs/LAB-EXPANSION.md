@@ -56,3 +56,20 @@ Protocol reference checks cover BLE Remote ID, Wi-Fi Remote ID vendor IE,
 Wi-Fi NAN service hash, iBeacon fields and malformed/truncated inputs.
 They establish format consistency only. True accuracy still requires
 independent radio reception and SquachWatch hardware observations.
+
+## Optional two-USB-port evidence capture
+
+On the host with both units connected, close the browser serial console,
+install pyserial via requirements-host.txt, and record a single bounded case:
+
+    python tools/capture_pair.py --emitter COM8 --receiver COM9 --receiver-baud 2000000 --case WIFI-AXON-CH6 --case-duration 12 --seconds 40 --output lab-ch6.ndjson
+
+The emitter port defaults to 115200. The CYD receiver UART defaults to
+2000000; adjust to its active serial configuration. The script captures
+both serial streams with the same PC monotonic clock and UTC timestamps,
+and sends STOP on exit for a case that it launched.
+
+Alternatively omit --case to capture a passive/manual C5 touchscreen session.
+This does NOT parse SquachWatch log formats or claim test success. Inspect
+receiver entries manually and record them in tests/trials.csv. Do not hold
+the same COM port in the browser Web Serial and the Python recorder together.

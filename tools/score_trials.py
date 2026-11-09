@@ -17,7 +17,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 RECEIVERS = {"CYD-2.8", "CYD-3.2"}
-MORE_LABELS = {"ALPR", "CAMERA", "DEAUTH", "EVILTWIN", "RING"}
+MORE_LABELS = {"ALPR", "CAMERA", "DEAUTH", "EVILTWIN", "RING", "AXON"}
 
 
 def classify(row: dict, expected: str) -> str:
