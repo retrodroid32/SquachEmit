@@ -27,3 +27,21 @@ jobs:
           name: squachemit-esp32s3-firmware-unverified
           path: .pio/build/esp32-s3-devkitc-1/firmware.bin
           if-no-files-found: error
+
+  firmware-waveshare-c5:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: pip install platformio
+      - run: pio run -e waveshare-esp32c5-touch-28
+      - uses: actions/upload-artifact@v4
+        with:
+          name: squachemit-waveshare-c5-firmware-unverified
+          path: |
+            .pio/build/waveshare-esp32c5-touch-28/firmware.bin
+            .pio/build/waveshare-esp32c5-touch-28/bootloader.bin
+            .pio/build/waveshare-esp32c5-touch-28/partitions.bin
+          if-no-files-found: error
