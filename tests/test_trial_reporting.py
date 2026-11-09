@@ -38,6 +38,16 @@ class TrialReportingTests(unittest.TestCase):
         self.assertEqual((b["tp"], b["fn"]), (0, 1))
         self.assertIn("CYD-3.2", render_md(scored))
 
+    def test_specificity_uses_negative_controls_only(self):
+        rows = [
+            self.row("N", "NONE", run_id="clean"),
+            self.row("P", "AXON", run_id="wrong-positive"),
+        ]
+        result = summarize(score_rows(rows, self.cases))
+        self.assertEqual(result["tn"], 1)
+        self.assertEqual(result["wrong_class"], 1)
+        self.assertEqual(result["specificity_pct"], 100.0)
+
     def test_invalid_input_is_rejected(self):
         with self.assertRaises(ValueError):
             score_rows([self.row("P", "DRONE"), self.row("P", "DRONE")], self.cases)

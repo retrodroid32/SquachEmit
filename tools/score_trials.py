@@ -96,7 +96,10 @@ def summarize(records: list[dict]) -> dict:
         "tp": tp, "tn": tn, "fp": fp, "fn": fn, "wrong_class": counts["WRONG"],
         "precision_pct": ratio(tp, tp + fp),
         "recall_pct": ratio(tp, tp + fn),
-        "specificity_pct": ratio(tn, tn + fp),
+        # Specificity is the true-negative rate on negative-control trials only.
+        # Wrong-class alarms on positive trials affect FP/precision but do not
+        # change the denominator for true negative controls.
+        "specificity_pct": ratio(tn, tn + counts["FP"]),
         "median_latency_ms": round(statistics.median(latencies), 1) if latencies else None,
         "p95_latency_ms": round(latencies[max(0, math.ceil(len(latencies) * 0.95) - 1)], 1) if latencies else None,
     }
@@ -105,6 +108,8 @@ def summarize(records: list[dict]) -> dict:
 def render_md(records: list[dict]) -> str:
     def fmt(n):
         return "n/a" if n is None else str(n)
+    def pct(n):
+        return "n/a" if n is None else str(n) + "%"
     lines = [
         "# SquachEmit physical verification: replicated trials",
         "", "Only documented completed receiver windows with working emission are scored.",
@@ -114,7 +119,7 @@ def render_md(records: list[dict]) -> str:
     ]
     for board in sorted(RECEIVERS):
         m = summarize([x for x in records if x["receiver"] == board])
-        lines.append(f'| {board} | {m["counted"]} | {m["untested"]} | {m["excluded"]} | {m["tp"]} | {m["tn"]} | {m["fp"]} | {m["fn"]} | {m["wrong_class"]} | {fmt(m["precision_pct"])}% | {fmt(m["recall_pct"])}% | {fmt(m["specificity_pct"])}% | {fmt(m["median_latency_ms"])} | {fmt(m["p95_latency_ms"])} |')
+        lines.append(f'| {board} | {m["counted"]} | {m["untested"]} | {m["excluded"]} | {m["tp"]} | {m["tn"]} | {m["fp"]} | {m["fn"]} | {m["wrong_class"]} | {pct(m["precision_pct"])} | {pct(m["recall_pct"])} | {pct(m["specificity_pct"])} | {fmt(m["median_latency_ms"])} | {fmt(m["p95_latency_ms"])} |')
     lines += [
         "", "## By receiver / scenario", "",
         "| Receiver | Case | Expected | TP | TN | FP | FN | Wrong | Untested | Excluded |",
