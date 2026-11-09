@@ -67,3 +67,10 @@ hashes every binary segment using Web Crypto. Missing, truncated, stale or
 mismatched files disable flashing and downloading that build. This is a
 transfer-integrity test, not cryptographic signing or proof the displayed
 board matches the PCB; user board confirmation is still mandatory.
+
+### S3 LAB parity
+
+The publisher independently looks for complete S3 and C5 firmware artifacts
+on successful lab branches. An S3 lab firmware is not treated as a C5 binary.
+The S3 job must provide bootloader, partitions, OTA selection and application;
+incomplete older artifacts are ignored rather than offered as flashable.

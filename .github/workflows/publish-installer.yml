@@ -58,47 +58,55 @@ jobs:
           seen=set()
           counts={'c5-waveshare-28':0,'s3-devkit':0}
           for run in runs:
-              if run['conclusion']!='success' or run.get('event')!='push':
+              if run['conclusion'] != 'success' or run.get('event') != 'push':
                   continue
-              if (run.get('head_repository') or {}).get('full_name')!=repo:
+              if (run.get('head_repository') or {}).get('full_name') != repo:
                   continue
-              branch=run.get('head_branch') or ''
-              if branch=='main':
-                  board='s3-devkit'
-                  artifact='squachemit-esp32s3-firmware-unverified'
-                  limit=1
+              branch = run.get('head_branch') or ''
+              # Each successful lab branch can contain BOTH board artifacts. Do not
+              # silently equate all lab builds with ESP32-C5.
+              if branch == 'main':
+                  targets = [('s3-devkit', 'squachemit-esp32s3-firmware-unverified', 4)]
               elif branch.startswith('lab/'):
-                  board='c5-waveshare-28'
-                  artifact='squachemit-waveshare-c5-28-firmware-unverified'
-                  limit=3
+                  targets = [
+                      ('c5-waveshare-28', 'squachemit-waveshare-c5-28-firmware-unverified', 3),
+                      ('s3-devkit', 'squachemit-esp32s3-firmware-unverified', 4),
+                  ]
               else:
                   continue
-              sha=run['head_sha']
-              key=(board,sha)
-              if key in seen or counts[board]>=limit:
-                  continue
               try:
-                  artifacts=api(f'repos/{repo}/actions/runs/{run["id"]}/artifacts?per_page=100')['artifacts']
-                  if not any(a['name']==artifact and not a['expired'] for a in artifacts):
-                      continue
-                  directory=root/f'{board}-{sha[:8]}'
-                  directory.mkdir(exist_ok=True)
-                  subprocess.run(['gh','run','download',str(run['id']),'-R',repo,'-n',artifact,'-D',str(directory)],check=True)
-                  required = (['bootloader.bin','partitions.bin','firmware.bin','ota_init.bin']
-                              if board=='s3-devkit' else
-                              ['SquachEmit.ino.bootloader.bin','SquachEmit.ino.partitions.bin',
-                               'SquachEmit.ino.bin','SquachEmit.ino.merged.bin'])
-                  missing=[name for name in required if not (directory/name).is_file()]
-                  if missing:
-                      print(f'::warning::Skipping legacy run {run["id"]}: missing {missing}')
-                      continue
-              except subprocess.CalledProcessError as e:
-                  print(f'::warning::Could not download run {run["id"]}: {e}',file=sys.stderr)
+                  artifacts = api(f'repos/{repo}/actions/runs/{run["id"]}/artifacts?per_page=100')['artifacts']
+              except subprocess.CalledProcessError as error:
+                  print(f'::warning::Cannot read run {run["id"]} artifacts: {error}', file=sys.stderr)
                   continue
-              seen.add(key)
-              counts[board]+=1
-              sources.append(dict(board=board,sha=sha,branch=branch,channel='lab',
-                                  run_id=run['id'],created_at=run['created_at'],path=str(directory)))
+              sha = run['head_sha']
+              for board, artifact, limit in targets:
+                  key = (board, sha)
+                  if key in seen or counts[board] >= limit:
+                      continue
+                  if not any(a['name'] == artifact and not a['expired'] for a in artifacts):
+                      continue
+                  directory = root / f'{board}-{sha[:8]}'
+                  directory.mkdir(exist_ok=True)
+                  try:
+                      subprocess.run(['gh','run','download',str(run['id']),
+                                      '-R',repo,'-n',artifact,'-D',str(directory)],check=True)
+                      required = (['bootloader.bin','partitions.bin','firmware.bin','ota_init.bin']
+                                  if board == 's3-devkit' else
+                                  ['SquachEmit.ino.bootloader.bin','SquachEmit.ino.partitions.bin',
+                                   'SquachEmit.ino.bin','SquachEmit.ino.merged.bin'])
+                      missing = [name for name in required if not (directory / name).is_file()]
+                      if missing:
+                          print(f'::warning::Skipping incomplete {board} run {run["id"]}: missing {missing}')
+                          continue
+                  except subprocess.CalledProcessError as error:
+                      print(f'::warning::Cannot download {board} run {run["id"]}: {error}', file=sys.stderr)
+                      continue
+                  seen.add(key)
+                  counts[board] += 1
+                  sources.append(dict(board=board,sha=sha,branch=branch,channel='lab',
+                                      run_id=run['id'],created_at=run['created_at'],
+                                      path=str(directory)))
           (root/'sources.json').write_text(json.dumps({'sources':sources},indent=2),encoding='utf-8')
           print('Downloaded firmware:',[(x['board'],x['sha'][:8],x['run_id']) for x in sources])
           if not sources:
