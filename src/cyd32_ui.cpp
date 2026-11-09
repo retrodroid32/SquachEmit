@@ -20,6 +20,9 @@ Preferences prefs;
 bool ready=false, calibrated=false, dirty=true, wasPressed=false;
 size_t selected=0,page=0;
 uint32_t lastDraw=0,lastPoll=0,lastPress=0;
+uint32_t lastTimerSeconds=UINT32_MAX;
+char lastActiveId[54]={0};
+bool lastSuite=false;
 
 void textAt(int x, int y, const char* str, uint16_t color, int fontSize=1) {
   tft.setTextFont(1);
@@ -176,14 +179,37 @@ void cyd32UiResetCalibration(){
 Cyd32UiAction cyd32UiTick(const char* active,uint32_t remaining,bool suite){
   if(!ready)return Cyd32UiAction::None;
   const uint32_t now=millis();
-  if(dirty || (calibrated && active && now-lastDraw>=1000)){
+  const char* id = active ? active : "";
+  if(strcmp(lastActiveId,id)!=0 || lastSuite!=suite){
+    strncpy(lastActiveId,id,sizeof(lastActiveId)-1);
+    lastActiveId[sizeof(lastActiveId)-1]='\0';
+    lastSuite=suite;
+    dirty=true;
+  }
+  if(dirty){
     if(calibrated)render(active,remaining,suite);
     else renderCalibration();
-    lastDraw=now;dirty=false;
+    lastDraw=now;
+    lastTimerSeconds=active?(remaining+999)/1000:UINT32_MAX;
+    dirty=false;
+  } else if(calibrated && active){
+    // Only repaint countdown: a full-screen redraw every second caused
+    // distracting flashing on the related SquachWatch 3.2 screen.
+    const uint32_t seconds=(remaining+999)/1000;
+    if(seconds!=lastTimerSeconds){
+      tft.fillRect(7,70,200,11,BG);
+      char timer[24];
+      snprintf(timer,sizeof(timer),"%lu SEC LEFT",(unsigned long)seconds);
+      textAt(7,71,timer,DIM);
+      lastTimerSeconds=seconds;
+    }
   }
   if(now-lastPoll<55)return Cyd32UiAction::None;
   lastPoll=now;
   if(!calibrated){
+    // calibrateTouch() is a blocking wizard; never enter it while the
+    // radio or the case suite is active, or a timed emission could overrun.
+    if(active || suite)return Cyd32UiAction::None;
     uint16_t rx=0,ry=0;
     if(tft.getTouchRaw(&rx,&ry) && !wasPressed &&
        now-lastPress>400){
