@@ -196,3 +196,15 @@ protocol checks and per-CYD repeated-trial scoring are described in
 
 No attacks, 5GHz or unattended RF are enabled; firmware CI builds are
 still unverified until tested on SquachWatch 2.8 and 3.2 hardware.
+
+## Synthetic drone-model Remote ID LAB v0.4.0
+
+Additional on-air BLE4 test profiles cover DJI Mini/Air/Mavic/Phantom/Matrice,
+Autel EVO II/Max/Lite and Parrot ANAFI/ANAFI USA. Two new ordinary
+Wi-Fi beacon vendor-IE test modes cover generic and Parrot-style Remote ID;
+negative controls test incorrect app codes, truncated messages, missing
+operator data, old location time-of-hour and invalid Basic ID type.
+
+No real drone hardware or private RF protocol is cloned. See
+[the drone LAB validation guide](docs/DRONE-LAB.md) for exact capability
+boundaries, especially BLE5 and NAN, which remain offline-only fixtures.
