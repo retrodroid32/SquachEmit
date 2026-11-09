@@ -57,3 +57,29 @@ GitHub Actions**. This is a one-time repository-owner setting; it cannot be
 performed by the GitHub file-edit actions in this assistant environment.
 
 Use HTTPS; Web Serial cannot run from arbitrary local files (`file://`).
+
+## Descriptive firmware selection labels
+
+Firmware dropdown options show the change category, LAB version and short
+commit SHA instead of only a date and hash. The selected-build panel explains
+the exact additions, limitations, board, complete SHA, build timestamp and
+application SHA256. Existing chip selection and mandatory hardware confirmation
+are unchanged.
+
+Notes are intentionally pinned to **full 40-character source commit SHAs** in
+`tools/firmware_build_notes.json`. When a new build is published, add a
+reviewed entry for that exact SHA before giving it feature-specific claims.
+An unknown SHA receives an explicit **review exact changes** warning, even
+if it comes from an older LAB branch; it never silently inherits the features
+of a nearby or newer commit. These notes describe source changes, NOT
+physical hardware verification.
+
+Historical C5 builds are distinguished:
+- fb57b628: v0.4.0 synthetic DJI/Autel/Parrot Remote ID profiles, 49 cases.
+- 6c08d0de: v0.3.0 same 31 RF cases as e5cf01bf, plus S3 artifact packaging.
+- e5cf01bf: initial v0.3.0 31-case Wi-Fi channel/negative test matrix.
+- 2d6e9f3f: original C5 touch-display baseline, 22 cases.
+- ee7295ac: original S3 baseline, 22 cases.
+
+No firmware files, flashing manifests or LAB branch merges are changed by
+this installer-label-only improvement.
