@@ -32,16 +32,21 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
-        with:
-          python-version: '3.12'
-      - run: pip install platformio
-      - run: pio run -e waveshare-esp32c5-touch-28
+      - uses: arduino/setup-arduino-cli@v2
+      - name: Install verified ESP32-C5 Arduino core and libraries
+        run: |
+          arduino-cli core update-index --additional-urls https://espressif.github.io/arduino-esp32/package_esp32_index.json
+          arduino-cli core install esp32:esp32@3.3.12 --additional-urls https://espressif.github.io/arduino-esp32/package_esp32_index.json
+          arduino-cli lib install "NimBLE-Arduino@2.3.8"
+          arduino-cli lib install "Adafruit GFX Library@1.12.1"
+      - name: Build Waveshare ESP32-C5 touch firmware
+        run: |
+          arduino-cli compile --fqbn "esp32:esp32:esp32c5:FlashSize=16M,PSRAM=enabled" \
+            --build-property "build.extra_flags=-DSQE_WAVESHARE_C5=1 -DARDUINO_USB_CDC_ON_BOOT=1 -I${GITHUB_WORKSPACE}/include" \
+            --libraries "${GITHUB_WORKSPACE}/lib" \
+            --output-dir "${GITHUB_WORKSPACE}/dist/c5" .
       - uses: actions/upload-artifact@v4
         with:
-          name: squachemit-waveshare-c5-firmware-unverified
-          path: |
-            .pio/build/waveshare-esp32c5-touch-28/firmware.bin
-            .pio/build/waveshare-esp32c5-touch-28/bootloader.bin
-            .pio/build/waveshare-esp32c5-touch-28/partitions.bin
+          name: squachemit-waveshare-c5-28-firmware-unverified
+          path: dist/c5/*
           if-no-files-found: error
