@@ -29,8 +29,9 @@
         <div class="panel-header"><div><div class="micro-label">01 / FIRMWARE</div><h2 id="installTitle">INSTALLER</h2></div><div class="indicator">USB · WEB SERIAL</div></div>
         <label for="board" class="field-label">TARGET DEVICE</label>
         <select id="board" disabled><option>Loading board profiles…</option></select>
-        <label for="build" class="field-label">FIRMWARE BUILD</label>
+        <label for="build" class="field-label">FIRMWARE BUILD · FEATURES / VERSION / COMMIT</label>
         <select id="build" disabled><option>Choose a board first</option></select>
+        <div class="build-hint">Build names summarize the changes. Select one for the complete feature list, date and SHA.</div>
         <div id="buildDetails" class="detail-box">No build selected.</div>
         <label class="confirm-line" for="confirm"><input type="checkbox" id="confirm" disabled /><span>I verified the <b>exact board model</b> and accept that flashing replaces its firmware. LAB builds are unverified.</span></label>
         <div id="installArea" class="install-area" hidden>

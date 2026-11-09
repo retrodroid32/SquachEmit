@@ -18,7 +18,15 @@
     const b = ui.board.value;
     const arr = visible.filter(x=>x.board === b).sort((a,c)=>c.created_at.localeCompare(a.created_at));
     ui.build.replaceChildren(opt('', arr.length ? 'Select a firmware build…' : 'No builds available for this board'));
-    arr.forEach(entry => ui.build.appendChild(opt(entry.id, `${entry.channel.toUpperCase()} · ${entry.short_sha} · ${entry.created_at.substring(0,10)}`)));
+    arr.forEach(entry => {
+      const title = entry.title || 'Uncatalogued firmware — review changes';
+      const version = entry.version_label ? ` · ${entry.version_label}` : '';
+      // Short SHA is retained for exact firmware identification. Date remains
+      // available below with the complete commit and source branch.
+      const option = opt(entry.id, `${entry.channel.toUpperCase()} · ${title}${version} · ${entry.short_sha}`);
+      option.title = entry.summary || title;
+      ui.build.appendChild(option);
+    });
     ui.build.disabled = !arr.length;
     ui.confirm.checked = false;
     selectBuild();
@@ -30,15 +38,26 @@
     if (!selected) {
       txt(ui.buildDetails, 'Choose a firmware build above. No device is modified until you explicitly connect and approve flashing.');
     } else {
+      const title = selected.title || 'Uncatalogued firmware — review changes';
+      const features = Array.isArray(selected.highlights)
+        ? selected.highlights.filter(s => typeof s === 'string').slice(0, 7) : [];
       const fragments = [
+        `FIRMWARE: ${title}`,
+        `VERSION: ${selected.version_label || 'Unknown LAB version'}`,
+        `WHAT CHANGED: ${selected.summary || 'No reviewed feature summary exists for this commit. Check the CI run before flashing.'}`
+      ];
+      if (features.length) fragments.push('FEATURES:\n' + features.map(x => '  • ' + x).join('\n'));
+      if (selected.notes_verified_for_sha === false)
+        fragments.push('NOTE: This SHA has no curated changelog. Review the source commit.');
+      fragments.push(
         `CHANNEL: ${selected.channel.toUpperCase()} / HARDWARE-UNVERIFIED`,
         `DEVICE: ${boardLabel(selected.board)}`,
         `COMMIT: ${selected.sha}`,
         `SOURCE: ${selected.branch}`,
-        `BUILD: ${selected.created_at.replace('T',' ').slice(0,19)} UTC`,
+        `BUILT: ${selected.created_at.replace('T',' ').slice(0,19)} UTC`,
         `SHA256: ${selected.sha256}`,
         'Installation uses bootloader, partitions, OTA selection and application. Existing user data may change.'
-      ];
+      );
       txt(ui.buildDetails, fragments.join('\n'));
       ui.buildDetails.style.whiteSpace = 'pre-line';
     }

@@ -23,6 +23,48 @@ BOARDS = {
 ALLOWED_BRANCH = re.compile(r'^(main|lab/[A-Za-z0-9._/-]{1,110})$')
 SHA = re.compile(r'^[a-f0-9]{40}$')
 
+NOTES_PATH = Path(__file__).resolve().with_name('firmware_build_notes.json')
+
+
+def load_build_notes(path: Path = NOTES_PATH) -> dict:
+    """Curated, SHA-pinned labels; never guess feature parity from build age."""
+    data = json.loads(path.read_text(encoding='utf-8'))
+    if data.get('schema') != 1 or not isinstance(data.get('builds'), dict):
+        raise ValueError('invalid firmware_build_notes.json schema')
+    notes = data['builds']
+    for commit, entry in notes.items():
+        if not SHA.fullmatch(commit) or not isinstance(entry, dict):
+            raise ValueError('invalid commit in build note catalog')
+        for field, limit in (('title', 110), ('version', 40), ('summary', 600)):
+            value = entry.get(field)
+            if not isinstance(value, str) or not value.strip() or len(value) > limit:
+                raise ValueError(f'invalid build note {commit[:8]} {field}')
+        features = entry.get('highlights', [])
+        if (not isinstance(features, list) or len(features) > 7
+            or not all(isinstance(f, str) and 0 < len(f) <= 260 for f in features)):
+            raise ValueError(f'invalid highlights in build note {commit[:8]}')
+    return notes
+
+
+def describe_build(sha: str, branch: str, board: str, notes: dict) -> dict:
+    """Known SHAs get exact features. Unknown SHAs never inherit old notes."""
+    if sha in notes:
+        note = notes[sha]
+        return {'title': note['title'], 'version_label': note['version'],
+                'summary': note['summary'], 'highlights': list(note['highlights']),
+                'notes_verified_for_sha': True}
+    label = {
+        'lab/drone-rid-profiles-': 'Drone Remote ID LAB (review exact changes)',
+        'lab/rf-fixtures-reporting-': 'RF Detection LAB (review exact changes)',
+        'lab/esp32c5-waveshare-touch-': 'C5 Touchscreen LAB (review exact changes)',
+    }
+    title = next((name for prefix, name in label.items() if branch.startswith(prefix)),
+                 'Uncatalogued LAB firmware (review changes)')
+    return {'title': title, 'version_label': 'Unspecified LAB',
+            'summary': 'No SHA-specific feature notes have been reviewed for this build. '
+                       'Use its source branch and CI run to verify changes before flashing.',
+            'highlights': [], 'notes_verified_for_sha': False}
+
 
 def sha256(data: bytes) -> str:
     return hashlib.sha256(data).hexdigest()
@@ -53,7 +95,7 @@ def verify_partitions(data: bytes, expected_app: int = 0x10000) -> None:
         raise ValueError('expected otadata partition at 0xE000 absent')
 
 
-def load_source(src: dict, output: Path) -> dict:
+def load_source(src: dict, output: Path, notes: dict | None = None) -> dict:
     board = src['board']
     if board not in BOARDS:
         raise ValueError(f'unsupported board: {board}')
@@ -110,11 +152,12 @@ def load_source(src: dict, output: Path) -> dict:
                     'parts':[{'path':name,'offset':off} for name,off,_ in parts]}],
     }
     (dest / 'manifest.json').write_text(json.dumps(manifest,indent=2)+'\n', encoding='utf-8')
+    description = describe_build(sha, src['branch'], board, notes if notes is not None else load_build_notes())
     return {'id':f'lab-{label}-{short}', 'board':board,'channel':'lab','sha':sha,
             'short_sha':short,'branch':src['branch'],'created_at':created_at,
             'run_id':src['run_id'],'manifest':str(folder/'manifest.json'),
             'application':str(folder/'application.bin'),'sha256':sha256(app),
-            'bytes':len(app), 'chipFamily':BOARDS[board]['chip']}
+            'bytes':len(app), 'chipFamily':BOARDS[board]['chip'], **description}
 
 
 def build(source_manifest: Path, output: Path) -> dict:
@@ -126,8 +169,9 @@ def build(source_manifest: Path, output: Path) -> dict:
         shutil.copyfile(SOURCE/filename, output/filename)
     (output/'.nojekyll').write_bytes(b'')
     builds=[]
+    notes = load_build_notes()
     for src in data['sources']:
-        builds.append(load_source(src,output))
+        builds.append(load_source(src,output,notes))
     builds.sort(key=lambda x:x['created_at'],reverse=True)
     catalog={'schema':1,'project':'SquachEmit','generated_from':'successful GitHub CI artifacts',
              'builds':builds,'production_policy':'No production release before approved physical validation'}
