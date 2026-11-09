@@ -21,18 +21,26 @@ Sources:
 - https://github.com/waveshareteam/ESP32-C5-Touch-LCD-2.8
 - https://github.com/platformio/platform-espressif32/releases/tag/v8.0.0
 
-## Build and upload
-PlatformIO 8.x ships Arduino-ESP32 3.3.12 (compatible with the vendor's
-documented version). A **custom board manifest** is checked into `boards/`.
+## Build and upload — Arduino CLI 3.3.12
+
+PlatformIO 8.0.0 does **not** ship `framework-arduinoespressif32-esp32c5-libs`;
+the custom board manifest is retained for future PlatformIO support but
+**do not use PlatformIO for this C5 target yet**. The build uses the
+manufacturer-validated Arduino-ESP32 3.3.12 core and Arduino CLI.
+
+From a clean clone in a terminal with Arduino CLI installed:
 
 ```powershell
-pio run -e waveshare-esp32c5-touch-28
-pio run -e waveshare-esp32c5-touch-28 -t upload
-pio device monitor -b 115200
+arduino-cli core update-index --additional-urls https://espressif.github.io/arduino-esp32/package_esp32_index.json
+arduino-cli core install esp32:esp32@3.3.12 --additional-urls https://espressif.github.io/arduino-esp32/package_esp32_index.json
+arduino-cli lib install "NimBLE-Arduino@2.3.8"
+arduino-cli lib install "Adafruit GFX Library@1.12.1"
+arduino-cli compile --fqbn "esp32:esp32:esp32c5:FlashSize=16M,PSRAM=enabled" --build-property "build.extra_flags=-DSQE_WAVESHARE_C5=1 -DARDUINO_USB_CDC_ON_BOOT=1 -I$(Get-Location)/include" --libraries "$(Get-Location)/lib" .
 ```
 
-For a new board, upload with the project (bootloader + partitions + app)
-rather than flashing a lone application binary at an arbitrary offset.
+For first installation, use Arduino CLI's board-specific upload operation
+or a full bootloader + partition + app flash layout produced by the build.
+Do **not** flash the standalone firmware.bin to offset 0x0000.
 
 ## Operation
 - No BLE/Wi-Fi transmissions are started on boot.
