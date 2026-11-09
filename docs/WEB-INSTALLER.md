@@ -83,3 +83,16 @@ Historical C5 builds are distinguished:
 
 No firmware files, flashing manifests or LAB branch merges are changed by
 this installer-label-only improvement.
+
+## CYD 3.2-inch ST7798 board option (unmerged)
+
+The LAB installer adds a distinct target for the owner's ESP32-2432S032R
+3.2-inch ST7798-compatible resistive-touch CYD, separate from Waveshare
+ESP32-C5 2.8-inch and ESP32-S3. Chip family MUST be classic ESP32;
+its bootloader is at 0x1000 (S3 is 0x0; C5 is 0x2000).
+The app starts at 0x10000 and OTA selection uses 0xe000.
+
+The firmware has a 49-case touchscreen menu and first-boot touch calibration.
+Flashing SquachEmit onto a 3.2-inch CYD overwrites SquachWatch there;
+another physical SquachWatch is needed to assess actual detections.
+No production releases and no device auto-flash. Requires physical check.

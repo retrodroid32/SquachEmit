@@ -13,7 +13,12 @@
   function notice(s, kind = '') { ui.notice.textContent = s; ui.notice.className = 'notice ' + kind; }
   function txt(node, value) { node.textContent = value; }
   function opt(value,label) { const o = document.createElement('option');o.value = value; o.textContent = label;return o; }
-  function boardLabel(b){ return b === 'c5-waveshare-28' ? 'Waveshare ESP32-C5 · 2.8" touchscreen' : b === 's3-devkit' ? 'ESP32-S3 · DevKitC-1' : b; }
+  function boardLabel(b){
+    if (b === 'c5-waveshare-28') return 'Waveshare ESP32-C5 · 2.8" touchscreen';
+    if (b === 'cyd32-st7798') return 'CYD 3.2" · ST7798 / ESP32-2432S032R · Resistive';
+    if (b === 's3-devkit') return 'ESP32-S3 · DevKitC-1';
+    return b;
+  }
   function buildOptions() {
     const b = ui.board.value;
     const arr = visible.filter(x=>x.board === b).sort((a,c)=>c.created_at.localeCompare(a.created_at));
@@ -49,6 +54,8 @@
       if (features.length) fragments.push('FEATURES:\n' + features.map(x => '  • ' + x).join('\n'));
       if (selected.notes_verified_for_sha === false)
         fragments.push('NOTE: This SHA has no curated changelog. Review the source commit.');
+      if (selected.board === 'cyd32-st7798')
+        fragments.push('WARNING: THIS REPLACES SQUACHWATCH ON YOUR 3.2 CYD. You need another physical board to observe detections. Backup settings; verify ST7798/XPT2046 and ESP32-WROOM-32 (NOT ESP32-C5).');
       fragments.push(
         `CHANNEL: ${selected.channel.toUpperCase()} / HARDWARE-UNVERIFIED`,
         `DEVICE: ${boardLabel(selected.board)}`,

@@ -19,6 +19,7 @@ SOURCE = Path(__file__).resolve().parent.parent / 'web-installer'
 BOARDS = {
     'c5-waveshare-28': {'chip': 'ESP32-C5', 'label': 'Waveshare ESP32-C5 Touch LCD 2.8'},
     's3-devkit': {'chip': 'ESP32-S3', 'label': 'ESP32-S3 DevKitC-1'},
+    'cyd32-st7798': {'chip': 'ESP32', 'label': 'CYD 3.2 ST7798 ESP32-2432S032R'},
 }
 ALLOWED_BRANCH = re.compile(r'^(main|lab/[A-Za-z0-9._/-]{1,110})$')
 SHA = re.compile(r'^[a-f0-9]{40}$')
@@ -111,7 +112,9 @@ def load_source(src: dict, output: Path, notes: dict | None = None) -> dict:
     if not input_dir.is_dir():
         raise ValueError(f'artifact directory missing: {input_dir}')
     short = sha[:8]
-    label = 'c5' if board == 'c5-waveshare-28' else 's3'
+    label = {'c5-waveshare-28':'c5',
+             's3-devkit':'s3',
+             'cyd32-st7798':'cyd32'}[board]
     folder = Path('lab') / (label + '-' + short)
     dest = output / folder
     dest.mkdir(parents=True, exist_ok=True)
@@ -133,7 +136,9 @@ def load_source(src: dict, output: Path, notes: dict | None = None) -> dict:
         partitions = require_binary(input_dir / 'partitions.bin', magic=b'\xaa\x50')
         app = require_binary(input_dir / 'firmware.bin', 4096, b'\xe9')
         ota = require_binary(input_dir / 'ota_init.bin', 8192)
-        boot_offset = 0x0
+        # Classic ESP32 WROOM bootloader begins at 0x1000, unlike S3
+        # bootloader at 0x0 and C5 bootloader at 0x2000.
+        boot_offset = 0x1000 if board == 'cyd32-st7798' else 0x0
     verify_partitions(partitions)
     if len(ota) != 8192 or ota == b'\xff' * len(ota):
         raise ValueError('initial OTA selection block missing or invalid')

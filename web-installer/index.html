@@ -64,8 +64,8 @@
     <section class="panel instructions" aria-labelledby="stepsTitle">
       <div class="micro-label">03 / VALIDATION PROTOCOL</div><h2 id="stepsTitle">HARDWARE CHECKLIST</h2>
       <div class="steps">
-        <div><b>01. VERIFY</b><p>Confirm the C5 PCB is the Waveshare capacitive-touch model (ST7789/CST3530), not an XPT2046 variant.</p></div>
-        <div><b>02. FLASH</b><p>Choose the correct LAB firmware and connect using Chrome/Edge. Initial installation may replace settings.</p></div>
+        <div><b>01. VERIFY</b><p>Choose the exact PCB: Waveshare C5 2.8" (ST7789/CST3530) or CYD 3.2" ESP32-2432S032R (ST7798-compatible/XPT2046). Their firmware is NOT interchangeable.</p></div>
+        <div><b>02. FLASH</b><p>Flashing SquachEmit replaces any SquachWatch firmware on that physical CYD. Back up first; use a second board as receiver.</p></div>
         <div><b>03. GENERATE</b><p>Run BLE-META-UUID, WIFI-AXON, BLE-NEG-UUID, then SUITE in a controlled RF environment.</p></div>
         <div><b>04. SCORE</b><p>Record each actual alert separately on the 2.8-inch and 3.2-inch SquachWatch CYDs; review missed and false detections.</p></div>
       </div>
