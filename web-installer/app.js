@@ -26,9 +26,9 @@
     arr.forEach(entry => {
       const title = entry.title || 'Uncatalogued firmware — review changes';
       const version = entry.version_label ? ` · ${entry.version_label}` : '';
-      // Short SHA is retained for exact firmware identification. Date remains
-      // available below with the complete commit and source branch.
-      const option = opt(entry.id, `${entry.channel.toUpperCase()} · ${title}${version} · ${entry.short_sha}`);
+      // User-facing menu shows a human title only. Keep SHA and branch in
+      // technical details below, where they are useful for diagnostics.
+      const option = opt(entry.id, title);
       option.title = entry.summary || title;
       ui.build.appendChild(option);
     });
