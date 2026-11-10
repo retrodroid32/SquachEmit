@@ -103,6 +103,19 @@
         "Retains core SquachWatch-derived Squachy animated UI and prior ST7798 inversion control; source-derived GPLv3 component is subject to GPLv3 distribution obligations.",
         "Manufacturer OUI, Pwnagotchi, deauth/evil twin and NAN receiver cases are offline fixtures, not forged on-air management traffic."
       ]
+    },
+    "04e380aa373cf2c4e02950f9076eb0355f7a7f98": {
+      "title": "SquachEmit 3.2 — Device-Type Test Library (95 Cases) + Squachy",
+      "version": "v0.4.2 LAB / CYD3.2 — Device Library",
+      "summary": "Reorganizes the 95-case SquachEmit CYD 3.2 test library into 10 exclusive device-type categories. Categories and case IDs are alphabetical. Drone cases remain in Drones regardless of BLE or Wi-Fi transport. Retains the Squachy animated UI, corrected ST7798 colors and the same synthetic RF tests. Hardware unverified.",
+      "highlights": [
+        "Ten alphabetical device-type groups: Axon, Drones / Remote ID, Flock, General / Controls, Hacker Devices, iBeacon, Raven, Serial Modules, Smart Glasses and Trackers.",
+        "Exactly one category for each of the 95 scenarios. Device-group variants and their near-match negative controls remain together.",
+        "PREV/NEXT category paging; alphabetically sorted test IDs within each category.",
+        "BLE/Wi-Fi carrier remains in technical details, not a separate duplicated category.",
+        "Retains Squachy animated character, bounded emissions, per-case synthetic MAC identity and browser-based flashing.",
+        "No physical hardware verification yet. No receiver firmware changes."
+      ]
     }
   }
 }
