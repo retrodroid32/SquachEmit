@@ -18,7 +18,7 @@ class Cyd32UiGuards(unittest.TestCase):
             self.assertIn(name,self.s)
     def test_squachwatch_panel_geometry_and_polarity(self):
         for name in ('lcd.setRotation(1)','lcd.invertDisplay(panelInverted)',
-                     '"invert",false','"touchland"','TFT_RGB_ORDER TFT_BGR'):
+                     '"invert2",true','"touchland"','TFT_RGB_ORDER TFT_BGR'):
             if "TFT_RGB_ORDER" in name:
                 self.assertIn(name,(ROOT/"include"/"cyd32_st7798_user_setup.h").read_text())
             else:
@@ -27,6 +27,11 @@ class Cyd32UiGuards(unittest.TestCase):
         self.assertIn('INVERT ON',self.main)
         self.assertIn('INVERT OFF',self.main)
         self.assertIn('void rgbBars()',self.s)
+        self.assertIn('void retroBackdrop()', self.s)
+        self.assertIn('lcd.fillRoundRect(x-27,y-2,54,21,5,kInk)', self.s)
+        self.assertIn('void speechBubble(',self.s)
+        self.assertIn('void statusStrip(',self.s)
+        self.assertIn('panelInverted=true;', self.s)
     def test_rf_timeout_and_wizard(self):
         self.assertIn('if((active&&*active)||suite)return Cyd32UiAction::None;',self.s)
         self.assertIn('void countdownOnly(',self.s)
