@@ -116,6 +116,19 @@
         "Retains Squachy animated character, bounded emissions, per-case synthetic MAC identity and browser-based flashing.",
         "No physical hardware verification yet. No receiver firmware changes."
       ]
+    },
+    "0b855549cf49f033708f6d285440844168f06e5c": {
+      "title": "SquachEmit 3.2 — DJI Model BLE + Wi-Fi Remote ID (135 Tests) · LAB",
+      "version": "v0.4.3 LAB / CYD3.2 — DJI 20-Model Matrix",
+      "summary": "135 synthetic time-limited tests, including 20 named DJI aircraft with separate BLE4 and Wi-Fi 2.4GHz beacon Basic ID smoke tests per model. These are NOT captured DJI transmissions, DJI proprietary DroneID, or full ASTM-conforming Wi-Fi broadcast. Squachy animated UI and alphabetical device-type library retained. Hardware unverified.",
+      "highlights": [
+        "40 additional synthetic DJI tests: 20 models with paired BLE4 and Wi-Fi Beacon Basic ID cases.",
+        "Mavic 2 Pro and Zoom; Phantom 4 Pro V2.0 and RTK; multiple Mavic 3, Mini, Air, Avata/FPV and Matrice models.",
+        "Shows explicit model selection and 'SYNTHETIC' protocol label on the CYD 3.2 touchscreen; all cases remain under Drones / Remote ID.",
+        "Uses unique fictional SQE-DJI-* Basic IDs; no genuine serials, DJI OcuSync, DJI DroneID, Wi-Fi NAN or Bluetooth 5 long range.",
+        "Wi-Fi messages include only Basic ID, not a full timed ASTM message pack; intended as receiver smoke tests.",
+        "Automated CI compilation only; actual board and SquachWatch validation required before merge."
+      ]
     }
   }
 }
