@@ -377,6 +377,8 @@ static void help() {
   Serial.println("Single 2.4GHz radio: BLE and Wi-Fi scenarios are exclusive.");
 #if defined(SQE_CYD32)
   Serial.println("CALTOUCH             reset touchscreen fit, then tap to calibrate");
+  Serial.println("COLORS               show idle-only RED/GREEN/BLUE/WHITE/BLACK test");
+  Serial.println("INVERT ON|OFF        save absolute panel inversion state");
 #endif
 }
 
@@ -388,6 +390,12 @@ static void command(String cmd) {
   if (cmd.equalsIgnoreCase("STOP")) { cancelAll(); return; }
 #if defined(SQE_CYD32)
   if (cmd.equalsIgnoreCase("CALTOUCH")) { cyd32UiResetCalibration(); return; }
+  if (cmd.equalsIgnoreCase("INVERT ON")) { cyd32UiSetInversion(true); return; }
+  if (cmd.equalsIgnoreCase("INVERT OFF")) { cyd32UiSetInversion(false); return; }
+  if (cmd.equalsIgnoreCase("COLORS")) {
+    if (g_active || g_suite) {Serial.println("ERROR,COLORS_REQUIRES_IDLE");return;}
+    cyd32UiColorBars();return;
+  }
 #endif
   if (cmd.equalsIgnoreCase("IDENTITY")) {
     Serial.printf("IDENTITY,%s,%s,%lu\n",g_active?g_active->id:"IDLE",

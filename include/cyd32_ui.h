@@ -9,3 +9,6 @@ void cyd32UiBegin();
 Cyd32UiAction cyd32UiTick(const char* activeId, uint32_t remainingMs, bool suiteRunning);
 const Scenario* cyd32UiSelection();
 void cyd32UiResetCalibration();
+void cyd32UiSetInversion(bool enabled);
+bool cyd32UiInversion();
+void cyd32UiColorBars();

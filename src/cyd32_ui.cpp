@@ -32,6 +32,8 @@ Screen screen=Screen::Home;
 Filter filter=Filter::All;
 size_t selected=0, page=0;
 bool ready=false, calibrated=false, redraw=true, wasPressed=false, previousSuite=false;
+bool panelInverted=false;
+uint32_t colorBarsUntil=0;
 uint32_t lastPoll=0, lastPress=0, lastCount=UINT32_MAX;
 uint8_t idleLine=0;
 char previousActive[56]={0};
@@ -356,6 +358,14 @@ void cyd32UiBegin(){
   digitalWrite(TFT_BL,LOW);
   lcd.init();
   lcd.setRotation(1); // 320x240 ST7798-compatible landscape
+  // Match SquachWatch ST7798: explicit panel state AFTER setRotation.
+  panelInverted=false;
+  if(prefs.begin("sqemit32",true)){
+    panelInverted=prefs.getBool("invert",false);
+    prefs.end();
+  }
+  lcd.invertDisplay(panelInverted);
+  Serial.printf("CYD32,PANEL,BGR,INVERT_%s\n",panelInverted?"ON":"OFF");
   lcd.fillScreen(kBg);
   digitalWrite(TFT_BL,HIGH);
   calibrated=loadCalibration();
@@ -365,6 +375,33 @@ void cyd32UiBegin(){
 }
 const Scenario* cyd32UiSelection(){
   return selected<kScenarioCount?&kScenarios[selected]:nullptr;
+}
+void cyd32UiSetInversion(bool enabled){
+  panelInverted=enabled;
+  lcd.invertDisplay(enabled);
+  if(prefs.begin("sqemit32",false)){
+    prefs.putBool("invert",enabled);
+    prefs.end();
+  }
+  redraw=true;
+  Serial.printf("CYD32,PANEL,BGR,INVERT_%s\n",enabled?"ON":"OFF");
+}
+bool cyd32UiInversion(){return panelInverted;}
+
+void cyd32UiColorBars(){
+  colorBarsUntil=millis()+7000;
+  lcd.fillScreen(kBg);
+  titleBar();
+  label(16,26,"ST7798 RGB565 TEST",kCyan,2);
+  const uint16_t cols[]={TFT_RED,TFT_GREEN,TFT_BLUE,TFT_WHITE,TFT_BLACK};
+  const char* names[]={"RED","GREEN","BLUE","WHITE","BLACK"};
+  for(uint8_t i=0;i<5;++i){
+    const int x=7+i*62;
+    lcd.fillRect(x,62,56,85,cols[i]);
+    lcd.drawRect(x,62,56,85,kPurple);
+    label(x,157,names[i],kWhite);
+  }
+  label(13,196,"TAP TO EXIT / 7S AUTO",kVaporPink);
 }
 void cyd32UiResetCalibration(){
   if(prefs.begin("sqemit32",false)){
@@ -377,6 +414,14 @@ void cyd32UiResetCalibration(){
 Cyd32UiAction cyd32UiTick(const char* active,uint32_t remaining,bool suite){
   if(!ready)return Cyd32UiAction::None;
   const uint32_t now=millis();
+  if(colorBarsUntil){
+    if((int32_t)(now-colorBarsUntil)>=0){colorBarsUntil=0;redraw=true;}
+    else {
+      uint16_t tx=0,ty=0;
+      if(lcd.getTouch(&tx,&ty,450)){colorBarsUntil=0;redraw=true;}
+      else return Cyd32UiAction::None;
+    }
+  }
   const char* name=active?active:"";
   if(strcmp(name,previousActive)!=0 || suite!=previousSuite){
     strncpy(previousActive,name,sizeof(previousActive)-1);
