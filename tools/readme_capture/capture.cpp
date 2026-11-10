@@ -1,6 +1,7 @@
 #include "Arduino.h"
 #include "TFT_eSPI.h"
 #include "cyd32_ui.h"
+#include "scenarios.h"
 #include <string>
 #include <fstream>
 #include <filesystem>
@@ -46,11 +47,16 @@ int main(int argc,char** argv){
  hold("categories",8);
  tap(156,225);
  hold("categories",5);
- tap(25,225);
- hold("categories",5);
+
+ // Select DRONES / REMOTE ID from the first alphabetized category page.
  tap(50,98);
  hold("categories",8);
+ // Select the alphabetically first test inside that category.
  tap(45,60);
+ if(!cyd32UiSelection() || std::string(cyd32UiSelection()->id)!="BLE-DRONE"){
+   fprintf(stderr,"Demo did not select first Drones case\n");
+   return 3;
+ }
  hold("home",8);
  for(int sec=9;sec>=2;sec--){
    for(int i=0;i<3;i++){tick("BLE-DRONE",sec*1000,false,175);frameToPpm("emitting");}
