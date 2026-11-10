@@ -8,7 +8,7 @@ authenticators, DJI OcuSync, Autel proprietary RF, or Parrot flight links.
 
 ## Firmware, on air only after selecting RUN
 
-Ten BLE4 legacy test variants: DJI Mini, Air, Mavic, Phantom, Matrice;
+Ten BLE4 legacy generic-family test variants: DJI Mini, Air, Mavic, Phantom, Matrice;
 Autel EVO II, EVO Max, EVO Lite; Parrot ANAFI, ANAFI USA.
 
 Additional cases:
@@ -54,7 +54,7 @@ be required for live coded-PHY validation.
 
 ## Required receiver acceptance
 
-1. Verify silent boot, 49 cases in LIST, normal C5 touch navigation,
+1. Verify silent boot, 135 cases in LIST, normal C5 touch navigation,
    STOP and automatic timeouts.
 2. Verify DJI, Autel and Parrot profiles all classify DRONE on both CYDs.
 3. Check synthetic Basic ID, synthetic aircraft coordinates and the
@@ -70,3 +70,12 @@ be required for live coded-PHY validation.
    tools/score_trials.py pipeline. Do not infer any PASS from CI alone.
 
 No production release, merge, or tag is authorized by this change.
+
+## New model-specific Wi-Fi/BLE LAB (135 total cases)
+
+20 DJI model labels each have **synthetic BLE4** and **2.4 GHz Wi-Fi
+beacon** cases. Wi-Fi tests now carry five message types together in a
+single 135-byte vendor IE, not a Basic ID alone: Basic ID, Location,
+System, Self-ID and Operator ID. See [DJI model profiles](DJI_MODEL_PROFILES.md).
+The synthetic fixtures are not genuine DJI emissions, do not implement
+Wi-Fi NAN or OcuSync, and do not establish operational FAA compliance.
