@@ -84,8 +84,8 @@
     "id": "BLE-GOOGLE",
     "carrier": "BLE",
     "kind": "BleUuid",
-    "expected": "GOOGLE_TAG",
-    "description": "Google Eddystone/FMDN shared UUID",
+    "expected": "NONE",
+    "description": "Generic Eddystone UUID alone is not a Google FMDN tracker",
     "code": 65194,
     "text": null
   },
@@ -439,5 +439,419 @@
     "description": "Valid Remote ID transport with invalid synthetic Basic ID text",
     "code": 0,
     "text": "SQE-BAD-SERIAL-LAB"
+  },
+  {
+    "id": "BLE-FLOCK-BATTERY",
+    "carrier": "BLE",
+    "kind": "BleName",
+    "expected": "FLOCK",
+    "description": "Flock external battery accessory name",
+    "code": 0,
+    "text": "FS Ext Battery"
+  },
+  {
+    "id": "BLE-FLOCK-SETUP",
+    "carrier": "BLE",
+    "kind": "BleName",
+    "expected": "FLOCK",
+    "description": "Flock setup accessory name",
+    "code": 0,
+    "text": "Flock_Setup"
+  },
+  {
+    "id": "BLE-FLOCK-BARE10",
+    "carrier": "BLE",
+    "kind": "BleName",
+    "expected": "FLOCK",
+    "description": "Flock battery bare ten-digit name",
+    "code": 0,
+    "text": "0123456789"
+  },
+  {
+    "id": "BLE-FLOCK-PIGVISION",
+    "carrier": "BLE",
+    "kind": "BleName",
+    "expected": "FLOCK",
+    "description": "Flock Pigvision accessory name",
+    "code": 0,
+    "text": "Pigvision-SQE"
+  },
+  {
+    "id": "BLE-NEG-PENGUIN-9",
+    "carrier": "BLE",
+    "kind": "BleName",
+    "expected": "NONE",
+    "description": "Nine-digit Penguin name must not match battery serial",
+    "code": 0,
+    "text": "Penguin-012345678"
+  },
+  {
+    "id": "BLE-NEG-BARE9",
+    "carrier": "BLE",
+    "kind": "BleName",
+    "expected": "NONE",
+    "description": "Nine-digit bare number must not match Flock battery serial",
+    "code": 0,
+    "text": "012345678"
+  },
+  {
+    "id": "BLE-META-TECH",
+    "carrier": "BLE",
+    "kind": "BleManufacturer",
+    "expected": "META",
+    "description": "Meta Technologies company ID; shared vendor evidence",
+    "code": 1422,
+    "text": null
+  },
+  {
+    "id": "BLE-META-LUXOTTICA",
+    "carrier": "BLE",
+    "kind": "BleManufacturer",
+    "expected": "META",
+    "description": "Luxottica company ID; not proof of glasses",
+    "code": 3411,
+    "text": null
+  },
+  {
+    "id": "BLE-META-SNAP",
+    "carrier": "BLE",
+    "kind": "BleManufacturer",
+    "expected": "META",
+    "description": "Snap company ID; not proof of Spectacles",
+    "code": 962,
+    "text": null
+  },
+  {
+    "id": "BLE-NEG-SNAP-ADJ",
+    "carrier": "BLE",
+    "kind": "BleManufacturer",
+    "expected": "NONE",
+    "description": "Adjacent manufacturer ID must not mean glasses",
+    "code": 963,
+    "text": null
+  },
+  {
+    "id": "BLE-RAVEN-3200",
+    "carrier": "BLE",
+    "kind": "BleUuid",
+    "expected": "RAVEN",
+    "description": "Raven alternate service UUID 3200",
+    "code": 12800,
+    "text": null
+  },
+  {
+    "id": "BLE-RAVEN-3300",
+    "carrier": "BLE",
+    "kind": "BleUuid",
+    "expected": "RAVEN",
+    "description": "Raven alternate service UUID 3300",
+    "code": 13056,
+    "text": null
+  },
+  {
+    "id": "BLE-RAVEN-3400",
+    "carrier": "BLE",
+    "kind": "BleUuid",
+    "expected": "RAVEN",
+    "description": "Raven alternate service UUID 3400",
+    "code": 13312,
+    "text": null
+  },
+  {
+    "id": "BLE-RAVEN-3500",
+    "carrier": "BLE",
+    "kind": "BleUuid",
+    "expected": "RAVEN",
+    "description": "Raven alternate service UUID 3500",
+    "code": 13568,
+    "text": null
+  },
+  {
+    "id": "BLE-NEG-RAVEN-3600",
+    "carrier": "BLE",
+    "kind": "BleUuid",
+    "expected": "NONE",
+    "description": "Adjacent UUID must not match Raven",
+    "code": 13824,
+    "text": null
+  },
+  {
+    "id": "BLE-TILE-FEEC",
+    "carrier": "BLE",
+    "kind": "BleUuid",
+    "expected": "TILE",
+    "description": "Tile secondary assigned service UUID",
+    "code": 65260,
+    "text": null
+  },
+  {
+    "id": "BLE-HACKER-3082",
+    "carrier": "BLE",
+    "kind": "BleUuid",
+    "expected": "HACKER",
+    "description": "Flipper alternate UUID 3082",
+    "code": 12418,
+    "text": null
+  },
+  {
+    "id": "BLE-HACKER-3083",
+    "carrier": "BLE",
+    "kind": "BleUuid",
+    "expected": "HACKER",
+    "description": "Flipper alternate UUID 3083",
+    "code": 12419,
+    "text": null
+  },
+  {
+    "id": "BLE-HACKER-NAME",
+    "carrier": "BLE",
+    "kind": "BleName",
+    "expected": "HACKER",
+    "description": "Synthetic Flipper name; not proof of genuine device",
+    "code": 0,
+    "text": "Flipper SQE"
+  },
+  {
+    "id": "BLE-NEG-FLIP-MFG",
+    "carrier": "BLE",
+    "kind": "BleManufacturer",
+    "expected": "NONE",
+    "description": "Cosonic company ID must not mean Flipper",
+    "code": 4026,
+    "text": null
+  },
+  {
+    "id": "BLE-SKIM-HC03",
+    "carrier": "BLE",
+    "kind": "BleName",
+    "expected": "SKIMMER",
+    "description": "Generic HC-03 serial module; not proof of skimmer",
+    "code": 0,
+    "text": "HC-03"
+  },
+  {
+    "id": "BLE-SKIM-HC06",
+    "carrier": "BLE",
+    "kind": "BleName",
+    "expected": "SKIMMER",
+    "description": "Generic HC-06 serial module; not proof of skimmer",
+    "code": 0,
+    "text": "HC-06"
+  },
+  {
+    "id": "BLE-SKIM-RN42",
+    "carrier": "BLE",
+    "kind": "BleName",
+    "expected": "SKIMMER",
+    "description": "Generic RN42 serial module; not proof of skimmer",
+    "code": 0,
+    "text": "RN42"
+  },
+  {
+    "id": "BLE-SKIM-BT04A",
+    "carrier": "BLE",
+    "kind": "BleName",
+    "expected": "SKIMMER",
+    "description": "Generic BT04-A serial module; not proof of skimmer",
+    "code": 0,
+    "text": "BT04-A"
+  },
+  {
+    "id": "BLE-SKIM-BT05",
+    "carrier": "BLE",
+    "kind": "BleName",
+    "expected": "SKIMMER",
+    "description": "Generic BT05 serial module; not proof of skimmer",
+    "code": 0,
+    "text": "BT05"
+  },
+  {
+    "id": "BLE-SKIM-JDY08",
+    "carrier": "BLE",
+    "kind": "BleName",
+    "expected": "SKIMMER",
+    "description": "Generic JDY-08 serial module; not proof of skimmer",
+    "code": 0,
+    "text": "JDY-08"
+  },
+  {
+    "id": "BLE-SKIM-JDY16",
+    "carrier": "BLE",
+    "kind": "BleName",
+    "expected": "SKIMMER",
+    "description": "Generic JDY-16 serial module; not proof of skimmer",
+    "code": 0,
+    "text": "JDY-16"
+  },
+  {
+    "id": "BLE-SKIM-MLTBT",
+    "carrier": "BLE",
+    "kind": "BleName",
+    "expected": "SKIMMER",
+    "description": "Generic MLT-BT serial module; not proof of skimmer",
+    "code": 0,
+    "text": "MLT-BT"
+  },
+  {
+    "id": "BLE-SKIM-LINVOR",
+    "carrier": "BLE",
+    "kind": "BleName",
+    "expected": "SKIMMER",
+    "description": "Generic linvor serial module; not proof of skimmer",
+    "code": 0,
+    "text": "linvor"
+  },
+  {
+    "id": "BLE-NEG-JDY16-EXTRA",
+    "carrier": "BLE",
+    "kind": "BleName",
+    "expected": "NONE",
+    "description": "JDY-16 suffix should not match exact module name",
+    "code": 0,
+    "text": "JDY-16-EXTRA"
+  },
+  {
+    "id": "BLE-AXON-NAME",
+    "carrier": "BLE",
+    "kind": "BleName",
+    "expected": "AXON",
+    "description": "Axon name candidate; not authenticated camera",
+    "code": 0,
+    "text": "Axon SQE"
+  },
+  {
+    "id": "WIFI-AXON-AB3",
+    "carrier": "WIFI",
+    "kind": "WifiAp",
+    "expected": "AXON",
+    "description": "Axon Body 3 pairing SSID",
+    "code": 1,
+    "text": "AB3-SQE-TEST"
+  },
+  {
+    "id": "WIFI-AXON-AB4",
+    "carrier": "WIFI",
+    "kind": "WifiAp",
+    "expected": "AXON",
+    "description": "Axon Body 4 pairing SSID",
+    "code": 1,
+    "text": "AB4-SQE-TEST"
+  },
+  {
+    "id": "WIFI-AXON-FIELD",
+    "carrier": "WIFI",
+    "kind": "WifiAp",
+    "expected": "AXON",
+    "description": "Axon Field pairing SSID",
+    "code": 1,
+    "text": "AXON-SQE-TEST"
+  },
+  {
+    "id": "WIFI-FLOCK-BARE",
+    "carrier": "WIFI",
+    "kind": "WifiAp",
+    "expected": "FLOCK",
+    "description": "Exact bare Flock SSID",
+    "code": 1,
+    "text": "Flock"
+  },
+  {
+    "id": "WIFI-HACKER-PAGER1",
+    "carrier": "WIFI",
+    "kind": "WifiAp",
+    "expected": "HACKER",
+    "description": "Exact Pineapple Pager SSID pager_open",
+    "code": 1,
+    "text": "pager_open"
+  },
+  {
+    "id": "WIFI-HACKER-PAGER2",
+    "carrier": "WIFI",
+    "kind": "WifiAp",
+    "expected": "HACKER",
+    "description": "Exact Pineapple Pager SSID pager-open",
+    "code": 1,
+    "text": "pager-open"
+  },
+  {
+    "id": "WIFI-NEG-PAGER-SUFFIX",
+    "carrier": "WIFI",
+    "kind": "WifiAp",
+    "expected": "NONE",
+    "description": "Pager suffix must not match exact Pager rule",
+    "code": 1,
+    "text": "pager_open_guest"
+  },
+  {
+    "id": "WIFI-NEG-PAGER-OFFICE",
+    "carrier": "WIFI",
+    "kind": "WifiAp",
+    "expected": "NONE",
+    "description": "Pager-office is not exact Pager default",
+    "code": 1,
+    "text": "pager-office"
+  },
+  {
+    "id": "WIFI-NEG-FLOCKHART",
+    "carrier": "WIFI",
+    "kind": "WifiAp",
+    "expected": "NONE",
+    "description": "Unrelated Flockhart SSID not Flock",
+    "code": 1,
+    "text": "Flockhart-SQE"
+  },
+  {
+    "id": "WIFI-NEG-AXON-NOHYPHEN",
+    "carrier": "WIFI",
+    "kind": "WifiAp",
+    "expected": "NONE",
+    "description": "Axon SSID without delimiter must not match",
+    "code": 1,
+    "text": "AB3SQE"
+  },
+  {
+    "id": "WIFI-AXON-CH3",
+    "carrier": "WIFI",
+    "kind": "WifiAp",
+    "expected": "AXON",
+    "description": "Axon Body 3 SSID on channel 3",
+    "code": 3,
+    "text": "AB3-SQE-TEST"
+  },
+  {
+    "id": "WIFI-AXON-CH9",
+    "carrier": "WIFI",
+    "kind": "WifiAp",
+    "expected": "AXON",
+    "description": "Axon Body 4 SSID on channel 9",
+    "code": 9,
+    "text": "AB4-SQE-TEST"
+  },
+  {
+    "id": "WIFI-FLOCK-CH11",
+    "carrier": "WIFI",
+    "kind": "WifiAp",
+    "expected": "FLOCK",
+    "description": "Flock SSID on channel 11",
+    "code": 11,
+    "text": "FLOCK-SQE-TEST"
+  },
+  {
+    "id": "RID-WIFI-CH1",
+    "carrier": "WIFI",
+    "kind": "WifiRemoteId",
+    "expected": "DRONE",
+    "description": "Remote ID Wi-Fi beacon channel 1",
+    "code": 1,
+    "text": "SQE-RID-CH1"
+  },
+  {
+    "id": "RID-WIFI-CH11",
+    "carrier": "WIFI",
+    "kind": "WifiRemoteId",
+    "expected": "DRONE",
+    "description": "Remote ID Wi-Fi beacon channel 11",
+    "code": 11,
+    "text": "SQE-RID-CH11"
   }
 ]

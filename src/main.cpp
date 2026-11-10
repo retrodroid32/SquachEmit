@@ -47,7 +47,7 @@ static void truth(const char* event, const Scenario* s, const char* status = "ok
 }
 
 
-// All 49 scenarios get their own reproducible test identity. Never write
+// Each catalog scenario gets its own reproducible test identity. Never write
 // to eFuse or claim a globally assigned manufacturer's OUI.
 static bool deriveIdentity(const Scenario* s, bool wifi, uint8_t out[6]) {
   if (!s) return false;
@@ -364,7 +364,7 @@ static void listCases() {
 }
 
 static void help() {
-  Serial.println("SquachEmit 0.4.0-LAB | 115200 8N1 | all RF tests time-limited");
+  Serial.printf("SquachEmit LAB | %u cases | 115200 8N1 | all RF tests time-limited\n", (unsigned)kScenarioCount);
   Serial.println("HELP                  commands");
   Serial.println("LIST                  show all supported cases");
   Serial.println("RUN <ID> [seconds]    transmit for 3..30 seconds (default 12)");
@@ -450,7 +450,7 @@ void setup() {
   Serial.println("BOOT,SquachEmit,0.4.0-LAB,ESP32-C5-Waveshare-2.8");
   c5UiBegin();
 #elif defined(SQE_CYD32)
-  Serial.println("BOOT,SquachEmit,0.4.1-ST7798-DARK-MAC-LAB,ESP32-2432S032R-ST7798");
+  Serial.println("BOOT,SquachEmit,0.4.2-CYD32-95-MATRIX-LAB,ESP32-2432S032R-ST7798");
   cyd32UiBegin();
 #else
   Serial.println("BOOT,SquachEmit,0.4.0-LAB,ESP32-S3");

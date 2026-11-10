@@ -247,7 +247,9 @@ void statusStrip(const char* active,bool suite){
   label(12,186,active&&*active?"ON AIR":suite?"SUITE":"LAB READY",
         active&&*active?kPink:kGreen);
   label(97,186,"BLE / WIFI / RID",kCyan);
-  label(244,186,"49 CASES",kVaporPink);
+  char totalText[18];
+  snprintf(totalText,sizeof(totalText),"%u CASES",(unsigned)kScenarioCount);
+  label(244,186,totalText,kVaporPink);
   lcd.drawFastHLine(6,198,308,kPurple);
   label(12,201,"PROFILE",kVaporPink);
   const Scenario* chosen=selected<kScenarioCount?&kScenarios[selected]:nullptr;
