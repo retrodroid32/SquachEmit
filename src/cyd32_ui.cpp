@@ -217,13 +217,20 @@ void bigSquachy(bool emitting,bool suite){
   if(squachSpriteReady)drawSquachyFrame(emitting,suite,millis());
   else oldSquachy(emitting,suite);
 }
+// Exclusive right-hand status slot: when transmitting, countdown takes
+// the place of the total case count. No two text baselines can overlap.
+void rightStatus(bool emitting,uint32_t count){
+  constexpr int kRightX=236,kRightY=183,kRightW=kW-kRightX,kRightH=15;
+  lcd.fillRect(kRightX,kRightY,kRightW,kRightH,kBg);
+  char text[24];
+  if(emitting)snprintf(text,sizeof(text),"%lus LEFT",(unsigned long)count);
+  else snprintf(text,sizeof(text),"%u CASES",(unsigned)kScenarioCount);
+  lcd.setTextFont(1);
+  lcd.setTextSize(1);
+  label(kW-12-lcd.textWidth(text),186,text,emitting?kPink:kVaporPink);
+}
 void countdownOnly(uint32_t count){
-  // Exactly one small patch changes per second; the full screen never
-  // clears during an active test.
-  lcd.fillRect(240,191,72,11,kBg);
-  char buf[18];
-  snprintf(buf,sizeof(buf),"%lus LEFT",(unsigned long)count);
-  label(247,193,buf,kPink);
+  rightStatus(true,count);
 }
 
 void speechBubble(const char* active,bool suite){
@@ -244,9 +251,7 @@ void statusStrip(const char* active,bool suite){
   label(12,186,active&&*active?"ON AIR":suite?"SUITE":"LAB READY",
         active&&*active?kPink:kGreen);
   label(97,186,"BLE / WIFI / RID",kCyan);
-  char totalText[18];
-  snprintf(totalText,sizeof(totalText),"%u CASES",(unsigned)kScenarioCount);
-  label(244,186,totalText,kVaporPink);
+  if(!(active&&*active))rightStatus(false,0);
   lcd.drawFastHLine(6,198,308,kPurple);
   label(12,201,"PROFILE",kVaporPink);
   const Scenario* chosen=selected<kScenarioCount?&kScenarios[selected]:nullptr;
