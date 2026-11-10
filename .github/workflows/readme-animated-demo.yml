@@ -4,6 +4,9 @@ on:
     branches:
       - 'docs/**'
     paths:
+      - src/cyd32_ui.cpp
+      - src/cyd32_squachy_port.cpp
+      - src/scenarios.cpp
       - tools/readme_capture/**
       - .github/workflows/readme-animated-demo.yml
   workflow_dispatch:
