@@ -15,3 +15,6 @@ void cyd32UiColorBars();
 
 // Show/clear last radio startup stage on the CYD 3.2 home screen.
 void cyd32UiSetRadioError(const char* stage);
+
+// Acknowledge a Wi-Fi RUN touch before the radio driver blocks.
+void cyd32UiSetRadioStarting(const char* scenarioId);

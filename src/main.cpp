@@ -549,7 +549,22 @@ void loop() {
   switch(action) {
     case Cyd32UiAction::Run: {
       const Scenario* chosen = cyd32UiSelection();
-      if(chosen){g_suite=false;startScenario(chosen);}
+      if(chosen) {
+        Serial.printf("UI,RUN_TAP,%s,%s\n",chosen->id,
+              chosen->kind==Kind::WifiRemoteId?"WIFI_RID":"OTHER");
+        g_suite=false;
+        if(chosen->kind==Kind::WifiRemoteId) {
+          cyd32UiSetRadioStarting(chosen->id);
+          // Render the accepted touch before the potentially blocking Wi-Fi
+          // init, so an operator sees a response even when startup fails.
+          cyd32UiTick(nullptr,0,false);
+        }
+        Serial.printf("UI,RUN_DISPATCH,%s\n",chosen->id);
+        startScenario(chosen);
+      } else {
+        Serial.println("ERROR,UI_RUN_NO_SELECTION");
+        cyd32UiSetRadioError("NO_SELECTION");
+      }
       break;
     }
     case Cyd32UiAction::Stop: cancelAll(); break;
