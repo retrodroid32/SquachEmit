@@ -1,0 +1,97 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <meta name="theme-color" content="#0a101d" />
+  <meta name="description" content="SquachEmit firmware installer and RF test console for ESP32-C5 and ESP32-S3 lab boards." />
+  <title>SquachEmit // Firmware Lab</title>
+  <link rel="stylesheet" href="./style.css" />
+  <script type="module" src="https://unpkg.com/esp-web-tools@10.4.0/dist/web/install-button.js?module"></script>
+  <script defer src="./app.js"></script>
+</head>
+<body>
+  <div class="grid-overlay" aria-hidden="true"></div>
+  <header class="masthead">
+    <a class="brand" href="./" aria-label="SquachEmit home"><span class="brand-mark" aria-hidden="true">⌁</span><span>SQUACH<span class="cyan">EMIT</span></span></a>
+    <div class="header-meta"><span class="dot"></span><span>RF DETECTION TEST TRANSMITTER</span><a href="https://github.com/retrodroid32/SquachEmit" target="_blank" rel="noopener noreferrer">SOURCE ↗</a></div>
+  </header>
+  <main>
+    <div class="hero">
+      <div class="eyebrow">// FIRMWARE OPERATIONS TERMINAL <span id="channelBadge" class="channel-badge">PRODUCTION</span></div>
+      <h1>Flash. <span>Transmit.</span> Verify.</h1>
+      <p>Install SquachEmit firmware and exercise repeatable radio-detection test cases against SquachWatch. Always verify results on the receiver—an advertised test signal is not proof of detection.</p>
+      <div class="hero-links"><a href="?lab=1" id="enterLab">ENABLE LAB BUILDS ↗</a><a href="./" id="exitLab" hidden>LEAVE LAB ↗</a><a href="https://github.com/retrodroid32/SquachEmit/actions/workflows/ci.yml">BUILD HISTORY ↗</a></div>
+    </div>
+    <div id="notice" class="notice" role="status">Checking firmware catalog…</div>
+    <div class="dashboard">
+      <section class="panel install-panel" aria-labelledby="installTitle">
+        <div class="panel-header"><div><div class="micro-label">01 / FIRMWARE</div><h2 id="installTitle">INSTALLER</h2></div><div class="indicator">USB · WEB SERIAL</div></div>
+        <label for="board" class="field-label">TARGET DEVICE</label>
+        <select id="board" disabled><option>Loading board profiles…</option></select>
+        <label for="build" class="field-label">FIRMWARE BUILD · FEATURES / VERSION / COMMIT</label>
+        <select id="build" disabled><option>Choose a board first</option></select>
+        <div class="build-hint">Build names summarize the changes. Select one for the complete feature list, date and SHA.</div>
+        <div id="buildDetails" class="detail-box">No build selected.</div>
+        <label class="confirm-line" for="confirm"><input type="checkbox" id="confirm" disabled /><span>I verified the <b>exact board model</b> and accept that flashing replaces its firmware. LAB builds are unverified.</span></label>
+        <div id="installArea" class="install-area" hidden>
+          <esp-web-install-button id="installButton" manifest="./manifest-unavailable.json">
+            <button slot="activate" class="primary-install" type="button">CONNECT &amp; INSTALL FIRMWARE</button>
+            <span slot="unsupported">Browser flashing requires a supported desktop browser with Web Serial (Chrome or Edge), HTTPS, and USB connection.</span>
+            <span slot="not-allowed">You must use HTTPS or localhost to flash.</span>
+          </esp-web-install-button>
+        </div>
+        <div id="installLocked" class="locked">Choose a build and confirm the exact board to unlock installation.</div>
+        <div class="small-note">Use a USB <b>data</b> cable, and close any open serial monitor before installing. The browser detects the ESP32 chip; it cannot verify the attached LCD/touch hardware.</div>
+        <a id="downloadBin" class="download-link" href="#" download hidden>DOWNLOAD APPLICATION BINARY (ADVANCED) ↗</a>
+      </section>
+      <section class="panel console-panel" aria-labelledby="consoleTitle">
+        <div class="panel-header"><div><div class="micro-label">02 / DEVICE CONTROL</div><h2 id="consoleTitle">SERIAL TEST CONSOLE</h2></div><div class="state" id="serialState">DISCONNECTED</div></div>
+        <div class="serial-baud-settings">
+          <label for="baudRate" class="field-label serial-baud-label">SERIAL BAUD RATE</label>
+          <div class="serial-baud-row">
+            <select id="baudRate" aria-label="Serial baud rate">
+              <option value="9600">9,600</option>
+              <option value="57600">57,600</option>
+              <option value="115200" selected>115,200 · SquachEmit (default)</option>
+              <option value="230400">230,400</option>
+              <option value="460800">460,800</option>
+              <option value="921600">921,600</option>
+              <option value="1000000">1,000,000</option>
+              <option value="2000000">2,000,000 · SquachWatch CYD</option>
+              <option value="3000000">3,000,000</option>
+              <option value="custom">Custom…</option>
+            </select>
+            <input id="customBaud" type="number" min="300" max="4000000" step="1"
+                   inputmode="numeric" aria-label="Custom serial baud rate"
+                   placeholder="Custom baud (300–4,000,000)" value="115200" hidden disabled />
+          </div>
+          <div id="baudHint" class="build-hint">Select the baud rate before connecting. Disconnect to change it.</div>
+        </div>
+        <div class="console-controls"><button type="button" id="connect" class="subtle-button">CONNECT SERIAL</button><button type="button" id="disconnect" class="subtle-button" disabled>DISCONNECT</button><button type="button" id="clear" class="subtle-button">CLEAR LOG</button></div>
+        <pre id="serialLog" tabindex="0" aria-label="Serial output" aria-live="off">SquachEmit serial console // default 115200 baud\nChoose the device baud rate, connect, then send HELP or LIST.\n</pre>
+        <div class="command-grid">
+          <button type="button" data-cmd="HELP" disabled>HELP</button>
+          <button type="button" data-cmd="LIST" disabled>LIST</button>
+          <button type="button" data-cmd="STATUS" disabled>STATUS</button>
+          <button type="button" data-cmd="SUITE" disabled>RUN SUITE</button>
+          <button type="button" data-cmd="STOP" class="stop" disabled>■ STOP</button>
+          <button type="button" id="saveLog">EXPORT LOG</button>
+        </div>
+        <form id="commandForm" class="command-form"><input id="command" maxlength="100" aria-label="Command" placeholder="RUN BLE-META-UUID 12" autocomplete="off" disabled /><button id="send" type="submit" disabled>SEND ↗</button></form>
+        <div class="small-note">Keep the receiver’s detections and this truth log together. Disconnect the console before flashing; the installer and monitor cannot share one serial port.</div>
+      </section>
+    </div>
+    <section class="panel instructions" aria-labelledby="stepsTitle">
+      <div class="micro-label">03 / VALIDATION PROTOCOL</div><h2 id="stepsTitle">HARDWARE CHECKLIST</h2>
+      <div class="steps">
+        <div><b>01. VERIFY</b><p>Choose the exact PCB: Waveshare C5 2.8" (ST7789/CST3530) or CYD 3.2" ESP32-2432S032R (ST7798-compatible/XPT2046). Their firmware is NOT interchangeable.</p></div>
+        <div><b>02. FLASH</b><p>Flashing SquachEmit replaces any SquachWatch firmware on that physical CYD. Back up first; use a second board as receiver.</p></div>
+        <div><b>03. GENERATE</b><p>Run BLE-META-UUID, WIFI-AXON, BLE-NEG-UUID, then SUITE in a controlled RF environment.</p></div>
+        <div><b>04. SCORE</b><p>Record each actual alert separately on the 2.8-inch and 3.2-inch SquachWatch CYDs; review missed and false detections.</p></div>
+      </div>
+    </section>
+  </main>
+  <footer>SquachEmit // retrodroid32 <span>LAB FIRMWARE MAY NOT BE HARDWARE-VALIDATED. NO AUTOMATIC RF ON BOOT.</span><a href="https://github.com/retrodroid32/SquachEmit/pull/1">C5 LAB PR ↗</a></footer>
+</body>
+</html>

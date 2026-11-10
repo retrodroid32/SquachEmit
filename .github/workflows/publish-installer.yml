@@ -1,0 +1,121 @@
+name: Publish SquachEmit web installer
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'web-installer/**'
+      - 'tools/build_installer_site.py'
+      - 'tools/firmware_build_notes.json'
+      - '.github/workflows/publish-installer.yml'
+      - '.github/workflows/ci.yml'
+  workflow_run:
+    workflows: ['SquachEmit CI']
+    types: [completed]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  actions: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: squachemit-pages
+  cancel-in-progress: true
+
+jobs:
+  publish:
+    # Only allow successful CI from this same repository, never a fork.
+    if: >-
+      github.event_name != 'workflow_run' ||
+      (github.event.workflow_run.conclusion == 'success' &&
+       github.event.workflow_run.head_repository.full_name == github.repository)
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deploy.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Download trusted successful LAB firmware artifacts
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+        run: |
+          python - <<'PY'
+          import json, os, pathlib, subprocess, sys
+          repo=os.environ['REPO']
+          root=pathlib.Path('_incoming')
+          root.mkdir(exist_ok=True)
+          def api(url):
+              return json.loads(subprocess.check_output(['gh','api',url],text=True))
+          runs=api(f'repos/{repo}/actions/workflows/ci.yml/runs?per_page=100&status=success')['workflow_runs']
+          sources=[]
+          seen=set()
+          counts={'c5-waveshare-28':0,'s3-devkit':0,'cyd32-st7798':0}
+          for run in runs:
+              if run['conclusion']!='success' or run.get('event')!='push':
+                  continue
+              if (run.get('head_repository') or {}).get('full_name')!=repo:
+                  continue
+              branch=run.get('head_branch') or ''
+              if branch=='main':
+                  board='s3-devkit'
+                  artifact='squachemit-esp32s3-firmware-unverified'
+                  limit=1
+              elif branch.startswith('lab/cyd32-'):
+                  board='cyd32-st7798'
+                  artifact='squachemit-cyd32-st7798-firmware-unverified'
+                  limit=1
+              elif branch.startswith('lab/'):
+                  board='c5-waveshare-28'
+                  artifact='squachemit-waveshare-c5-28-firmware-unverified'
+                  limit=3
+              else:
+                  continue
+              sha=run['head_sha']
+              key=(board,sha)
+              if key in seen or counts[board]>=limit:
+                  continue
+              try:
+                  artifacts=api(f'repos/{repo}/actions/runs/{run["id"]}/artifacts?per_page=100')['artifacts']
+                  if not any(a['name']==artifact and not a['expired'] for a in artifacts):
+                      continue
+                  directory=root/f'{board}-{sha[:8]}'
+                  directory.mkdir(exist_ok=True)
+                  subprocess.run(['gh','run','download',str(run['id']),'-R',repo,'-n',artifact,'-D',str(directory)],check=True)
+                  required = (['SquachEmit.ino.bootloader.bin','SquachEmit.ino.partitions.bin',
+                               'SquachEmit.ino.bin','SquachEmit.ino.merged.bin']
+                              if board=='c5-waveshare-28' else
+                              ['bootloader.bin','partitions.bin','firmware.bin','ota_init.bin'])
+                  missing=[name for name in required if not (directory/name).is_file()]
+                  if missing:
+                      print(f'::warning::Skipping legacy run {run["id"]}: missing {missing}')
+                      continue
+              except subprocess.CalledProcessError as e:
+                  print(f'::warning::Could not download run {run["id"]}: {e}',file=sys.stderr)
+                  continue
+              seen.add(key)
+              counts[board]+=1
+              sources.append(dict(board=board,sha=sha,branch=branch,channel='lab',
+                                  run_id=run['id'],created_at=run['created_at'],path=str(directory)))
+          (root/'sources.json').write_text(json.dumps({'sources':sources},indent=2),encoding='utf-8')
+          print('Downloaded firmware:',[(x['board'],x['sha'][:8],x['run_id']) for x in sources])
+          if not sources:
+              print('::error::No trusted complete LAB artifacts available')
+              sys.exit(1)
+          PY
+      - name: Build same-origin manifests and SHA256 catalog
+        run: python tools/build_installer_site.py --sources _incoming/sources.json --output _site
+      - uses: actions/configure-pages@v5
+      - uses: actions/upload-pages-artifact@v4
+        with:
+          path: _site
+      - name: Deploy Pages
+        id: deploy
+        uses: actions/deploy-pages@v4
