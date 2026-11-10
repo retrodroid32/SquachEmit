@@ -114,12 +114,11 @@ setImmediate(() => {
   assert.equal(fetches, 1);
   assert.equal(elements.board.value, 'c5-waveshare-28');
   const options = elements.build.children;
-  for (let i = 0; i < shaRows.length; i++) {
-    const label = options.find(option => option.value === builds[i].id)?.textContent;
-    assert.ok(label, 'missing build ' + builds[i].id);
-    assert.ok(label.includes(notes[shaRows[i]].title), 'not descriptive: ' + label);
-    assert.ok(!label.includes(shaRows[i].slice(0, 8)), 'hash leaked into human-facing picker');
-  }
+  // One human-readable newest option per board, even if old artifacts remain.
+  assert.equal(options.length, 2);
+  assert.equal(options[1].value, builds[0].id);
+  assert.equal(options[1].textContent, notes[shaRows[0]].title);
+  assert.ok(!options[1].textContent.includes(shaRows[0].slice(0, 8)));
   elements.build.value = builds[0].id;
   elements.build.handlers.change();
   assert.ok(elements.buildDetails.textContent.includes('DJI'));
@@ -127,12 +126,6 @@ setImmediate(() => {
             elements.buildDetails.textContent.includes('Autel'));
   assert.ok(elements.buildDetails.textContent.includes(shaRows[0]));
   assert.ok(elements.buildDetails.textContent.includes('FEATURES:'));
-  elements.build.value = builds[4].id;
-  elements.build.handlers.change();
-  assert.ok(elements.buildDetails.textContent.includes('no curated changelog') ||
-            elements.buildDetails.textContent.includes('no curated') ||
-            elements.buildDetails.textContent.includes('no SHA-specific') ||
-            elements.buildDetails.textContent.includes('no reviewed'));
   assert.equal(elements.confirm.checked, false);
   // Switch board; only the 3.2-inch ESP32 build must be visible.
   elements.board.value = 'cyd32-st7798';
