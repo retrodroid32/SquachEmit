@@ -39,6 +39,7 @@ bool panelInverted=false;
 uint32_t lastPoll=0,lastPress=0,lastCount=UINT32_MAX,colorBarsUntil=0;
 uint8_t talkIndex=0;
 char previousActive[56]={0};
+char radioStartError[28]={0}; // visible radio-start failure stage
 
 void label(int x,int y,const char* s,uint16_t col,uint8_t font=1) {
   lcd.setTextFont(font);
@@ -241,11 +242,14 @@ void speechBubble(const char* active,bool suite){
   lcd.drawRoundRect(7,20,306,44,4,kVaporPink);
   lcd.drawRoundRect(9,22,302,40,3,kPurple);
   const Scenario* chosen=selected<kScenarioCount?&kScenarios[selected]:nullptr;
-  const char* phrase=(active&&*active)?"RF LAB TRANSMITTING":suite?"TEST SUITE RUNNING":
+  const bool failed=!(active&&*active) && radioStartError[0];
+  const char* phrase=failed?"WIFI START FAILED":
+      (active&&*active)?"RF LAB TRANSMITTING":suite?"TEST SUITE RUNNING":
       "READY TO TEST. PICK A PROFILE.";
-  fit(16,25,phrase,285,kWhite,2);
-  fit(16,47,active&&*active?active:chosen?chosen->id:"NO PROFILE",
-      288,active&&*active?kPink:kCyan,1);
+  fit(16,25,phrase,285,failed?kPink:kWhite,2);
+  fit(16,47,failed?radioStartError:
+      (active&&*active)?active:chosen?chosen->id:"NO PROFILE",
+      288,failed?kYellow:(active&&*active?kPink:kCyan),1);
 }
 
 void statusStrip(const char* active,bool suite){
@@ -451,6 +455,10 @@ void rgbBars(){
 }
 } // namespace
 
+void cyd32UiSetRadioError(const char* stage){
+  snprintf(radioStartError,sizeof(radioStartError),"%s",stage?stage:"");
+  redraw=true;
+}
 void cyd32UiBegin(){
   pinMode(TFT_BL,OUTPUT);
   digitalWrite(TFT_BL,LOW);

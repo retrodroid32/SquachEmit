@@ -12,3 +12,6 @@ void cyd32UiResetCalibration();
 void cyd32UiSetInversion(bool enabled);
 bool cyd32UiInversion();
 void cyd32UiColorBars();
+
+// Show/clear last radio startup stage on the CYD 3.2 home screen.
+void cyd32UiSetRadioError(const char* stage);

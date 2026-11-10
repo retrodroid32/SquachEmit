@@ -23,6 +23,13 @@ static constexpr uint32_t kSuiteGapMs = 2400;
 
 static NimBLEAdvertising* g_adv = nullptr;
 static bool g_wifiVendorIE = false;
+static const char* g_wifiFailureStage = "UNKNOWN";
+static esp_err_t g_wifiFailureCode = ESP_OK;
+static void wifiFailure(const char* stage, esp_err_t code = ESP_FAIL) {
+  g_wifiFailureStage = stage;
+  g_wifiFailureCode = code;
+  Serial.printf("ERROR,WIFI_STAGE,%s,%d,%s\n",stage,(int)code,esp_err_to_name(code));
+}
 static bool g_bleInit = false;
 static const Scenario* g_active = nullptr;
 static uint32_t g_started = 0;
@@ -87,18 +94,20 @@ static bool beginWifiIdentity(const Scenario* s) {
   if (!deriveIdentity(s, true, mac)) return false;
   // IDF esp_wifi_set_mac requires the target AP interface to be OFF.
   // Init in STA-only mode, configure AP BSSID, then enable AP.
-  if (!WiFi.mode(WIFI_STA)) return false;
+  if (!WiFi.mode(WIFI_STA)) { wifiFailure("STA_MODE"); return false; }
   const esp_err_t err=esp_wifi_set_mac(WIFI_IF_AP, mac);
   if (err != ESP_OK) {
-    Serial.printf("ERROR,WIFI_MAC_SET,%d\n", (int)err);
+    wifiFailure("AP_MAC_SET",err);
     WiFi.mode(WIFI_OFF);
     return false;
   }
-  if (!WiFi.mode(WIFI_AP)) return false;
+  if (!WiFi.mode(WIFI_AP)) {
+    wifiFailure("AP_MODE"); WiFi.mode(WIFI_OFF); return false;
+  }
   uint8_t actual[6]={0};
   if (esp_wifi_get_mac(WIFI_IF_AP,actual)!=ESP_OK ||
       memcmp(mac,actual,6)!=0) {
-    Serial.println("ERROR,WIFI_MAC_READBACK");
+    wifiFailure("AP_MAC_READBACK");
     WiFi.mode(WIFI_OFF);
     return false;
   }
@@ -216,10 +225,14 @@ static bool advertiseRemoteNegative(const Scenario* s) {
 // Byte-for-byte follows SquachWatch's RemoteId::isWifiBeacon test fixture.
 static bool startWifiRemote(const Scenario* s) {
   const uint8_t channel = s->code ? static_cast<uint8_t>(s->code) : 6;
-  if (channel < 1 || channel > 11) return false;
+  if (channel < 1 || channel > 11) {
+    wifiFailure("CHANNEL",ESP_ERR_INVALID_ARG); return false;
+  }
   if (!beginWifiIdentity(s)) return false;
   if (!WiFi.softAP(s->text ? s->text : "SQE-RID-LAB",
-                   "SquachLab2026!", channel, false, 1)) return false;
+                   "SquachLab2026!", channel, false, 1)) {
+    wifiFailure("SOFTAP_START"); return false;
+  }
   // Synthetic message pack: Basic ID, Location, System, Self-ID, Operator ID.
   // This tests complete receiver parsing but is not flight-compliant broadcast:
   // there is no true GNSS/UTC on the emitter and all identities are fictional.
@@ -230,15 +243,16 @@ static bool startWifiRemote(const Scenario* s) {
     memcpy(msgs[i],frame+2,SquachRidWifi::kMsgBytes);
   }
   uint8_t ie[SquachRidWifi::kIeBytes] = {};
-  if(!SquachRidWifi::encode(msgs,1,ie,sizeof(ie)))return false;
+  if(!SquachRidWifi::encode(msgs,1,ie,sizeof(ie))) {
+    wifiFailure("PACK_ENCODE",ESP_ERR_INVALID_ARG); return false;
+  }
   if (scenarioIs(s, "RID-WIFI-PARROT")) {
     ie[2] = 0x90; ie[3] = 0x3A; ie[4] = 0xE6;
   }
   const esp_err_t err = esp_wifi_set_vendor_ie(
       true, WIFI_VND_IE_TYPE_BEACON, WIFI_VND_IE_ID_0, ie);
   g_wifiVendorIE = err == ESP_OK;
-  if (!g_wifiVendorIE)
-    Serial.printf("ERROR,WIFI_RID_IE,%d\n", (int)err);
+  if (!g_wifiVendorIE) wifiFailure("VENDOR_IE",err);
   return g_wifiVendorIE;
 }
 
@@ -351,15 +365,33 @@ static bool startScenario(const Scenario* s, uint32_t duration = kDefaultMs) {
     if (channel >= 1 && channel <= 11)
       ok = WiFi.softAP(s->text, "SquachLab2026!", channel, false, 1);
   } else if (s->kind == Kind::WifiRemoteId) {
-    ok = startWifiRemote(s);
+    // One bounded recovery after a failed Wi-Fi mode transition.
+    for(unsigned attempt=1; attempt<=2 && !ok; ++attempt){
+      Serial.printf("RADIO,WIFI_ATTEMPT,%s,%u\n",s->id,attempt);
+      g_wifiFailureStage="UNKNOWN"; g_wifiFailureCode=ESP_OK;
+      ok=startWifiRemote(s);
+      if(!ok && attempt==1){
+        Serial.printf("WARN,WIFI_RETRY,%s,%s\n",s->id,g_wifiFailureStage);
+        stopTx();
+        delay(120);
+      }
+    }
   } else {
     ok = advertiseBle(s);
   }
   if (!ok) {
+    if(s->kind == Kind::WifiRemoteId)
+      Serial.printf("ERROR,WIFI_CASE,%s,%s,%d\n",s->id,g_wifiFailureStage,(int)g_wifiFailureCode);
     truth("ERROR", s, "radio_start_failed");
     stopTx();
+#if defined(SQE_CYD32)
+    cyd32UiSetRadioError(s->kind == Kind::WifiRemoteId ? g_wifiFailureStage : "RADIO_START");
+#endif
     return false;
   }
+#if defined(SQE_CYD32)
+  cyd32UiSetRadioError(nullptr);
+#endif
   g_active = s;
   g_started = millis();
   g_duration = duration;
