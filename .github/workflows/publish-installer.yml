@@ -68,10 +68,10 @@ jobs:
                   board='s3-devkit'
                   artifact='squachemit-esp32s3-firmware-unverified'
                   limit=1
-              elif branch.startswith('lab/cyd32-st7798-'):
+              elif branch.startswith('lab/cyd32-'):
                   board='cyd32-st7798'
                   artifact='squachemit-cyd32-st7798-firmware-unverified'
-                  limit=2
+                  limit=1
               elif branch.startswith('lab/'):
                   board='c5-waveshare-28'
                   artifact='squachemit-waveshare-c5-28-firmware-unverified'

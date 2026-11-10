@@ -78,6 +78,18 @@
         "Touch calibration is blocked during active RF or suite mode, so a wizard cannot extend timed emissions.",
         "Flashing replaces the SquachWatch app on this board; use a separate device to receive test signals."
       ]
+    },
+    "caa89d82047b73cecfbd9d9b476c7bc2fa2a14bb": {
+      "title": "SquachEmit 3.2 — Squachy Animated UI (Latest LAB)",
+      "version": "Squachy Animated LAB 1",
+      "summary": "Newest 3.2-inch ST7798 SquachEmit LAB: ports SquachWatch GPLv3-derived core Squachy appearance and movements into an isolated sprite, removes oversized status text over Squachy and retains the earlier color-inversion and unique BLE/Wi-Fi MAC fixes. This is a first core-character port, not the entire original animation/costume/speech engine. Hardware unverified.",
+      "highlights": [
+        "Source-derived SquachWatch default Squachy proportions, hair, sunglasses, blink, wave, bounce, walk, dance, sleep and startled expressions.",
+        "Animates only a 112x111 offscreen patch (~24KB heap); static fallback if allocation fails, pending real ST7798 verification.",
+        "Retains display polarity override (COLORS, INVERT ON/OFF), local scenario-specific BLE/Wi-Fi MACs (IDENTITY) and 49 RF scenarios.",
+        "Serial console supports selectable baud rates; device firmware serial default is 115200.",
+        "GPLv3-derived port requires GPLv3-compliant distribution of linked firmware; this LAB is not a hardware-approved release."
+      ]
     }
   }
 }
