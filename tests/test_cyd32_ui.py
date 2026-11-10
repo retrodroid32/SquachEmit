@@ -28,7 +28,7 @@ class Cyd32UiGuards(unittest.TestCase):
         self.assertIn('INVERT OFF',self.main)
         self.assertIn('void rgbBars()',self.s)
         self.assertIn('void retroBackdrop()', self.s)
-        self.assertIn('lcd.fillRoundRect(x-27,y-2,54,21,5,kInk)', self.s)
+        self.assertIn('SquachyPort::render(', self.s)
         self.assertIn('void speechBubble(',self.s)
         self.assertIn('void statusStrip(',self.s)
         self.assertIn('panelInverted=true;', self.s)
@@ -43,5 +43,12 @@ class Cyd32UiGuards(unittest.TestCase):
         self.assertIn('Kind::WifiRemoteId',self.s)
         for name in ("Filter::All","Filter::Drone","Filter::Ble","Filter::Wifi"):
             self.assertIn(name,self.s)
+    def test_source_derived_core(self):
+        p=(ROOT/"src"/"cyd32_squachy_port.cpp").read_text()
+        for s in ("void render(", "static void wedge(", "const int tuft[4][6]",
+                  "slot=now/2600u", "squachSprite"):
+            self.assertIn(s,p if s!="squachSprite" else self.s)
+        self.assertIn("lastSquachFrame>=120u",self.s)
+        self.assertNotIn("label(hx,148,heading",self.s)
 if __name__=="__main__":
     unittest.main()

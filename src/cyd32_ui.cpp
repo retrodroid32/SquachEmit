@@ -1,6 +1,7 @@
 #if defined(SQE_CYD32)
 #include "cyd32_ui.h"
 #include "scenarios.h"
+#include "cyd32_squachy_port.h"
 #include <Arduino.h>
 #include <TFT_eSPI.h>
 #include <Preferences.h>
@@ -29,6 +30,9 @@ const char* const kCategoryId[] = {"ALL","DRONE","BLE","WIFI"};
 constexpr size_t kPageRows=4;
 
 TFT_eSPI lcd;
+TFT_eSprite squachSprite(&lcd);
+bool squachSpriteReady=false;
+uint32_t lastSquachFrame=0, petUntil=0;
 Preferences prefs;
 Screen screen=Screen::Home;
 Filter filter=Filter::All;
@@ -146,7 +150,7 @@ void retroBackdrop(){
   lcd.drawFastHLine(0,180,320,kCyan);
 }
 
-void bigSquachy(bool emitting,bool suite){
+void oldSquachy(bool emitting,bool suite){
   // Reduced Squachy silhouette taken from visual inspection of the
   // *actual SquachWatch renders* (hair tuft, black shades, pink cheeks,
   // square pink mouth, small ears, short legs). Independent artwork:
@@ -206,6 +210,16 @@ void bigSquachy(bool emitting,bool suite){
   }
 }
 
+void drawSquachyFrame(bool emitting,bool suite,uint32_t now){
+  if(!squachSpriteReady)return;
+  SquachyPort::render(squachSprite,now,emitting,suite,(int32_t)(petUntil-now)>0);
+  squachSprite.pushSprite(104,70);
+  lastSquachFrame=now;
+}
+void bigSquachy(bool emitting,bool suite){
+  if(squachSpriteReady)drawSquachyFrame(emitting,suite,millis());
+  else oldSquachy(emitting,suite);
+}
 void countdownOnly(uint32_t count){
   // Exactly one small patch changes per second; the full screen never
   // clears during an active test.
@@ -230,7 +244,7 @@ void speechBubble(const char* active,bool suite){
 void statusStrip(const char* active,bool suite){
   lcd.fillRect(0,183,320,29,kBg);
   lcd.drawFastHLine(6,182,308,kPurple);
-  label(12,186,active&&*active?"EMITTING":suite?"SUITE":"RF IDLE",
+  label(12,186,active&&*active?"ON AIR":suite?"SUITE":"LAB READY",
         active&&*active?kPink:kGreen);
   label(97,186,"BLE / WIFI / RID",kCyan);
   label(244,186,"49 CASES",kVaporPink);
@@ -247,13 +261,7 @@ void homeScreen(const char* active,uint32_t remaining,bool suite){
   bigSquachy(emitting,suite);
   titleBar();
   speechBubble(active,suite);
-  // SquachWatch places an oversized status headline directly over Squachy
-  // rather than placing it into another rectangular dashboard card.
-  const char* heading=emitting?"ON AIR":suite?"SUITE":"LAB READY";
-  const int textW=emitting?102:suite?95:157;
-  const int hx=(kW-textW)/2;
-  label(hx+1,150,heading,kInk,4);
-  label(hx,148,heading,emitting?kPink:suite?kYellow:kGreen,4);
+  // Status is in the bottom strip: no huge headline over the mascot.
   statusStrip(active,suite);
   if(emitting)countdownOnly((remaining+999)/1000);
   footer("TESTS",emitting?"STOP":"RUN","SUITE");
@@ -376,8 +384,8 @@ Cyd32UiAction touchHome(int x,int y,bool active){
     if(x<213)return active?Cyd32UiAction::Stop:Cyd32UiAction::Run;
     return Cyd32UiAction::Suite;
   }
-  if(x<212&&y>=40&&y<195){
-    talkIndex=(talkIndex+1)%3;
+  if(x>=116&&x<=204&&y>=70&&y<183){
+    petUntil=millis()+1500;
   }
   return Cyd32UiAction::None;
 }
@@ -443,6 +451,9 @@ void cyd32UiBegin(){
   }
   lcd.invertDisplay(panelInverted);
   lcd.fillScreen(kBg);
+  squachSprite.setColorDepth(16);
+  squachSpriteReady=(squachSprite.createSprite(112,111)!=nullptr);
+  if(!squachSpriteReady)Serial.println("WARN,CYD32_SPRITE_ALLOC;STATIC_FALLBACK");
   digitalWrite(TFT_BL,HIGH);
   calibrated=loadCal();
   ready=true;
@@ -505,6 +516,9 @@ Cyd32UiAction cyd32UiTick(const char* active,uint32_t remaining,bool suite){
     const uint32_t count=(remaining+999)/1000;
     if(count!=lastCount){countdownOnly(count);lastCount=count;}
   }
+  if(calibrated&&screen==Screen::Home&&squachSpriteReady&&
+     now-lastSquachFrame>=120u && colorBarsUntil==0)
+    drawSquachyFrame(active&&*active,suite,now);
   if(now-lastPoll<55)return Cyd32UiAction::None;
   lastPoll=now;
   if(!calibrated){
