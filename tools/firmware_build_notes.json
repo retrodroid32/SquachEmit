@@ -78,6 +78,19 @@
         "Touch calibration is blocked during active RF or suite mode, so a wizard cannot extend timed emissions.",
         "Flashing replaces the SquachWatch app on this board; use a separate device to receive test signals."
       ]
+    },
+    "504430454caa465696fd39fff8c92ad56247bcf0": {
+      "title": "CYD 3.2 Photo-Fix Dark UI + Unique MAC (49 tests)",
+      "version": "0.4.1 ST7798 Photo-Fix LAB",
+      "summary": "Corrects the actual 3.2-inch ST7798 display seen inverted in the owner's hardware photo. Replaces the washed-out flat UI with a dark SquachWatch-style synthwave skyline, a distinct Squachy with sunglasses/pink cheeks, speech bubble and neon status/buttons. Defaults to inverted pixel polarity ON for this panel; includes COLORS and INVERT ON/OFF commands. Every test broadcasts a scenario-unique synthetic MAC. Hardware validation required.",
+      "highlights": [
+        "3.2-inch ESP32-2432S032R ST7798: new display default invertDisplay(true) after rotation; separate invert2 NVS key avoids inheriting broken R3 setting.",
+        "SquachWatch-style full dark scene, neon title/speech bubble, enlarged status headline, recognizable brown Squachy with sunglasses and pink cheeks.",
+        "49 existing synthetic BLE/Wi-Fi/Remote ID scenarios, including DJI, Autel and Parrot model-labeled fixtures; opt-in 3–30 second transmissions.",
+        "Per-board and per-scenario unique synthetic BLE advertiser address and Wi-Fi SoftAP BSSID, logged by IDENTITY and TRUTH.mac.",
+        "Low-flicker countdown-only redraw plus TESTS/STOP/RUN/SUITE controls and categorized list screens.",
+        "Flashing replaces SquachWatch on this physical 3.2 CYD; keep another CYD as a receiver. CI is compile-only, not hardware validation."
+      ]
     }
   }
 }

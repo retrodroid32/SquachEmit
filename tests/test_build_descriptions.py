@@ -15,6 +15,7 @@ class BuildDescriptionTests(unittest.TestCase):
 
     def test_known_firmware_builds_have_distinct_descriptive_labels(self):
         builds = [
+            ("504430454caa465696fd39fff8c92ad56247bcf0", "CYD 3.2 Photo-Fix", 49),
             ("471699cb08ad7e458b4d56a11e1f5ef265d54ed5", "CYD 3.2", 49),
             ("2774856ec2c0f852eb87b1ec99dfcb910aadca7e", "CYD 3.2", 49),
             ("fb57b628ce6a2539cb0940127763744e47be19bf", "Drone Remote ID", 49),
