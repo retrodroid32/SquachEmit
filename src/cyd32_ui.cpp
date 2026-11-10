@@ -99,86 +99,159 @@ void wedge(int x1,int y1,int x2,int y2,int r,uint16_t col){
   lcd.fillCircle(x1,y1,r,col);
   lcd.fillCircle(x2,y2,r,col);
 }
+void retroBackdrop(){
+  // Synthwave night-scape: matches SquachWatch's actual dark, detailed
+  // backgrounds rather than leaving a flat near-black void.
+  // Designed independently in TFT primitives, no bitmap/PSRAM required.
+  lcd.fillRect(0,15,320,164,lcd.color565(4,4,18));
+  for (int y=16; y<155; y+=8){
+    const uint8_t shift=(uint8_t)((y-16)/8);
+    const uint16_t dusk=lcd.color565((uint8_t)(4+shift/3),
+                                     (uint8_t)(5+shift/4),
+                                     (uint8_t)(25+shift));
+    lcd.drawFastHLine(0,y,320,dusk);
+  }
+  // Stars use deterministic fixed coordinates: no animated background
+  // repaints during countdown, unlike the old flickering 3.2 render.
+  static const uint8_t stars[][2]={
+    {13,27},{48,42},{81,23},{114,37},{154,25},{203,39},{243,26},
+    {290,33},{306,47},{27,66},{65,79},{94,55},{137,86},{181,63},
+    {236,81},{277,68},{311,94},{17,116},{73,124},{222,116},{296,130}};
+  for(const auto& st:stars){
+    lcd.drawPixel(st[0],st[1],kCyan);
+    if((st[0]%3)==0)lcd.drawPixel(st[0]+1,st[1],kVaporPurple);
+  }
+  // Distant neon mountains and city buildings form a readable silhouette.
+  lcd.fillTriangle(0,146,53,87,115,146,lcd.color565(17,3,44));
+  lcd.fillTriangle(62,146,138,93,201,146,lcd.color565(15,2,36));
+  lcd.fillTriangle(166,146,252,83,320,146,lcd.color565(20,3,48));
+  const struct {uint8_t x,y,w;} buildings[]={
+    {0,132,19},{22,116,15},{42,128,14},{61,100,19},
+    {86,123,18},{111,116,12},{215,116,20},{240,99,16},
+    {263,128,17},{284,107,20},{308,123,12}};
+  for(const auto& b:buildings){
+    lcd.fillRect(b.x,b.y,b.w,168-b.y,lcd.color565(5,2,24));
+    lcd.drawFastVLine(b.x,b.y,168-b.y,kVaporPurple);
+    for(int y=b.y+5;y<163;y+=10){
+      for(int x=b.x+4;x<(int)b.x+b.w-2;x+=7)
+        lcd.fillRect(x,y,2,3,(x+y)%3==0?kPink:kCyan);
+    }
+  }
+  // Retro ground grid, a signature SquachWatch scene motif.
+  lcd.fillRect(0,168,320,13,lcd.color565(3,1,13));
+  lcd.drawFastHLine(0,167,320,kVaporPink);
+  for(int x=0;x<320;x+=28)
+    lcd.drawLine(160,167,x,181,kPurple);
+  lcd.drawFastHLine(0,174,320,kPurple);
+  lcd.drawFastHLine(0,180,320,kCyan);
+}
+
 void bigSquachy(bool emitting,bool suite){
-  // Proportions follow SquachWatch's central standing character: long arms,
-  // squat fur-covered body, wider head, tan muzzle. Distinct original art.
-  const int x=159,y=92;
-  lcd.drawFastHLine(95,194,130,kPurple);
-  lcd.drawFastHLine(112,195,96,kVaporPurple);
-  // Legs/feet
-  wedge(x-13,y+49,x-19,y+90,12,kInk);
-  wedge(x+13,y+49,x+18,y+90,12,kInk);
-  wedge(x-13,y+49,x-19,y+89,9,kFurDark);
-  wedge(x+13,y+49,x+18,y+89,9,kFurDark);
-  lcd.fillRoundRect(x-30,y+86,28,12,5,kFurMain);
-  lcd.fillRoundRect(x+3,y+86,28,12,5,kFurMain);
-  // Torso + long angled arms, strong keyline.
-  lcd.fillRoundRect(x-31,y+20,62,63,20,kInk);
-  lcd.fillRoundRect(x-28,y+20,56,60,18,kFurMain);
-  lcd.fillRoundRect(x-13,y+38,26,28,10,kFurDark);
-  wedge(x-27,y+26,x-43,y+74,12,kInk);
-  wedge(x+27,y+26,x+43,y+74,12,kInk);
-  wedge(x-27,y+26,x-43,y+74,9,kFurMain);
-  wedge(x+27,y+26,x+43,y+74,9,kFurMain);
-  // Head dark outline and layered fur (same silhouette geometry family).
-  lcd.fillRoundRect(x-38,y-39,76,65,23,kInk);
-  lcd.fillRoundRect(x-35,y-37,70,60,22,kFurLight);
-  lcd.fillRoundRect(x-32,y-34,64,56,20,kFurMain);
-  lcd.fillTriangle(x-20,y-33,x-9,y-52,x+3,y-31,kFurLight);
-  lcd.fillTriangle(x-15,y-35,x-8,y-46,x+3,y-32,kFurMain);
-  lcd.fillCircle(x-34,y-8,10,kInk);
-  lcd.fillCircle(x+34,y-8,10,kInk);
-  lcd.fillCircle(x-34,y-8,7,kFurDark);
-  lcd.fillCircle(x+34,y-8,7,kFurDark);
-  // Muzzle and eyes. No white "bear-face" mask.
-  lcd.fillRoundRect(x-23,y-15,46,30,11,kSkin);
-  lcd.fillRoundRect(x-20,y-18,40,9,4,kFurLight);
-  lcd.drawFastHLine(x-19,y-18,14,kFurDark);
-  lcd.drawFastHLine(x+5,y-18,14,kFurDark);
-  lcd.fillCircle(x-11,y-10,4,kWhite);
-  lcd.fillCircle(x+11,y-10,4,kWhite);
-  lcd.fillCircle(x-10,y-9,2,kInk);
-  lcd.fillCircle(x+10,y-9,2,kInk);
-  lcd.fillRoundRect(x-5,y+2,10,5,2,kFurDark);
-  lcd.fillCircle(x-17,y+4,3,kSkinDark);
-  lcd.fillCircle(x+17,y+4,3,kSkinDark);
-  if(emitting){
-    lcd.fillCircle(x,y+12,5,kInk);
-    lcd.fillCircle(x,y+12,2,kPink);
-  }else if(suite)lcd.drawFastHLine(x-10,y+12,20,kInk);
-  else{
-    lcd.drawLine(x-10,y+10,x,y+15,kInk);
-    lcd.drawLine(x,y+15,x+10,y+10,kInk);
+  // Reduced Squachy silhouette taken from visual inspection of the
+  // *actual SquachWatch renders* (hair tuft, black shades, pink cheeks,
+  // square pink mouth, small ears, short legs). Independent artwork:
+  // no copy of SquachWatch's GPLv3 sprite/character rendering functions.
+  const int x=160,y=86;
+  // Dark outline first, then shaggy body and short round feet.
+  lcd.fillRoundRect(x-30,y+23,60,71,14,kInk);
+  lcd.fillRoundRect(x-26,y+24,52,67,12,kFurMain);
+  lcd.fillRoundRect(x-15,y+35,30,35,6,kFurDark);
+  // Feet: they sit on the ground, not on top of the diagnostics strip.
+  lcd.fillRoundRect(x-29,y+86,29,11,5,kInk);
+  lcd.fillRoundRect(x+1,y+86,29,11,5,kInk);
+  lcd.fillRoundRect(x-27,y+85,26,10,4,kFurMain);
+  lcd.fillRoundRect(x+2,y+85,25,10,4,kFurMain);
+  // Arms hang outside the torso, with dark keyline.
+  lcd.fillRoundRect(x-40,y+26,20,58,7,kInk);
+  lcd.fillRoundRect(x+20,y+26,20,58,7,kInk);
+  lcd.fillRoundRect(x-36,y+28,14,53,6,kFurMain);
+  lcd.fillRoundRect(x+22,y+28,14,53,6,kFurMain);
+  lcd.fillCircle(x-30,y+81,7,kFurLight);
+  lcd.fillCircle(x+30,y+81,7,kFurLight);
+  // Uneven pointed hair, the source character's unmistakable crown.
+  lcd.fillTriangle(x-28,y-13,x-16,y-38,x-3,y-11,kInk);
+  lcd.fillTriangle(x-8,y-12,x+15,y-45,x+24,y-10,kInk);
+  lcd.fillTriangle(x-25,y-12,x-14,y-33,x+0,y-10,kFurLight);
+  lcd.fillTriangle(x-5,y-12,x+14,y-39,x+21,y-10,kFurLight);
+  lcd.fillRoundRect(x-39,y-20,78,66,18,kInk);
+  lcd.fillRoundRect(x-35,y-18,70,60,16,kFurLight);
+  lcd.fillRoundRect(x-31,y-16,62,55,15,kFurMain);
+  // Short round Sasquatch ears, with contrasting inner fur.
+  lcd.fillCircle(x-35,y+7,10,kInk);
+  lcd.fillCircle(x+35,y+7,10,kInk);
+  lcd.fillCircle(x-35,y+7,7,kFurMain);
+  lcd.fillCircle(x+35,y+7,7,kFurMain);
+  lcd.fillCircle(x-35,y+7,3,kSkinDark);
+  lcd.fillCircle(x+35,y+7,3,kSkinDark);
+  // Eye ridge, signature squared dark sunglasses with blue lens gleam.
+  lcd.fillRoundRect(x-27,y-2,54,21,5,kInk);
+  lcd.fillRoundRect(x-24,y-1,22,17,3,lcd.color565(8,19,52));
+  lcd.fillRoundRect(x+2,y-1,22,17,3,lcd.color565(8,19,52));
+  lcd.fillRect(x-17,y+2,4,7,lcd.color565(37,113,172));
+  lcd.fillRect(x+9,y+2,4,7,lcd.color565(37,113,172));
+  lcd.drawFastHLine(x-3,y+7,6,kFurDark);
+  // Pink cheeks, outlined muzzle, bright rectangular expressive mouth.
+  lcd.fillCircle(x-29,y+22,7,kVaporPink);
+  lcd.fillCircle(x+29,y+22,7,kVaporPink);
+  lcd.fillRoundRect(x-25,y+25,50,20,6,kInk);
+  lcd.fillRoundRect(x-21,y+27,42,15,5,emitting?kPink:kSkin);
+  lcd.fillRect(x-15,y+28,30,4,kWhite);
+  if(suite)lcd.drawFastHLine(x-13,y+36,26,kInk);
+  else if(emitting){
+    lcd.fillRect(x-9,y+34,18,6,kInk);
+    lcd.fillRect(x-7,y+33,14,2,kVaporPink);
+  }else{
+    lcd.drawLine(x-10,y+35,x,y+39,kInk);
+    lcd.drawLine(x,y+39,x+10,y+35,kInk);
   }
 }
+
 void countdownOnly(uint32_t count){
-  // Entire home stays untouched; repaint timer digits only.
-  lcd.fillRect(238,62,65,17,kBg);
-  char buf[20];
+  // Exactly one small patch changes per second; the full screen never
+  // clears during an active test.
+  lcd.fillRect(240,191,72,11,kBg);
+  char buf[18];
   snprintf(buf,sizeof(buf),"%lus LEFT",(unsigned long)count);
-  label(238,65,buf,kPink);
+  label(247,193,buf,kPink);
 }
+
+void speechBubble(const char* active,bool suite){
+  lcd.fillRoundRect(7,20,306,44,4,kBg);
+  lcd.drawRoundRect(7,20,306,44,4,kVaporPink);
+  lcd.drawRoundRect(9,22,302,40,3,kPurple);
+  const Scenario* chosen=selected<kScenarioCount?&kScenarios[selected]:nullptr;
+  const char* phrase=(active&&*active)?"RF LAB TRANSMITTING":suite?"TEST SUITE RUNNING":
+      "READY TO TEST. PICK A PROFILE.";
+  fit(16,25,phrase,285,kWhite,2);
+  fit(16,47,active&&*active?active:chosen?chosen->id:"NO PROFILE",
+      288,active&&*active?kPink:kCyan,1);
+}
+
+void statusStrip(const char* active,bool suite){
+  lcd.fillRect(0,183,320,29,kBg);
+  lcd.drawFastHLine(6,182,308,kPurple);
+  label(12,186,active&&*active?"EMITTING":suite?"SUITE":"RF IDLE",
+        active&&*active?kPink:kGreen);
+  label(97,186,"BLE / WIFI / RID",kCyan);
+  label(244,186,"49 CASES",kVaporPink);
+  lcd.drawFastHLine(6,198,308,kPurple);
+  label(12,201,"PROFILE",kVaporPink);
+  const Scenario* chosen=selected<kScenarioCount?&kScenarios[selected]:nullptr;
+  fit(66,200,chosen?chosen->id:"NONE",164,kWhite,1);
+}
+
 void homeScreen(const char* active,uint32_t remaining,bool suite){
   const bool emitting=active&&*active;
   lcd.fillScreen(kBg);
-  titleBar();
-  fit(8,22,emitting?"!! EMITTING !!":suite?">> LAB SUITE <<":">> ALL CLEAR <<",
-      303,emitting?kPink:kGreen,2);
+  retroBackdrop();
   bigSquachy(emitting,suite);
-  const char* lines[]={"READY TO TEST","CHOOSE AN RF PROFILE","RECEIVER ON A 2ND CYD"};
-  fit(203,40,emitting?active:suite?"RUNNING SUITE":lines[talkIndex%3],
-      109,emitting?kPink:kCyan,1);
-  lcd.drawFastHLine(202,57,108,kPurple);
+  titleBar();
+  speechBubble(active,suite);
+  statusStrip(active,suite);
   if(emitting)countdownOnly((remaining+999)/1000);
-  else label(218,65,suite?"SUITE ON":"RF: OFF",suite?kYellow:kGreen);
-  const Scenario* chosen=selected<kScenarioCount?&kScenarios[selected]:nullptr;
-  label(6,176,"SELECTED:",kVaporPink);
-  fit(6,189,chosen?chosen->id:"NONE",99,kWhite,1);
-  label(211,176,"CASES:",kVaporPink);
-  label(256,176,"49",kWhite,2);
-  label(211,192,"2.4 GHZ LAB",kMuted);
   footer("TESTS",emitting?"STOP":"RUN","SUITE");
 }
+
 bool matches(size_t index){
   const Scenario& s=kScenarios[index];
   const bool wifi=s.kind==Kind::WifiAp||s.kind==Kind::WifiRemoteId;
@@ -355,9 +428,10 @@ void cyd32UiBegin(){
   lcd.setRotation(1); // 320x240 landscape
   // From SquachWatch's real CYD32: ST7798-compatible, BGR, inversion OFF.
   // TFT inversion needs an absolute setting after setRotation().
-  panelInverted=false;
+  panelInverted=true; // physically observed E32R32P board requires inversion ON
   if(prefs.begin("sqemit32",true)){
-    panelInverted=prefs.getBool("invert",false);
+    // New key avoids inheriting R3's incorrect "invert=false" default.
+    panelInverted=prefs.getBool("invert2",true);
     prefs.end();
   }
   lcd.invertDisplay(panelInverted);
@@ -376,7 +450,7 @@ void cyd32UiSetInversion(bool enabled){
   panelInverted=enabled;
   lcd.invertDisplay(enabled);
   if(prefs.begin("sqemit32",false)){
-    prefs.putBool("invert",enabled);
+    prefs.putBool("invert2",enabled);
     prefs.end();
   }
   redraw=true;
