@@ -113,7 +113,7 @@ void retroBackdrop(){
   }
   // Stars use deterministic fixed coordinates: no animated background
   // repaints during countdown, unlike the old flickering 3.2 render.
-  static const uint8_t stars[][2]={
+  static const uint16_t stars[][2]={
     {13,27},{48,42},{81,23},{114,37},{154,25},{203,39},{243,26},
     {290,33},{306,47},{27,66},{65,79},{94,55},{137,86},{181,63},
     {236,81},{277,68},{311,94},{17,116},{73,124},{222,116},{296,130}};
@@ -125,7 +125,7 @@ void retroBackdrop(){
   lcd.fillTriangle(0,146,53,87,115,146,lcd.color565(17,3,44));
   lcd.fillTriangle(62,146,138,93,201,146,lcd.color565(15,2,36));
   lcd.fillTriangle(166,146,252,83,320,146,lcd.color565(20,3,48));
-  const struct {uint8_t x,y,w;} buildings[]={
+  const struct {uint16_t x,y,w;} buildings[]={
     {0,132,19},{22,116,15},{42,128,14},{61,100,19},
     {86,123,18},{111,116,12},{215,116,20},{240,99,16},
     {263,128,17},{284,107,20},{308,123,12}};
