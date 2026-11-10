@@ -25,3 +25,4 @@
 #define TFT_INVERSION_OFF
 #define LOAD_GLCD
 #define LOAD_FONT2
+#define LOAD_FONT4

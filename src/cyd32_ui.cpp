@@ -247,6 +247,13 @@ void homeScreen(const char* active,uint32_t remaining,bool suite){
   bigSquachy(emitting,suite);
   titleBar();
   speechBubble(active,suite);
+  // SquachWatch places an oversized status headline directly over Squachy
+  // rather than placing it into another rectangular dashboard card.
+  const char* heading=emitting?"ON AIR":suite?"SUITE":"LAB READY";
+  const int textW=emitting?102:suite?95:157;
+  const int hx=(kW-textW)/2;
+  label(hx+1,150,heading,kInk,4);
+  label(hx,148,heading,emitting?kPink:suite?kYellow:kGreen,4);
   statusStrip(active,suite);
   if(emitting)countdownOnly((remaining+999)/1000);
   footer("TESTS",emitting?"STOP":"RUN","SUITE");
