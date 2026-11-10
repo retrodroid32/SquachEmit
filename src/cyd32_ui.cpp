@@ -1,6 +1,7 @@
 #if defined(SQE_CYD32)
 #include "cyd32_ui.h"
 #include "scenarios.h"
+#include "scenario_library.h"
 #include "cyd32_squachy_port.h"
 #include <Arduino.h>
 #include <TFT_eSPI.h>
@@ -23,10 +24,6 @@ constexpr uint16_t kFurDark=0x38C0,kFurMain=0x5941,kFurLight=0x9326;
 constexpr uint16_t kSkin=0xF60F,kSkinDark=0xCB88;
 
 enum class Screen : uint8_t { Home, Categories, Library };
-enum class Filter : uint8_t { All, Drone, Ble, Wifi };
-const char* const kCategoryName[] = {"ALL TEST CASES","DRONE / REMOTE ID",
-                                      "BLUETOOTH / BLE","WIFI / BEACONS"};
-const char* const kCategoryId[] = {"ALL","DRONE","BLE","WIFI"};
 constexpr size_t kPageRows=4;
 
 TFT_eSPI lcd;
@@ -35,8 +32,8 @@ bool squachSpriteReady=false;
 uint32_t lastSquachFrame=0, petUntil=0;
 Preferences prefs;
 Screen screen=Screen::Home;
-Filter filter=Filter::All;
-size_t selected=0,page=0;
+DeviceCategory category=DeviceCategory::Axon;
+size_t selected=0,page=0,categoryPage=0;
 bool ready=false,calibrated=false,redraw=true,wasPressed=false,previousSuite=false;
 bool panelInverted=false;
 uint32_t lastPoll=0,lastPress=0,lastCount=UINT32_MAX,colorBarsUntil=0;
@@ -269,34 +266,18 @@ void homeScreen(const char* active,uint32_t remaining,bool suite){
   footer("TESTS",emitting?"STOP":"RUN","SUITE");
 }
 
-bool matches(size_t index){
-  const Scenario& s=kScenarios[index];
-  const bool wifi=s.kind==Kind::WifiAp||s.kind==Kind::WifiRemoteId;
-  switch(filter){
-    case Filter::All:return true;
-    case Filter::Wifi:return wifi;
-    case Filter::Ble:return !wifi;
-    case Filter::Drone:return strcmp(s.expected,"DRONE")==0 ||
-          strstr(s.id,"DRONE")!=nullptr||strncmp(s.id,"RID-",4)==0;
-  }
-  return true;
-}
 size_t totalMatches(){
-  size_t count=0;
-  for(size_t i=0;i<kScenarioCount;++i)if(matches(i))++count;
-  return count;
+  return deviceCategoryCaseCount(category);
 }
 const Scenario* atRank(size_t rank,size_t* raw=nullptr){
-  for(size_t i=0;i<kScenarioCount;++i){
-    if(!matches(i))continue;
-    if(!rank){if(raw)*raw=i;return &kScenarios[i];}
-    --rank;
-  }
-  return nullptr;
+  size_t i=0;
+  if(!deviceCategoryCaseAtRank(category,rank,&i))return nullptr;
+  if(raw)*raw=i;
+  return &kScenarios[i];
 }
 void firstSelected(){
   size_t raw=0;
-  if(atRank(page*4,&raw))selected=raw;
+  if(atRank(page*kPageRows,&raw))selected=raw;
 }
 void menuRow(int y,const char* title,const char* sub,bool chosen=false){
   // Native SquachWatch settings row: squared panel, thin purple outline,
@@ -309,25 +290,26 @@ void menuRow(int y,const char* title,const char* sub,bool chosen=false){
 void categoriesScreen(){
   lcd.fillScreen(kBg);
   titleBar();
-  label(8,21,"TEST LIBRARY",kVaporPink,2);
-  for(size_t i=0;i<4;++i){
-    char sub[50];
-    if(i==0)snprintf(sub,sizeof(sub),"ALL %u TEST CASES",(unsigned)kScenarioCount);
-    else if(i==1)snprintf(sub,sizeof(sub),"SYNTHETIC REMOTE ID / DRONE");
-    else if(i==2)snprintf(sub,sizeof(sub),"BLUETOOTH ADVERTISING");
-    else snprintf(sub,sizeof(sub),"2.4 GHZ WIFI BEACONS");
-    const char* titles[]={"ALL TEST CASES","DRONE / REMOTE ID",
-                          "BLUETOOTH / BLE","WIFI / BEACONS"};
-    menuRow(44+(int)i*39,titles[i],sub);
+  label(8,21,"TEST LIBRARY / DEVICE TYPE",kVaporPink,2);
+  for(size_t row=0;row<kPageRows;++row){
+    const size_t index=categoryPage*kPageRows+row;
+    if(index>=kDeviceCategoryCount)break;
+    const DeviceCategory c=static_cast<DeviceCategory>(index);
+    char sub[42];
+    snprintf(sub,sizeof(sub),"%u TEST CASES", (unsigned)deviceCategoryCaseCount(c));
+    menuRow(44+(int)row*39,deviceCategoryName(c),sub);
   }
-  pinnedBack();
+  char pages[28];
+  snprintf(pages,sizeof(pages),"PAGE %u/%u",(unsigned)(categoryPage+1),
+           (unsigned)((kDeviceCategoryCount+kPageRows-1)/kPageRows));
+  label(12,199,pages,kMuted);
+  footer("BACK","< PREV","NEXT >");
 }
 void libraryScreen(const char* active,bool suite){
   lcd.fillScreen(kBg);
   titleBar();
-  const char* names[]={"ALL","DRONE","BLE","WIFI"};
-  char header[44];
-  snprintf(header,sizeof(header),"%s  %u CASES",names[(int)filter],
+  char header[52];
+  snprintf(header,sizeof(header),"%s  %u CASES",deviceCategoryName(category),
            (unsigned)totalMatches());
   fit(8,23,header,301,kVaporPink,2);
   for(size_t row=0;row<4;++row){
@@ -392,11 +374,17 @@ Cyd32UiAction touchHome(int x,int y,bool active){
   return Cyd32UiAction::None;
 }
 Cyd32UiAction touchCategories(int x,int y){
-  if(y>=211){screen=Screen::Home;return Cyd32UiAction::None;}
-  if(y<44||y>=44+4*39)return Cyd32UiAction::None;
+  if(y>=kFooterY){
+    if(x<108){screen=Screen::Home;return Cyd32UiAction::None;}
+    if(x<213){if(categoryPage>0)--categoryPage;return Cyd32UiAction::None;}
+    if((categoryPage+1)*kPageRows<kDeviceCategoryCount)++categoryPage;
+    return Cyd32UiAction::None;
+  }
+  if(y<44||y>=44+(int)kPageRows*39)return Cyd32UiAction::None;
   const size_t row=(size_t)((y-44)/39);
-  if(row<4){
-    filter=(Filter)row;
+  const size_t index=categoryPage*kPageRows+row;
+  if(index<kDeviceCategoryCount){
+    category=static_cast<DeviceCategory>(index);
     page=0;
     firstSelected();
     screen=Screen::Library;

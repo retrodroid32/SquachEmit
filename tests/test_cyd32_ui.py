@@ -13,8 +13,8 @@ class Cyd32UiGuards(unittest.TestCase):
                      "touchHome(","touchCategories(","touchLibrary(",
                      "pinnedBack(", "titleBar(", "bigSquachy(",
                      '"TESTS"', '"RUN"', '"STOP"', '"SUITE"',
-                     '"ALL TEST CASES"', '"DRONE / REMOTE ID"',
-                     '"BLUETOOTH / BLE"', '"WIFI / BEACONS"'):
+                     '"TEST LIBRARY / DEVICE TYPE"', 'deviceCategoryName(',
+                     'deviceCategoryCaseAtRank(', '"< PREV"', '"NEXT >"'):
             self.assertIn(name,self.s)
     def test_squachwatch_panel_geometry_and_polarity(self):
         for name in ('lcd.setRotation(1)','lcd.invertDisplay(panelInverted)',
@@ -40,9 +40,12 @@ class Cyd32UiGuards(unittest.TestCase):
         self.assertNotIn('LIST_H=',self.s)
         self.assertNotIn('FILTERS=',self.s)
     def test_filters(self):
-        self.assertIn('Kind::WifiRemoteId',self.s)
-        for name in ("Filter::All","Filter::Drone","Filter::Ble","Filter::Wifi"):
-            self.assertIn(name,self.s)
+        self.assertIn('scenario_library.h',self.s)
+        self.assertNotIn('Filter::',self.s)
+        self.assertNotIn('"BLUETOOTH / BLE"',self.s)
+        self.assertNotIn('"WIFI / BEACONS"',self.s)
+        self.assertIn('categoryPage*kPageRows',self.s)
+        self.assertIn('deviceCategoryCaseAtRank(',self.s)
     def test_source_derived_core(self):
         p=(ROOT/"src"/"cyd32_squachy_port.cpp").read_text()
         for s in ("void render(", "static void wedge(", "const int tuft[4][6]",
