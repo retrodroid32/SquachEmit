@@ -3,6 +3,7 @@
 #include <esp_wifi.h>
 #include <NimBLEDevice.h>
 #include "scenarios.h"
+#include "rid_wifi_pack.h"
 #include "identity.h"
 #if defined(SQE_WAVESHARE_C5)
 #include "c5_ui.h"
@@ -174,6 +175,11 @@ static void remoteFrame(uint8_t which, uint8_t* body27, const Scenario* s) {
       memcpy(m + 2, description, strnlen(description, 23));
       break;
     }
+    case 4:
+      m[0] = 0x52; // Operator ID message, protocol version 2
+      m[1] = 0;    // operator ID type (synthetic)
+      strncpy(reinterpret_cast<char*>(m + 2), "SQE-LAB-OPERATOR", 20);
+      break;
     default: break;
   }
 }
@@ -214,14 +220,20 @@ static bool startWifiRemote(const Scenario* s) {
   if (!beginWifiIdentity(s)) return false;
   if (!WiFi.softAP(s->text ? s->text : "SQE-RID-LAB",
                    "SquachLab2026!", channel, false, 1)) return false;
-  uint8_t body[27];
-  remoteFrame(0, body, s);
-  uint8_t ie[35] = {0xDD, 33, 0xFA, 0x0B, 0xBC, 0x0D, 0x01,
-                    0xF2, 25, 1};
+  // Synthetic message pack: Basic ID, Location, System, Self-ID, Operator ID.
+  // This tests complete receiver parsing but is not flight-compliant broadcast:
+  // there is no true GNSS/UTC on the emitter and all identities are fictional.
+  uint8_t msgs[SquachRidWifi::kMsgCount][SquachRidWifi::kMsgBytes] = {};
+  for(size_t i=0;i<SquachRidWifi::kMsgCount;++i) {
+    uint8_t frame[27] = {};
+    remoteFrame((uint8_t)i,frame,s);
+    memcpy(msgs[i],frame+2,SquachRidWifi::kMsgBytes);
+  }
+  uint8_t ie[SquachRidWifi::kIeBytes] = {};
+  if(!SquachRidWifi::encode(msgs,1,ie,sizeof(ie)))return false;
   if (scenarioIs(s, "RID-WIFI-PARROT")) {
     ie[2] = 0x90; ie[3] = 0x3A; ie[4] = 0xE6;
   }
-  memcpy(ie + 10, body + 2, 25);
   const esp_err_t err = esp_wifi_set_vendor_ie(
       true, WIFI_VND_IE_TYPE_BEACON, WIFI_VND_IE_ID_0, ie);
   g_wifiVendorIE = err == ESP_OK;
