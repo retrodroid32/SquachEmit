@@ -118,7 +118,7 @@ setImmediate(() => {
     const label = options.find(option => option.value === builds[i].id)?.textContent;
     assert.ok(label, 'missing build ' + builds[i].id);
     assert.ok(label.includes(notes[shaRows[i]].title), 'not descriptive: ' + label);
-    assert.ok(label.includes(shaRows[i].slice(0, 8)), 'missing short SHA');
+    assert.ok(!label.includes(shaRows[i].slice(0, 8)), 'hash leaked into human-facing picker');
   }
   elements.build.value = builds[0].id;
   elements.build.handlers.change();
@@ -144,6 +144,8 @@ setImmediate(() => {
   assert.ok(elements.buildDetails.textContent.includes('caa89d82'));
   assert.ok(elements.buildDetails.textContent.includes('Source-derived') || elements.buildDetails.textContent.includes('source-derived'));
   assert.equal(elements.build.children[1].value, 'lab-cyd32-caa89d82');
+  assert.equal(elements.build.children[1].textContent, 'SquachEmit 3.2 — Squachy Animated UI (Latest LAB)');
+  assert.ok(!elements.build.children[1].textContent.includes('caa89d82'));
   assert.equal(elements.confirm.checked, false);
   // Regression: when 2 CYD builds are present, only the newest is shown.
   // The newest is selected by created_at, not the catalog array's order.
