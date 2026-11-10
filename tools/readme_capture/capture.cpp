@@ -42,19 +42,31 @@ int main(int argc,char** argv){
  // The *real* UI is drawn by cyd32UiTick(), including the source Squachy animator.
  hold("home",19);
  tap(32,225);
- hold("categories",8);
+ hold("categories",6);    // AXON, DRONES, FLOCK, GENERAL
  tap(245,225);
- hold("categories",8);
+ hold("categories",6);    // HACKER, IBEACON, RAVEN, SERIAL
+ tap(245,225);
+ hold("categories",6);    // SMART GLASSES, TRACKERS
  tap(156,225);
- hold("categories",5);
-
+ hold("categories",4);
+ tap(156,225);
+ hold("categories",4);
  // Select DRONES / REMOTE ID from the first alphabetized category page.
  tap(50,98);
- hold("categories",8);
- // Select the alphabetically first test inside that category.
+ hold("categories",6);
+ // Navigate through alphabetically sorted Drones tests.
+ tap(250,225);
+ hold("categories",5);
+ tap(250,225);
+ hold("categories",5);
+ tap(150,225);
+ hold("categories",4);
+ tap(150,225);
+ hold("categories",4);
+ // Select the alphabetically first test inside DRONES.
  tap(45,60);
  if(!cyd32UiSelection() || std::string(cyd32UiSelection()->id)!="BLE-DRONE"){
-   fprintf(stderr,"Demo did not select first Drones case\n");
+   fprintf(stderr,"Demo did not select first Drones case\\n");
    return 3;
  }
  hold("home",8);
