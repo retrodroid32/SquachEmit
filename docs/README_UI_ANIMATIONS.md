@@ -38,3 +38,12 @@ The final generated images can be reviewed from the README PR before merge.
 
 The core source-derived Squachy animation retains GPL-3.0-only provenance;
 see `docs/SQUACHY-PORT.md`.
+
+## Generated demo checks
+
+The current README capture run compiled both unmodified CYD 3.2 C++
+renderers and produced **110 native TFT frames** before building the
+three animated sequences. Output frames were checked for GIF decodability
+and 640 × 480 embedded dimensions. The demo and category previews are
+separate animations; the hardware photographs are historical and collapsed
+below them. The public firmware release itself is unchanged.
