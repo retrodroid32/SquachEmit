@@ -84,6 +84,20 @@ builds.push({
   manifest: 'lab/cyd32-471699cb/manifest.json',
   application: 'lab/cyd32-471699cb/application.bin'
 });
+// Newest CYD source-port build and older catalog entry intentionally coexist.
+builds.push({
+  ...builds[builds.length - 1],
+  id: 'lab-cyd32-caa89d82',
+  sha: 'caa89d82047b73cecfbd9d9b476c7bc2fa2a14bb',
+  short_sha: 'caa89d82',
+  title: notes['caa89d82047b73cecfbd9d9b476c7bc2fa2a14bb'].title,
+  version_label: notes['caa89d82047b73cecfbd9d9b476c7bc2fa2a14bb'].version,
+  summary: notes['caa89d82047b73cecfbd9d9b476c7bc2fa2a14bb'].summary,
+  highlights: notes['caa89d82047b73cecfbd9d9b476c7bc2fa2a14bb'].highlights,
+  created_at: '2026-11-10T13:23:09Z',
+  manifest: 'lab/cyd32-caa89d82/manifest.json',
+  application: 'lab/cyd32-caa89d82/application.bin'
+});
 let fetches = 0;
 const context = {
   document,
@@ -124,12 +138,12 @@ setImmediate(() => {
   elements.board.value = 'cyd32-st7798';
   elements.board.handlers.change();
   assert.equal(elements.build.children.length, 2); // placeholder + CYD
-  elements.build.value = 'lab-cyd32-471699cb';
+  elements.build.value = 'lab-cyd32-caa89d82';
   elements.build.handlers.change();
   assert.ok(elements.buildDetails.textContent.includes('ST7798'));
-  assert.ok(elements.buildDetails.textContent.includes('471699cb'));
-  assert.ok(elements.buildDetails.textContent.includes('REPLACES SQUACHWATCH'));
-  assert.ok(elements.buildDetails.textContent.includes('ESP32-2432S032R'));
+  assert.ok(elements.buildDetails.textContent.includes('caa89d82'));
+  assert.ok(elements.buildDetails.textContent.includes('Source-derived') || elements.buildDetails.textContent.includes('source-derived'));
+  assert.equal(elements.build.children[1].value, 'lab-cyd32-caa89d82');
   assert.equal(elements.confirm.checked, false);
   // Regression: when 2 CYD builds are present, only the newest is shown.
   // The newest is selected by created_at, not the catalog array's order.
