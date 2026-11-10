@@ -1,218 +1,106 @@
-# SquachEmit — ESP32-S3 / ESP32-C5 detection test transmitter
+# SquachEmit
 
-**Status: v0.2.0 development. ESP32-S3 baseline retained, Waveshare ESP32-C5 2.8-inch GUI lab target added. Physical RF/hardware verification is required before a production release.**
+**An ESP32 signal emulator for testing SquachWatch detection accuracy.**
 
-A **separate** laboratory companion to [retrodroid32/SquachWatch-CYD](https://github.com/retrodroid32/SquachWatch-CYD).
-SquachEmit emits bounded, synthetic BLE advertisements and ordinary Wi-Fi
-SoftAP beacons that SquachWatch *should* classify. It also provides offline
-802.11 frame fixtures for signatures an ESP32-S3 cannot safely or fully emit
-on its own. **It does not install anything into SquachWatch.**
+[Web Installer](https://retrodroid32.github.io/SquachEmit/) · [v1.0.0 Public Release](https://github.com/retrodroid32/SquachEmit/releases/tag/v1.0.0) · [SquachWatch-CYD](https://github.com/retrodroid32/SquachWatch-CYD) · [Report an Issue](https://github.com/retrodroid32/SquachEmit/issues)
 
-The goal is to measure **signature-level** detection, missed hits, wrong
-classifications, false positives on negative controls, and latency — without
-pretending that a synthetic beacon proves a physical camera/drone is there.
+SquachEmit is a standalone, open-source test transmitter built to exercise the detection signatures used by [SquachWatch-CYD](https://github.com/retrodroid32/SquachWatch-CYD). It broadcasts **synthetic, time-limited BLE advertisements and ordinary 2.4 GHz Wi-Fi test signals**, while separate offline fixtures cover additional receiver-only patterns.
 
-## ESP32-C5 Waveshare touchscreen — experimental board
+The purpose is to measure **hits, misses, false positives, classification accuracy, and detection latency** using controlled test cases. A test signal resembling a named product **does not authenticate that product or indicate its real-world presence**.
 
-The `waveshare-esp32c5-touch-28` PlatformIO environment is a **separate**
-build target for the Waveshare **ESP32-C5-Touch-LCD-2.8**: ST7789 240x320,
-CST3530 capacitive touch, CH32V003 backlight/reset I/O expander. This
-**is not the XPT2046 resistive-touch RockBase/ZLX/LCDWiki model.**
+> **First public release: v1.0.0.** GitHub CI compilation passes for the supported board targets; physical screen, radio, and end-to-end SquachWatch detection validation is still in progress. The public release is not a claim of hardware certification.
 
-Its touchscreen provides scenario selection, PREV/NEXT, RUN, STOP and SUITE.
-Boot is radio-silent, and the existing USB serial command interface is kept.
-The new target uses Arduino-ESP32 3.3.12 through Arduino CLI. The custom PlatformIO board definition is retained for future use but PlatformIO 8.0.0 cannot currently compile the C5 Arduino core. **It has not been physically tested yet.**
+## Actual interface
 
-```bash
-# Firmware CI uses Arduino CLI and the official ESP32-C5 core v3.3.12.
-# See docs/WAVESHARE-C5.md for setup and flashing.
-arduino-cli compile --fqbn "esp32:esp32:esp32c5:FlashSize=16M,PSRAM=enabled" \
-  --build-property "build.extra_flags=-DSQE_WAVESHARE_C5=1 -DARDUINO_USB_CDC_ON_BOOT=1 -I$PWD/include" \
-  --libraries "$PWD/lib" .
-```
+<p align="center">
+  <img src="assets/ui/squachemit-cyd32-hardware.jpg" alt="Actual SquachEmit CYD 3.2-inch hardware displaying the dark Squachy home screen with synthetic BLE/Wi-Fi/RID test controls, from an earlier LAB build" width="360">
+</p>
+<p align="center"><em>Actual CYD 3.2 hardware photo from the earlier 49-case LAB build. The v1.0.0 firmware retains the animated Squachy interface and expands the library to 95 cases organized by device type. This photo is not presented as a v1.0.0 hardware verification.</em></p>
 
-See [Waveshare C5 setup, pinout, and validation](docs/WAVESHARE-C5.md).
-Confirm your actual PCB marking before flashing; the Amazon product page
-alone did not provide a verifiable schematic. **Never flash S3 firmware to C5.**
+Use [the web installer](https://retrodroid32.github.io/SquachEmit/) for the live browser interface and firmware selection. The installed CYD 3.2 firmware provides a SquachWatch-style home screen, animated Squachy, **TESTS / RUN / STOP / SUITE**, and an alphabetical device-type library. Touch calibration and ST7798 color inversion are available for the supported hardware variant.
 
-## Hardware
+## Install — browser only
 
-- One **ESP32-S3 development board** with usable onboard 2.4 GHz antenna and USB data cable.
-- One SquachWatch CYD 2.8-inch **or** 3.2-inch, with its normal firmware.
-- PC with PlatformIO for building/flashing, and serial monitor at **115200**.
-- For meaningful controlled accuracy measurements, use a shielded enclosure
-  or otherwise RF-isolated, authorized lab. Use the minimum necessary range.
+**Recommended method: [Open the SquachEmit Web Installer](https://retrodroid32.github.io/SquachEmit/)**
 
-ESP32-S3 has 2.4 GHz Wi-Fi and Bluetooth **LE** only. It cannot transmit real
-Bluetooth Classic discovery, 5 GHz Wi-Fi, or arbitrary 2.4 GHz protocols. It
-uses one time-shared Wi-Fi/BLE radio, so this firmware runs one case at a time.
+1. Connect the intended SquachEmit ESP32 board using a **USB data cable** and desktop Chrome or Edge.
+2. Select the **exact board model**; firmware builds are not interchangeable.
+3. Select the **SquachEmit v1.0.0** public firmware shown for your board.
+4. Confirm the board and use **Install** to flash directly in the browser.
+5. For test commands, use the installer's built-in **Serial Test Console** (115200 baud by default, with selectable baud rates).
 
-## Build / flash
+There is **no requirement to download firmware files or run a manual flasher**. GitHub release assets are retained for reproducibility, while browser flashing is the primary installation workflow. A separate [LAB channel](https://retrodroid32.github.io/SquachEmit/?lab=1) exposes unverified experimental builds.
 
-Install [PlatformIO](https://platformio.org/install) (VS Code extension or CLI).
-From the project directory:
+**Warning:** Flashing SquachEmit onto a CYD replaces the firmware currently on that device, including SquachWatch. Use a **separate device** as the SquachWatch receiver.
 
-```bash
-pio run -e esp32-s3-devkitc-1
-pio run -e esp32-s3-devkitc-1 -t upload
-pio device monitor -b 115200
-```
+## Hardware targets
 
-To flash without rebuilding in a later phase, use the GitHub CI artifact after
-confirming its board target. **CI compilation is not hardware validation.**
+| Board | Display/interface | Firmware |
+|---|---|---|
+| **CYD 3.2 ST7798** (ESP32-2432S032R / E32R32P) | 3.2-inch resistive touchscreen; animated Squachy, device-type test library | v1.0.0 public build; hardware verification pending |
+| **Waveshare ESP32-C5 Touch LCD 2.8** | ST7789, CST3530 capacitive touch | v1.0.0 public build; hardware verification pending |
+| **ESP32-S3 DevKitC-1** | USB serial test console | v1.0.0 public build; hardware verification pending |
 
-For other S3 boards with different flash/PSRAM/pinout settings, create a board
-profile before flashing. The current profile assumes the Espressif S3
-DevKitC-1 compatible board.
+The Waveshare C5 profile is **not** interchangeable with other ESP32-C5 2.8-inch touchscreen boards, and CYD 3.2 firmware is **not** compatible with CYD 2.8. See [CYD hardware notes](docs/CYD32-LAB.md) and [Waveshare C5 details](docs/WAVESHARE-C5.md).
 
-## Radio commands
+The ESP32 hardware cannot reproduce every radio protocol: e.g., 5 GHz Wi-Fi, Bluetooth Classic inquiry, BLE 5 extended/coded PHY, proprietary drone links, and arbitrary 802.11 management frames require different hardware or offline receiver fixtures.
 
-The device stays silent until explicitly instructed and stops transmitting
-after the selected test duration. Send one command per line over 115200 USB
-serial:
+## 95 test cases — one device family per library
+
+**The CYD 3.2 on-screen library groups cases by device type, not by BLE versus Wi-Fi.** Each case appears exactly once, in its matching category; categories and test IDs are alphabetically ordered.
+
+| Device library | Examples |
+|---|---|
+| **Axon** | Body 2/3/4 pairing SSIDs, Field patterns, near-match controls |
+| **Drones / Remote ID** | DJI, Autel, Parrot, generic OpenDroneID, stale/invalid message controls |
+| **Flock** | Setup SSIDs, Penguin battery names, vendor ID and negative controls |
+| **General / Controls** | Generic benign/unknown radio fixtures |
+| **Hacker Devices** | Flipper UUID/name patterns, Pineapple/Pager SSIDs, negatives |
+| **iBeacon** | Structured Apple iBeacon positives and malformed controls |
+| **Raven** | Service UUID family and nonmatching adjacent UUID |
+| **Serial Modules** | HC-series, JDY-series, RN42, linvor and other **candidate** device names |
+| **Smart Glasses** | Meta, Luxottica, Snap company IDs and Ray-Ban Meta service UUID |
+| **Trackers** | AirTag-like Find My patterns, Samsung SmartTag, Tile, Eddystone controls |
+
+For example, a drone's BLE and Wi-Fi Remote ID cases are **both found only under Drones / Remote ID**, never duplicated under a generic BLE list. BLE/Wi-Fi are still recorded as technical transmission details.
+
+Coverage notes: [95-case detection matrix](docs/DETECTION_MATRIX_95.md) · [device-type library](docs/DEVICE_TYPE_LIBRARY.md) · [drone variants](docs/DRONE-LAB.md).
+
+**Interpretation matters:** A generic Bluetooth serial module is not necessarily a card skimmer. A Meta company ID is not proof of camera glasses. The generic Eddystone UUID `0xFEAA` alone is **not** proof of a Google tracker. Negative cases exist to catch such false positives.
+
+## Running a test
+
+Select a profile on the touchscreen or use the **Serial Test Console** in the web installer:
 
 ```text
 HELP
 LIST
 RUN BLE-META-UUID 12
-RUN BLE-DRONE 15
-RUN WIFI-AXON 12
-RUN BLE-NEG-APPLE 12
+RUN RID-DJI-MINI 12
+RUN WIFI-AXON-AB4 12
+STATUS
 STOP
 SUITE
-STATUS
 ```
 
-`RUN <ID> [seconds]` accepts 3–30 seconds (12 seconds by default). `SUITE`
-walks every test for 12 seconds with a 2.4-second quiet gap between cases.
-`STOP` terminates both current emission and suite. Device boot does not
-transmit. **No unrestricted broadcasting, deauth floods, or attack frames.**
+`RUN <ID> [seconds]` accepts 3–30 seconds per case (12 seconds by default). The device does not transmit automatically at boot. `STOP` immediately ends the active case or suite. A full 95-case suite takes time; run it only while attended and monitor your receiver.
 
-Typical truth log:
+A typical result contains a `TRUTH` record with the case ID and expected classification. **This records the transmitter's intention**, not proof that another device actually received or recognized the signal.
 
-```text
-TRUTH,{"event":"BEGIN","seq":1,"ms":6025,"id":"BLE-META-UUID","expected":"META","status":"ok"}
-INFO,BLE-META-UUID,META,Ray-Ban Meta service UUID
-TRUTH,{"event":"END","seq":1,"ms":18029,"id":"BLE-META-UUID","expected":"META","status":"ok"}
-```
+For meaningful results, use a separate SquachWatch receiver (CYD 2.8 or 3.2), test positive and negative controls, and record observed classifications and latency in `tests/observations.csv`. See [accuracy testing](docs/ACCURACY.md), [limitations](docs/LIMITATIONS.md), and [trial scoring](docs/LAB-EXPANSION.md).
 
-The `TRUTH` messages describe what SquachEmit attempted to broadcast. They
-**do not** certify RF delivery, SquachWatch reception, or a match.
+## What's covered offline, not transmitted
 
-## Coverage — 17 SquachWatch categories
+The fixture library also tests receiver behavior for vendor OUIs (cameras, ALPR, Ring, drone manufacturers), Flock wildcard-probe corroboration, evil-twin frame relationships, Pwnagotchi identifiers, Wi-Fi Remote ID NAN, and deauthentication thresholds. Those are **offline test vectors**, **not** emitted spoofed manufacturer identities or attack traffic.
 
-| Detection category | ESP32-S3 on-air coverage | Important limitation |
-|---|---|---|
-| `FLOCK` | BLE company ID/name, Wi-Fi SSID | Flock OUIs / wildcard-probe corroboration need offline or additional lab transmitter |
-| `AXON` | Wi-Fi SSID prefixes | Vendor MAC OUIs not tested on-air |
-| `META` | BLE service UUID and manufacturer ID | Checks labels, not an actual camera/glasses |
-| `SKIMMER` | BLE SPP-like name | **Not** actual Bluetooth Classic inquiry/connection |
-| `RAVEN` | BLE service UUID | Unverified against physical Raven hardware |
-| `AIRTAG` | Synthetic Apple Find My payload | Doesn't reproduce full Apple tracker behavior |
-| `DRONE` | 3 rotating BLE legacy OpenDroneID messages | No physical UAV; Wi-Fi beacon/NAN are offline fixtures |
-| `ALPR` | Offline OUI fixture | Manufacturer-specific radio identity not replicated on-air |
-| `CAMERA` | Offline OUI fixture | Manufacturer-specific radio identity not replicated on-air |
-| `SAMSUNG_TAG` | BLE service UUID | No real SmartTag protocol/state machine |
-| `GOOGLE_TAG` | BLE service UUID | Also matches ordinary Eddystone; ambiguous by design |
-| `TILE` | BLE service UUID | No real Tile protocol/state machine |
-| `RING` | Offline OUI fixture | Manufacturer-specific radio identity not replicated on-air |
-| `DEAUTH` | Offline single-frame + boundary fixtures | **No** over-the-air deauth attacks/floods |
-| `EVILTWIN` | Offline contrasting beacons | One S3 SoftAP cannot generate two independent BSSIDs for a complete live test |
-| `IBEACON` | Complete synthetic manufacturer data | Enable iBeacon in SquachWatch's detection filters first |
-| `HACKER` | BLE UUID/company ID, Wi-Fi SSID; Pwnagotchi IE offline | Not a pentest-radio emulator |
+SquachEmit does **not** broadcast deauth floods, jam networks, collect credentials, or reproduce private drone flight links. Use it only in environments and with radio equipment you control or are authorized to test, following applicable RF rules.
 
-See [docs/ACCURACY.md](docs/ACCURACY.md) for a repeatable acceptance procedure,
-expected outcomes, and how to score results. See
-[docs/LIMITATIONS.md](docs/LIMITATIONS.md) for a breakdown of what is and isn't proven.
+## Development, provenance and licensing
 
-## Host tests and report
+Code and test cases: `src/`, `include/`, and `tests/`. Automated workflow: [SquachEmit CI](https://github.com/retrodroid32/SquachEmit/actions/workflows/ci.yml). Version details: [v1.0.0 release notes](docs/RELEASE_V1.0.0.md). The release's source-derived Squachy core is documented in [Squachy port provenance](docs/SQUACHY-PORT.md); it incorporates GPL-3.0-only source adaptations from SquachWatch. Other MIT-authored portions retain their notices. **The combined distributed firmware must satisfy GPLv3 obligations**; see `LICENSE` and `LICENSES/GPL-3.0.txt`.
 
-Without hardware, validate fixture geometry and catalog consistency:
+SquachEmit and SquachWatch-CYD are separate firmware projects. SquachEmit is not affiliated with the device manufacturers referenced by its detection test cases.
 
-```bash
-python -m unittest discover -s tests -v
-python tools/generate_vectors.py
-python tools/rid_vectors.py
-# With a separate local SquachWatch-CYD clone and g++:
-python tools/verify_native.py ../SquachWatch-CYD
-```
+## Contributing and reporting bugs
 
-For real accuracy measurements:
-
-1. Load SquachWatch onto the **2.8-inch** CYD, enable relevant detector types;
-   enable iBeacon explicitly for its case.
-2. Run `LIST` then one `RUN ...` case at a time on SquachEmit.
-3. For each case record the **actual SquachWatch** detected type, `NONE` after
-   a full clean test window, or leave blank if not yet tested.
-4. Enter observations in `tests/observations.csv` and, if measured, latency in ms.
-5. Score:
-
-```bash
-python tools/analyze.py tests/observations.csv --output tests/report-2.8.md
-```
-
-6. Repeat independently on **3.2-inch** CYD with its own observations CSV and
-   report. Each case should have multiple independent runs and periodic negative
-   controls; do not equate one successful sighting with a high detection rate.
-
-An optional USB log recorder is available:
-
-```bash
-pip install -r requirements-host.txt
-python tools/capture.py COM8
-```
-
-**Important:** `capture.py` records the SquachEmit truth serial stream only;
-to automate matching, add a separate, version-specific parser for the CYD's
-serial/SD log format. Current scoring is deliberately driven by actual
-observations, not made-up successes.
-
-## Project rules
-
-- Independent repository, release history and versioning; no SquachWatch merges.
-- All test profiles marked synthetic and bounded to 30 seconds per case.
-- No deauth/jamming, arbitrary raw management-frame injection, credential
-  collection, or impersonation of nearby networks.
-- Offline fixtures are **not** over-the-air hardware evidence.
-- Firmware built by CI is labelled `unverified` until tested on an S3.
-- The test device should be used only on equipment and radio environments
-  you control/are authorized to test, in compliance with RF regulations.
-
-## Provenance
-
-Compared on 2026-11-08 against SquachWatch-CYD's `include/state.h`,
-`src/signatures.cpp`, `src/detection.cpp`, `src/remote_id.cpp`,
-`test/emitter_roundtrip_test.cpp`, and `docs/DETECTIONS.md` (default `master`).
-The fork's signature table can change; revisit the catalog for new firmware.
-This project is independent; it is not affiliated with any of the product
-manufacturers named in SquachWatch's detector signatures.
-
-## LAB 0.3.0: reproducible RF validation (not yet hardware verified)
-
-Adds 31 bounded scenarios, selected 2.4GHz Wi-Fi channels 1/6/11 and
-additional BLE positive/negative controls. Offline Marauder-inspired
-protocol checks and per-CYD repeated-trial scoring are described in
-[the LAB expansion guide](docs/LAB-EXPANSION.md).
-
-No attacks, 5GHz or unattended RF are enabled; firmware CI builds are
-still unverified until tested on SquachWatch 2.8 and 3.2 hardware.
-
-## Synthetic drone-model Remote ID LAB v0.4.0
-
-Additional on-air BLE4 test profiles cover DJI Mini/Air/Mavic/Phantom/Matrice,
-Autel EVO II/Max/Lite and Parrot ANAFI/ANAFI USA. Two new ordinary
-Wi-Fi beacon vendor-IE test modes cover generic and Parrot-style Remote ID;
-negative controls test incorrect app codes, truncated messages, missing
-operator data, old location time-of-hour and invalid Basic ID type.
-
-No real drone hardware or private RF protocol is cloned. See
-[the drone LAB validation guide](docs/DRONE-LAB.md) for exact capability
-boundaries, especially BLE5 and NAN, which remain offline-only fixtures.
-
-## CYD 3.2-inch ST7798 SquachEmit LAB target
-
-New ESP32-2432S032R / E32R32P 3.2-inch ST7798/ST7789-compatible
-resistive-touch target, matching the SquachWatch 'cyd32-st7798' pinout.
-240x320 UI with RUN/STOP/SUITE, NVS touch calibration and 49 scenarios.
-115200 baud serial. Flashing replaces SquachWatch on the same physical
-board; use another CYD as receiver. Details: docs/CYD32-LAB.md.
+Open a [GitHub issue](https://github.com/retrodroid32/SquachEmit/issues) with the exact board, the firmware version, steps to reproduce, actual versus expected result, and relevant console log. Hardware-tested reports are especially valuable; **CI pass does not mean physical validation**.
