@@ -1,7 +1,6 @@
-# SquachEmit — ESP32-S3 detection test transmitter
+# SquachEmit — ESP32-S3 / ESP32-C5 detection test transmitter
 
-**Status: v0.1.0 source-only prototype — host fixture tests pass; on-device
-compile, actual RF emission, and SquachWatch hardware detections require validation.**
+**Status: v0.2.0 development. ESP32-S3 baseline retained, Waveshare ESP32-C5 2.8-inch GUI lab target added. Physical RF/hardware verification is required before a production release.**
 
 A **separate** laboratory companion to [retrodroid32/SquachWatch-CYD](https://github.com/retrodroid32/SquachWatch-CYD).
 SquachEmit emits bounded, synthetic BLE advertisements and ordinary Wi-Fi
@@ -13,21 +12,28 @@ The goal is to measure **signature-level** detection, missed hits, wrong
 classifications, false positives on negative controls, and latency — without
 pretending that a synthetic beacon proves a physical camera/drone is there.
 
-## Web installer and LAB console
+## ESP32-C5 Waveshare touchscreen — experimental board
 
-The [SquachEmit web installer](https://retrodroid32.github.io/SquachEmit/?lab=1)
-(available after enabling **Settings → Pages → Source: GitHub Actions**)
-uses ESP Web Tools to flash compiled, unverified LAB builds with chip-family
-verification, build SHA, and same-origin binary manifests. Its serial console
-supports `LIST`, `RUN`, `STOP`, `SUITE`, `STATUS` and exporting emitter
-truth logs. Use desktop Chrome/Edge and a USB data cable; disconnect the
-console before flashing.
+The `waveshare-esp32c5-touch-28` PlatformIO environment is a **separate**
+build target for the Waveshare **ESP32-C5-Touch-LCD-2.8**: ST7789 240x320,
+CST3530 capacitive touch, CH32V003 backlight/reset I/O expander. This
+**is not the XPT2046 resistive-touch RockBase/ZLX/LCDWiki model.**
 
-LAB builds are imported from successful CI artifacts on `main` (S3)
-and `lab/**` (Waveshare C5). No project branches are merged. The installer
-keeps multiple C5 lab builds for comparison, and publishes no production
-releases until hardware approval. See [web installer documentation](docs/WEB-INSTALLER.md).
-**Waveshare capacitive-touch C5 boards and resistive-touch C5 boards are different.**
+Its touchscreen provides scenario selection, PREV/NEXT, RUN, STOP and SUITE.
+Boot is radio-silent, and the existing USB serial command interface is kept.
+The new target uses Arduino-ESP32 3.3.12 through Arduino CLI. The custom PlatformIO board definition is retained for future use but PlatformIO 8.0.0 cannot currently compile the C5 Arduino core. **It has not been physically tested yet.**
+
+```bash
+# Firmware CI uses Arduino CLI and the official ESP32-C5 core v3.3.12.
+# See docs/WAVESHARE-C5.md for setup and flashing.
+arduino-cli compile --fqbn "esp32:esp32:esp32c5:FlashSize=16M,PSRAM=enabled" \
+  --build-property "build.extra_flags=-DSQE_WAVESHARE_C5=1 -DARDUINO_USB_CDC_ON_BOOT=1 -I$PWD/include" \
+  --libraries "$PWD/lib" .
+```
+
+See [Waveshare C5 setup, pinout, and validation](docs/WAVESHARE-C5.md).
+Confirm your actual PCB marking before flashing; the Amazon product page
+alone did not provide a verifiable schematic. **Never flash S3 firmware to C5.**
 
 ## Hardware
 
@@ -180,3 +186,33 @@ Compared on 2026-11-08 against SquachWatch-CYD's `include/state.h`,
 The fork's signature table can change; revisit the catalog for new firmware.
 This project is independent; it is not affiliated with any of the product
 manufacturers named in SquachWatch's detector signatures.
+
+## LAB 0.3.0: reproducible RF validation (not yet hardware verified)
+
+Adds 31 bounded scenarios, selected 2.4GHz Wi-Fi channels 1/6/11 and
+additional BLE positive/negative controls. Offline Marauder-inspired
+protocol checks and per-CYD repeated-trial scoring are described in
+[the LAB expansion guide](docs/LAB-EXPANSION.md).
+
+No attacks, 5GHz or unattended RF are enabled; firmware CI builds are
+still unverified until tested on SquachWatch 2.8 and 3.2 hardware.
+
+## Synthetic drone-model Remote ID LAB v0.4.0
+
+Additional on-air BLE4 test profiles cover DJI Mini/Air/Mavic/Phantom/Matrice,
+Autel EVO II/Max/Lite and Parrot ANAFI/ANAFI USA. Two new ordinary
+Wi-Fi beacon vendor-IE test modes cover generic and Parrot-style Remote ID;
+negative controls test incorrect app codes, truncated messages, missing
+operator data, old location time-of-hour and invalid Basic ID type.
+
+No real drone hardware or private RF protocol is cloned. See
+[the drone LAB validation guide](docs/DRONE-LAB.md) for exact capability
+boundaries, especially BLE5 and NAN, which remain offline-only fixtures.
+
+## CYD 3.2-inch ST7798 SquachEmit LAB target
+
+New ESP32-2432S032R / E32R32P 3.2-inch ST7798/ST7789-compatible
+resistive-touch target, matching the SquachWatch 'cyd32-st7798' pinout.
+240x320 UI with RUN/STOP/SUITE, NVS touch calibration and 49 scenarios.
+115200 baud serial. Flashing replaces SquachWatch on the same physical
+board; use another CYD as receiver. Details: docs/CYD32-LAB.md.
