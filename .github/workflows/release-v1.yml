@@ -1,0 +1,62 @@
+name: Publish first public SquachEmit v1.0.0 GitHub Release
+on:
+  workflow_run:
+    workflows: ["SquachEmit CI"]
+    types: [completed]
+permissions:
+  contents: write
+  actions: read
+jobs:
+  publish:
+    if: >-
+      github.event.workflow_run.conclusion == 'success' &&
+      github.event.workflow_run.event == 'push' &&
+      github.event.workflow_run.head_branch == 'main' &&
+      github.event.workflow_run.head_repository.full_name == github.repository
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+          persist-credentials: false
+      - name: Verify source and one-time release gate
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          SOURCE_SHA: ${{ github.event.workflow_run.head_sha }}
+        run: |
+          set -euo pipefail
+          test "$SOURCE_SHA" = "$(gh api repos/$REPO/commits/main --jq .sha)"
+          if gh release view v1.0.0 -R "$REPO" >/dev/null 2>&1; then
+            echo "v1.0.0 already exists; no duplicate release."
+            echo "EXISTS=true" >> "$GITHUB_ENV"
+          fi
+      - name: Download complete verified CI build artifacts
+        if: env.EXISTS != 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          RUN_ID: ${{ github.event.workflow_run.id }}
+        run: |
+          set -euo pipefail
+          mkdir -p release/parts
+          gh run download "$RUN_ID" -R "$REPO" -n squachemit-cyd32-st7798-firmware-unverified -D release/parts/CYD32-ST7798
+          gh run download "$RUN_ID" -R "$REPO" -n squachemit-waveshare-c5-28-firmware-unverified -D release/parts/WAVESHARE-C5-28
+          gh run download "$RUN_ID" -R "$REPO" -n squachemit-esp32s3-firmware-unverified -D release/parts/ESP32-S3
+          for board in CYD32-ST7798 WAVESHARE-C5-28 ESP32-S3; do
+            test -s "release/parts/$board/firmware.bin" || test -s "release/parts/$board/SquachEmit.ino.bin"
+            (cd "release/parts/$board"; sha256sum * > SHA256SUMS.txt)
+            (cd "release/parts/$board"; zip -q -r "../../SquachEmit-v1.0.0-$board.zip" .)
+          done
+      - name: Publish GitHub public release
+        if: env.EXISTS != 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          SOURCE_SHA: ${{ github.event.workflow_run.head_sha }}
+        run: |
+          gh release create v1.0.0 -R "$REPO" \
+            release/SquachEmit-v1.0.0-*.zip \
+            --target "$SOURCE_SHA" \
+            --title "SquachEmit v1.0.0 — First Public Release" \
+            --notes-file docs/RELEASE_V1.0.0.md --latest
