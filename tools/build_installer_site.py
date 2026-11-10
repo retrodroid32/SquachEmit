@@ -104,8 +104,11 @@ def load_source(src: dict, output: Path, notes: dict | None = None) -> dict:
     sha = src['sha'].lower()
     if not SHA.fullmatch(sha) or not ALLOWED_BRANCH.fullmatch(src['branch']):
         raise ValueError(f'invalid trusted source ref: {src}')
-    if src.get('channel') != 'lab':
-        raise ValueError('only lab builds are currently eligible; hardware-approved releases require separate approval')
+    channel = src.get('channel')
+    if channel not in ('lab', 'stable'):
+        raise ValueError('unsupported firmware channel')
+    if channel == 'stable' and src['branch'] != 'main':
+        raise ValueError('public release must originate from successful main CI')
     created_at = src['created_at']
     if not re.fullmatch(r'20\d{2}-\d\d-\d\dT\d\d:\d\d:\d\dZ', created_at):
         raise ValueError('invalid run creation timestamp')
@@ -116,7 +119,7 @@ def load_source(src: dict, output: Path, notes: dict | None = None) -> dict:
     label = {'c5-waveshare-28':'c5',
              's3-devkit':'s3',
              'cyd32-st7798':'cyd32'}[board]
-    folder = Path('lab') / (label + '-' + short)
+    folder = Path(channel) / (label + '-' + short)
     dest = output / folder
     dest.mkdir(parents=True, exist_ok=True)
     if board == 'c5-waveshare-28':
@@ -151,15 +154,32 @@ def load_source(src: dict, output: Path, notes: dict | None = None) -> dict:
         checksums.append(f'{sha256(data)}  {filename}')
     (dest / 'SHA256SUMS.txt').write_text('\n'.join(checksums)+'\n', encoding='utf-8')
     manifest={
-        'name': f'SquachEmit LAB · {BOARDS[board]["label"]} · {short}',
-        'version': f'lab-{short}',
+        'name': (f'SquachEmit v1.0.0 · {BOARDS[board]["label"]}' if channel == 'stable'
+                 else f'SquachEmit LAB · {BOARDS[board]["label"]} · {short}'),
+        'version': ('1.0.0' if channel == 'stable' else f'lab-{short}'),
         'new_install_prompt_erase': True,
         'builds': [{'chipFamily':BOARDS[board]['chip'],
                     'parts':[{'path':name,'offset':off} for name,off,_ in parts]}],
     }
     (dest / 'manifest.json').write_text(json.dumps(manifest,indent=2)+'\n', encoding='utf-8')
     description = describe_build(sha, src['branch'], board, notes if notes is not None else load_build_notes())
-    return {'id':f'lab-{label}-{short}', 'board':board,'channel':'lab','sha':sha,
+    if channel == 'stable':
+        description = {
+            'title': f'SquachEmit v1.0.0 — {BOARDS[board]["label"]} (95 Test Cases)',
+            'version_label': 'v1.0.0 · First Public Release',
+            'summary': ('First public SquachEmit release with 95 synthetic time-limited RF tests, '
+                        'alphabetical device-type test categories on CYD 3.2, and browser flashing. '
+                        'CI builds passed; physical hardware verification remains pending.'),
+            'highlights': [
+                '95 synthetic test scenarios across BLE and Wi-Fi, plus offline receiver fixtures.',
+                'CYD 3.2: alphabetized device categories and tests, animated Squachy.',
+                'One device family per category; drone scenarios never appear in generic BLE lists.',
+                'Stop button and 3–30 second transmit limits; nothing transmits at boot.',
+                'Firmware hardware validation pending. Do not assume real product authentication.'
+            ],
+            'notes_verified_for_sha': True,
+        }
+    return {'id':f'{channel}-{label}-{short}', 'board':board,'channel':channel,'sha':sha,
             'short_sha':short,'branch':src['branch'],'created_at':created_at,
             'run_id':src['run_id'],'manifest':str(folder/'manifest.json'),
             'application':str(folder/'application.bin'),'sha256':sha256(app),
@@ -180,10 +200,10 @@ def build(source_manifest: Path, output: Path) -> dict:
         builds.append(load_source(src,output,notes))
     builds.sort(key=lambda x:x['created_at'],reverse=True)
     catalog={'schema':1,'project':'SquachEmit','generated_from':'successful GitHub CI artifacts',
-             'builds':builds,'production_policy':'No production release before approved physical validation'}
+             'builds':builds,'production_policy':'Public v1.0.0 approved by owner; physical hardware verification remains pending'}
     (output/'catalog.json').write_text(json.dumps(catalog,indent=2)+'\n',encoding='utf-8')
     if not builds: raise ValueError('refusing to publish a Pages site with no validated CI source artifacts')
-    print(f'Prepared {len(builds)} unverified LAB builds: '+', '.join(x['id'] for x in builds))
+    print(f'Prepared {len(builds)} firmware builds (public and LAB; hardware verification pending): '+', '.join(x['id'] for x in builds))
     return catalog
 
 if __name__=='__main__':

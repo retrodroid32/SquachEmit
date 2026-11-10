@@ -5,7 +5,7 @@
   const el = id => document.getElementById(id);
   const ui = Object.fromEntries(['board','build','buildDetails','confirm','notice','channelBadge','enterLab','exitLab','installArea','installLocked','installButton','downloadBin','serialState','connect','disconnect','serialLog','command','commandForm','send','clear','saveLog','baudRate','customBaud','baudHint'].map(k => [k,el(k)]));
   let catalog = { builds: [] }, visible = [], selected = null;
-  ui.channelBadge.textContent = lab ? 'LAB CHANNEL · UNVERIFIED' : 'PRODUCTION';
+  ui.channelBadge.textContent = lab ? 'LAB CHANNEL · UNVERIFIED' : 'PUBLIC RELEASE · HW UNVERIFIED';
   ui.channelBadge.classList.toggle('lab', lab);
   ui.enterLab.hidden = lab;
   ui.exitLab.hidden = !lab;
@@ -93,7 +93,7 @@
       // older catalog still containing historical duplicates.
       const newestByBoard = new Map();
       for (const entry of catalog.builds) {
-        if (!lab && entry.channel !== 'stable') continue;
+        if (lab ? entry.channel !== 'lab' : entry.channel !== 'stable') continue;
         const prior = newestByBoard.get(entry.board);
         if (!prior || Date.parse(entry.created_at) > Date.parse(prior.created_at)) {
           newestByBoard.set(entry.board, entry);
@@ -101,15 +101,15 @@
       }
       visible = [...newestByBoard.values()];
       const boards = [...new Set(visible.map(x=>x.board))];
-      ui.board.replaceChildren(opt('',boards.length?'Choose a target board…':'No approved production firmware yet'));
+      ui.board.replaceChildren(opt('',boards.length?'Choose a target board…':'No public release firmware available yet'));
       boards.forEach(b => ui.board.appendChild(opt(b,boardLabel(b))));
       ui.board.disabled = !boards.length;
       if (lab) {
         notice(`LAB mode enabled. ${visible.length} build(s) loaded. These builds compile in CI but have NOT passed physical RF/display verification.`, 'warn');
         if (boards.length) { ui.board.value = boards.includes('c5-waveshare-28')?'c5-waveshare-28':boards[0]; buildOptions(); }
       } else if (!boards.length) {
-        notice('No hardware-approved production release yet. To use development firmware, open the LAB channel using ENABLE LAB BUILDS.', 'warn');
-      } else notice(`${visible.length} approved production build(s) available.`);
+        notice('No public firmware release published yet. The LAB channel contains development builds.', 'warn');
+      } else notice(`SquachEmit v1.0.0 public release: ${visible.length} board builds available. Hardware verification is pending.`, 'warn');
       if (!navigator.serial || !window.isSecureContext) notice('Browser serial requires HTTPS and Web Serial (desktop Chrome or Edge). Firmware catalog is available for viewing.', 'warn');
     } catch (e) { notice(`Firmware catalog unavailable: ${e.message}. Check the GitHub Actions Pages deployment.`, 'error'); }
   }
