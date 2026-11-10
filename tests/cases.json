@@ -283,7 +283,7 @@
     "carrier": "BLE",
     "kind": "BleRemoteId",
     "expected": "DRONE",
-    "description": "LAB DJI Mini Remote ID profile (synthetic, not real aircraft)",
+    "description": "DJI Mini family | GENERIC SYNTHETIC BLE4; no model RF",
     "code": 0,
     "text": "SQE-DJI-MINI-LAB01"
   },
@@ -292,7 +292,7 @@
     "carrier": "BLE",
     "kind": "BleRemoteId",
     "expected": "DRONE",
-    "description": "LAB DJI Air Remote ID profile (synthetic, not real aircraft)",
+    "description": "DJI Air family | GENERIC SYNTHETIC BLE4; no model RF",
     "code": 0,
     "text": "SQE-DJI-AIR-LAB001"
   },
@@ -301,7 +301,7 @@
     "carrier": "BLE",
     "kind": "BleRemoteId",
     "expected": "DRONE",
-    "description": "LAB DJI Mavic Remote ID profile (synthetic, not real aircraft)",
+    "description": "DJI Mavic family | GENERIC SYNTHETIC BLE4; no model RF",
     "code": 0,
     "text": "SQE-DJI-MAVIC-LAB1"
   },
@@ -310,7 +310,7 @@
     "carrier": "BLE",
     "kind": "BleRemoteId",
     "expected": "DRONE",
-    "description": "LAB DJI Phantom Remote ID profile (synthetic, not real aircraft)",
+    "description": "DJI Phantom family | GENERIC SYNTHETIC BLE4; no model RF",
     "code": 0,
     "text": "SQE-DJI-PHANTOM-L1"
   },
@@ -319,7 +319,7 @@
     "carrier": "BLE",
     "kind": "BleRemoteId",
     "expected": "DRONE",
-    "description": "LAB DJI Matrice Remote ID profile (synthetic, not real aircraft)",
+    "description": "DJI Matrice family | GENERIC SYNTHETIC BLE4; no model RF",
     "code": 0,
     "text": "SQE-DJI-MATRICE-L1"
   },
@@ -853,5 +853,365 @@
     "description": "Remote ID Wi-Fi beacon channel 11",
     "code": 11,
     "text": "SQE-RID-CH11"
+  },
+  {
+    "id": "RID-DJI-AIR2S",
+    "carrier": "BLE",
+    "kind": "BleRemoteId",
+    "expected": "DRONE",
+    "description": "DJI Air 2S | SYNTHETIC BLE4; not actual DJI RF",
+    "code": 0,
+    "text": "SQE-DJI-AIR2S-B"
+  },
+  {
+    "id": "RID-WIFI-DJI-AIR2S",
+    "carrier": "WIFI",
+    "kind": "WifiRemoteId",
+    "expected": "DRONE",
+    "description": "DJI Air 2S | SYNTHETIC WIFI BEACON Basic ID; not actual DJI RF",
+    "code": 6,
+    "text": "SQE-DJI-AIR2S-W"
+  },
+  {
+    "id": "RID-DJI-AIR3",
+    "carrier": "BLE",
+    "kind": "BleRemoteId",
+    "expected": "DRONE",
+    "description": "DJI Air 3 | SYNTHETIC BLE4; not actual DJI RF",
+    "code": 0,
+    "text": "SQE-DJI-AIR3-B"
+  },
+  {
+    "id": "RID-WIFI-DJI-AIR3",
+    "carrier": "WIFI",
+    "kind": "WifiRemoteId",
+    "expected": "DRONE",
+    "description": "DJI Air 3 | SYNTHETIC WIFI BEACON Basic ID; not actual DJI RF",
+    "code": 6,
+    "text": "SQE-DJI-AIR3-W"
+  },
+  {
+    "id": "RID-DJI-AVATA",
+    "carrier": "BLE",
+    "kind": "BleRemoteId",
+    "expected": "DRONE",
+    "description": "DJI Avata | SYNTHETIC BLE4; not actual DJI RF",
+    "code": 0,
+    "text": "SQE-DJI-AVATA-B"
+  },
+  {
+    "id": "RID-WIFI-DJI-AVATA",
+    "carrier": "WIFI",
+    "kind": "WifiRemoteId",
+    "expected": "DRONE",
+    "description": "DJI Avata | SYNTHETIC WIFI BEACON Basic ID; not actual DJI RF",
+    "code": 6,
+    "text": "SQE-DJI-AVATA-W"
+  },
+  {
+    "id": "RID-DJI-FPV",
+    "carrier": "BLE",
+    "kind": "BleRemoteId",
+    "expected": "DRONE",
+    "description": "DJI FPV | SYNTHETIC BLE4; not actual DJI RF",
+    "code": 0,
+    "text": "SQE-DJI-FPV-B"
+  },
+  {
+    "id": "RID-WIFI-DJI-FPV",
+    "carrier": "WIFI",
+    "kind": "WifiRemoteId",
+    "expected": "DRONE",
+    "description": "DJI FPV | SYNTHETIC WIFI BEACON Basic ID; not actual DJI RF",
+    "code": 6,
+    "text": "SQE-DJI-FPV-W"
+  },
+  {
+    "id": "RID-DJI-MATRICE300RTK",
+    "carrier": "BLE",
+    "kind": "BleRemoteId",
+    "expected": "DRONE",
+    "description": "DJI Matrice 300 RTK | SYNTHETIC BLE4; not actual DJI RF",
+    "code": 0,
+    "text": "SQE-DJI-M300-B"
+  },
+  {
+    "id": "RID-WIFI-DJI-MATRICE300RTK",
+    "carrier": "WIFI",
+    "kind": "WifiRemoteId",
+    "expected": "DRONE",
+    "description": "DJI Matrice 300 RTK | SYNTHETIC WIFI BEACON Basic ID; not actual DJI RF",
+    "code": 6,
+    "text": "SQE-DJI-M300-W"
+  },
+  {
+    "id": "RID-DJI-MATRICE30",
+    "carrier": "BLE",
+    "kind": "BleRemoteId",
+    "expected": "DRONE",
+    "description": "DJI Matrice 30 | SYNTHETIC BLE4; not actual DJI RF",
+    "code": 0,
+    "text": "SQE-DJI-M30-B"
+  },
+  {
+    "id": "RID-WIFI-DJI-MATRICE30",
+    "carrier": "WIFI",
+    "kind": "WifiRemoteId",
+    "expected": "DRONE",
+    "description": "DJI Matrice 30 | SYNTHETIC WIFI BEACON Basic ID; not actual DJI RF",
+    "code": 6,
+    "text": "SQE-DJI-M30-W"
+  },
+  {
+    "id": "RID-DJI-MATRICE350RTK",
+    "carrier": "BLE",
+    "kind": "BleRemoteId",
+    "expected": "DRONE",
+    "description": "DJI Matrice 350 RTK | SYNTHETIC BLE4; not actual DJI RF",
+    "code": 0,
+    "text": "SQE-DJI-M350-B"
+  },
+  {
+    "id": "RID-WIFI-DJI-MATRICE350RTK",
+    "carrier": "WIFI",
+    "kind": "WifiRemoteId",
+    "expected": "DRONE",
+    "description": "DJI Matrice 350 RTK | SYNTHETIC WIFI BEACON Basic ID; not actual DJI RF",
+    "code": 6,
+    "text": "SQE-DJI-M350-W"
+  },
+  {
+    "id": "RID-DJI-MAVIC2EA",
+    "carrier": "BLE",
+    "kind": "BleRemoteId",
+    "expected": "DRONE",
+    "description": "DJI Mavic 2 Enterprise Advanced | SYNTHETIC BLE4; not actual DJI RF",
+    "code": 0,
+    "text": "SQE-DJI-M2EA-B"
+  },
+  {
+    "id": "RID-WIFI-DJI-MAVIC2EA",
+    "carrier": "WIFI",
+    "kind": "WifiRemoteId",
+    "expected": "DRONE",
+    "description": "DJI Mavic 2 Enterprise Advanced | SYNTHETIC WIFI BEACON Basic ID; not actual DJI RF",
+    "code": 6,
+    "text": "SQE-DJI-M2EA-W"
+  },
+  {
+    "id": "RID-DJI-MAVIC2PRO",
+    "carrier": "BLE",
+    "kind": "BleRemoteId",
+    "expected": "DRONE",
+    "description": "DJI Mavic 2 Pro | SYNTHETIC BLE4; not actual DJI RF",
+    "code": 0,
+    "text": "SQE-DJI-M2PRO-B"
+  },
+  {
+    "id": "RID-WIFI-DJI-MAVIC2PRO",
+    "carrier": "WIFI",
+    "kind": "WifiRemoteId",
+    "expected": "DRONE",
+    "description": "DJI Mavic 2 Pro | SYNTHETIC WIFI BEACON Basic ID; not actual DJI RF",
+    "code": 6,
+    "text": "SQE-DJI-M2PRO-W"
+  },
+  {
+    "id": "RID-DJI-MAVIC2ZOOM",
+    "carrier": "BLE",
+    "kind": "BleRemoteId",
+    "expected": "DRONE",
+    "description": "DJI Mavic 2 Zoom | SYNTHETIC BLE4; not actual DJI RF",
+    "code": 0,
+    "text": "SQE-DJI-M2ZOOM-B"
+  },
+  {
+    "id": "RID-WIFI-DJI-MAVIC2ZOOM",
+    "carrier": "WIFI",
+    "kind": "WifiRemoteId",
+    "expected": "DRONE",
+    "description": "DJI Mavic 2 Zoom | SYNTHETIC WIFI BEACON Basic ID; not actual DJI RF",
+    "code": 6,
+    "text": "SQE-DJI-M2ZOOM-W"
+  },
+  {
+    "id": "RID-DJI-MAVIC3",
+    "carrier": "BLE",
+    "kind": "BleRemoteId",
+    "expected": "DRONE",
+    "description": "DJI Mavic 3 | SYNTHETIC BLE4; not actual DJI RF",
+    "code": 0,
+    "text": "SQE-DJI-M3-B"
+  },
+  {
+    "id": "RID-WIFI-DJI-MAVIC3",
+    "carrier": "WIFI",
+    "kind": "WifiRemoteId",
+    "expected": "DRONE",
+    "description": "DJI Mavic 3 | SYNTHETIC WIFI BEACON Basic ID; not actual DJI RF",
+    "code": 6,
+    "text": "SQE-DJI-M3-W"
+  },
+  {
+    "id": "RID-DJI-MAVIC3CLASSIC",
+    "carrier": "BLE",
+    "kind": "BleRemoteId",
+    "expected": "DRONE",
+    "description": "DJI Mavic 3 Classic | SYNTHETIC BLE4; not actual DJI RF",
+    "code": 0,
+    "text": "SQE-DJI-M3CL-B"
+  },
+  {
+    "id": "RID-WIFI-DJI-MAVIC3CLASSIC",
+    "carrier": "WIFI",
+    "kind": "WifiRemoteId",
+    "expected": "DRONE",
+    "description": "DJI Mavic 3 Classic | SYNTHETIC WIFI BEACON Basic ID; not actual DJI RF",
+    "code": 6,
+    "text": "SQE-DJI-M3CL-W"
+  },
+  {
+    "id": "RID-DJI-MAVIC3E",
+    "carrier": "BLE",
+    "kind": "BleRemoteId",
+    "expected": "DRONE",
+    "description": "DJI Mavic 3 Enterprise | SYNTHETIC BLE4; not actual DJI RF",
+    "code": 0,
+    "text": "SQE-DJI-M3E-B"
+  },
+  {
+    "id": "RID-WIFI-DJI-MAVIC3E",
+    "carrier": "WIFI",
+    "kind": "WifiRemoteId",
+    "expected": "DRONE",
+    "description": "DJI Mavic 3 Enterprise | SYNTHETIC WIFI BEACON Basic ID; not actual DJI RF",
+    "code": 6,
+    "text": "SQE-DJI-M3E-W"
+  },
+  {
+    "id": "RID-DJI-MAVIC3PRO",
+    "carrier": "BLE",
+    "kind": "BleRemoteId",
+    "expected": "DRONE",
+    "description": "DJI Mavic 3 Pro | SYNTHETIC BLE4; not actual DJI RF",
+    "code": 0,
+    "text": "SQE-DJI-M3PRO-B"
+  },
+  {
+    "id": "RID-WIFI-DJI-MAVIC3PRO",
+    "carrier": "WIFI",
+    "kind": "WifiRemoteId",
+    "expected": "DRONE",
+    "description": "DJI Mavic 3 Pro | SYNTHETIC WIFI BEACON Basic ID; not actual DJI RF",
+    "code": 6,
+    "text": "SQE-DJI-M3PRO-W"
+  },
+  {
+    "id": "RID-DJI-MAVIC3T",
+    "carrier": "BLE",
+    "kind": "BleRemoteId",
+    "expected": "DRONE",
+    "description": "DJI Mavic 3 Thermal | SYNTHETIC BLE4; not actual DJI RF",
+    "code": 0,
+    "text": "SQE-DJI-M3T-B"
+  },
+  {
+    "id": "RID-WIFI-DJI-MAVIC3T",
+    "carrier": "WIFI",
+    "kind": "WifiRemoteId",
+    "expected": "DRONE",
+    "description": "DJI Mavic 3 Thermal | SYNTHETIC WIFI BEACON Basic ID; not actual DJI RF",
+    "code": 6,
+    "text": "SQE-DJI-M3T-W"
+  },
+  {
+    "id": "RID-DJI-MINI3",
+    "carrier": "BLE",
+    "kind": "BleRemoteId",
+    "expected": "DRONE",
+    "description": "DJI Mini 3 | SYNTHETIC BLE4; not actual DJI RF",
+    "code": 0,
+    "text": "SQE-DJI-MINI3-B"
+  },
+  {
+    "id": "RID-WIFI-DJI-MINI3",
+    "carrier": "WIFI",
+    "kind": "WifiRemoteId",
+    "expected": "DRONE",
+    "description": "DJI Mini 3 | SYNTHETIC WIFI BEACON Basic ID; not actual DJI RF",
+    "code": 6,
+    "text": "SQE-DJI-MINI3-W"
+  },
+  {
+    "id": "RID-DJI-MINI3PRO",
+    "carrier": "BLE",
+    "kind": "BleRemoteId",
+    "expected": "DRONE",
+    "description": "DJI Mini 3 Pro | SYNTHETIC BLE4; not actual DJI RF",
+    "code": 0,
+    "text": "SQE-DJI-MINI3P-B"
+  },
+  {
+    "id": "RID-WIFI-DJI-MINI3PRO",
+    "carrier": "WIFI",
+    "kind": "WifiRemoteId",
+    "expected": "DRONE",
+    "description": "DJI Mini 3 Pro | SYNTHETIC WIFI BEACON Basic ID; not actual DJI RF",
+    "code": 6,
+    "text": "SQE-DJI-MINI3P-W"
+  },
+  {
+    "id": "RID-DJI-MINI4PRO",
+    "carrier": "BLE",
+    "kind": "BleRemoteId",
+    "expected": "DRONE",
+    "description": "DJI Mini 4 Pro | SYNTHETIC BLE4; not actual DJI RF",
+    "code": 0,
+    "text": "SQE-DJI-MINI4P-B"
+  },
+  {
+    "id": "RID-WIFI-DJI-MINI4PRO",
+    "carrier": "WIFI",
+    "kind": "WifiRemoteId",
+    "expected": "DRONE",
+    "description": "DJI Mini 4 Pro | SYNTHETIC WIFI BEACON Basic ID; not actual DJI RF",
+    "code": 6,
+    "text": "SQE-DJI-MINI4P-W"
+  },
+  {
+    "id": "RID-DJI-P4PROV2",
+    "carrier": "BLE",
+    "kind": "BleRemoteId",
+    "expected": "DRONE",
+    "description": "DJI Phantom 4 Pro V2.0 | SYNTHETIC BLE4; not actual DJI RF",
+    "code": 0,
+    "text": "SQE-DJI-P4PROV2-B"
+  },
+  {
+    "id": "RID-WIFI-DJI-P4PROV2",
+    "carrier": "WIFI",
+    "kind": "WifiRemoteId",
+    "expected": "DRONE",
+    "description": "DJI Phantom 4 Pro V2.0 | SYNTHETIC WIFI BEACON Basic ID; not actual DJI RF",
+    "code": 6,
+    "text": "SQE-DJI-P4PROV2-W"
+  },
+  {
+    "id": "RID-DJI-P4RTK",
+    "carrier": "BLE",
+    "kind": "BleRemoteId",
+    "expected": "DRONE",
+    "description": "DJI Phantom 4 RTK | SYNTHETIC BLE4; not actual DJI RF",
+    "code": 0,
+    "text": "SQE-DJI-P4RTK-B"
+  },
+  {
+    "id": "RID-WIFI-DJI-P4RTK",
+    "carrier": "WIFI",
+    "kind": "WifiRemoteId",
+    "expected": "DRONE",
+    "description": "DJI Phantom 4 RTK | SYNTHETIC WIFI BEACON Basic ID; not actual DJI RF",
+    "code": 6,
+    "text": "SQE-DJI-P4RTK-W"
   }
 ]
