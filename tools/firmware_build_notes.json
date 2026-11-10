@@ -90,6 +90,19 @@
         "Serial console supports selectable baud rates; device firmware serial default is 115200.",
         "GPLv3-derived port requires GPLv3-compliant distribution of linked firmware; this LAB is not a hardware-approved release."
       ]
+    },
+    "774e2c8cc3077c7ae07a534d9519e0774cb51e25": {
+      "title": "SquachEmit 3.2 — Expanded Detection Matrix (95 Cases) + Squachy Animated UI",
+      "version": "v0.4.2 LAB / CYD3.2",
+      "summary": "Adds 46 opt-in synthetic BLE/Wi-Fi variants and negative controls to the 49-case Squachy Animated UI LAB, for 95 total scenarios. Covers Flock battery, Snap/Luxottica/Meta IDs, Raven, Tile, Flipper, serial-module names, Axon AB3/AB4, Pineapple Pager, additional Wi-Fi channels and Remote ID beacons; corrects the Eddystone-only Google false positive. The CYD3.2 UI now displays the live catalog count. Hardware not yet verified.",
+      "highlights": [
+        "95 synthetic time-limited on-air tests with separate per-case locally-administered MAC identities; zero RF emission at boot.",
+        "More SquachWatch family variants: Flock, Meta/Snap/Luxottica, Raven, Tile, Flipper, Axon, generic Bluetooth serial-module candidates and Pineapple Pager.",
+        "Negative controls for spoofable names, neighboring UUIDs/company IDs, Flockhart/Pager prefixes and generic Eddystone (0xFEAA).",
+        "Wi-Fi channels 1/3/9/11 plus Remote ID SoftAP beacon tests on channels 1/11; BLE legacy, not BLE5 extended or Bluetooth Classic.",
+        "Retains core SquachWatch-derived Squachy animated UI and prior ST7798 inversion control; source-derived GPLv3 component is subject to GPLv3 distribution obligations.",
+        "Manufacturer OUI, Pwnagotchi, deauth/evil twin and NAN receiver cases are offline fixtures, not forged on-air management traffic."
+      ]
     }
   }
 }
