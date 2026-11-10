@@ -119,7 +119,7 @@
     },
     "0b855549cf49f033708f6d285440844168f06e5c": {
       "title": "SquachEmit 3.2 — DJI Model BLE + Wi-Fi Remote ID (135 Tests) · LAB",
-      "version": "v0.4.3 LAB / CYD3.2 — DJI 20-Model Matrix",
+      "version": "v0.4.3 LAB / DJI 135 BLE+WiFi",
       "summary": "135 synthetic time-limited tests, including 20 named DJI aircraft with separate BLE4 and Wi-Fi 2.4GHz beacon Basic ID smoke tests per model. These are NOT captured DJI transmissions, DJI proprietary DroneID, or full ASTM-conforming Wi-Fi broadcast. Squachy animated UI and alphabetical device-type library retained. Hardware unverified.",
       "highlights": [
         "40 additional synthetic DJI tests: 20 models with paired BLE4 and Wi-Fi Beacon Basic ID cases.",
