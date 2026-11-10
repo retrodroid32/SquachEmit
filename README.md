@@ -45,23 +45,7 @@ The **95 test cases** are organized into exclusive device-type libraries, not sp
 
 Tests transmit only after an explicit start and automatically stop at the configured duration. In the animations above, **no radio was transmitted**—the C++ firmware interface is rendered using a host display adapter.
 
-<details>
-<summary><b>Original hardware test photos (early development)</b></summary>
 
-<table>
-  <tr>
-    <td width="50%"><img src="assets/ui/squachemit-cyd32-hardware.jpg" alt="Earlier SquachEmit LAB hardware photo showing dark home screen" width="320"></td>
-    <td width="50%"><img src="assets/ui/squachemit-active-test.webp" alt="Earlier SquachEmit LAB active test showing an old inverted-color display" width="320"></td>
-  </tr>
-</table>
-
-<p align="center">
-  <img src="assets/ui/squachemit-with-squachwatch.webp" width="580" alt="Original SquachEmit and SquachWatch side-by-side hardware test">
-</p>
-
-These are early **49-case LAB** hardware photos, not v1.0.0 validation evidence. The old color inversion shown in one photo is an early issue, not the intended current palette.
-
-</details>
 
 ## Install — browser only
 
