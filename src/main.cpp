@@ -3,6 +3,7 @@
 #include <esp_wifi.h>
 #include <NimBLEDevice.h>
 #include "scenarios.h"
+#include "identity.h"
 #if defined(SQE_WAVESHARE_C5)
 #include "c5_ui.h"
 #elif defined(SQE_CYD32)
@@ -32,15 +33,75 @@ static bool g_suite = false;
 static size_t g_suiteNext = 0;
 static uint32_t g_suiteAt = 0;
 static String g_line;
+static char g_address[18] = "";
+static uint32_t g_radioIdentity = 0;
 
 static void truth(const char* event, const Scenario* s, const char* status = "ok") {
   // Existing keys remain stable for the serial truth consumer. 0 = BLE.
   const bool wifi = s && (s->kind == Kind::WifiAp || s->kind == Kind::WifiRemoteId);
   const unsigned channel = wifi ? (s->code ? (unsigned)s->code : 1u) : 0u;
-  Serial.printf("TRUTH,{\"event\":\"%s\",\"seq\":%lu,\"ms\":%lu,\"id\":\"%s\",\"expected\":\"%s\",\"status\":\"%s\",\"carrier\":\"%s\",\"channel\":%u}\n",
+  Serial.printf("TRUTH,{\"event\":\"%s\",\"seq\":%lu,\"ms\":%lu,\"id\":\"%s\",\"expected\":\"%s\",\"status\":\"%s\",\"carrier\":\"%s\",\"channel\":%u,\"mac\":\"%s\"}\n",
                 event, (unsigned long)g_caseNumber, (unsigned long)millis(),
                 s ? s->id : "", s ? s->expected : "NONE", status,
-                wifi ? "WIFI" : "BLE", channel);
+                wifi ? "WIFI" : "BLE", channel, g_address);
+}
+
+
+// All 49 scenarios get their own reproducible test identity. Never write
+// to eFuse or claim a globally assigned manufacturer's OUI.
+static bool deriveIdentity(const Scenario* s, bool wifi, uint8_t out[6]) {
+  if (!s) return false;
+  size_t index = kScenarioCount;
+  for (size_t i=0; i<kScenarioCount; ++i)
+    if (&kScenarios[i] == s) { index=i; break; }
+  if (index >= kScenarioCount || index >= 254) return false;
+  g_radioIdentity = (uint32_t)index + 1u;
+  SquachIdentity::derive(ESP.getEfuseMac(), index,
+        wifi ? SquachIdentity::Radio::Wifi : SquachIdentity::Radio::Ble, out);
+  SquachIdentity::text(out, g_address);
+  return true;
+}
+
+static bool setBleIdentity(const Scenario* s) {
+  uint8_t mac[6];
+  if (!deriveIdentity(s, false, mac)) return false;
+  const NimBLEAddress addr(mac, BLE_ADDR_RANDOM);
+  if (!NimBLEDevice::setOwnAddr(addr)) {
+    Serial.println("ERROR,BLE_MAC_SET");
+    return false;
+  }
+  if (!NimBLEDevice::setOwnAddrType(BLE_OWN_ADDR_RANDOM)) {
+    Serial.println("ERROR,BLE_MAC_TYPE");
+    return false;
+  }
+  if (NimBLEDevice::getAddress() != addr) {
+    Serial.println("ERROR,BLE_MAC_READBACK");
+    return false;
+  }
+  return true;
+}
+
+static bool beginWifiIdentity(const Scenario* s) {
+  uint8_t mac[6];
+  if (!deriveIdentity(s, true, mac)) return false;
+  // IDF esp_wifi_set_mac requires the target AP interface to be OFF.
+  // Init in STA-only mode, configure AP BSSID, then enable AP.
+  if (!WiFi.mode(WIFI_STA)) return false;
+  const esp_err_t err=esp_wifi_set_mac(WIFI_IF_AP, mac);
+  if (err != ESP_OK) {
+    Serial.printf("ERROR,WIFI_MAC_SET,%d\n", (int)err);
+    WiFi.mode(WIFI_OFF);
+    return false;
+  }
+  if (!WiFi.mode(WIFI_AP)) return false;
+  uint8_t actual[6]={0};
+  if (esp_wifi_get_mac(WIFI_IF_AP,actual)!=ESP_OK ||
+      memcmp(mac,actual,6)!=0) {
+    Serial.println("ERROR,WIFI_MAC_READBACK");
+    WiFi.mode(WIFI_OFF);
+    return false;
+  }
+  return true;
 }
 
 static bool beginBle() {
@@ -146,7 +207,7 @@ static bool advertiseRemoteNegative(const Scenario* s) {
 static bool startWifiRemote(const Scenario* s) {
   const uint8_t channel = s->code ? static_cast<uint8_t>(s->code) : 6;
   if (channel < 1 || channel > 11) return false;
-  WiFi.mode(WIFI_AP);
+  if (!beginWifiIdentity(s)) return false;
   if (!WiFi.softAP(s->text ? s->text : "SQE-RID-LAB",
                    "SquachLab2026!", channel, false, 1)) return false;
   uint8_t body[27];
@@ -168,6 +229,7 @@ static bool startWifiRemote(const Scenario* s) {
 static bool advertiseBle(const Scenario* s) {
   if (!beginBle()) return false;
   g_adv->stop();
+  if (!setBleIdentity(s)) return false;
   g_adv->clearData();
   if (s->kind == Kind::BleRemoteId) {
     g_remotePart = 0;
@@ -261,10 +323,13 @@ static bool startScenario(const Scenario* s, uint32_t duration = kDefaultMs) {
   if (g_active) finish("interrupted");
   stopTx();
   ++g_caseNumber;
+  g_address[0] = '\0';
   bool ok = false;
   if (s->kind == Kind::WifiAp) {
-    // One ordinary WPA2 SoftAP. No spoofed BSSIDs or attacks.
-    WiFi.mode(WIFI_AP);
+    // One ordinary WPA2 SoftAP with a distinct synthetic BSSID.
+    if (!beginWifiIdentity(s)) {
+      truth("ERROR",s,"identity_failed");stopTx();return false;
+    }
     // Channel 0 is the legacy channel-1 profile; explicit 1..11 for LAB.
     const uint8_t channel = s->code ? static_cast<uint8_t>(s->code) : 1;
     if (channel >= 1 && channel <= 11)
@@ -284,6 +349,7 @@ static bool startScenario(const Scenario* s, uint32_t duration = kDefaultMs) {
   g_duration = duration;
   truth("BEGIN", s);
   Serial.printf("INFO,%s,%s,%s\n", s->id, s->expected, s->description);
+  Serial.printf("IDENTITY,%s,%s\n", s->id, g_address);
   if (s->kind == Kind::WifiAp || s->kind == Kind::WifiRemoteId)
     Serial.printf("RADIO,CHANNEL,%u\n", s->code ? (unsigned)s->code : 1u);
   return true;
@@ -305,6 +371,7 @@ static void help() {
   Serial.println("SUITE                 run each case with 2.4s off-air gaps");
   Serial.println("STOP                  stop current case/suite immediately");
   Serial.println("STATUS                show current case and time remaining");
+  Serial.println("IDENTITY              current synthetic case MAC");
   Serial.println("Remote ID profiles are synthetic; no genuine vendor serials or flight links.");
   Serial.println("BLE5 extended/coded PHY and Wi-Fi NAN: OFFLINE FIXTURES ONLY.");
   Serial.println("Single 2.4GHz radio: BLE and Wi-Fi scenarios are exclusive.");
@@ -322,6 +389,11 @@ static void command(String cmd) {
 #if defined(SQE_CYD32)
   if (cmd.equalsIgnoreCase("CALTOUCH")) { cyd32UiResetCalibration(); return; }
 #endif
+  if (cmd.equalsIgnoreCase("IDENTITY")) {
+    Serial.printf("IDENTITY,%s,%s,%lu\n",g_active?g_active->id:"IDLE",
+                  g_active?g_address:"",(unsigned long)g_radioIdentity);
+    return;
+  }
   if (cmd.equalsIgnoreCase("STATUS")) {
     const uint32_t now = millis();
     const uint32_t left = g_active ? (g_duration > now - g_started ? g_duration - (now - g_started) : 0) : 0;
