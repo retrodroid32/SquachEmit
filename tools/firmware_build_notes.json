@@ -80,8 +80,8 @@
       ]
     },
     "caa89d82047b73cecfbd9d9b476c7bc2fa2a14bb": {
-      "title": "CYD 3.2 Squachy Source-Port (49 tests)",
-      "version": "v0.4.1 LAB / CYD3.2 Squachy",
+      "title": "SquachEmit 3.2 — Squachy Animated UI (Latest LAB)",
+      "version": "Squachy Animated LAB 1",
       "summary": "Newest 3.2-inch ST7798 SquachEmit LAB: ports SquachWatch GPLv3-derived core Squachy appearance and movements into an isolated sprite, removes oversized status text over Squachy and retains the earlier color-inversion and unique BLE/Wi-Fi MAC fixes. This is a first core-character port, not the entire original animation/costume/speech engine. Hardware unverified.",
       "highlights": [
         "Source-derived SquachWatch default Squachy proportions, hair, sunglasses, blink, wave, bounce, walk, dance, sleep and startled expressions.",
