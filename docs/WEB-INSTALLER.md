@@ -7,8 +7,8 @@ When GitHub Pages has been enabled in **Settings → Pages → Source: GitHub Ac
 - Production: `https://retrodroid32.github.io/SquachEmit/` (empty until real hardware approval)
 - Unverified lab: `https://retrodroid32.github.io/SquachEmit/?lab=1`
 
-The lab channel shows up to three recent successful C5 lab builds and the latest
-successful S3 baseline with SHA/CI provenance. Firmware binaries and manifests
+The lab channel shows only the newest successful firmware per board, including
+CYD 3.2 ST7798, C5 touchscreen and S3 with SHA/CI provenance. Firmware binaries and manifests
 are copied into the Pages artifact (same origin, without GitHub API CORS/login).
 The `esp-web-tools` installer recognizes ESP32-C5 and ESP32-S3 and refuses a
 mismatched chip family, but it **cannot** distinguish different display/touch
@@ -129,3 +129,13 @@ reports its connected speed and includes it in the exported raw truth log.
 
 The firmware installer is unaffected; this change does not modify
 ESP Web Tools manifests, firmware, or on-air behavior.
+
+
+## Latest-only firmware picker
+
+For each target board, the LAB installer displays one firmware option: the
+newest successfully completed CI artifact. Historical binaries remain in
+GitHub Actions for debugging, but are not listed for installation. The CYD 3.2
+publisher now recognizes all `lab/cyd32-*` branches, including the source-port
+branch, and uses an exact-SHA description for `caa89d82`. This does not merge
+the firmware PR or approve production distribution.

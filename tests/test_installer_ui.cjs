@@ -131,5 +131,8 @@ setImmediate(() => {
   assert.ok(elements.buildDetails.textContent.includes('REPLACES SQUACHWATCH'));
   assert.ok(elements.buildDetails.textContent.includes('ESP32-2432S032R'));
   assert.equal(elements.confirm.checked, false);
+  // Regression: when 2 CYD builds are present, only the newest is shown.
+  // The newest is selected by created_at, not the catalog array's order.
+  assert.equal(elements.build.children.length, 2);
   console.log('Installer build dropdown / C5 / CYD3.2 warning / SHA fallback: PASS');
 });

@@ -88,7 +88,18 @@
       if (!response.ok) throw Error(`HTTP ${response.status}`);
       catalog = await response.json();
       if (!Array.isArray(catalog.builds)) throw Error('Invalid firmware catalog');
-      visible = catalog.builds.filter(entry => lab || entry.channel === 'stable');
+      // Show one (newest successfully published) firmware per board.
+      // The publishing workflow also limits builds; this guards against an
+      // older catalog still containing historical duplicates.
+      const newestByBoard = new Map();
+      for (const entry of catalog.builds) {
+        if (!lab && entry.channel !== 'stable') continue;
+        const prior = newestByBoard.get(entry.board);
+        if (!prior || Date.parse(entry.created_at) > Date.parse(prior.created_at)) {
+          newestByBoard.set(entry.board, entry);
+        }
+      }
+      visible = [...newestByBoard.values()];
       const boards = [...new Set(visible.map(x=>x.board))];
       ui.board.replaceChildren(opt('',boards.length?'Choose a target board…':'No approved production firmware yet'));
       boards.forEach(b => ui.board.appendChild(opt(b,boardLabel(b))));
