@@ -10,14 +10,31 @@ The purpose is to measure **hits, misses, false positives, classification accura
 
 > **First public release: v1.0.0.** GitHub CI compilation passes for the supported board targets; physical screen, radio, and end-to-end SquachWatch detection validation is still in progress. The public release is not a claim of hardware certification.
 
-## Actual interface
+## Actual UI gallery — photographed on real hardware
+
+The images below are **real SquachEmit and SquachWatch hardware photos**, not generated mockups.
+
+<table>
+  <tr>
+    <td width="50%" align="center">
+      <a href="assets/ui/squachemit-cyd32-hardware.jpg"><img src="assets/ui/squachemit-cyd32-hardware.jpg" alt="SquachEmit CYD 3.2 original dark Squachy home screen with TESTS, RUN and SUITE" width="340"></a>
+      <br><strong>Squachy home screen</strong>
+    </td>
+    <td width="50%" align="center">
+      <a href="assets/ui/squachemit-active-test.webp"><img src="assets/ui/squachemit-active-test.webp" alt="Actual SquachEmit CYD 3.2 emitting a BLE-FLOCK-NAME synthetic signal with remaining-time countdown and STOP button" width="340"></a>
+      <br><strong>Active synthetic test / countdown</strong>
+    </td>
+  </tr>
+</table>
 
 <p align="center">
-  <img src="assets/ui/squachemit-cyd32-hardware.jpg" alt="Actual SquachEmit CYD 3.2-inch hardware displaying the dark Squachy home screen with synthetic BLE/Wi-Fi/RID test controls, from an earlier LAB build" width="360">
+  <a href="assets/ui/squachemit-with-squachwatch.webp"><img src="assets/ui/squachemit-with-squachwatch.webp" alt="Real-world test setup showing SquachWatch receiver alongside the SquachEmit CYD 3.2 test transmitter" width="650"></a>
+  <br><strong>SquachWatch receiver alongside SquachEmit transmitter</strong>
 </p>
-<p align="center"><em>Actual CYD 3.2 hardware photo from the earlier 49-case LAB build. The v1.0.0 firmware retains the animated Squachy interface and expands the library to 95 cases organized by device type. This photo is not presented as a v1.0.0 hardware verification.</em></p>
 
-Use [the web installer](https://retrodroid32.github.io/SquachEmit/) for the live browser interface and firmware selection. The installed CYD 3.2 firmware provides a SquachWatch-style home screen, animated Squachy, **TESTS / RUN / STOP / SUITE**, and an alphabetical device-type library. Touch calibration and ST7798 color inversion are available for the supported hardware variant.
+> **Photo provenance:** These are photographs from earlier **49-case CYD 3.2 LAB** testing, before the v1.0.0 95-case device-type library. One emitting-screen photograph shows an earlier color-inversion issue; it documents hardware testing, not the final corrected colors. They are **not v1.0.0 physical-validation evidence**. The v1.0.0 build preserves the Squachy UI and adds alphabetized device categories; verified v1.0.0 category screenshots have not yet been supplied.
+
+Use [the web installer](https://retrodroid32.github.io/SquachEmit/) for browser-based flashing and its live firmware selector. The installed CYD 3.2 firmware provides a SquachWatch-style home screen, animated Squachy, **TESTS / RUN / STOP / SUITE**, and an alphabetical device-type library. Touch calibration and ST7798 color inversion are available for the supported hardware variant.
 
 ## Install — browser only
 
