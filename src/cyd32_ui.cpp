@@ -317,8 +317,25 @@ void libraryScreen(const char* active,bool suite){
     const Scenario* s=atRank(page*4+row,&raw);
     char title[55]={0},hint[45]={0};
     if(s){
-      snprintf(title,sizeof(title),"%02u  %.42s",(unsigned)(page*4+row+1),s->id);
-      snprintf(hint,sizeof(hint),"EXPECTED: %.24s",s->expected);
+      const bool djiBle = startsWith(s->id,"RID-DJI-");
+      const bool djiWifi = startsWith(s->id,"RID-WIFI-DJI-");
+      if(djiBle || djiWifi) {
+        // Clearly identify the model name and transport. These are lab labels,
+        // not a signature proven to identify an actual DJI aircraft.
+        const char* end = strstr(s->description," | ");
+        if(end) snprintf(title,sizeof(title),"%02u  %.*s",
+                         (unsigned)(page*4+row+1),
+                         (int)(end-s->description),s->description);
+        else snprintf(title,sizeof(title),"%02u  %.42s",
+                      (unsigned)(page*4+row+1),s->id);
+        snprintf(hint,sizeof(hint),"%s",
+                 djiWifi?"SYNTHETIC WIFI BEACON / BASIC ID":
+                          "SYNTHETIC BLE4 / EXPECT DRONE");
+      } else {
+        snprintf(title,sizeof(title),"%02u  %.42s",
+                 (unsigned)(page*4+row+1),s->id);
+        snprintf(hint,sizeof(hint),"EXPECTED: %.24s",s->expected);
+      }
     }
     menuRow(48+(int)row*36,title,hint,s&&raw==selected);
   }
