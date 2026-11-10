@@ -138,7 +138,11 @@ static void remoteFrame(uint8_t which, uint8_t* body27, const Scenario* s) {
     case 0: {
       m[0] = 0x02; m[1] = scenarioIs(s, "RID-BAD-SERIAL") ? 0xF2 : 0x12;
       // Intentionally invalid IDType F is still transport-recognizable.
-      const char* serial = (s && s->kind == Kind::BleRemoteId && s->text)
+      // The Wi-Fi model tests use their own clearly synthetic SQE-DJI Basic ID,
+      // not the shared generic fallback. Never borrow real aircraft serials.
+      const bool wifiModel = s && s->kind == Kind::WifiRemoteId &&
+                             strncmp(s->id,"RID-WIFI-DJI-",13)==0;
+      const char* serial = (s && s->text && (s->kind == Kind::BleRemoteId || wifiModel))
         ? s->text : "SQUACHEMIT-TEST-0001";
       strncpy(reinterpret_cast<char*>(m + 2), serial, 20);
       break;
