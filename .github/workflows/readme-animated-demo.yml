@@ -2,7 +2,7 @@ name: Render README UI animations from firmware C++ source
 on:
   push:
     branches:
-      - docs/squachemit-animated-readme-20261110
+      - 'docs/**'
     paths:
       - tools/readme_capture/**
       - .github/workflows/readme-animated-demo.yml
@@ -32,5 +32,5 @@ jobs:
             echo "Animated graphics unchanged"
           else
             git commit -m "Docs: capture animated SquachEmit firmware UI directly from C++"
-            git push origin HEAD:docs/squachemit-animated-readme-20261110
+            git push origin "HEAD:$GITHUB_REF_NAME"
           fi

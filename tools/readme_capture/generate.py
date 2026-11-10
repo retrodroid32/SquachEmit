@@ -10,31 +10,11 @@ import argparse
 from pathlib import Path
 import subprocess
 import tempfile
-from PIL import Image, ImageDraw, ImageFont
+from PIL import Image
 
 ROOT = Path(__file__).resolve().parents[2]
 CAPTURE = Path(__file__).resolve().parent
 DOCS = ROOT / "docs"
-
-
-def font_header():
-    dst = CAPTURE / "include" / "font5x7.generated.h"
-    try:
-        font = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSansMono.ttf", 11)
-    except OSError:
-        font = ImageFont.load_default()
-    glyphs = []
-    for cp in range(32, 128):
-        im = Image.new("L", (10, 15), 0)
-        d = ImageDraw.Draw(im)
-        d.text((0, -2), chr(cp), font=font, fill=255)
-        im = im.crop((0, 0, 7, 10)).resize((5, 7), Image.Resampling.LANCZOS)
-        glyphs.append("{" + ",".join(str(sum(1 << (4 - x)
-                                         for x in range(5)
-                                         if im.getpixel((x, y)) > 95))
-                                    for y in range(7)) + "}")
-    dst.write_text("#pragma once\nstatic const unsigned char font5x7[96][7]={\n" +
-                   ",\n".join(glyphs) + "\n};\n")
 
 
 def images_at(folder: Path):
@@ -61,7 +41,7 @@ def main():
     parser.add_argument("--verify", action="store_true")
     args = parser.parse_args()
     DOCS.mkdir(exist_ok=True)
-    font_header()
+    # Firmware Font 1 and Font 2 are stored as exact TFT_eSPI bitmap glyphs.
     with tempfile.TemporaryDirectory() as td:
         dest = Path(td)
         binary = dest / "firmware-ui-capture"

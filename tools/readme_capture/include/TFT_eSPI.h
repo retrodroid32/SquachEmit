@@ -4,7 +4,7 @@
 #include <cstdint>
 #include <vector>
 #include <string>
-#include "font5x7.generated.h"
+#include "tft_espi_fonts.h"
 namespace MockDisplay {
   class TFTMarker;
   inline bool touch=false;
@@ -17,7 +17,7 @@ public:
  int w=320,h=240;
  std::vector<uint16_t> pixel;
  uint16_t fg=0xffff;
- int cx=0,cy=0,scale=1;
+ int cx=0,cy=0,font=1,size=1;
  explicit TFT_eSPI(int width=320,int height=240,bool root=true)
  :w(width),h(height),pixel(size_t(width)*height,0){
    if(root)MockDisplay::screen=this;
@@ -105,21 +105,50 @@ public:
     if((a>=0&&b>=0&&d>=0)||(a<=0&&b<=0&&d<=0))drawPixel(xx,yy,c);
    }
  }
- void setTextFont(uint8_t f){scale=(f==2?2:1);}
- void setTextSize(uint8_t){}
+ void setTextFont(uint8_t f){font=(f==2?2:1);}
+ void setTextSize(uint8_t s){size=(s?s:1);}
  void setTextColor(uint16_t c){fg=c;}
  void setCursor(int x,int y){cx=x;cy=y;}
- int textWidth(const char* s) const{return int(std::char_traits<char>::length(s))*6*scale;}
- void print(const char* s){
-  if(!s)return;
-  for(const char* c=s;*c;c++){
-   int ch=(unsigned char)*c;
+ int charWidth(unsigned ch) const {
+   if(font==1)return 6*size;
+   if(ch<32||ch>127)ch=' ';
+   return int(FontPixels::font2_width[ch-32])*size;
+ }
+ int textWidth(const char* s) const {
+   if(!s)return 0;
+   int width=0;
+   for(const unsigned char* c=(const unsigned char*)s;*c;c++)
+     width+=charWidth(*c);
+   return width;
+ }
+ // Match the actual TFT_eSPI GLCD 5x8 bit-columns (font 1) and
+ // Font16.c row-byte glyphs + proportional advance widths (font 2).
+ void drawGlyph(unsigned ch,int x,int y) {
    if(ch<32||ch>127)ch='?';
-   for(int yy=0;yy<7;yy++)for(int xx=0;xx<5;xx++)
-    if(font5x7[ch-32][yy]&(1<<(4-xx)))
-      fillRect(cx+xx*scale,cy+yy*scale,scale,scale,fg);
-   cx+=6*scale;
-  }
+   if(font==1){
+     for(int gx=0;gx<5;gx++){
+       uint8_t col=FontPixels::glcd[ch*5+gx];
+       for(int gy=0;gy<8;gy++)
+         if(col&(1u<<gy))fillRect(x+gx*size,y+gy*size,size,size,fg);
+     }
+   }else{
+     const int gw=int(FontPixels::font2_width[ch-32]);
+     const int bytes=(gw+6)/8; // TFT_eSPI Font 2's special byte rounding
+     for(int yy=0;yy<16;yy++)
+       for(int xb=0;xb<bytes;xb++){
+         const uint8_t data=FontPixels::font2_bitmap[ch-32][yy*bytes+xb];
+         for(int bit=0;bit<8;bit++)
+           if(data&(0x80u>>bit))
+             fillRect(x+(xb*8+bit)*size,y+yy*size,size,size,fg);
+       }
+   }
+ }
+ void print(const char* s){
+   if(!s)return;
+   for(const unsigned char* c=(const unsigned char*)s;*c;c++){
+     drawGlyph(*c,cx,cy);
+     cx+=charWidth(*c);
+   }
  }
 };
 class TFT_eSprite : public TFT_eSPI {

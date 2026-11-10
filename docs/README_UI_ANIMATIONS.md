@@ -10,13 +10,17 @@ The generator builds these production source files **unchanged**:
 - `src/scenarios.cpp` — 95 test records used by the on-screen library
 
 Host-only substitutes for `Arduino.h`, `Preferences.h`, and
-`TFT_eSPI.h` implement pixel drawing, simple text metrics and synthetic touches.
+`TFT_eSPI.h` implement pixel drawing and synthetic touches. The font rasterizer
+now uses the **actual TFT_eSPI GLCD 5x8 (Font 1) and proportional 16px
+(Font 2) bitmap glyphs, advance widths, and textWidth calculations** rather
+than the previous scaled DejaVu mock font. The original upstream TFT_eSPI
+license is preserved in `tools/readme_capture/TFT_ESPI_LICENSE.txt`.
 The host adapter produces RGB565 frames; Pillow encodes animated GIFs at 2x
 nearest-neighbor scale for the README.
 
-**Limitations:** The stand-in text rasterizer uses a DejaVuSansMono-derived
-5x7 pixel font, not the TFT_eSPI font bitmaps. Slight text differences and
-panel-specific inversion/antialiasing may therefore occur. The animations
+**Limitations:** Text is rasterized using the actual TFT_eSPI font pixel data.
+Panel-specific inversion and hardware rendering details may still differ.
+The animations
 are not photos, do not depict actual RF transmissions, and do not establish
 physical-board or detection performance.
 
