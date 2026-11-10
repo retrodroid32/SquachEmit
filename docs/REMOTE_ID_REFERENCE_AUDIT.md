@@ -29,7 +29,7 @@ cadence. **Transport support and regulatory compliance are not the same.**
 | Mode | Classic CYD 3.2 SquachEmit currently emits | Next action |
 |---|---|---|
 | BLE4 Legacy service-data | Yes; synthetic message rotation | Validate message bytes against OpenDroneID golden vectors |
-| Wi-Fi 2.4 GHz beacon vendor IE | Yes; one synthetic Basic ID per test | Add full multi-message pack and cadence after offline conformance tests |
+| Wi-Fi 2.4 GHz beacon vendor IE | Yes; synthetic five-message pack (Basic ID / Location / System / Self-ID / Operator ID) | Independently decode pack, inspect beacon cadence and validate on physical receiver |
 | BLE5 long-range / coded | No | Mark offline/other hardware; avoid fake pass claims |
 | Wi-Fi NAN | No | Offline frame fixtures or a verified hardware implementation |
 | 5 GHz beacon | No on classic CYD | Verify capability of different hardware before offering on-air mode |
@@ -40,8 +40,7 @@ cadence. **Transport support and regulatory compliance are not the same.**
 - No transmitter activity at boot; explicit user action starts bounded tests
 - Synthetic `SQE-` identifiers, no copied genuine aircraft serials/locations
 - Negative vectors with wrong application ID, truncated payload, invalid ID type
-- Wi-Fi beacon field layout matches golden vectors; full packs eventually
-  include required messages, not Basic ID alone
+- Wi-Fi beacon packs contain five 25-byte synthetic messages and one 135-byte vendor IE; independently compare bytes against OpenDroneID Core C and actual received frames
 - 2.8/3.2 SquachWatch receiver detection logged separately from emitter CI
 - Model names in UI labeled as a simulation, never a real-aircraft fingerprint
 - Every case appears exactly once in alphabetical Drones / Remote ID library
@@ -54,3 +53,12 @@ Sources:
 - https://github.com/alphafox02/droneid-go
 - https://github.com/cyber-defence-campus/droneRemoteIDSpoofer
 - https://github.com/RUB-SysSec/DroneSecurity
+
+## 135-case Wi-Fi Pack LAB follow-up
+
+This LAB now transmits a five-message vendor IE via the normal 2.4 GHz
+SoftAP beacon API, bounded by the existing 3–30-second test timeout.
+The pack has Basic ID, Location, System, Self-ID and Operator ID, all with
+explicitly synthetic identities; the source header is
+`include/rid_wifi_pack.h`. Actual on-air frame timing, receiver behavior,
+trusted UTC/GNSS, and formal ASTM conformity remain unverified.
