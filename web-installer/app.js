@@ -5,6 +5,9 @@
   const el = id => document.getElementById(id);
   const ui = Object.fromEntries(['board','build','buildDetails','confirm','notice','channelBadge','enterLab','exitLab','installArea','installLocked','installButton','downloadBin','serialState','connect','disconnect','serialLog','command','commandForm','send','clear','saveLog','baudRate','customBaud','baudHint'].map(k => [k,el(k)]));
   let catalog = { builds: [] }, visible = [], selected = null;
+  // Never unlock flashing/download until this selected build's exact four
+  // published segments and manifest have passed checksum/offset validation.
+  let integrityVerified = false, verificationRequest = 0;
   ui.channelBadge.textContent = lab ? 'LAB CHANNEL · UNVERIFIED' : 'PUBLIC RELEASE · HW UNVERIFIED';
   ui.channelBadge.classList.toggle('lab', lab);
   ui.enterLab.hidden = lab;
@@ -37,8 +40,10 @@
     selectBuild();
   }
   function selectBuild() {
+    const token = ++verificationRequest; // invalidate in-flight stale checks
     selected = visible.find(x => x.id === ui.build.value) || null;
-    ui.confirm.disabled = !selected;
+    integrityVerified = false;
+    ui.confirm.disabled = true;
     ui.confirm.checked = false;
     if (!selected) {
       txt(ui.buildDetails, 'Choose a firmware build above. No device is modified until you explicitly connect and approve flashing.');
@@ -62,25 +67,107 @@
         `COMMIT: ${selected.sha}`,
         `SOURCE: ${selected.branch}`,
         `BUILT: ${selected.created_at.replace('T',' ').slice(0,19)} UTC`,
-        `SHA256: ${selected.sha256}`,
+        `SHA256 (application): ${selected.sha256}`,
+        'INTEGRITY: checking the manifest and all four firmware segments...',
         'Installation uses bootloader, partitions, OTA selection and application. Existing user data may change.'
       );
       txt(ui.buildDetails, fragments.join('\n'));
       ui.buildDetails.style.whiteSpace = 'pre-line';
     }
     updateInstall();
+    if (selected) void verifyIntegrity(selected, token);
   }
   function updateInstall() {
-    const allowed = !!selected && ui.confirm.checked;
+    const allowed = !!selected && integrityVerified && ui.confirm.checked;
     ui.installArea.hidden = !allowed;
     ui.installLocked.hidden = allowed;
-    ui.downloadBin.hidden = !selected;
-    if (selected) {
-      ui.installButton.setAttribute('manifest', `./${selected.manifest}`);
+    ui.downloadBin.hidden = !selected || !integrityVerified;
+    if (selected && integrityVerified) {
+      ui.installButton.setAttribute('manifest', allowed ? `./${selected.manifest}` : './manifest-unavailable.json');
       ui.downloadBin.href = `./${selected.application}`;
       ui.downloadBin.download = `${selected.id}.bin`;
-    } else ui.installButton.setAttribute('manifest','./manifest-unavailable.json');
+    } else {
+      ui.installButton.setAttribute('manifest','./manifest-unavailable.json');
+      ui.downloadBin.removeAttribute('href');
+    }
     if (allowed) txt(ui.installLocked, '');
+    else if (selected && !integrityVerified)
+      txt(ui.installLocked, 'Checking firmware integrity. Flashing is locked until all four files pass verification.');
+    else if (selected)
+      txt(ui.installLocked, 'Firmware verified. Confirm the exact board to unlock installation.');
+  }
+
+  // Fail closed on corrupt or mismatched Pages assets. Hashing confirms
+  // transfer integrity relative to the CI-generated catalog, not signing,
+  // authenticity, or the attached board's actual screen/touch controller.
+  async function verifyIntegrity(entry, token) {
+    try {
+      if (!window.isSecureContext || !globalThis.crypto?.subtle)
+        throw Error('SHA-256 verification requires HTTPS and Web Crypto');
+      const allowed = {
+        'c5-waveshare-28': {prefix:'c5', chip:'ESP32-C5', boot:0x2000},
+        's3-devkit': {prefix:'s3', chip:'ESP32-S3', boot:0x0000},
+        'cyd32-st7798': {prefix:'cyd32', chip:'ESP32', boot:0x1000}
+      };
+      const board = allowed[entry.board];
+      if (!board || !['lab','stable'].includes(entry.channel) ||
+          entry.chipFamily !== board.chip ||
+          !/^[a-f0-9]{40}$/.test(entry.sha) ||
+          entry.short_sha !== entry.sha.slice(0,8))
+        throw Error('Unknown board, chip family, channel or firmware SHA');
+      const expectedFolder = `${entry.channel}/${board.prefix}-${entry.short_sha}/`;
+      if (entry.manifest !== expectedFolder + 'manifest.json' ||
+          entry.application !== expectedFolder + 'application.bin' ||
+          entry.id !== `${entry.channel}-${board.prefix}-${entry.short_sha}`)
+        throw Error('Unsafe or inconsistent build paths');
+      const names = ['bootloader.bin','partitions.bin','otadata.bin','application.bin'];
+      const offsets = [board.boot,0x8000,0xe000,0x10000];
+      if (!Array.isArray(entry.segments) || entry.segments.length !== 4 ||
+          entry.segments.some((s,i) =>
+            s.name !== names[i] || s.path !== expectedFolder + names[i] ||
+            s.offset !== offsets[i] || !Number.isSafeInteger(s.bytes) ||
+            s.bytes < 32 || !/^[a-f0-9]{64}$/.test(s.sha256)) ||
+          entry.sha256 !== entry.segments[3].sha256 ||
+          entry.bytes !== entry.segments[3].bytes)
+        throw Error('Build lacks valid four-part checksum and offset metadata');
+
+      const response = await fetch('./' + entry.manifest, {cache:'no-store'});
+      if (!response.ok) throw Error('Manifest unavailable: HTTP ' + response.status);
+      const manifest = await response.json();
+      if (!Array.isArray(manifest.builds) || manifest.builds.length !== 1 ||
+          manifest.builds[0]?.chipFamily !== board.chip)
+        throw Error('Manifest chip family mismatch');
+      const parts = manifest.builds[0].parts;
+      if (!Array.isArray(parts) || parts.length !== 4 ||
+          parts.some((part,i)=>part.path !== names[i] || part.offset !== offsets[i]))
+        throw Error('Manifest offsets or binary filenames mismatch');
+      for (const segment of entry.segments) {
+        if (token !== verificationRequest || selected?.id !== entry.id) return;
+        const resp = await fetch('./' + segment.path, {cache:'no-store'});
+        if (!resp.ok) throw Error(segment.name + ' unavailable: HTTP ' + resp.status);
+        const bytes = await resp.arrayBuffer();
+        if (bytes.byteLength !== segment.bytes)
+          throw Error(segment.name + ' size mismatch');
+        const hash = Array.from(new Uint8Array(await globalThis.crypto.subtle.digest('SHA-256', bytes)))
+          .map(b=>b.toString(16).padStart(2,'0')).join('');
+        if (hash !== segment.sha256) throw Error(segment.name + ' SHA-256 mismatch');
+      }
+      if (token !== verificationRequest || selected?.id !== entry.id) return;
+      integrityVerified = true;
+      ui.confirm.disabled = false;
+      txt(ui.buildDetails, ui.buildDetails.textContent +
+          '\nINTEGRITY: PASS — all four firmware segments verified against the manifest and SHA-256 checksums.');
+      updateInstall();
+    } catch (err) {
+      if (token !== verificationRequest || selected?.id !== entry.id) return;
+      integrityVerified = false;
+      ui.confirm.checked = false;
+      ui.confirm.disabled = true;
+      txt(ui.buildDetails, ui.buildDetails.textContent +
+          '\nINTEGRITY: FAILED — ' + err.message + '. Flashing and downloading disabled.');
+      notice('Firmware validation failed: ' + err.message + '. Do not flash this build.', 'error');
+      updateInstall();
+    }
   }
   async function loadCatalog() {
     try {

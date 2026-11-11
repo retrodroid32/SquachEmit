@@ -3,7 +3,11 @@
 #include <esp_wifi.h>
 #include <NimBLEDevice.h>
 #include "scenarios.h"
+#include "rid_wifi_pack.h"
+#include "ap_mac_lifecycle.h"
 #include "identity.h"
+#include "dji_oui_lab.h"
+#include "uav_vendor_oui_lab.h"
 #if defined(SQE_WAVESHARE_C5)
 #include "c5_ui.h"
 #elif defined(SQE_CYD32)
@@ -22,6 +26,13 @@ static constexpr uint32_t kSuiteGapMs = 2400;
 
 static NimBLEAdvertising* g_adv = nullptr;
 static bool g_wifiVendorIE = false;
+static const char* g_wifiFailureStage = "UNKNOWN";
+static esp_err_t g_wifiFailureCode = ESP_OK;
+static void wifiFailure(const char* stage, esp_err_t code = ESP_FAIL) {
+  g_wifiFailureStage = stage;
+  g_wifiFailureCode = code;
+  Serial.printf("ERROR,WIFI_STAGE,%s,%d,%s\n",stage,(int)code,esp_err_to_name(code));
+}
 static bool g_bleInit = false;
 static const Scenario* g_active = nullptr;
 static uint32_t g_started = 0;
@@ -47,8 +58,9 @@ static void truth(const char* event, const Scenario* s, const char* status = "ok
 }
 
 
-// Each catalog scenario gets its own reproducible test identity. Never write
-// to eFuse or claim a globally assigned manufacturer's OUI.
+// Each scenario gets a reproducible identity. Only explicit OUI-only
+// lab fixtures replace the local test MAC with a vendor-registered prefix.
+// Never alter eFuse or claim a real vendor-issued device identity.
 static bool deriveIdentity(const Scenario* s, bool wifi, uint8_t out[6]) {
   if (!s) return false;
   size_t index = kScenarioCount;
@@ -58,6 +70,14 @@ static bool deriveIdentity(const Scenario* s, bool wifi, uint8_t out[6]) {
   g_radioIdentity = (uint32_t)index + 1u;
   SquachIdentity::derive(ESP.getEfuseMac(), index,
         wifi ? SquachIdentity::Radio::Wifi : SquachIdentity::Radio::Ble, out);
+  // Only selected OUI-only cases use allocated vendor prefixes.
+// Other Wi-Fi and BLE tests retain locally administered lab identities.
+  if (wifi && SquachDjiOuiLab::find(s->id)) {
+    if (!SquachDjiOuiLab::apply(s->id,out)) return false;
+  }
+  if (wifi && SquachUavVendorLab::find(s->id)) {
+    if (!SquachUavVendorLab::apply(s->id,out)) return false;
+  }
   SquachIdentity::text(out, g_address);
   return true;
 }
@@ -81,26 +101,33 @@ static bool setBleIdentity(const Scenario* s) {
   return true;
 }
 
+// Configure a synthetic AP MAC with the target interface in AP mode but
+// disabled. Previous STA-only -> esp_wifi_set_mac(WIFI_IF_AP) caused AP_MAC_SET.
+struct WiFiApMacDriver {
+  bool startSta() { return WiFi.mode(WIFI_STA); }
+  int32_t stop() { return (int32_t)esp_wifi_stop(); }
+  int32_t setApMode() { return (int32_t)esp_wifi_set_mode(WIFI_MODE_AP); }
+  int32_t setMac(const uint8_t mac[6]) {
+    return (int32_t)esp_wifi_set_mac(WIFI_IF_AP, mac);
+  }
+  int32_t restart() { return (int32_t)esp_wifi_start(); }
+  int32_t getMac(uint8_t out[6]) {
+    return (int32_t)esp_wifi_get_mac(WIFI_IF_AP, out);
+  }
+};
 static bool beginWifiIdentity(const Scenario* s) {
   uint8_t mac[6];
-  if (!deriveIdentity(s, true, mac)) return false;
-  // IDF esp_wifi_set_mac requires the target AP interface to be OFF.
-  // Init in STA-only mode, configure AP BSSID, then enable AP.
-  if (!WiFi.mode(WIFI_STA)) return false;
-  const esp_err_t err=esp_wifi_set_mac(WIFI_IF_AP, mac);
-  if (err != ESP_OK) {
-    Serial.printf("ERROR,WIFI_MAC_SET,%d\n", (int)err);
+  if (!deriveIdentity(s,true,mac)) {
+    wifiFailure("AP_IDENTITY"); return false;
+  }
+  WiFiApMacDriver driver;
+  const SquachApMac::Result result=SquachApMac::configure(driver,mac);
+  if (!result.ok()) {
+    wifiFailure(SquachApMac::stageName(result.stage),(esp_err_t)result.code);
     WiFi.mode(WIFI_OFF);
     return false;
   }
-  if (!WiFi.mode(WIFI_AP)) return false;
-  uint8_t actual[6]={0};
-  if (esp_wifi_get_mac(WIFI_IF_AP,actual)!=ESP_OK ||
-      memcmp(mac,actual,6)!=0) {
-    Serial.println("ERROR,WIFI_MAC_READBACK");
-    WiFi.mode(WIFI_OFF);
-    return false;
-  }
+  Serial.printf("RADIO,AP_MAC_READY,%s,%s\n",s->id,g_address);
   return true;
 }
 
@@ -138,7 +165,11 @@ static void remoteFrame(uint8_t which, uint8_t* body27, const Scenario* s) {
     case 0: {
       m[0] = 0x02; m[1] = scenarioIs(s, "RID-BAD-SERIAL") ? 0xF2 : 0x12;
       // Intentionally invalid IDType F is still transport-recognizable.
-      const char* serial = (s && s->kind == Kind::BleRemoteId && s->text)
+      // The Wi-Fi model tests use their own clearly synthetic SQE-DJI Basic ID,
+      // not the shared generic fallback. Never borrow real aircraft serials.
+      const bool wifiModel = s && s->kind == Kind::WifiRemoteId &&
+                             strncmp(s->id,"RID-WIFI-DJI-",13)==0;
+      const char* serial = (s && s->text && (s->kind == Kind::BleRemoteId || wifiModel))
         ? s->text : "SQUACHEMIT-TEST-0001";
       strncpy(reinterpret_cast<char*>(m + 2), serial, 20);
       break;
@@ -170,6 +201,11 @@ static void remoteFrame(uint8_t which, uint8_t* body27, const Scenario* s) {
       memcpy(m + 2, description, strnlen(description, 23));
       break;
     }
+    case 4:
+      m[0] = 0x52; // Operator ID message, protocol version 2
+      m[1] = 0;    // operator ID type (synthetic)
+      strncpy(reinterpret_cast<char*>(m + 2), "SQE-LAB-OPERATOR", 20);
+      break;
     default: break;
   }
 }
@@ -206,23 +242,34 @@ static bool advertiseRemoteNegative(const Scenario* s) {
 // Byte-for-byte follows SquachWatch's RemoteId::isWifiBeacon test fixture.
 static bool startWifiRemote(const Scenario* s) {
   const uint8_t channel = s->code ? static_cast<uint8_t>(s->code) : 6;
-  if (channel < 1 || channel > 11) return false;
+  if (channel < 1 || channel > 11) {
+    wifiFailure("CHANNEL",ESP_ERR_INVALID_ARG); return false;
+  }
   if (!beginWifiIdentity(s)) return false;
   if (!WiFi.softAP(s->text ? s->text : "SQE-RID-LAB",
-                   "SquachLab2026!", channel, false, 1)) return false;
-  uint8_t body[27];
-  remoteFrame(0, body, s);
-  uint8_t ie[35] = {0xDD, 33, 0xFA, 0x0B, 0xBC, 0x0D, 0x01,
-                    0xF2, 25, 1};
+                   "SquachLab2026!", channel, false, 1)) {
+    wifiFailure("SOFTAP_START"); return false;
+  }
+  // Synthetic message pack: Basic ID, Location, System, Self-ID, Operator ID.
+  // This tests complete receiver parsing but is not flight-compliant broadcast:
+  // there is no true GNSS/UTC on the emitter and all identities are fictional.
+  uint8_t msgs[SquachRidWifi::kMsgCount][SquachRidWifi::kMsgBytes] = {};
+  for(size_t i=0;i<SquachRidWifi::kMsgCount;++i) {
+    uint8_t frame[27] = {};
+    remoteFrame((uint8_t)i,frame,s);
+    memcpy(msgs[i],frame+2,SquachRidWifi::kMsgBytes);
+  }
+  uint8_t ie[SquachRidWifi::kIeBytes] = {};
+  if(!SquachRidWifi::encode(msgs,1,ie,sizeof(ie))) {
+    wifiFailure("PACK_ENCODE",ESP_ERR_INVALID_ARG); return false;
+  }
   if (scenarioIs(s, "RID-WIFI-PARROT")) {
     ie[2] = 0x90; ie[3] = 0x3A; ie[4] = 0xE6;
   }
-  memcpy(ie + 10, body + 2, 25);
   const esp_err_t err = esp_wifi_set_vendor_ie(
       true, WIFI_VND_IE_TYPE_BEACON, WIFI_VND_IE_ID_0, ie);
   g_wifiVendorIE = err == ESP_OK;
-  if (!g_wifiVendorIE)
-    Serial.printf("ERROR,WIFI_RID_IE,%d\n", (int)err);
+  if (!g_wifiVendorIE) wifiFailure("VENDOR_IE",err);
   return g_wifiVendorIE;
 }
 
@@ -318,6 +365,20 @@ static void cancelAll() {
   Serial.println("STATE,IDLE");
 }
 
+static bool isOuiOnly(const Scenario* s) {
+  return s && (SquachDjiOuiLab::find(s->id)!=nullptr ||
+               SquachUavVendorLab::find(s->id)!=nullptr);
+}
+// CYD 3.2 time selection controls touchscreen RUN and every SUITE case.
+// Other boards keep their existing 12-second default.
+static uint32_t selectedDurationMs(){
+#if defined(SQE_CYD32)
+  return cyd32UiDurationMs();
+#else
+  return kDefaultMs;
+#endif
+}
+
 static bool startScenario(const Scenario* s, uint32_t duration = kDefaultMs) {
   if (!s) return false;
   if (g_active) finish("interrupted");
@@ -326,28 +387,59 @@ static bool startScenario(const Scenario* s, uint32_t duration = kDefaultMs) {
   g_address[0] = '\0';
   bool ok = false;
   if (s->kind == Kind::WifiAp) {
-    // One ordinary WPA2 SoftAP with a distinct synthetic BSSID.
+    const bool ouiTest=isOuiOnly(s);
+    // The vendor-OUI fixtures contain NO Remote ID; the BSSID is the
+    // selected registry prefix with a generated, synthetic 3-byte suffix.
     if (!beginWifiIdentity(s)) {
+      if(ouiTest) {
+        Serial.printf("ERROR,WIFI_OUI_CASE,%s,%s,%d\n",
+                      s->id,g_wifiFailureStage,(int)g_wifiFailureCode);
+#if defined(SQE_CYD32)
+        cyd32UiSetRadioError(g_wifiFailureStage);
+#endif
+      }
       truth("ERROR",s,"identity_failed");stopTx();return false;
     }
     // Channel 0 is the legacy channel-1 profile; explicit 1..11 for LAB.
     const uint8_t channel = s->code ? static_cast<uint8_t>(s->code) : 1;
     if (channel >= 1 && channel <= 11)
       ok = WiFi.softAP(s->text, "SquachLab2026!", channel, false, 1);
+    if(ouiTest && !ok) wifiFailure("SOFTAP_START");
   } else if (s->kind == Kind::WifiRemoteId) {
-    ok = startWifiRemote(s);
+    // One bounded recovery after a failed Wi-Fi mode transition.
+    for(unsigned attempt=1; attempt<=2 && !ok; ++attempt){
+      Serial.printf("RADIO,WIFI_ATTEMPT,%s,%u\n",s->id,attempt);
+      g_wifiFailureStage="UNKNOWN"; g_wifiFailureCode=ESP_OK;
+      ok=startWifiRemote(s);
+      if(!ok && attempt==1){
+        Serial.printf("WARN,WIFI_RETRY,%s,%s\n",s->id,g_wifiFailureStage);
+        stopTx();
+        delay(120);
+      }
+    }
   } else {
     ok = advertiseBle(s);
   }
   if (!ok) {
+    if(s->kind == Kind::WifiRemoteId || isOuiOnly(s))
+      Serial.printf("ERROR,WIFI_CASE,%s,%s,%d\n",s->id,g_wifiFailureStage,(int)g_wifiFailureCode);
     truth("ERROR", s, "radio_start_failed");
     stopTx();
+#if defined(SQE_CYD32)
+    cyd32UiSetRadioError((s->kind == Kind::WifiRemoteId ||
+          isOuiOnly(s)) ? g_wifiFailureStage : "RADIO_START");
+#endif
     return false;
   }
+#if defined(SQE_CYD32)
+  cyd32UiSetRadioError(nullptr);
+#endif
   g_active = s;
   g_started = millis();
   g_duration = duration;
   truth("BEGIN", s);
+  if(isOuiOnly(s))
+    Serial.printf("TEST,OUI_ONLY,%s,%s,NO_REMOTE_ID\n",s->id,g_address);
   Serial.printf("INFO,%s,%s,%s\n", s->id, s->expected, s->description);
   Serial.printf("IDENTITY,%s,%s\n", s->id, g_address);
   if (s->kind == Kind::WifiAp || s->kind == Kind::WifiRemoteId)
@@ -367,7 +459,7 @@ static void help() {
   Serial.printf("SquachEmit LAB | %u cases | 115200 8N1 | all RF tests time-limited\n", (unsigned)kScenarioCount);
   Serial.println("HELP                  commands");
   Serial.println("LIST                  show all supported cases");
-  Serial.println("RUN <ID> [seconds]    transmit for 3..30 seconds (default 12)");
+  Serial.println("RUN <ID> [seconds]    transmit 3..30s; default is selected TX time (CYD3.2) or 12s");
   Serial.println("SUITE                 run each case with 2.4s off-air gaps");
   Serial.println("STOP                  stop current case/suite immediately");
   Serial.println("STATUS                show current case and time remaining");
@@ -376,6 +468,7 @@ static void help() {
   Serial.println("BLE5 extended/coded PHY and Wi-Fi NAN: OFFLINE FIXTURES ONLY.");
   Serial.println("Single 2.4GHz radio: BLE and Wi-Fi scenarios are exclusive.");
 #if defined(SQE_CYD32)
+  Serial.println("Tap TX TIME on the home screen to set 3..30s for RUN and SUITE.");
   Serial.println("CALTOUCH             reset touchscreen fit, then tap to calibrate");
   Serial.println("COLORS               show idle-only RED/GREEN/BLUE/WHITE/BLACK test");
   Serial.println("INVERT ON|OFF        save absolute panel inversion state");
@@ -425,7 +518,7 @@ static void command(String cmd) {
     id.toUpperCase();
     const Scenario* s = findScenario(id.c_str());
     if (!s) { Serial.println("ERROR,unknown_id (use LIST)"); return; }
-    uint32_t duration = kDefaultMs;
+    uint32_t duration = selectedDurationMs();
     if (space >= 0) {
       const String seconds = cmd.substring(space + 1);
       const long sec = seconds.toInt();
@@ -450,7 +543,7 @@ void setup() {
   Serial.println("BOOT,SquachEmit,0.4.0-LAB,ESP32-C5-Waveshare-2.8");
   c5UiBegin();
 #elif defined(SQE_CYD32)
-  Serial.println("BOOT,SquachEmit,0.4.2-CYD32-95-MATRIX-LAB,ESP32-2432S032R-ST7798");
+  Serial.println("BOOT,SquachEmit,0.4.2-CYD32-172-OUI-TXTIME-LAB,ESP32-2432S032R-ST7798");
   cyd32UiBegin();
 #else
   Serial.println("BOOT,SquachEmit,0.4.0-LAB,ESP32-S3");
@@ -486,7 +579,7 @@ void loop() {
     if (g_suiteNext >= kScenarioCount) {
       Serial.println("STATE,SUITE_DONE");
       g_suite = false;
-    } else if (!startScenario(&kScenarios[g_suiteNext++])) {
+    } else if (!startScenario(&kScenarios[g_suiteNext++],selectedDurationMs())) {
       g_suite = false;
       Serial.println("STATE,SUITE_ABORTED");
     }
@@ -501,7 +594,23 @@ void loop() {
   switch(action) {
     case Cyd32UiAction::Run: {
       const Scenario* chosen = cyd32UiSelection();
-      if(chosen){g_suite=false;startScenario(chosen);}
+      if(chosen) {
+        const bool ouiCase=isOuiOnly(chosen);
+        Serial.printf("UI,RUN_TAP,%s,%s\n",chosen->id,
+              ouiCase?"WIFI_OUI":chosen->kind==Kind::WifiRemoteId?"WIFI_RID":"OTHER");
+        g_suite=false;
+        if(chosen->kind==Kind::WifiRemoteId || ouiCase) {
+          cyd32UiSetRadioStarting(chosen->id);
+          // Render the accepted touch before the potentially blocking Wi-Fi
+          // init, so an operator sees a response even when startup fails.
+          cyd32UiTick(nullptr,0,false);
+        }
+        Serial.printf("UI,RUN_DISPATCH,%s\n",chosen->id);
+        startScenario(chosen,selectedDurationMs());
+      } else {
+        Serial.println("ERROR,UI_RUN_NO_SELECTION");
+        cyd32UiSetRadioError("NO_SELECTION");
+      }
       break;
     }
     case Cyd32UiAction::Stop: cancelAll(); break;

@@ -1,0 +1,55 @@
+{
+  "schema": 1,
+  "vendor": "SZ DJI TECHNOLOGY CO.,LTD",
+  "udger_vendor_id": 10425,
+  "udger_vendor_code": "sz_dji_technology_co-ltd",
+  "verified_on": "2026-11-10",
+  "registry_type": "IEEE MA-L",
+  "sources": [
+    "https://maclookup.app/vendors/sz-dji-technology-co-ltd",
+    "https://udger.com/resources/mac-address-vendor-detail?name=sz_dji_technology_co-ltd"
+  ],
+  "usage": "Passive vendor registry plus 10 explicit user-started Wi-Fi OUI-only LAB test beacons. No actual DJI device identity or Remote ID is implied; all other SquachEmit cases use locally administered MACs.",
+  "prefixes": [
+    {
+      "prefix": "04:A8:5A",
+      "registered": "2025-01-09"
+    },
+    {
+      "prefix": "0C:9A:E6",
+      "registered": "2025-08-14"
+    },
+    {
+      "prefix": "34:D2:62",
+      "registered": "2019-08-13"
+    },
+    {
+      "prefix": "48:1C:B9",
+      "registered": "2022-05-07"
+    },
+    {
+      "prefix": "4C:43:F6",
+      "registered": "2025-12-01"
+    },
+    {
+      "prefix": "58:B8:58",
+      "registered": "2024-07-26"
+    },
+    {
+      "prefix": "60:60:1F",
+      "registered": "2013-03-11"
+    },
+    {
+      "prefix": "88:29:85",
+      "registered": "2025-10-29"
+    },
+    {
+      "prefix": "8C:58:23",
+      "registered": "2025-05-27"
+    },
+    {
+      "prefix": "E4:7A:2C",
+      "registered": "2023-10-19"
+    }
+  ]
+}

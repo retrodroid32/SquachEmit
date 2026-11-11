@@ -23,7 +23,7 @@ constexpr uint16_t kWhite=0xFFFF,kMuted=0x7393,kInk=0x1801;
 constexpr uint16_t kFurDark=0x38C0,kFurMain=0x5941,kFurLight=0x9326;
 constexpr uint16_t kSkin=0xF60F,kSkinDark=0xCB88;
 
-enum class Screen : uint8_t { Home, Categories, Library };
+enum class Screen : uint8_t { Home, Categories, Library, Duration };
 constexpr size_t kPageRows=4;
 
 TFT_eSPI lcd;
@@ -34,11 +34,14 @@ Preferences prefs;
 Screen screen=Screen::Home;
 DeviceCategory category=DeviceCategory::Axon;
 size_t selected=0,page=0,categoryPage=0;
+uint8_t durationSeconds=12; // 3..30s, saved independently of touch calibration
 bool ready=false,calibrated=false,redraw=true,wasPressed=false,previousSuite=false;
 bool panelInverted=false;
 uint32_t lastPoll=0,lastPress=0,lastCount=UINT32_MAX,colorBarsUntil=0;
 uint8_t talkIndex=0;
 char previousActive[56]={0};
+char radioStartError[28]={0}; // visible radio-start failure stage
+char radioStartingProfile[56]={0}; // visible acknowledgement of requested Wi-Fi RUN
 
 void label(int x,int y,const char* s,uint16_t col,uint8_t font=1) {
   lcd.setTextFont(font);
@@ -217,8 +220,8 @@ void bigSquachy(bool emitting,bool suite){
   if(squachSpriteReady)drawSquachyFrame(emitting,suite,millis());
   else oldSquachy(emitting,suite);
 }
-// Exclusive right-hand status slot: when transmitting, countdown takes
-// the place of the total case count. No two text baselines can overlap.
+// Right-side status is ONE label on ONE baseline.  During an active test,
+// countdown REPLACES the case total; never render both in the same 15px band.
 void rightStatus(bool emitting,uint32_t count){
   constexpr int kRightX=236,kRightY=183,kRightW=kW-kRightX,kRightH=15;
   lcd.fillRect(kRightX,kRightY,kRightW,kRightH,kBg);
@@ -227,9 +230,12 @@ void rightStatus(bool emitting,uint32_t count){
   else snprintf(text,sizeof(text),"%u CASES",(unsigned)kScenarioCount);
   lcd.setTextFont(1);
   lcd.setTextSize(1);
-  label(kW-12-lcd.textWidth(text),186,text,emitting?kPink:kVaporPink);
+  const int textX=kW-12-lcd.textWidth(text);
+  // Both labels share y=186.  No glyph touches the separator at y=198.
+  label(textX,186,text,emitting?kPink:kVaporPink);
 }
 void countdownOnly(uint32_t count){
+  // Only redraw the right status slot once per second, preserving mascot FPS.
   rightStatus(true,count);
 }
 
@@ -238,24 +244,69 @@ void speechBubble(const char* active,bool suite){
   lcd.drawRoundRect(7,20,306,44,4,kVaporPink);
   lcd.drawRoundRect(9,22,302,40,3,kPurple);
   const Scenario* chosen=selected<kScenarioCount?&kScenarios[selected]:nullptr;
-  const char* phrase=(active&&*active)?"RF LAB TRANSMITTING":suite?"TEST SUITE RUNNING":
+  const bool failed=!(active&&*active) && radioStartError[0];
+  const bool starting=!(active&&*active) && !failed && radioStartingProfile[0];
+  const char* phrase=failed?"WIFI START FAILED":
+      starting?"STARTING WIFI TRANSMISSION":
+      (active&&*active)?"RF LAB TRANSMITTING":suite?"TEST SUITE RUNNING":
       "READY TO TEST. PICK A PROFILE.";
-  fit(16,25,phrase,285,kWhite,2);
-  fit(16,47,active&&*active?active:chosen?chosen->id:"NO PROFILE",
-      288,active&&*active?kPink:kCyan,1);
+  fit(16,25,phrase,285,failed?kPink:(starting?kYellow:kWhite),2);
+  fit(16,47,failed?radioStartError:
+      starting?radioStartingProfile:
+      (active&&*active)?active:chosen?chosen->id:"NO PROFILE",
+      288,failed?kYellow:(starting?kYellow:(active&&*active?kPink:kCyan)),1);
 }
 
 void statusStrip(const char* active,bool suite){
   lcd.fillRect(0,183,320,29,kBg);
   lcd.drawFastHLine(6,182,308,kPurple);
-  label(12,186,active&&*active?"ON AIR":suite?"SUITE":"LAB READY",
-        active&&*active?kPink:kGreen);
-  label(97,186,"BLE / WIFI / RID",kCyan);
+  const bool starting=!(active&&*active) && radioStartingProfile[0];
+  label(12,186,active&&*active?"ON AIR":starting?"STARTING":suite?"SUITE":"LAB READY",
+        active&&*active?kPink:(starting?kYellow:kGreen));
+  // Time control is an explicit tap target; it does not overlap the countdown.
+  lcd.drawRect(93,183,137,15,kPurple);
+  label(99,186,"TX TIME",kCyan);
+  char timeText[20];
+  snprintf(timeText,sizeof(timeText),"%us [SET]",(unsigned)durationSeconds);
+  label(150,186,timeText,kYellow);
   if(!(active&&*active))rightStatus(false,0);
   lcd.drawFastHLine(6,198,308,kPurple);
   label(12,201,"PROFILE",kVaporPink);
   const Scenario* chosen=selected<kScenarioCount?&kScenarios[selected]:nullptr;
   fit(66,200,chosen?chosen->id:"NONE",164,kWhite,1);
+}
+
+void durationValue(){
+  // Adjust only this number's rectangle. Full-screen repaints on +/- taps
+  // caused the ST7798 to visibly flash; the controls and backdrop stay put.
+  lcd.fillRect(96,82,128,65,kBg);
+  char value[20];
+  snprintf(value,sizeof(value),"%u",(unsigned)durationSeconds);
+  lcd.setTextFont(2);
+  label((kW-lcd.textWidth(value))/2,95,value,kWhite,2);
+  label(139,126,"SECONDS",kMuted);
+}
+void durationScreen(){
+  lcd.fillScreen(kBg);
+  titleBar();
+  label(20,27,"TRANSMIT TIME",kVaporPink,2);
+  label(22,57,"FOR EACH RUN AND SUITE CASE",kCyan);
+  button(12,85,83,54,"- 1 SEC");
+  button(225,85,83,54,"+ 1 SEC");
+  durationValue();
+  label(21,164,"AUTO STOP  /  3 TO 30 SECONDS",kGreen);
+  label(26,191,"SAVED FOR THE NEXT TEST",kMuted);
+  footer("BACK","RESET 12","DONE");
+}
+void setDuration(uint8_t value){
+  if(value<3 || value>30 || durationSeconds==value)return;
+  durationSeconds=value;
+  if(prefs.begin("sqemit32",false)){
+    prefs.putUChar("txtime",durationSeconds);
+    prefs.end();
+  }
+  Serial.printf("CYD32,TX_TIME,%u\n",(unsigned)durationSeconds);
+  durationValue();
 }
 
 void homeScreen(const char* active,uint32_t remaining,bool suite){
@@ -322,8 +373,37 @@ void libraryScreen(const char* active,bool suite){
     const Scenario* s=atRank(page*4+row,&raw);
     char title[55]={0},hint[45]={0};
     if(s){
-      snprintf(title,sizeof(title),"%02u  %.42s",(unsigned)(page*4+row+1),s->id);
-      snprintf(hint,sizeof(hint),"EXPECTED: %.24s",s->expected);
+      const bool djiBle = startsWith(s->id,"RID-DJI-");
+      const bool djiWifi = startsWith(s->id,"RID-WIFI-DJI-");
+      const bool djiOui = startsWith(s->id,"OUI-DJI-");
+      const bool otherOui = startsWith(s->id,"OUI-") && !djiOui;
+      if(djiOui || otherOui) {
+        const char* end=strstr(s->description," | ");
+        if(end) snprintf(title,sizeof(title),"%02u  %.*s",
+                         (unsigned)(page*4+row+1),
+                         (int)(end-s->description),s->description);
+        else snprintf(title,sizeof(title),"%02u  %.42s",
+                      (unsigned)(page*4+row+1),s->id);
+        snprintf(hint,sizeof(hint),"%s", djiOui ?
+                 "DJI VENDOR OUI / NO REMOTE ID" :
+                 "VENDOR PREFIX / NO REMOTE ID");
+      } else if(djiBle || djiWifi) {
+        // Clearly identify the model name and transport. These are lab labels,
+        // not a signature proven to identify an actual DJI aircraft.
+        const char* end = strstr(s->description," | ");
+        if(end) snprintf(title,sizeof(title),"%02u  %.*s",
+                         (unsigned)(page*4+row+1),
+                         (int)(end-s->description),s->description);
+        else snprintf(title,sizeof(title),"%02u  %.42s",
+                      (unsigned)(page*4+row+1),s->id);
+        snprintf(hint,sizeof(hint),"%s",
+                 djiWifi?"SYNTHETIC WIFI BEACON / BASIC ID":
+                          "SYNTHETIC BLE4 / EXPECT DRONE");
+      } else {
+        snprintf(title,sizeof(title),"%02u  %.42s",
+                 (unsigned)(page*4+row+1),s->id);
+        snprintf(hint,sizeof(hint),"EXPECTED: %.24s",s->expected);
+      }
     }
     menuRow(48+(int)row*36,title,hint,s&&raw==selected);
   }
@@ -367,22 +447,28 @@ void startCal(){
   redraw=true;
   Serial.println("CYD32,TOUCH,CALIBRATED_LANDSCAPE");
 }
-Cyd32UiAction touchHome(int x,int y,bool active){
+Cyd32UiAction touchHome(int x,int y,bool active,bool suite){
   if(y>=kFooterY){
-    if(x<108){screen=Screen::Categories;return Cyd32UiAction::None;}
+    if(x<108){screen=Screen::Categories;redraw=true;return Cyd32UiAction::None;}
     if(x<213)return active?Cyd32UiAction::Stop:Cyd32UiAction::Run;
     return Cyd32UiAction::Suite;
   }
+  if(!active && !suite && x>=93 && x<230 && y>=183 && y<199){
+    screen=Screen::Duration;
+    redraw=true;
+    return Cyd32UiAction::None;
+  }
   if(x>=116&&x<=204&&y>=70&&y<183){
     petUntil=millis()+1500;
+    // Squachy updates on its sprite timer; do not clear the entire TFT.
   }
   return Cyd32UiAction::None;
 }
 Cyd32UiAction touchCategories(int x,int y){
   if(y>=kFooterY){
-    if(x<108){screen=Screen::Home;return Cyd32UiAction::None;}
-    if(x<213){if(categoryPage>0)--categoryPage;return Cyd32UiAction::None;}
-    if((categoryPage+1)*kPageRows<kDeviceCategoryCount)++categoryPage;
+    if(x<108){screen=Screen::Home;redraw=true;return Cyd32UiAction::None;}
+    if(x<213){if(categoryPage>0){--categoryPage;redraw=true;}return Cyd32UiAction::None;}
+    if((categoryPage+1)*kPageRows<kDeviceCategoryCount){++categoryPage;redraw=true;}
     return Cyd32UiAction::None;
   }
   if(y<44||y>=44+(int)kPageRows*39)return Cyd32UiAction::None;
@@ -393,15 +479,16 @@ Cyd32UiAction touchCategories(int x,int y){
     page=0;
     firstSelected();
     screen=Screen::Library;
+    redraw=true;
   }
   return Cyd32UiAction::None;
 }
 Cyd32UiAction touchLibrary(int x,int y,bool active){
   if(y>=kFooterY){
-    if(x<108){screen=Screen::Categories;return Cyd32UiAction::None;}
-    if(x<213){if(page>0){--page;firstSelected();}return Cyd32UiAction::None;}
+    if(x<108){screen=Screen::Categories;redraw=true;return Cyd32UiAction::None;}
+    if(x<213){if(page>0){--page;firstSelected();redraw=true;}return Cyd32UiAction::None;}
     if(active)return Cyd32UiAction::Stop;
-    if((page+1)*4<totalMatches()){++page;firstSelected();}
+    if((page+1)*4<totalMatches()){++page;firstSelected();redraw=true;}
     return Cyd32UiAction::None;
   }
   if(y>=48&&y<48+4*36){
@@ -410,7 +497,19 @@ Cyd32UiAction touchLibrary(int x,int y,bool active){
     if(row<4&&atRank(page*4+row,&idx)){
       selected=idx;
       screen=Screen::Home;
+      redraw=true;
     }
+  }
+  return Cyd32UiAction::None;
+}
+Cyd32UiAction touchDuration(int x,int y){
+  if(y>=kFooterY){
+    if(x>=112 && x<213){setDuration(12);return Cyd32UiAction::None;}
+    screen=Screen::Home;redraw=true;return Cyd32UiAction::None;
+  }
+  if(y>=85 && y<139){
+    if(x>=12 && x<95 && durationSeconds>3)setDuration(durationSeconds-1);
+    if(x>=225 && x<308 && durationSeconds<30)setDuration(durationSeconds+1);
   }
   return Cyd32UiAction::None;
 }
@@ -431,6 +530,17 @@ void rgbBars(){
 }
 } // namespace
 
+void cyd32UiSetRadioStarting(const char* scenarioId){
+  radioStartError[0]='\0';
+  snprintf(radioStartingProfile,sizeof(radioStartingProfile),"%s",
+           scenarioId?scenarioId:"");
+  redraw=true;
+}
+void cyd32UiSetRadioError(const char* stage){
+  radioStartingProfile[0]='\0';
+  snprintf(radioStartError,sizeof(radioStartError),"%s",stage?stage:"");
+  redraw=true;
+}
 void cyd32UiBegin(){
   pinMode(TFT_BL,OUTPUT);
   digitalWrite(TFT_BL,LOW);
@@ -442,8 +552,10 @@ void cyd32UiBegin(){
   if(prefs.begin("sqemit32",true)){
     // New key avoids inheriting R3's incorrect "invert=false" default.
     panelInverted=prefs.getBool("invert2",true);
+    durationSeconds=prefs.getUChar("txtime",12);
     prefs.end();
   }
+  if(durationSeconds<3 || durationSeconds>30)durationSeconds=12;
   lcd.invertDisplay(panelInverted);
   lcd.fillScreen(kBg);
   squachSprite.setColorDepth(16);
@@ -456,6 +568,7 @@ void cyd32UiBegin(){
   Serial.printf("CYD32,PANEL,BGR,INVERT_%s\n",panelInverted?"ON":"OFF");
   Serial.println(calibrated?"CYD32,UI,CLEAR_TOUCH_SAVED":"CYD32,UI,CLEAR_TOUCH_SETUP");
 }
+uint32_t cyd32UiDurationMs(){return (uint32_t)durationSeconds*1000UL;}
 const Scenario* cyd32UiSelection(){
   return selected<kScenarioCount?&kScenarios[selected]:nullptr;
 }
@@ -494,6 +607,12 @@ Cyd32UiAction cyd32UiTick(const char* active,uint32_t remaining,bool suite){
     }
   }
   const char* name=active?active:"";
+  // A serial-initiated RUN or SUITE must not leave a hidden STOP button
+  // behind the duration editor.
+  if(((active&&*active)||suite)&&screen==Screen::Duration){
+    screen=Screen::Home;
+    redraw=true;
+  }
   if(strcmp(previousActive,name)!=0||previousSuite!=suite){
     strncpy(previousActive,name,sizeof(previousActive)-1);
     previousActive[sizeof(previousActive)-1]='\0';
@@ -504,6 +623,7 @@ Cyd32UiAction cyd32UiTick(const char* active,uint32_t remaining,bool suite){
     if(!calibrated)calibrationScreen();
     else if(screen==Screen::Home)homeScreen(active,remaining,suite);
     else if(screen==Screen::Categories)categoriesScreen();
+    else if(screen==Screen::Duration)durationScreen();
     else libraryScreen(active,suite);
     lastCount=(active&&*active)?((remaining+999)/1000):UINT32_MAX;
     redraw=false;
@@ -531,11 +651,13 @@ Cyd32UiAction cyd32UiTick(const char* active,uint32_t remaining,bool suite){
   const bool pressed=lcd.getTouch(&x,&y,450);
   Cyd32UiAction action=Cyd32UiAction::None;
   if(pressed&&!wasPressed&&now-lastPress>=240&&x<kW&&y<kH){
-    if(screen==Screen::Home)action=touchHome(x,y,active&&*active);
+    if(screen==Screen::Home)action=touchHome(x,y,active&&*active,suite);
     else if(screen==Screen::Categories)action=touchCategories(x,y);
+    else if(screen==Screen::Duration)action=touchDuration(x,y);
     else action=touchLibrary(x,y,active&&*active);
     lastPress=now;
-    redraw=true;
+    // Only navigation/state changes request a full repaint. Every other
+    // touch (including Squachy and duration +/-) stays flicker-free.
   }
   wasPressed=pressed;
   return action;
