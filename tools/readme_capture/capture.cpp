@@ -41,6 +41,24 @@ int main(int argc,char** argv){
  cyd32UiBegin();
  // The *real* UI is drawn by cyd32UiTick(), including the source Squachy animator.
  hold("home",19);
+ // Show the *current* firmware's persisted TX TIME editor rather than
+ // compositing a mock screen into the README graphics.
+ if(cyd32UiDurationMs()!=12000UL){
+   fprintf(stderr,"Expected default 12-second TX duration in clean native capture\n");
+   return 4;
+ }
+ tap(175,189); // Open TRANSMIT TIME from the genuine 172-case home UI.
+ hold("duration",3);
+ for(int i=0;i<4;i++){tap(262,109);hold("duration",2);} // 12 -> 16 sec
+ if(cyd32UiDurationMs()!=16000UL){fprintf(stderr,"Duration increment failed\n");return 5;}
+ for(int i=0;i<2;i++){tap(55,109);hold("duration",2);} // 16 -> 14 sec
+ if(cyd32UiDurationMs()!=14000UL){fprintf(stderr,"Duration decrement failed\n");return 6;}
+ tap(160,225);hold("duration",2); // RESET 12
+ if(cyd32UiDurationMs()!=12000UL){fprintf(stderr,"Duration reset failed\n");return 7;}
+ tap(262,109);hold("duration",2); // Set 13 sec for the subsequent RUN preview.
+ if(cyd32UiDurationMs()!=13000UL){fprintf(stderr,"Duration final setting failed\n");return 8;}
+ tap(263,225); // DONE, return to the home display without erasing saved time.
+ hold("home",5);
  tap(32,225);
  hold("categories",6);    // AXON, DRONES, FLOCK, GENERAL
  tap(245,225);
@@ -70,7 +88,7 @@ int main(int argc,char** argv){
    return 3;
  }
  hold("home",8);
- for(int sec=9;sec>=2;sec--){
+ for(int sec=13;sec>=2;sec--){
    for(int i=0;i<3;i++){tick("BLE-DRONE",sec*1000,false,175);frameToPpm("emitting");}
  }
  hold("home",9);

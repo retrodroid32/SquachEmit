@@ -55,15 +55,18 @@ def main():
         ], check=True)
         subprocess.run([str(binary), str(dest/"frames")], check=True)
         raw = dest/"frames"
-        home, menu, active = [images_at(raw/part)
-                              for part in ("home", "categories", "emitting")]
+        home, duration, menu, active = [images_at(raw/part)
+                                        for part in ("home", "duration", "categories", "emitting")]
         # Capture names are sequential per group but continuity is only visual;
         # the screen renderer itself controls all UI animation states.
-        gif(home[:19] + menu + home[19:] + active + home[-8:], "squachemit-demo.gif")
+        gif(home[:19] + duration + home[19:] + menu + active + home[-8:],
+            "squachemit-demo.gif")
+        gif(duration, "squachemit-tx-time.gif", delay=360)
         gif(menu, "squachemit-device-library.gif")
         gif(active, "squachemit-test-running.gif")
     if args.verify:
         minimums = {"squachemit-demo.gif": 16,
+                    "squachemit-tx-time.gif": 6,
                     "squachemit-device-library.gif": 6,
                     "squachemit-test-running.gif": 12}
         for name, minimum in minimums.items():

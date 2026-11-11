@@ -14,9 +14,21 @@ class ReadmeGifWorkflowTests(unittest.TestCase):
             "tools/readme_capture/**",
             "docs/squachemit-demo.gif",
             "docs/squachemit-device-library.gif",
-            "docs/squachemit-test-running.gif"):
+            "docs/squachemit-test-running.gif",
+            "docs/squachemit-tx-time.gif"):
             self.assertIn(required,yml)
         self.assertIn("python tools/readme_capture/generate.py --verify",yml)
+
+    def test_latest_ui_capture_includes_duration_editor(self):
+        capture=(ROOT / "tools/readme_capture/capture.cpp").read_text()
+        generator=(ROOT / "tools/readme_capture/generate.py").read_text()
+        readme=(ROOT / "README.md").read_text()
+        self.assertIn('hold("duration"', capture)
+        self.assertIn('cyd32UiDurationMs()', capture)
+        self.assertIn('for(int sec=13;sec>=2;sec--)', capture)
+        self.assertIn('"squachemit-tx-time.gif"', generator)
+        self.assertIn('docs/squachemit-tx-time.gif', readme)
+        self.assertIn('172', readme)
 
     def test_safe_concurrent_update_not_forced(self):
         yml=WORKFLOW.read_text()
