@@ -179,11 +179,20 @@ def load_source(src: dict, output: Path, notes: dict | None = None) -> dict:
             ],
             'notes_verified_for_sha': True,
         }
+    # Integrity manifest: the browser must verify *all four* flash segments.
+    # The human-readable application hash alone cannot protect bootloader,
+    # partition table or OTA selection bytes from a truncated Pages upload.
+    segments = [
+        {'name':filename, 'path':str(folder / filename), 'offset':offset,
+         'sha256':sha256(data), 'bytes':len(data)}
+        for filename,offset,data in parts
+    ]
     return {'id':f'{channel}-{label}-{short}', 'board':board,'channel':channel,'sha':sha,
             'short_sha':short,'branch':src['branch'],'created_at':created_at,
             'run_id':src['run_id'],'manifest':str(folder/'manifest.json'),
             'application':str(folder/'application.bin'),'sha256':sha256(app),
-            'bytes':len(app), 'chipFamily':BOARDS[board]['chip'], **description}
+            'bytes':len(app), 'chipFamily':BOARDS[board]['chip'],
+            'segments':segments, **description}
 
 
 def build(source_manifest: Path, output: Path) -> dict:
