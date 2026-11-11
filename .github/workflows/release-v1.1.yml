@@ -76,4 +76,4 @@ jobs:
             release/SquachEmit-v1.1.0-172Cases-*.zip release/SquachEmit-v1.1.0-SHA256SUMS.txt \
             --target "$SOURCE_SHA" \
             --title "SquachEmit v1.1.0 — 172-Case Detection Suite & Smooth Touch" \
-            --notes-file docs/RELEASE_V1.0.0.md --latest
+            --notes-file docs/RELEASE_V1.1.0.md --latest
