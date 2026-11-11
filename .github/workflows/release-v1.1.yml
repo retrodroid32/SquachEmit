@@ -1,0 +1,79 @@
+name: Publish SquachEmit v1.1.0 — 172-Case Detection Suite
+on:
+  workflow_run:
+    workflows: ["SquachEmit CI"]
+    types: [completed]
+permissions:
+  contents: write
+  actions: read
+jobs:
+  publish:
+    if: >-
+      github.event.workflow_run.conclusion == 'success' &&
+      github.event.workflow_run.event == 'push' &&
+      github.event.workflow_run.head_branch == 'main' &&
+      github.event.workflow_run.head_repository.full_name == github.repository
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.workflow_run.head_sha }}
+          persist-credentials: false
+      - name: Verify source and one-time release gate
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          SOURCE_SHA: ${{ github.event.workflow_run.head_sha }}
+        run: |
+          set -euo pipefail
+          test "$SOURCE_SHA" = "$(gh api repos/$REPO/commits/main --jq .sha)"
+          # Only publish from a successful four-job CI run against exact main.
+          test -s docs/RELEASE_V1.1.0.md
+          grep -q '172' docs/RELEASE_V1.1.0.md
+          grep -q 'v1.1.0' tools/active_firmware_profile.json
+          if gh release view v1.1.0 -R "$REPO" >/dev/null 2>&1; then
+            echo "v1.1.0 already exists; preserve published tag and assets."
+            echo "EXISTS=true" >> "$GITHUB_ENV"
+          fi
+      - name: Download complete verified CI build artifacts
+        if: env.EXISTS != 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          RUN_ID: ${{ github.event.workflow_run.id }}
+          SOURCE_SHA: ${{ github.event.workflow_run.head_sha }}
+        run: |
+          set -euo pipefail
+          mkdir -p release/parts
+          gh run download "$RUN_ID" -R "$REPO" -n squachemit-cyd32-st7798-firmware-unverified -D release/parts/CYD32-ST7798
+          gh run download "$RUN_ID" -R "$REPO" -n squachemit-waveshare-c5-28-firmware-unverified -D release/parts/WAVESHARE-C5-28
+          gh run download "$RUN_ID" -R "$REPO" -n squachemit-esp32s3-firmware-unverified -D release/parts/ESP32-S3
+          for board in CYD32-ST7798 WAVESHARE-C5-28 ESP32-S3; do
+            test -s "release/parts/$board/firmware.bin" || test -s "release/parts/$board/SquachEmit.ino.bin"
+            if [ "$board" = "WAVESHARE-C5-28" ]; then
+              for part in SquachEmit.ino.bootloader.bin SquachEmit.ino.partitions.bin SquachEmit.ino.bin SquachEmit.ino.merged.bin; do
+                test -s "release/parts/$board/$part"
+              done
+            else
+              for part in bootloader.bin partitions.bin firmware.bin ota_init.bin; do
+                test -s "release/parts/$board/$part"
+              done
+              test "$(stat -c%s release/parts/$board/ota_init.bin)" -eq 8192
+            fi
+            printf 'SquachEmit v1.1.0 - 172-Case Detection Suite and Smooth Touch\nTarget: %s\nCommit: %s\nCI run: %s\nSee docs/RELEASE_V1.1.0.md in source for changes.\n' "$board" "$SOURCE_SHA" "$RUN_ID" > "release/parts/$board/RELEASE-INFO.txt"
+            (cd "release/parts/$board"; sha256sum *.bin > SHA256SUMS.txt)
+            (cd "release/parts/$board"; zip -q -r "../../SquachEmit-v1.1.0-172Cases-$board.zip" .)
+          done
+          (cd release; sha256sum SquachEmit-v1.1.0-172Cases-*.zip > SquachEmit-v1.1.0-SHA256SUMS.txt)
+      - name: Publish GitHub public release
+        if: env.EXISTS != 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          SOURCE_SHA: ${{ github.event.workflow_run.head_sha }}
+        run: |
+          gh release create v1.1.0 -R "$REPO" \
+            release/SquachEmit-v1.1.0-172Cases-*.zip release/SquachEmit-v1.1.0-SHA256SUMS.txt \
+            --target "$SOURCE_SHA" \
+            --title "SquachEmit v1.1.0 — 172-Case Detection Suite & Smooth Touch" \
+            --notes-file docs/RELEASE_V1.1.0.md --latest

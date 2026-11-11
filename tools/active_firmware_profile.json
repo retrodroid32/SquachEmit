@@ -2,7 +2,7 @@
   "schema": 1,
   "scenario_count": 172,
   "firmware_sources": {
-    "src": "183d65bb8a8169410d696f703d56193f22a5553e",
+    "src": "5682c3bb00a7434a0bc9c637a460b7b3ddacadb8",
     "include": "f028a6e7e0da9e0023725307c44c1c56d2cc9bf2",
     "lib": "bd0df45f7747bc9971aa4b379a12940dd2d7d98f",
     "SquachEmit.ino": "90b4205813a2f7885bc1e12ce7431eebf7249f45",
@@ -10,9 +10,9 @@
   },
   "builds": {
     "cyd32-st7798": {
-      "title": "SquachEmit CYD 3.2 — 172-Case UAV Detection Suite + Smooth Touch",
-      "version": "MAINLINE 172-R3",
-      "summary": "Current 172-case CYD 3.2 ST7798 firmware: 27 new UAV vendor-prefix Wi-Fi test beacons, 3–30-second saved TX TIME editor, reduced touchscreen flashing and animated Squachy. The browser installer SHA-256 checks all four firmware segments before flashing. This is a current mainline build, not the original 95-case v1.0.0 release.",
+      "title": "SquachEmit v1.1.0 CYD 3.2 — 172-Case UAV Suite + Smooth Touch",
+      "version": "v1.1.0 MAINLINE · 172 cases",
+      "summary": "Public v1.1.0 firmware for CYD 3.2 ST7798: 172 synthetic BLE/Wi-Fi test cases including 27 UAS vendor-prefix beacons, saved 3–30-second TX-time editor, reduced touchscreen flashing, and animated Squachy. Browser installer verifies all four flash segments by SHA-256. Actual CYD hardware was flashed during development; no device certification.",
       "highlights": [
         "172 bounded synthetic BLE/Wi-Fi scenarios; per-case locally administered MAC IDs.",
         "TX TIME [SET] with +/- 1 second, RESET 12 and DONE; persists after reboot.",
@@ -23,9 +23,9 @@
       ]
     },
     "c5-waveshare-28": {
-      "title": "SquachEmit Waveshare C5 — 172-Case BLE + Wi-Fi Detection Suite",
-      "version": "MAINLINE 172-R3",
-      "summary": "Current Waveshare ESP32-C5 2.8-inch touchscreen build with the shared 172-case synthetic BLE/Wi-Fi test suite including 27 added UAV vendor-prefix beacons and synthetic Remote ID profiles. The browser installer validates the four firmware segments by SHA-256. The CYD 3.2-specific saved TX-time touchscreen is not included on C5.",
+      "title": "SquachEmit v1.1.0 Waveshare C5 — 172-Case Detection Suite",
+      "version": "v1.1.0 MAINLINE · 172 cases",
+      "summary": "Public v1.1.0 firmware for the exact Waveshare ESP32-C5 2.8-inch touchscreen board: 172 synthetic BLE/Wi-Fi test cases including UAV vendor-prefix beacons, controlled RF tests, and SHA-256 verified browser flashing. CYD 3.2-only TX TIME screen is not a C5 feature. Build passes CI; physical C5 hardware verification is still required.",
       "highlights": [
         "172 shared detection cases and negative controls.",
         "27 UAV vendor Wi-Fi test beacons; no genuine drone RF claim.",
@@ -35,9 +35,9 @@
       ]
     },
     "s3-devkit": {
-      "title": "SquachEmit ESP32-S3 — 172-Case Serial Signal Test Suite",
-      "version": "MAINLINE 172-R3",
-      "summary": "Current ESP32-S3 DevKitC-1 build of the shared 172-case synthetic BLE/Wi-Fi test suite, including UAV vendor-prefix beacon tests and synthetic Remote ID profiles. Serial RUN/STOP/SUITE control remains. Browser flashing now verifies all four firmware segments by SHA-256. The CYD 3.2-specific TX-time screen is not available on this board.",
+      "title": "SquachEmit v1.1.0 ESP32-S3 — 172-Case Serial Test Suite",
+      "version": "v1.1.0 MAINLINE · 172 cases",
+      "summary": "Public v1.1.0 firmware for ESP32-S3 DevKitC-1 with 172 synthetic BLE/Wi-Fi detection test cases, on-demand serial RUN/STOP/SUITE control, UAV vendor-prefix test scenarios, and SHA-256 verified browser flashing. No CYD touchscreen is included. Build passes CI; physical S3 hardware verification is still required.",
       "highlights": [
         "172 shared synthetic scenarios and negative controls.",
         "USB serial RUN, STOP and SUITE for bounded transmitter tests.",
