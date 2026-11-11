@@ -14,17 +14,17 @@ spec.loader.exec_module(builder)
 
 def partition_table():
     return (struct.pack("<HBBII16sI",0x50aa,0,0x10,0x10000,0x300000,b"factory",0)
-            +struct.pack("<HBBII16sI",0x50aa,1,0,0xe000,0x2000,b"otadata",0)).ljust(3072,b"\\xff")
+            +struct.pack("<HBBII16sI",0x50aa,1,0,0xe000,0x2000,b"otadata",0)).ljust(3072,b"\xff")
 
 class InstallerManifestTests(unittest.TestCase):
     def make_artifact(self,root,board):
         work=root/"source";work.mkdir()
-        boot=b"\\xe9"+b"\\x00"*4095
-        app=b"\\xe9"+b"\\x00"*4095
-        ota=b"\\x00"*8192
+        boot=b"\xe9"+b"\x00"*4095
+        app=b"\xe9"+b"\x00"*4095
+        ota=b"\x00"*8192
         parts=partition_table()
         if board=="c5-waveshare-28":
-            merged=bytearray(b"\\xff"*(0x10000+len(app)))
+            merged=bytearray(b"\xff"*(0x10000+len(app)))
             for offset,data in ((0x2000,boot),(0x8000,parts),(0xe000,ota),(0x10000,app)):
                 merged[offset:offset+len(data)]=data
             files={"SquachEmit.ino.bootloader.bin":boot,"SquachEmit.ino.partitions.bin":parts,
@@ -76,7 +76,7 @@ class InstallerManifestTests(unittest.TestCase):
         with self.assertRaises(ValueError):
             builder.load_source({"board":"cyd32-st7789-s3"},Path("/tmp/invalid-site"))
         with self.assertRaises(ValueError):
-            builder.verify_partitions(b"\\x00"*3072)
+            builder.verify_partitions(b"\x00"*3072)
 
     def test_browser_fail_closed_includes_current_board_and_channel_contract(self):
         app=(ROOT/"web-installer"/"app.js").read_text()
