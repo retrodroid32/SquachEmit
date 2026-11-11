@@ -79,6 +79,25 @@ these beacons is a vendor-prefix heuristic, **not a valid Remote ID decode**.
 Actual DJI/Autel model identification requires a separately verified
 broadcast capture and standard/proprietary protocol evidence.
 
+## Adjustable transmit time and touch flicker fix (same LAB branch)
+
+On the CYD 3.2 home screen, tap **TX TIME / [SET]** in the top status row
+above PROFILE. Use large **- 1 SEC** or **+ 1 SEC** buttons to select any
+duration from **3 to 30 seconds**, then tap DONE. BACK also preserves
+changes; RESET 12 restores the default. The setting is saved to SquachEmit's
+NVS namespace across reboots, and applies to both touchscreen RUN and each
+SUITE case, as well as serial RUN without explicit seconds. Serial
+`RUN <ID> [seconds]` continues to override the preset for that individual test.
+Existing auto-stop and STOP remain authoritative and duration cannot be
+changed while RF or a suite is active.
+
+CYD 3.2 touch now marks the full screen dirty **only for actual navigation
+or radio-state transitions**, instead of clearing/repainting on every tap.
+Petting Squachy, tapping unused space, hitting a page boundary, and
+adjusting +/- use no full-screen clear. The TX-time number is redrawn
+locally on adjustment. This is a firmware source fix, not proof of
+flicker-free hardware: verify on the physical ST7798.
+
 ## CYD 3.2 ST7798 verification
 
 Flash the unmerged LAB build from

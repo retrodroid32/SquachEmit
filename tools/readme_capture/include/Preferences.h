@@ -2,8 +2,11 @@
 #include <cstring>
 #include <cstddef>
 #include <cstdint>
+inline uint8_t mock_saved_tx_time=12;
 class Preferences{
 public:
+ uint8_t getUChar(const char*,uint8_t fallback){return mock_saved_tx_time?mock_saved_tx_time:fallback;}
+ size_t putUChar(const char*,uint8_t value){mock_saved_tx_time=value;return 1;}
  bool begin(const char*,bool){return true;}
  void end(){}
  bool getBool(const char*,bool defaultVal){return defaultVal;}

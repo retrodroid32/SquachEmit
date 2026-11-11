@@ -369,6 +369,15 @@ static bool isOuiOnly(const Scenario* s) {
   return s && (SquachDjiOuiLab::find(s->id)!=nullptr ||
                SquachUavVendorLab::find(s->id)!=nullptr);
 }
+// CYD 3.2 time selection controls touchscreen RUN and every SUITE case.
+// Other boards keep their existing 12-second default.
+static uint32_t selectedDurationMs(){
+#if defined(SQE_CYD32)
+  return cyd32UiDurationMs();
+#else
+  return kDefaultMs;
+#endif
+}
 
 static bool startScenario(const Scenario* s, uint32_t duration = kDefaultMs) {
   if (!s) return false;
@@ -450,7 +459,7 @@ static void help() {
   Serial.printf("SquachEmit LAB | %u cases | 115200 8N1 | all RF tests time-limited\n", (unsigned)kScenarioCount);
   Serial.println("HELP                  commands");
   Serial.println("LIST                  show all supported cases");
-  Serial.println("RUN <ID> [seconds]    transmit for 3..30 seconds (default 12)");
+  Serial.println("RUN <ID> [seconds]    transmit 3..30s; default is selected TX time (CYD3.2) or 12s");
   Serial.println("SUITE                 run each case with 2.4s off-air gaps");
   Serial.println("STOP                  stop current case/suite immediately");
   Serial.println("STATUS                show current case and time remaining");
@@ -459,6 +468,7 @@ static void help() {
   Serial.println("BLE5 extended/coded PHY and Wi-Fi NAN: OFFLINE FIXTURES ONLY.");
   Serial.println("Single 2.4GHz radio: BLE and Wi-Fi scenarios are exclusive.");
 #if defined(SQE_CYD32)
+  Serial.println("Tap TX TIME on the home screen to set 3..30s for RUN and SUITE.");
   Serial.println("CALTOUCH             reset touchscreen fit, then tap to calibrate");
   Serial.println("COLORS               show idle-only RED/GREEN/BLUE/WHITE/BLACK test");
   Serial.println("INVERT ON|OFF        save absolute panel inversion state");
@@ -508,7 +518,7 @@ static void command(String cmd) {
     id.toUpperCase();
     const Scenario* s = findScenario(id.c_str());
     if (!s) { Serial.println("ERROR,unknown_id (use LIST)"); return; }
-    uint32_t duration = kDefaultMs;
+    uint32_t duration = selectedDurationMs();
     if (space >= 0) {
       const String seconds = cmd.substring(space + 1);
       const long sec = seconds.toInt();
@@ -533,7 +543,7 @@ void setup() {
   Serial.println("BOOT,SquachEmit,0.4.0-LAB,ESP32-C5-Waveshare-2.8");
   c5UiBegin();
 #elif defined(SQE_CYD32)
-  Serial.println("BOOT,SquachEmit,0.4.2-CYD32-95-MATRIX-LAB,ESP32-2432S032R-ST7798");
+  Serial.println("BOOT,SquachEmit,0.4.2-CYD32-172-OUI-TXTIME-LAB,ESP32-2432S032R-ST7798");
   cyd32UiBegin();
 #else
   Serial.println("BOOT,SquachEmit,0.4.0-LAB,ESP32-S3");
@@ -569,7 +579,7 @@ void loop() {
     if (g_suiteNext >= kScenarioCount) {
       Serial.println("STATE,SUITE_DONE");
       g_suite = false;
-    } else if (!startScenario(&kScenarios[g_suiteNext++])) {
+    } else if (!startScenario(&kScenarios[g_suiteNext++],selectedDurationMs())) {
       g_suite = false;
       Serial.println("STATE,SUITE_ABORTED");
     }
@@ -596,7 +606,7 @@ void loop() {
           cyd32UiTick(nullptr,0,false);
         }
         Serial.printf("UI,RUN_DISPATCH,%s\n",chosen->id);
-        startScenario(chosen);
+        startScenario(chosen,selectedDurationMs());
       } else {
         Serial.println("ERROR,UI_RUN_NO_SELECTION");
         cyd32UiSetRadioError("NO_SELECTION");

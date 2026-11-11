@@ -8,6 +8,8 @@ enum class Cyd32UiAction : uint8_t { None, Run, Stop, Suite };
 void cyd32UiBegin();
 Cyd32UiAction cyd32UiTick(const char* activeId, uint32_t remainingMs, bool suiteRunning);
 const Scenario* cyd32UiSelection();
+// User-selected 3..30 second duration, persisted in CYD32 NVS.
+uint32_t cyd32UiDurationMs();
 void cyd32UiResetCalibration();
 void cyd32UiSetInversion(bool enabled);
 bool cyd32UiInversion();
