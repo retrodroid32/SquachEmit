@@ -4,9 +4,16 @@ on:
     branches:
       - 'docs/**'
     paths:
+      - src/cyd32_ui.cpp
+      - src/cyd32_squachy_port.cpp
+      - src/scenarios.cpp
       - tools/readme_capture/**
       - .github/workflows/readme-animated-demo.yml
   workflow_dispatch:
+# Avoid simultaneous GIF generators racing one branch or pushing stale HEADs.
+concurrency:
+  group: squachemit-readme-gifs-${{ github.ref }}
+  cancel-in-progress: true
 permissions:
   contents: write
 jobs:
@@ -27,10 +34,23 @@ jobs:
           set -euo pipefail
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add docs/squachemit-demo.gif docs/squachemit-device-library.gif docs/squachemit-test-running.gif
+          git add docs/squachemit-demo.gif docs/squachemit-device-library.gif docs/squachemit-test-running.gif docs/squachemit-tx-time.gif
           if git diff --staged --quiet; then
             echo "Animated graphics unchanged"
           else
             git commit -m "Docs: capture animated SquachEmit firmware UI directly from C++"
-            git push origin "HEAD:$GITHUB_REF_NAME"
+            # Another workflow or maintainer commit may have advanced this branch.
+            # Rebase onto the latest remote HEAD before writing GIF assets;
+            # never force push or overwrite source changes.
+            for attempt in 1 2 3; do
+              git fetch origin "$GITHUB_REF_NAME"
+              git rebase "origin/$GITHUB_REF_NAME"
+              if git push origin "HEAD:$GITHUB_REF_NAME"; then
+                echo "Animated README assets committed"
+                exit 0
+              fi
+              echo "Concurrent branch update, retrying push $attempt/3"
+            done
+            echo "::error::Unable to fast-forward generated GIFs after 3 retries"
+            exit 1
           fi
