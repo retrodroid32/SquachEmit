@@ -1,0 +1,121 @@
+{
+  "schema": 1,
+  "builds": {
+    "fb57b628ce6a2539cb0940127763744e47be19bf": {
+      "title": "Drone Remote ID Profiles (49 tests)",
+      "version": "v0.4.0 LAB",
+      "summary": "Adds 10 synthetic DJI, Autel and Parrot Remote ID profiles, generic BLE4 Remote ID, Wi-Fi beacon formats, and negative/partial-data cases. Does not clone actual aircraft radios.",
+      "highlights": [
+        "DJI Mini, Air, Mavic, Phantom and Matrice; Autel EVO II, EVO Max and EVO Lite; Parrot ANAFI and ANAFI USA test labels.",
+        "49 selectable scenarios, including synthetic BLE Remote ID and 2.4 GHz Wi-Fi Remote ID beacon tests.",
+        "New invalid, shortened, old-location and missing-operator test cases.",
+        "BLE5 coded/extended and Wi-Fi NAN are offline-only fixtures, not live radio transmissions."
+      ]
+    },
+    "6c08d0de80c0206a08ba99eaab4c324400a35bff": {
+      "title": "RF Test Matrix + S3 Packaging (31 tests)",
+      "version": "v0.3.0 LAB",
+      "summary": "Contains the same 31 on-air detection scenarios as e5cf01bf. Improves the ESP32-S3 firmware artifact packaging for browser installation; no new C5 RF tests compared with e5cf01bf.",
+      "highlights": [
+        "2.4 GHz Wi-Fi channel 1, 6 and 11 detection and benign-negative controls.",
+        "Additional BLE iBeacon identity and malformed/near-match detection cases.",
+        "Per-CYD accuracy scoring and paired serial evidence capture.",
+        "Complete S3 flash parts now built for future browser installer support."
+      ]
+    },
+    "e5cf01bf40a796f50750b37b1777da0273da92f1": {
+      "title": "RF Test Matrix (31 tests)",
+      "version": "v0.3.0 LAB",
+      "summary": "Initial expansion from 22 to 31 RF scenarios with Wi-Fi channel-specific tests, additional BLE negative controls and per-CYD verification tools.",
+      "highlights": [
+        "Wi-Fi channel 6/11 AXON, FLOCK and benign AP test profiles.",
+        "Second iBeacon identity and malformed iBeacon, Remote ID UUID and Meta UUID negatives.",
+        "Independent offline Remote ID/iBeacon checks.",
+        "Separate SquachWatch 2.8 and 3.2 accuracy reports and paired USB serial evidence."
+      ]
+    },
+    "2d6e9f3f29b51b30d1b5731bc7b220e7d020312f": {
+      "title": "C5 Touchscreen Baseline (22 tests)",
+      "version": "v0.2.0 DEV",
+      "summary": "Initial ESP32-C5 Waveshare 2.8-inch touchscreen support with 22 synthetic BLE and Wi-Fi RF scenarios; no later channel matrix or drone-model profile expansion.",
+      "highlights": [
+        "Waveshare C5 ST7789 display and CST3530 touch GUI.",
+        "Original 22 opt-in RF detection test cases.",
+        "BLE Remote ID generic, iBeacon, tracker and Wi-Fi SSID test scenarios."
+      ]
+    },
+    "ee7295ac58d3e159036fae76b964644a202d9838": {
+      "title": "ESP32-S3 Baseline (22 tests)",
+      "version": "v0.1.0",
+      "summary": "Original ESP32-S3 22-case bounded BLE and Wi-Fi lab transmitter, before the channel-specific and drone-model profile expansions.",
+      "highlights": [
+        "Original BLE tracker, iBeacon, generic Remote ID and Wi-Fi SSID detection tests.",
+        "Serial RUN / SUITE / STOP control; no RF transmission on boot.",
+        "No C5 display support or new model-specific Remote ID test profiles."
+      ]
+    },
+    "2774856ec2c0f852eb87b1ec99dfcb910aadca7e": {
+      "title": "CYD 3.2 ST7798 Emitter (49 tests)",
+      "version": "v0.4.0 LAB / CYD3.2",
+      "summary": "First SquachEmit build for ESP32-2432S032R 3.2-inch ST7798-compatible resistive CYD. Adds on-screen RF scenario control, persistent touch calibration, and all 49 synthetic Remote ID / RF test cases. Replaces SquachWatch on the flashed device.",
+      "highlights": [
+        "Supports owner's 3.2-inch ESP32-WROOM-32 CYD ST7798-compatible TFT, XPT2046 touch, and GPIO27 backlight.",
+        "49 controlled on-air tests including 10 synthetic DJI/Autel/Parrot drone Remote ID lab profiles.",
+        "On-device PREV/NEXT, RUN/STOP/SUITE and five-point touch calibration saved in a separate NVS namespace.",
+        "Uses 115200 baud SquachEmit serial and classic ESP32 2.4GHz Wi-Fi/BLE4 hardware.",
+        "Flashing overwrites SquachWatch on this physical CYD; use a second CYD receiver."
+      ]
+    },
+    "471699cb08ad7e458b4d56a11e1f5ef265d54ed5": {
+      "title": "CYD 3.2 ST7798 Smooth UI (49 tests)",
+      "version": "v0.4.0 LAB / CYD3.2 r2",
+      "summary": "Updated SquachEmit 3.2-inch CYD ST7798/XPT2046 firmware: 49 RF test cases, onboard UI and persistent touch calibration. Redraws only the running countdown instead of refreshing the entire screen each second; prevents a blocking calibration from extending RF transmissions. Replaces SquachWatch on the flashed board.",
+      "highlights": [
+        "ESP32-2432S032R 3.2-inch ST7798/ST7789-compatible TFT, XPT2046 touch, GPIO27 backlight and classic ESP32 4MB flash.",
+        "49 synthetic BLE/Wi-Fi tests including DJI Mini/Air/Mavic/Phantom/Matrice, Autel EVO and Parrot ANAFI Remote ID profiles.",
+        "New touchscreen PREV/NEXT, RUN/STOP/SUITE, persistent five-point calibration and CALTOUCH serial recovery.",
+        "Reduced screen flicker: running countdown updates only its small timer region instead of clearing the entire display.",
+        "Touch calibration is blocked during active RF or suite mode, so a wizard cannot extend timed emissions.",
+        "Flashing replaces the SquachWatch app on this board; use a separate device to receive test signals."
+      ]
+    },
+    "caa89d82047b73cecfbd9d9b476c7bc2fa2a14bb": {
+      "title": "SquachEmit 3.2 — Squachy Animated UI (Latest LAB)",
+      "version": "Squachy Animated LAB 1",
+      "summary": "Newest 3.2-inch ST7798 SquachEmit LAB: ports SquachWatch GPLv3-derived core Squachy appearance and movements into an isolated sprite, removes oversized status text over Squachy and retains the earlier color-inversion and unique BLE/Wi-Fi MAC fixes. This is a first core-character port, not the entire original animation/costume/speech engine. Hardware unverified.",
+      "highlights": [
+        "Source-derived SquachWatch default Squachy proportions, hair, sunglasses, blink, wave, bounce, walk, dance, sleep and startled expressions.",
+        "Animates only a 112x111 offscreen patch (~24KB heap); static fallback if allocation fails, pending real ST7798 verification.",
+        "Retains display polarity override (COLORS, INVERT ON/OFF), local scenario-specific BLE/Wi-Fi MACs (IDENTITY) and 49 RF scenarios.",
+        "Serial console supports selectable baud rates; device firmware serial default is 115200.",
+        "GPLv3-derived port requires GPLv3-compliant distribution of linked firmware; this LAB is not a hardware-approved release."
+      ]
+    },
+    "774e2c8cc3077c7ae07a534d9519e0774cb51e25": {
+      "title": "SquachEmit 3.2 — Expanded Detection Matrix (95 Cases) + Squachy Animated UI",
+      "version": "v0.4.2 LAB / CYD3.2",
+      "summary": "Adds 46 opt-in synthetic BLE/Wi-Fi variants and negative controls to the 49-case Squachy Animated UI LAB, for 95 total scenarios. Covers Flock battery, Snap/Luxottica/Meta IDs, Raven, Tile, Flipper, serial-module names, Axon AB3/AB4, Pineapple Pager, additional Wi-Fi channels and Remote ID beacons; corrects the Eddystone-only Google false positive. The CYD3.2 UI now displays the live catalog count. Hardware not yet verified.",
+      "highlights": [
+        "95 synthetic time-limited on-air tests with separate per-case locally-administered MAC identities; zero RF emission at boot.",
+        "More SquachWatch family variants: Flock, Meta/Snap/Luxottica, Raven, Tile, Flipper, Axon, generic Bluetooth serial-module candidates and Pineapple Pager.",
+        "Negative controls for spoofable names, neighboring UUIDs/company IDs, Flockhart/Pager prefixes and generic Eddystone (0xFEAA).",
+        "Wi-Fi channels 1/3/9/11 plus Remote ID SoftAP beacon tests on channels 1/11; BLE legacy, not BLE5 extended or Bluetooth Classic.",
+        "Retains core SquachWatch-derived Squachy animated UI and prior ST7798 inversion control; source-derived GPLv3 component is subject to GPLv3 distribution obligations.",
+        "Manufacturer OUI, Pwnagotchi, deauth/evil twin and NAN receiver cases are offline fixtures, not forged on-air management traffic."
+      ]
+    },
+    "04e380aa373cf2c4e02950f9076eb0355f7a7f98": {
+      "title": "SquachEmit 3.2 — Device-Type Test Library (95 Cases) + Squachy",
+      "version": "v0.4.2 LAB / CYD3.2 — Device Library",
+      "summary": "Reorganizes the 95-case SquachEmit CYD 3.2 test library into 10 exclusive device-type categories. Categories and case IDs are alphabetical. Drone cases remain in Drones regardless of BLE or Wi-Fi transport. Retains the Squachy animated UI, corrected ST7798 colors and the same synthetic RF tests. Hardware unverified.",
+      "highlights": [
+        "Ten alphabetical device-type groups: Axon, Drones / Remote ID, Flock, General / Controls, Hacker Devices, iBeacon, Raven, Serial Modules, Smart Glasses and Trackers.",
+        "Exactly one category for each of the 95 scenarios. Device-group variants and their near-match negative controls remain together.",
+        "PREV/NEXT category paging; alphabetically sorted test IDs within each category.",
+        "BLE/Wi-Fi carrier remains in technical details, not a separate duplicated category.",
+        "Retains Squachy animated character, bounded emissions, per-case synthetic MAC identity and browser-based flashing.",
+        "No physical hardware verification yet. No receiver firmware changes."
+      ]
+    }
+  }
+}

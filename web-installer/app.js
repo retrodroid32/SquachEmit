@@ -3,10 +3,12 @@
   const params = new URLSearchParams(location.search);
   const lab = params.get('lab') === '1';
   const el = id => document.getElementById(id);
-  const ui = Object.fromEntries(['board','build','buildDetails','confirm','notice','channelBadge','enterLab','exitLab','installArea','installLocked','installButton','downloadBin','serialState','connect','disconnect','serialLog','command','commandForm','send','clear','saveLog'].map(k => [k,el(k)]));
+  const ui = Object.fromEntries(['board','build','buildDetails','confirm','notice','channelBadge','enterLab','exitLab','installArea','installLocked','installButton','downloadBin','serialState','connect','disconnect','serialLog','command','commandForm','send','clear','saveLog','baudRate','customBaud','baudHint'].map(k => [k,el(k)]));
   let catalog = { builds: [] }, visible = [], selected = null;
+  // Never unlock flashing/download until this selected build's exact four
+  // published segments and manifest have passed checksum/offset validation.
   let integrityVerified = false, verificationRequest = 0;
-  ui.channelBadge.textContent = lab ? 'LAB CHANNEL · UNVERIFIED' : 'PRODUCTION';
+  ui.channelBadge.textContent = lab ? 'LAB CHANNEL · UNVERIFIED' : 'PUBLIC RELEASE · HW UNVERIFIED';
   ui.channelBadge.classList.toggle('lab', lab);
   ui.enterLab.hidden = lab;
   ui.exitLab.hidden = !lab;
@@ -14,18 +16,31 @@
   function notice(s, kind = '') { ui.notice.textContent = s; ui.notice.className = 'notice ' + kind; }
   function txt(node, value) { node.textContent = value; }
   function opt(value,label) { const o = document.createElement('option');o.value = value; o.textContent = label;return o; }
-  function boardLabel(b){ return b === 'c5-waveshare-28' ? 'Waveshare ESP32-C5 · 2.8" touchscreen' : b === 's3-devkit' ? 'ESP32-S3 · DevKitC-1' : b; }
+  function boardLabel(b){
+    if (b === 'c5-waveshare-28') return 'Waveshare ESP32-C5 · 2.8" touchscreen';
+    if (b === 'cyd32-st7798') return 'CYD 3.2" · ST7798 / ESP32-2432S032R · Resistive';
+    if (b === 's3-devkit') return 'ESP32-S3 · DevKitC-1';
+    return b;
+  }
   function buildOptions() {
     const b = ui.board.value;
     const arr = visible.filter(x=>x.board === b).sort((a,c)=>c.created_at.localeCompare(a.created_at));
     ui.build.replaceChildren(opt('', arr.length ? 'Select a firmware build…' : 'No builds available for this board'));
-    arr.forEach(entry => ui.build.appendChild(opt(entry.id, `${entry.channel.toUpperCase()} · ${entry.short_sha} · ${entry.created_at.substring(0,10)}`)));
+    arr.forEach(entry => {
+      const title = entry.title || 'Uncatalogued firmware — review changes';
+      const version = entry.version_label ? ` · ${entry.version_label}` : '';
+      // User-facing menu shows a human title only. Keep SHA and branch in
+      // technical details below, where they are useful for diagnostics.
+      const option = opt(entry.id, title);
+      option.title = entry.summary || title;
+      ui.build.appendChild(option);
+    });
     ui.build.disabled = !arr.length;
     ui.confirm.checked = false;
     selectBuild();
   }
   function selectBuild() {
-    const token = ++verificationRequest;
+    const token = ++verificationRequest; // invalidate in-flight stale checks
     selected = visible.find(x => x.id === ui.build.value) || null;
     integrityVerified = false;
     ui.confirm.disabled = true;
@@ -33,16 +48,29 @@
     if (!selected) {
       txt(ui.buildDetails, 'Choose a firmware build above. No device is modified until you explicitly connect and approve flashing.');
     } else {
+      const title = selected.title || 'Uncatalogued firmware — review changes';
+      const features = Array.isArray(selected.highlights)
+        ? selected.highlights.filter(s => typeof s === 'string').slice(0, 7) : [];
       const fragments = [
+        `FIRMWARE: ${title}`,
+        `VERSION: ${selected.version_label || 'Unknown LAB version'}`,
+        `WHAT CHANGED: ${selected.summary || 'No reviewed feature summary exists for this commit. Check the CI run before flashing.'}`
+      ];
+      if (features.length) fragments.push('FEATURES:\n' + features.map(x => '  • ' + x).join('\n'));
+      if (selected.notes_verified_for_sha === false)
+        fragments.push('NOTE: This SHA has no curated changelog. Review the source commit.');
+      if (selected.board === 'cyd32-st7798')
+        fragments.push('WARNING: THIS REPLACES SQUACHWATCH ON YOUR 3.2 CYD. You need another physical board to observe detections. Backup settings; verify ST7798/XPT2046 and ESP32-WROOM-32 (NOT ESP32-C5).');
+      fragments.push(
         `CHANNEL: ${selected.channel.toUpperCase()} / HARDWARE-UNVERIFIED`,
         `DEVICE: ${boardLabel(selected.board)}`,
         `COMMIT: ${selected.sha}`,
         `SOURCE: ${selected.branch}`,
-        `BUILD: ${selected.created_at.replace('T',' ').slice(0,19)} UTC`,
-        `SHA256: ${selected.sha256}`,
-        'INTEGRITY: checking all four firmware segments before allowing flash...',
+        `BUILT: ${selected.created_at.replace('T',' ').slice(0,19)} UTC`,
+        `SHA256 (application): ${selected.sha256}`,
+        'INTEGRITY: checking the manifest and all four firmware segments...',
         'Installation uses bootloader, partitions, OTA selection and application. Existing user data may change.'
-      ];
+      );
       txt(ui.buildDetails, fragments.join('\n'));
       ui.buildDetails.style.whiteSpace = 'pre-line';
     }
@@ -54,86 +82,121 @@
     ui.installArea.hidden = !allowed;
     ui.installLocked.hidden = allowed;
     ui.downloadBin.hidden = !selected || !integrityVerified;
-    if (selected) {
+    if (selected && integrityVerified) {
       ui.installButton.setAttribute('manifest', allowed ? `./${selected.manifest}` : './manifest-unavailable.json');
       ui.downloadBin.href = `./${selected.application}`;
       ui.downloadBin.download = `${selected.id}.bin`;
-    } else ui.installButton.setAttribute('manifest','./manifest-unavailable.json');
+    } else {
+      ui.installButton.setAttribute('manifest','./manifest-unavailable.json');
+      ui.downloadBin.removeAttribute('href');
+    }
     if (allowed) txt(ui.installLocked, '');
+    else if (selected && !integrityVerified)
+      txt(ui.installLocked, 'Checking firmware integrity. Flashing is locked until all four files pass verification.');
+    else if (selected)
+      txt(ui.installLocked, 'Firmware verified. Confirm the exact board to unlock installation.');
   }
 
-  // Validate the exact four published firmware segments and ESP Web Tools
-  // offsets before exposing either install or download controls. This catches
-  // truncated/mismatched Pages assets, but is not a signature or device test.
+  // Fail closed on corrupt or mismatched Pages assets. Hashing confirms
+  // transfer integrity relative to the CI-generated catalog, not signing,
+  // authenticity, or the attached board's actual screen/touch controller.
   async function verifyIntegrity(entry, token) {
     try {
-      if (!window.isSecureContext || !crypto?.subtle)
-        throw Error('SHA-256 Web Crypto requires a secure HTTPS browser');
-      if (!/^lab\/(?:c5|s3)-[a-f0-9]{8}\/manifest\.json$/.test(entry.manifest))
-        throw Error('Unsafe or malformed firmware manifest path');
-      if (!Array.isArray(entry.segments) || entry.segments.length !== 4)
-        throw Error('Build is missing its four required segment checksums');
-      const folder = entry.manifest.slice(0, entry.manifest.lastIndexOf('/') + 1);
+      if (!window.isSecureContext || !globalThis.crypto?.subtle)
+        throw Error('SHA-256 verification requires HTTPS and Web Crypto');
+      const allowed = {
+        'c5-waveshare-28': {prefix:'c5', chip:'ESP32-C5', boot:0x2000},
+        's3-devkit': {prefix:'s3', chip:'ESP32-S3', boot:0x0000},
+        'cyd32-st7798': {prefix:'cyd32', chip:'ESP32', boot:0x1000}
+      };
+      const board = allowed[entry.board];
+      if (!board || !['lab','stable'].includes(entry.channel) ||
+          entry.chipFamily !== board.chip ||
+          !/^[a-f0-9]{40}$/.test(entry.sha) ||
+          entry.short_sha !== entry.sha.slice(0,8))
+        throw Error('Unknown board, chip family, channel or firmware SHA');
+      const expectedFolder = `${entry.channel}/${board.prefix}-${entry.short_sha}/`;
+      if (entry.manifest !== expectedFolder + 'manifest.json' ||
+          entry.application !== expectedFolder + 'application.bin' ||
+          entry.id !== `${entry.channel}-${board.prefix}-${entry.short_sha}`)
+        throw Error('Unsafe or inconsistent build paths');
       const names = ['bootloader.bin','partitions.bin','otadata.bin','application.bin'];
-      if (entry.segments.some((s,i) => s.name !== names[i] ||
-          s.path !== folder + s.name || !Number.isSafeInteger(s.offset) || s.offset < 0 ||
-          !Number.isSafeInteger(s.bytes) || s.bytes <= 0 ||
-          !/^[a-f0-9]{64}$/.test(s.sha256)))
-        throw Error('Unsafe or inconsistent firmware segment metadata');
-      const manifestResponse = await fetch('./' + entry.manifest, {cache:'no-store'});
-      if (!manifestResponse.ok) throw Error('Cannot load installer manifest: HTTP ' + manifestResponse.status);
-      const manifest = await manifestResponse.json();
-      const build = manifest.builds?.[0];
-      if (build?.chipFamily !== entry.chipFamily || !Array.isArray(build.parts) ||
-          build.parts.length !== entry.segments.length)
-        throw Error('Manifest chip family or partition count mismatch');
+      const offsets = [board.boot,0x8000,0xe000,0x10000];
+      if (!Array.isArray(entry.segments) || entry.segments.length !== 4 ||
+          entry.segments.some((s,i) =>
+            s.name !== names[i] || s.path !== expectedFolder + names[i] ||
+            s.offset !== offsets[i] || !Number.isSafeInteger(s.bytes) ||
+            s.bytes < 32 || !/^[a-f0-9]{64}$/.test(s.sha256)) ||
+          entry.sha256 !== entry.segments[3].sha256 ||
+          entry.bytes !== entry.segments[3].bytes)
+        throw Error('Build lacks valid four-part checksum and offset metadata');
+
+      const response = await fetch('./' + entry.manifest, {cache:'no-store'});
+      if (!response.ok) throw Error('Manifest unavailable: HTTP ' + response.status);
+      const manifest = await response.json();
+      if (!Array.isArray(manifest.builds) || manifest.builds.length !== 1 ||
+          manifest.builds[0]?.chipFamily !== board.chip)
+        throw Error('Manifest chip family mismatch');
+      const parts = manifest.builds[0].parts;
+      if (!Array.isArray(parts) || parts.length !== 4 ||
+          parts.some((part,i)=>part.path !== names[i] || part.offset !== offsets[i]))
+        throw Error('Manifest offsets or binary filenames mismatch');
       for (const segment of entry.segments) {
-        if (token !== verificationRequest) return;
-        if (!build.parts.some(p => p.path === segment.name && p.offset === segment.offset))
-          throw Error('Manifest offset mismatch for ' + segment.name);
-        const response = await fetch('./' + segment.path, {cache:'no-store'});
-        if (!response.ok) throw Error('Cannot fetch ' + segment.name + ': HTTP ' + response.status);
-        const bytes = await response.arrayBuffer();
+        if (token !== verificationRequest || selected?.id !== entry.id) return;
+        const resp = await fetch('./' + segment.path, {cache:'no-store'});
+        if (!resp.ok) throw Error(segment.name + ' unavailable: HTTP ' + resp.status);
+        const bytes = await resp.arrayBuffer();
         if (bytes.byteLength !== segment.bytes)
-          throw Error('Size mismatch for ' + segment.name);
-        const hash = Array.from(new Uint8Array(await crypto.subtle.digest('SHA-256', bytes)))
-          .map(byte => byte.toString(16).padStart(2,'0')).join('');
-        if (hash !== segment.sha256)
-          throw Error('SHA-256 mismatch for ' + segment.name);
+          throw Error(segment.name + ' size mismatch');
+        const hash = Array.from(new Uint8Array(await globalThis.crypto.subtle.digest('SHA-256', bytes)))
+          .map(b=>b.toString(16).padStart(2,'0')).join('');
+        if (hash !== segment.sha256) throw Error(segment.name + ' SHA-256 mismatch');
       }
       if (token !== verificationRequest || selected?.id !== entry.id) return;
       integrityVerified = true;
       ui.confirm.disabled = false;
-      ui.buildDetails.textContent += '\nINTEGRITY: all four firmware segments passed SHA-256 and offset checks.';
+      txt(ui.buildDetails, ui.buildDetails.textContent +
+          '\nINTEGRITY: PASS — all four firmware segments verified against the manifest and SHA-256 checksums.');
       updateInstall();
-    } catch (error) {
+    } catch (err) {
       if (token !== verificationRequest || selected?.id !== entry.id) return;
       integrityVerified = false;
       ui.confirm.checked = false;
       ui.confirm.disabled = true;
-      ui.buildDetails.textContent += '\nINTEGRITY FAILED: ' + error.message + '. Flashing disabled.';
-      notice('Firmware validation failed: ' + error.message + '. Do not flash this build.', 'error');
+      txt(ui.buildDetails, ui.buildDetails.textContent +
+          '\nINTEGRITY: FAILED — ' + err.message + '. Flashing and downloading disabled.');
+      notice('Firmware validation failed: ' + err.message + '. Do not flash this build.', 'error');
       updateInstall();
     }
   }
-
   async function loadCatalog() {
     try {
       const response = await fetch('./catalog.json', {cache:'no-store'});
       if (!response.ok) throw Error(`HTTP ${response.status}`);
       catalog = await response.json();
       if (!Array.isArray(catalog.builds)) throw Error('Invalid firmware catalog');
-      visible = catalog.builds.filter(entry => lab || entry.channel === 'stable');
+      // Show one (newest successfully published) firmware per board.
+      // The publishing workflow also limits builds; this guards against an
+      // older catalog still containing historical duplicates.
+      const newestByBoard = new Map();
+      for (const entry of catalog.builds) {
+        if (lab ? entry.channel !== 'lab' : entry.channel !== 'stable') continue;
+        const prior = newestByBoard.get(entry.board);
+        if (!prior || Date.parse(entry.created_at) > Date.parse(prior.created_at)) {
+          newestByBoard.set(entry.board, entry);
+        }
+      }
+      visible = [...newestByBoard.values()];
       const boards = [...new Set(visible.map(x=>x.board))];
-      ui.board.replaceChildren(opt('',boards.length?'Choose a target board…':'No approved production firmware yet'));
+      ui.board.replaceChildren(opt('',boards.length?'Choose a target board…':'No public release firmware available yet'));
       boards.forEach(b => ui.board.appendChild(opt(b,boardLabel(b))));
       ui.board.disabled = !boards.length;
       if (lab) {
         notice(`LAB mode enabled. ${visible.length} build(s) loaded. These builds compile in CI but have NOT passed physical RF/display verification.`, 'warn');
         if (boards.length) { ui.board.value = boards.includes('c5-waveshare-28')?'c5-waveshare-28':boards[0]; buildOptions(); }
       } else if (!boards.length) {
-        notice('No hardware-approved production release yet. To use development firmware, open the LAB channel using ENABLE LAB BUILDS.', 'warn');
-      } else notice(`${visible.length} approved production build(s) available.`);
+        notice('No public firmware release published yet. The LAB channel contains development builds.', 'warn');
+      } else notice(`SquachEmit v1.0.0 public release: ${visible.length} board builds available. Hardware verification is pending.`, 'warn');
       if (!navigator.serial || !window.isSecureContext) notice('Browser serial requires HTTPS and Web Serial (desktop Chrome or Edge). Firmware catalog is available for viewing.', 'warn');
     } catch (e) { notice(`Firmware catalog unavailable: ${e.message}. Check the GitHub Actions Pages deployment.`, 'error'); }
   }
@@ -144,8 +207,32 @@
 
   // Serial console. All serial operations originate from explicit user gestures;
   // it never starts or resumes the transmitter when the page opens.
-  let port = null, reader = null, reading = null, writer = null;
+  let port = null, reader = null, reading = null, writer = null, connecting = false;
+  let activeBaudRate = null;
+  const MIN_BAUD = 300, MAX_BAUD = 4000000;
   const encoder = new TextEncoder(), decoder = new TextDecoder();
+
+  function requestedBaudRate() {
+    const value = ui.baudRate.value === 'custom' ? ui.customBaud.value : ui.baudRate.value;
+    const numeric = Number(value);
+    if (!Number.isSafeInteger(numeric) || numeric < MIN_BAUD || numeric > MAX_BAUD ||
+        String(value).trim() === '') {
+      throw new Error('Enter a whole-number baud rate between 300 and 4,000,000.');
+    }
+    return numeric;
+  }
+  function updateBaudControls() {
+    const locked = !!port || connecting;
+    const custom = ui.baudRate.value === 'custom';
+    ui.baudRate.disabled = locked;
+    ui.customBaud.hidden = !custom;
+    ui.customBaud.disabled = locked || !custom;
+    ui.baudHint.textContent = locked
+      ? 'Disconnect before changing the baud rate.'
+      : 'SquachEmit uses 115,200. SquachWatch CYD typically uses 2,000,000. Choose a rate before connecting.';
+  }
+  ui.baudRate.addEventListener('change', updateBaudControls);
+  updateBaudControls();
   let log = '';
   function append(data) {
     if (!data) return;
@@ -155,10 +242,13 @@
     ui.serialLog.scrollTop = ui.serialLog.scrollHeight;
   }
   function setState(connected) {
-    ui.serialState.textContent = connected ? 'CONNECTED' : 'DISCONNECTED';
+    ui.serialState.textContent = connected
+      ? `CONNECTED · ${activeBaudRate.toLocaleString('en-US')} BAUD`
+      : (connecting ? 'CONNECTING' : 'DISCONNECTED');
     ui.serialState.classList.toggle('connected', connected);
-    ui.connect.disabled = connected;
+    ui.connect.disabled = connected || connecting;
     ui.disconnect.disabled = !connected;
+    updateBaudControls();
     ui.command.disabled = !connected;
     ui.send.disabled = !connected;
     document.querySelectorAll('[data-cmd]').forEach(b=>b.disabled=!connected);
@@ -175,21 +265,40 @@
     finally { try {r.releaseLock();} catch (_) {} if(reader===r) reader=null; }
   }
   async function disconnect() {
-    const p=port;port=null;setState(false);
+    const p=port;port=null;activeBaudRate=null;setState(false);
     try { if(reader) await reader.cancel(); } catch (_) {}
     try { if(reading) await reading; } catch (_) {}
     try { if(writer) {writer.releaseLock();writer=null;} } catch (_) {}
     try { if(p) await p.close(); } catch (e) {append(`[port close: ${e.message}]\n`);}
   }
   ui.connect.addEventListener('click', async()=>{
-    if (!('serial' in navigator) || !window.isSecureContext) {append('Web Serial unavailable. Use desktop Chrome or Edge over HTTPS.\n');return;}
+    if (port || connecting) return;
+    if (!('serial' in navigator) || !window.isSecureContext) {
+      append('Web Serial unavailable. Use desktop Chrome or Edge over HTTPS.\n');
+      return;
+    }
+    let baudRate;
+    try { baudRate = requestedBaudRate(); }
+    catch (e) { append(`[serial baud: ${e.message}]\n`); return; }
+
+    // Freeze the chosen speed during the OS port picker and connection.
+    connecting = true;
+    setState(false);
     try {
-      port=await navigator.serial.requestPort();
-      await port.open({baudRate:115200});
+      port = await navigator.serial.requestPort();
+      await port.open({baudRate});
+      activeBaudRate = baudRate;
+      connecting = false;
       setState(true);
-      append('\n[serial connected at 115200 baud; type HELP]\n');
+      append(`\n[serial connected at ${baudRate.toLocaleString('en-US')} baud; type HELP]\n`);
       reading=monitorLoop(port);
-    } catch(e) {append(`[serial connect: ${e.message}]\n`);if(port) await disconnect();}
+    } catch(e) {
+      append(`[serial connect: ${e.message}]\n`);
+      if(port) await disconnect();
+    } finally {
+      connecting = false;
+      if (!port) setState(false);
+    }
   });
   ui.disconnect.addEventListener('click',disconnect);
   async function send(cmd) {

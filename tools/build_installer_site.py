@@ -19,9 +19,53 @@ SOURCE = Path(__file__).resolve().parent.parent / 'web-installer'
 BOARDS = {
     'c5-waveshare-28': {'chip': 'ESP32-C5', 'label': 'Waveshare ESP32-C5 Touch LCD 2.8'},
     's3-devkit': {'chip': 'ESP32-S3', 'label': 'ESP32-S3 DevKitC-1'},
+    'cyd32-st7798': {'chip': 'ESP32', 'label': 'CYD 3.2 ST7798 ESP32-2432S032R'},
 }
 ALLOWED_BRANCH = re.compile(r'^(main|lab/[A-Za-z0-9._/-]{1,110})$')
 SHA = re.compile(r'^[a-f0-9]{40}$')
+
+NOTES_PATH = Path(__file__).resolve().with_name('firmware_build_notes.json')
+
+
+def load_build_notes(path: Path = NOTES_PATH) -> dict:
+    """Curated, SHA-pinned labels; never guess feature parity from build age."""
+    data = json.loads(path.read_text(encoding='utf-8'))
+    if data.get('schema') != 1 or not isinstance(data.get('builds'), dict):
+        raise ValueError('invalid firmware_build_notes.json schema')
+    notes = data['builds']
+    for commit, entry in notes.items():
+        if not SHA.fullmatch(commit) or not isinstance(entry, dict):
+            raise ValueError('invalid commit in build note catalog')
+        for field, limit in (('title', 110), ('version', 40), ('summary', 600)):
+            value = entry.get(field)
+            if not isinstance(value, str) or not value.strip() or len(value) > limit:
+                raise ValueError(f'invalid build note {commit[:8]} {field}')
+        features = entry.get('highlights', [])
+        if (not isinstance(features, list) or len(features) > 7
+            or not all(isinstance(f, str) and 0 < len(f) <= 260 for f in features)):
+            raise ValueError(f'invalid highlights in build note {commit[:8]}')
+    return notes
+
+
+def describe_build(sha: str, branch: str, board: str, notes: dict) -> dict:
+    """Known SHAs get exact features. Unknown SHAs never inherit old notes."""
+    if sha in notes:
+        note = notes[sha]
+        return {'title': note['title'], 'version_label': note['version'],
+                'summary': note['summary'], 'highlights': list(note['highlights']),
+                'notes_verified_for_sha': True}
+    label = {
+        'lab/drone-rid-profiles-': 'Drone Remote ID LAB (review exact changes)',
+        'lab/rf-fixtures-reporting-': 'RF Detection LAB (review exact changes)',
+        'lab/esp32c5-waveshare-touch-': 'C5 Touchscreen LAB (review exact changes)',
+        'lab/cyd32-st7798-': 'CYD 3.2 ST7798 LAB (review exact changes)',
+    }
+    title = next((name for prefix, name in label.items() if branch.startswith(prefix)),
+                 'Uncatalogued LAB firmware (review changes)')
+    return {'title': title, 'version_label': 'Unspecified LAB',
+            'summary': 'No SHA-specific feature notes have been reviewed for this build. '
+                       'Use its source branch and CI run to verify changes before flashing.',
+            'highlights': [], 'notes_verified_for_sha': False}
 
 
 def sha256(data: bytes) -> str:
@@ -53,15 +97,18 @@ def verify_partitions(data: bytes, expected_app: int = 0x10000) -> None:
         raise ValueError('expected otadata partition at 0xE000 absent')
 
 
-def load_source(src: dict, output: Path) -> dict:
+def load_source(src: dict, output: Path, notes: dict | None = None) -> dict:
     board = src['board']
     if board not in BOARDS:
         raise ValueError(f'unsupported board: {board}')
     sha = src['sha'].lower()
     if not SHA.fullmatch(sha) or not ALLOWED_BRANCH.fullmatch(src['branch']):
         raise ValueError(f'invalid trusted source ref: {src}')
-    if src.get('channel') != 'lab':
-        raise ValueError('only lab builds are currently eligible; hardware-approved releases require separate approval')
+    channel = src.get('channel')
+    if channel not in ('lab', 'stable'):
+        raise ValueError('unsupported firmware channel')
+    if channel == 'stable' and src['branch'] != 'main':
+        raise ValueError('public release must originate from successful main CI')
     created_at = src['created_at']
     if not re.fullmatch(r'20\d{2}-\d\d-\d\dT\d\d:\d\d:\d\dZ', created_at):
         raise ValueError('invalid run creation timestamp')
@@ -69,8 +116,10 @@ def load_source(src: dict, output: Path) -> dict:
     if not input_dir.is_dir():
         raise ValueError(f'artifact directory missing: {input_dir}')
     short = sha[:8]
-    label = 'c5' if board == 'c5-waveshare-28' else 's3'
-    folder = Path('lab') / (label + '-' + short)
+    label = {'c5-waveshare-28':'c5',
+             's3-devkit':'s3',
+             'cyd32-st7798':'cyd32'}[board]
+    folder = Path(channel) / (label + '-' + short)
     dest = output / folder
     dest.mkdir(parents=True, exist_ok=True)
     if board == 'c5-waveshare-28':
@@ -91,7 +140,9 @@ def load_source(src: dict, output: Path) -> dict:
         partitions = require_binary(input_dir / 'partitions.bin', magic=b'\xaa\x50')
         app = require_binary(input_dir / 'firmware.bin', 4096, b'\xe9')
         ota = require_binary(input_dir / 'ota_init.bin', 8192)
-        boot_offset = 0x0
+        # Classic ESP32 WROOM bootloader begins at 0x1000, unlike S3
+        # bootloader at 0x0 and C5 bootloader at 0x2000.
+        boot_offset = 0x1000 if board == 'cyd32-st7798' else 0x0
     verify_partitions(partitions)
     if len(ota) != 8192 or ota == b'\xff' * len(ota):
         raise ValueError('initial OTA selection block missing or invalid')
@@ -103,25 +154,45 @@ def load_source(src: dict, output: Path) -> dict:
         checksums.append(f'{sha256(data)}  {filename}')
     (dest / 'SHA256SUMS.txt').write_text('\n'.join(checksums)+'\n', encoding='utf-8')
     manifest={
-        'name': f'SquachEmit LAB · {BOARDS[board]["label"]} · {short}',
-        'version': f'lab-{short}',
+        'name': (f'SquachEmit v1.0.0 · {BOARDS[board]["label"]}' if channel == 'stable'
+                 else f'SquachEmit LAB · {BOARDS[board]["label"]} · {short}'),
+        'version': ('1.0.0' if channel == 'stable' else f'lab-{short}'),
         'new_install_prompt_erase': True,
         'builds': [{'chipFamily':BOARDS[board]['chip'],
                     'parts':[{'path':name,'offset':off} for name,off,_ in parts]}],
     }
     (dest / 'manifest.json').write_text(json.dumps(manifest,indent=2)+'\n', encoding='utf-8')
-    return {'id':f'lab-{label}-{short}', 'board':board,'channel':'lab','sha':sha,
+    description = describe_build(sha, src['branch'], board, notes if notes is not None else load_build_notes())
+    if channel == 'stable':
+        description = {
+            'title': f'SquachEmit v1.0.0 — {BOARDS[board]["label"]} (95 Test Cases)',
+            'version_label': 'v1.0.0 · First Public Release',
+            'summary': ('First public SquachEmit release with 95 synthetic time-limited RF tests, '
+                        'alphabetical device-type test categories on CYD 3.2, and browser flashing. '
+                        'CI builds passed; physical hardware verification remains pending.'),
+            'highlights': [
+                '95 synthetic test scenarios across BLE and Wi-Fi, plus offline receiver fixtures.',
+                'CYD 3.2: alphabetized device categories and tests, animated Squachy.',
+                'One device family per category; drone scenarios never appear in generic BLE lists.',
+                'Stop button and 3–30 second transmit limits; nothing transmits at boot.',
+                'Firmware hardware validation pending. Do not assume real product authentication.'
+            ],
+            'notes_verified_for_sha': True,
+        }
+    # Integrity manifest: the browser must verify *all four* flash segments.
+    # The human-readable application hash alone cannot protect bootloader,
+    # partition table or OTA selection bytes from a truncated Pages upload.
+    segments = [
+        {'name':filename, 'path':str(folder / filename), 'offset':offset,
+         'sha256':sha256(data), 'bytes':len(data)}
+        for filename,offset,data in parts
+    ]
+    return {'id':f'{channel}-{label}-{short}', 'board':board,'channel':channel,'sha':sha,
             'short_sha':short,'branch':src['branch'],'created_at':created_at,
             'run_id':src['run_id'],'manifest':str(folder/'manifest.json'),
             'application':str(folder/'application.bin'),'sha256':sha256(app),
             'bytes':len(app), 'chipFamily':BOARDS[board]['chip'],
-            # Each installer segment gets its own independently checked hash.
-            # The site verifies these before exposing the flashing button.
-            'segments': [
-                {'name':name, 'path':str(folder / name), 'offset':off,
-                 'sha256':sha256(data), 'bytes':len(data)}
-                for name, off, data in parts
-            ]}
+            'segments':segments, **description}
 
 
 def build(source_manifest: Path, output: Path) -> dict:
@@ -133,14 +204,15 @@ def build(source_manifest: Path, output: Path) -> dict:
         shutil.copyfile(SOURCE/filename, output/filename)
     (output/'.nojekyll').write_bytes(b'')
     builds=[]
+    notes = load_build_notes()
     for src in data['sources']:
-        builds.append(load_source(src,output))
+        builds.append(load_source(src,output,notes))
     builds.sort(key=lambda x:x['created_at'],reverse=True)
     catalog={'schema':1,'project':'SquachEmit','generated_from':'successful GitHub CI artifacts',
-             'builds':builds,'production_policy':'No production release before approved physical validation'}
+             'builds':builds,'production_policy':'Public v1.0.0 approved by owner; physical hardware verification remains pending'}
     (output/'catalog.json').write_text(json.dumps(catalog,indent=2)+'\n',encoding='utf-8')
     if not builds: raise ValueError('refusing to publish a Pages site with no validated CI source artifacts')
-    print(f'Prepared {len(builds)} unverified LAB builds: '+', '.join(x['id'] for x in builds))
+    print(f'Prepared {len(builds)} firmware builds (public and LAB; hardware verification pending): '+', '.join(x['id'] for x in builds))
     return catalog
 
 if __name__=='__main__':

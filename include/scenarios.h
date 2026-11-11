@@ -5,7 +5,7 @@
 // The only on-air modes included are ordinary BLE advertisements and ordinary
 // Wi-Fi SoftAP beacons. No forged 802.11 management traffic or deauth floods.
 enum class Kind : uint8_t { BleUuid, BleManufacturer, BleName, BleRemoteId,
-                            WifiAp, BleAppleNegative };
+                            WifiAp, BleAppleNegative, WifiRemoteId, BleRemoteNegative };
 struct Scenario {
   const char* id;
   Kind kind;

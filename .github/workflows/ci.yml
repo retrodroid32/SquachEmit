@@ -3,6 +3,10 @@ on:
   push:
   pull_request:
   workflow_dispatch:
+# Keep only the newest lab build for a branch/PR while iterating.
+concurrency:
+  group: squachemit-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 jobs:
   host-fixtures:
     runs-on: ubuntu-latest
@@ -13,7 +17,10 @@ jobs:
           python-version: '3.12'
       - run: python -m unittest discover -s tests -v
       - run: node --check web-installer/app.js
+      - run: g++ -std=c++11 -Wall -Wextra -Werror tests/test_identity.cpp -o /tmp/sqe_identity && /tmp/sqe_identity
       - run: python tools/generate_vectors.py && git diff --exit-code tests/offline_vectors.json
+      - run: python tools/generate_drone_vectors.py --output /tmp/sqe-drone-vectors.json
+      - run: python tools/score_trials.py tests/trials.csv --output /tmp/sqe-trials.md --json /tmp/sqe-trials.json
   firmware:
     runs-on: ubuntu-latest
     steps:
@@ -22,7 +29,7 @@ jobs:
         with:
           python-version: '3.12'
       - run: pip install platformio
-      - name: Build S3 LAB firmware and stage all flash parts
+      - name: Build S3 LAB firmware and stage complete flash layout
         run: |
           set -euo pipefail
           pio run -e esp32-s3-devkitc-1
@@ -40,4 +47,53 @@ jobs:
             .pio/build/esp32-s3-devkitc-1/bootloader.bin
             .pio/build/esp32-s3-devkitc-1/partitions.bin
             .pio/build/esp32-s3-devkitc-1/ota_init.bin
+          if-no-files-found: error
+
+  firmware-waveshare-c5:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: arduino/setup-arduino-cli@v2
+      - name: Install verified ESP32-C5 Arduino core and libraries
+        run: |
+          arduino-cli core update-index --additional-urls https://espressif.github.io/arduino-esp32/package_esp32_index.json
+          arduino-cli core install esp32:esp32@3.3.12 --additional-urls https://espressif.github.io/arduino-esp32/package_esp32_index.json
+          arduino-cli lib install "NimBLE-Arduino@2.5.1"
+      - name: Build Waveshare ESP32-C5 touch firmware
+        run: |
+          arduino-cli compile --fqbn "esp32:esp32:esp32c5:FlashSize=16M,PSRAM=enabled,PartitionScheme=app3M_fat9M_16MB" \
+            --build-property "build.extra_flags=-DSQE_WAVESHARE_C5=1 -I${GITHUB_WORKSPACE}/include" \
+            --libraries "${GITHUB_WORKSPACE}/lib" \
+            --output-dir "${GITHUB_WORKSPACE}/dist/c5" .
+      - uses: actions/upload-artifact@v4
+        with:
+          name: squachemit-waveshare-c5-28-firmware-unverified
+          path: dist/c5/*
+          if-no-files-found: error
+
+  firmware-cyd32-st7798:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: pip install platformio
+      - name: Compile CYD 3.2 ST7798 ESP32-WROOM firmware
+        run: |
+          set -euo pipefail
+          pio run -e cyd32-st7798
+          cp "$(find "$HOME/.platformio/packages/framework-arduinoespressif32/tools/partitions" -name boot_app0.bin -print -quit)" .pio/build/cyd32-st7798/ota_init.bin
+          test "$(stat -c%s .pio/build/cyd32-st7798/ota_init.bin)" -eq 8192
+          test -s .pio/build/cyd32-st7798/firmware.bin
+          test -s .pio/build/cyd32-st7798/bootloader.bin
+          test -s .pio/build/cyd32-st7798/partitions.bin
+      - uses: actions/upload-artifact@v4
+        with:
+          name: squachemit-cyd32-st7798-firmware-unverified
+          path: |
+            .pio/build/cyd32-st7798/firmware.bin
+            .pio/build/cyd32-st7798/bootloader.bin
+            .pio/build/cyd32-st7798/partitions.bin
+            .pio/build/cyd32-st7798/ota_init.bin
           if-no-files-found: error
