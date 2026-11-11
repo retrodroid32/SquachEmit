@@ -22,6 +22,9 @@ def array(s: bytes) -> str:
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument('--dji-oui-only', action='store_true',
+                        help='Check the 10 offline DJI vendor OUIs directly against native receiver code; '
+                             'do not interpret on-air synthetic scenario labels as signatures')
     parser.add_argument('squachwatch', type=Path, help='Local SquachWatch-CYD checkout')
     args = parser.parse_args()
     fork = args.squachwatch.resolve()
@@ -30,8 +33,15 @@ def main():
             parser.error(f'missing {fork/target}')
     if not shutil.which('g++'):
         parser.error('g++ required for native tests (Linux, WSL, MinGW)')
-    cases = json.loads((ROOT/'tests'/'cases.json').read_text())
+    cases = [] if args.dji_oui_only else json.loads((ROOT/'tests'/'cases.json').read_text())
     offline = json.loads((ROOT/'tests'/'offline_vectors.json').read_text())
+    if args.dji_oui_only:
+        offline = [v for v in offline if v['id'].startswith('OUI-DJI-')]
+        if len(offline) != 10:
+            parser.error(f'expected exactly 10 DJI offline OUI vectors, got {len(offline)}')
+        if any(v.get('class') != 'WIFI_OUI' or v.get('rf_transmitted') is not False
+               for v in offline):
+            parser.error('DJI OUI native verification accepts only offline Wi-Fi OUI vectors')
     lines = ['#include "signatures.h"', '#include "remote_id.h"',
              '#include <stdint.h>', '#include <stdio.h>', '#include <string.h>',
              'static int failed=0;',
@@ -87,13 +97,14 @@ def main():
             # Stateful rules cannot be judged from one isolated frame.
             lines.append(f'CK("{id}-shape", sizeof(f)>=26);')
         lines.append('}')
-    lines.append('RemoteId::Info rid;')
-    for i,adv in enumerate(advertisements()):
-        lines.append(f'{{ const uint8_t a[]={array(adv)}; CK("RID-BLE-{i}", RemoteId::merge(a,sizeof(a),rid,1000+{i}*1000)); }}')
-    lines.extend(['CK("RID-fields", rid.haveBasic && rid.haveLoc && rid.haveOperator && strcmp(rid.serial,"SQUACHEMIT-TEST-0001")==0);',
-                  'CK("RID-airframe", rid.uaType==2);',
-                  'CK("RID-coordinates", rid.lat >40.7127f && rid.lat <40.7129f && rid.opLat >40.7579f && rid.opLat <40.7581f);',
-                  'printf("Native SquachWatch signature and RID checks: %s\\n", failed ? "FAIL" : "PASS");',
+    if not args.dji_oui_only:
+        lines.append('RemoteId::Info rid;')
+        for i,adv in enumerate(advertisements()):
+            lines.append(f'{{ const uint8_t a[]={array(adv)}; CK("RID-BLE-{i}", RemoteId::merge(a,sizeof(a),rid,1000+{i}*1000)); }}')
+        lines.extend(['CK("RID-fields", rid.haveBasic && rid.haveLoc && rid.haveOperator && strcmp(rid.serial,"SQUACHEMIT-TEST-0001")==0);',
+                      'CK("RID-airframe", rid.uaType==2);',
+                      'CK("RID-coordinates", rid.lat >40.7127f && rid.lat <40.7129f && rid.opLat >40.7579f && rid.opLat <40.7581f);'])
+    lines.extend([f'printf("Native SquachWatch {"10 DJI offline OUI" if args.dji_oui_only else "signature and RID"} checks: %s\\n", failed ? "FAIL" : "PASS");',
                   'return failed ? 1 : 0;', '}'])
     with tempfile.TemporaryDirectory(prefix='squachemit-native-') as d:
         d=Path(d)
