@@ -47,6 +47,37 @@ def load_build_notes(path: Path = NOTES_PATH) -> dict:
     return notes
 
 
+def describe_source_profile(profile: dict, board: str, source_sha: str) -> dict:
+    """Describe a mainline artifact from metadata fetched at its exact CI commit.
+
+    The firmware source fingerprint is enforced by host CI before publishing.
+    """
+    if not isinstance(profile, dict) or profile.get('schema') != 1:
+        raise ValueError('invalid source firmware-profile schema')
+    if profile.get('source_commit_sha') != source_sha:
+        raise ValueError('source firmware-profile ref differs from CI artifact')
+    if profile.get('scenario_count') != 172:
+        raise ValueError('source firmware-profile scenario count mismatch')
+    builds = profile.get('builds')
+    if not isinstance(builds, dict) or set(builds) != set(BOARDS):
+        raise ValueError('source firmware profile must name all three boards')
+    record = builds.get(board)
+    if not isinstance(record, dict):
+        raise ValueError('source firmware profile missing board')
+    for field, limit in (('title', 110), ('version', 40), ('summary', 600)):
+        val = record.get(field)
+        if not isinstance(val, str) or not val.strip() or len(val) > limit:
+            raise ValueError(f'invalid source firmware-profile {board}: {field}')
+    features = record.get('highlights')
+    if (not isinstance(features, list) or not features or len(features) > 7
+        or any(not isinstance(s, str) or not s.strip() or len(s) > 260 for s in features)):
+        raise ValueError('invalid source firmware profile highlights')
+    return {'title': record['title'],
+            'version_label': f"{record['version']} · {source_sha[:8]}",
+            'summary': record['summary'], 'highlights': list(features),
+            'notes_verified_for_sha': True}
+
+
 def describe_build(sha: str, branch: str, board: str, notes: dict) -> dict:
     """Known SHAs get exact features. Unknown SHAs never inherit old notes."""
     if sha in notes:
@@ -61,10 +92,11 @@ def describe_build(sha: str, branch: str, board: str, notes: dict) -> dict:
         'lab/cyd32-st7798-': 'CYD 3.2 ST7798 LAB (review exact changes)',
     }
     title = next((name for prefix, name in label.items() if branch.startswith(prefix)),
-                 'Uncatalogued LAB firmware (review changes)')
-    return {'title': title, 'version_label': 'Unspecified LAB',
-            'summary': 'No SHA-specific feature notes have been reviewed for this build. '
-                       'Use its source branch and CI run to verify changes before flashing.',
+                 f"SquachEmit {BOARDS[board]['label']} — build {sha[:8]} (needs changelog)")
+    version = ('MAINLINE' if branch == 'main' else 'LAB') + f' · build {sha[:8]}'
+    return {'title': title, 'version_label': version,
+            'summary': f'Source build {sha[:8]} on {branch} has no reviewed feature description. '
+                       'Check its CI run and exact source diff before flashing; capabilities are not asserted.',
             'highlights': [], 'notes_verified_for_sha': False}
 
 
@@ -153,32 +185,20 @@ def load_source(src: dict, output: Path, notes: dict | None = None) -> dict:
         (dest / filename).write_bytes(data)
         checksums.append(f'{sha256(data)}  {filename}')
     (dest / 'SHA256SUMS.txt').write_text('\n'.join(checksums)+'\n', encoding='utf-8')
+    # Current-main CI artifacts are not automatically the older tagged
+    # v1.0.0 release. Derive version, title and changes from the exact source.
+    description = (describe_source_profile(src['source_profile'], board, sha)
+                   if src.get('source_profile') is not None
+                   else describe_build(sha, src['branch'], board,
+                                       notes if notes is not None else load_build_notes()))
     manifest={
-        'name': (f'SquachEmit v1.0.0 · {BOARDS[board]["label"]}' if channel == 'stable'
-                 else f'SquachEmit LAB · {BOARDS[board]["label"]} · {short}'),
-        'version': ('1.0.0' if channel == 'stable' else f'lab-{short}'),
+        'name': description['title'],
+        'version': description['version_label'],
         'new_install_prompt_erase': True,
         'builds': [{'chipFamily':BOARDS[board]['chip'],
                     'parts':[{'path':name,'offset':off} for name,off,_ in parts]}],
     }
-    (dest / 'manifest.json').write_text(json.dumps(manifest,indent=2)+'\n', encoding='utf-8')
-    description = describe_build(sha, src['branch'], board, notes if notes is not None else load_build_notes())
-    if channel == 'stable':
-        description = {
-            'title': f'SquachEmit v1.0.0 — {BOARDS[board]["label"]} (95 Test Cases)',
-            'version_label': 'v1.0.0 · First Public Release',
-            'summary': ('First public SquachEmit release with 95 synthetic time-limited RF tests, '
-                        'alphabetical device-type test categories on CYD 3.2, and browser flashing. '
-                        'CI builds passed; physical hardware verification remains pending.'),
-            'highlights': [
-                '95 synthetic test scenarios across BLE and Wi-Fi, plus offline receiver fixtures.',
-                'CYD 3.2: alphabetized device categories and tests, animated Squachy.',
-                'One device family per category; drone scenarios never appear in generic BLE lists.',
-                'Stop button and 3–30 second transmit limits; nothing transmits at boot.',
-                'Firmware hardware validation pending. Do not assume real product authentication.'
-            ],
-            'notes_verified_for_sha': True,
-        }
+    (dest / 'manifest.json').write_text(json.dumps(manifest,indent=2)+'\\n', encoding='utf-8')
     # Integrity manifest: the browser must verify *all four* flash segments.
     # The human-readable application hash alone cannot protect bootloader,
     # partition table or OTA selection bytes from a truncated Pages upload.
