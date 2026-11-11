@@ -5,9 +5,14 @@ ROOT=Path(__file__).resolve().parents[1]
 class WifiStartRecoveryTest(unittest.TestCase):
  def test_stages_retry_and_truth(self):
   src=(ROOT/"src/main.cpp").read_text()
-  for stage in ("STA_MODE","AP_MAC_SET","AP_MODE","AP_MAC_READBACK","CHANNEL",
-                "SOFTAP_START","PACK_ENCODE","VENDOR_IE"):
-   self.assertIn('wifiFailure("'+stage+'"',src)
+  header=(ROOT/"include/ap_mac_lifecycle.h").read_text()
+  self.assertIn("SquachApMac::configure(driver,mac)",src)
+  for name in ("STA_MODE","AP_STOP_FOR_MAC","AP_MODE","AP_MAC_SET",
+               "AP_RESTART","AP_MAC_READBACK"):
+   self.assertIn('"'+name+'"',header)
+  for call in ("esp_wifi_stop()","esp_wifi_set_mode(WIFI_MODE_AP)",
+               "esp_wifi_set_mac(WIFI_IF_AP, mac)","esp_wifi_start()"):
+   self.assertIn(call,src)
   for marker in ("ERROR,WIFI_STAGE","ERROR,WIFI_CASE","RADIO,WIFI_ATTEMPT",
                  "WARN,WIFI_RETRY","attempt<=2 && !ok",
                  'truth("ERROR", s, "radio_start_failed");','truth("BEGIN", s);'):

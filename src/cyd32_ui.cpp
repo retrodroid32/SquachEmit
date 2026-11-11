@@ -40,6 +40,7 @@ uint32_t lastPoll=0,lastPress=0,lastCount=UINT32_MAX,colorBarsUntil=0;
 uint8_t talkIndex=0;
 char previousActive[56]={0};
 char radioStartError[28]={0}; // visible radio-start failure stage
+char radioStartingProfile[56]={0}; // visible acknowledgement of requested Wi-Fi RUN
 
 void label(int x,int y,const char* s,uint16_t col,uint8_t font=1) {
   lcd.setTextFont(font);
@@ -243,20 +244,24 @@ void speechBubble(const char* active,bool suite){
   lcd.drawRoundRect(9,22,302,40,3,kPurple);
   const Scenario* chosen=selected<kScenarioCount?&kScenarios[selected]:nullptr;
   const bool failed=!(active&&*active) && radioStartError[0];
+  const bool starting=!(active&&*active) && !failed && radioStartingProfile[0];
   const char* phrase=failed?"WIFI START FAILED":
+      starting?"STARTING WIFI TRANSMISSION":
       (active&&*active)?"RF LAB TRANSMITTING":suite?"TEST SUITE RUNNING":
       "READY TO TEST. PICK A PROFILE.";
-  fit(16,25,phrase,285,failed?kPink:kWhite,2);
+  fit(16,25,phrase,285,failed?kPink:(starting?kYellow:kWhite),2);
   fit(16,47,failed?radioStartError:
+      starting?radioStartingProfile:
       (active&&*active)?active:chosen?chosen->id:"NO PROFILE",
-      288,failed?kYellow:(active&&*active?kPink:kCyan),1);
+      288,failed?kYellow:(starting?kYellow:(active&&*active?kPink:kCyan)),1);
 }
 
 void statusStrip(const char* active,bool suite){
   lcd.fillRect(0,183,320,29,kBg);
   lcd.drawFastHLine(6,182,308,kPurple);
-  label(12,186,active&&*active?"ON AIR":suite?"SUITE":"LAB READY",
-        active&&*active?kPink:kGreen);
+  const bool starting=!(active&&*active) && radioStartingProfile[0];
+  label(12,186,active&&*active?"ON AIR":starting?"STARTING":suite?"SUITE":"LAB READY",
+        active&&*active?kPink:(starting?kYellow:kGreen));
   label(97,186,"BLE / WIFI / RID",kCyan);
   if(!(active&&*active))rightStatus(false,0);
   lcd.drawFastHLine(6,198,308,kPurple);
@@ -455,7 +460,14 @@ void rgbBars(){
 }
 } // namespace
 
+void cyd32UiSetRadioStarting(const char* scenarioId){
+  radioStartError[0]='\0';
+  snprintf(radioStartingProfile,sizeof(radioStartingProfile),"%s",
+           scenarioId?scenarioId:"");
+  redraw=true;
+}
 void cyd32UiSetRadioError(const char* stage){
+  radioStartingProfile[0]='\0';
   snprintf(radioStartError,sizeof(radioStartError),"%s",stage?stage:"");
   redraw=true;
 }
