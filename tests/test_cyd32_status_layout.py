@@ -47,7 +47,7 @@ int main(){
   cyd32UiBegin();
   mock_time_ms += 200;
   cyd32UiTick(nullptr,0,false);
-  expectRightStatus("145 CASES",0xFB99);
+  expectRightStatus("172 CASES",0xFB99);
   mock_time_ms += 200;
   cyd32UiTick("RID-DJI-MAVIC2PRO",7000,false);
   expectRightStatus("7s LEFT",0xF96F);
@@ -56,7 +56,7 @@ int main(){
   expectRightStatus("6s LEFT",0xF96F);
   mock_time_ms += 1000;
   cyd32UiTick(nullptr,0,false);
-  expectRightStatus("145 CASES",0xFB99);
+  expectRightStatus("172 CASES",0xFB99);
   return 0;
 }'''
         with tempfile.TemporaryDirectory() as tmp:

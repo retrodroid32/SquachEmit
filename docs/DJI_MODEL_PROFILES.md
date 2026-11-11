@@ -1,6 +1,6 @@
 # SquachEmit — DJI model synthetic Remote ID test coverage
 
-**Merged main:** 135 synthetic test cases (earlier baseline: 95),
+**Original DJI model expansion:** 135 cases (earlier baseline: 95),
 including 40 new synthetic on-air model-label cases across 20 named DJI
 aircraft (20 BLE4 and 20 Wi-Fi beacon).
 
@@ -92,8 +92,17 @@ complete ASTM conformance still require validation.
 
 ## Separate manufacturer-prefix Wi-Fi LAB
 
-An unmerged LAB branch adds ten manufacturer-OUI test beacons using
+Merged main includes ten DJI manufacturer-OUI test beacons using
 DJI registered MA-L prefixes. These are deliberately **not Remote ID**;
 they test only SquachWatch's manufacturer-prefix detection heuristic.
 The established forty model-labeled Remote ID cases are unchanged.
 See [DJI OUI Reference](DJI_OUI_REFERENCE.md) for prefixes and caveats.
+
+## Extended UAS vendor allocations — separate 172-case LAB
+
+A separate unmerged CYD 3.2 LAB adds 27 precisely verified prefixes for
+Autel, Parrot, Skydio, DJI Baiwang, Quantum-Systems, Insitu, Yuneec,
+FIMI, Hubsan, XAG, and avionics/payload suppliers. These emit only ordinary
+Wi-Fi beacons, never verified aircraft Remote ID. See
+[Extended UAV Vendor OUI LAB](UAV_VENDOR_OUI_LAB.md) for exact 24/28/36-bit
+allocations and rejected misattributions.

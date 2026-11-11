@@ -1303,5 +1303,248 @@
     "description": "DJI OUI E4:7A:2C | LAB WIFI MAC ONLY; NO RID",
     "code": 6,
     "text": "SQE-LAB-DJI-E47A2C"
+  },
+  {
+    "id": "OUI-AUTEL-18D7936",
+    "carrier": "WIFI",
+    "kind": "WifiAp",
+    "expected": "DRONE",
+    "description": "Autel Intelligent 18D7936 | LAB OUI ONLY; NO RID",
+    "code": 6,
+    "text": "SQE-LAB-AUTEL-18D7936"
+  },
+  {
+    "id": "OUI-AUTEL-EC5BCDE",
+    "carrier": "WIFI",
+    "kind": "WifiAp",
+    "expected": "DRONE",
+    "description": "Autel Robotics USA EC5BCDE | LAB OUI ONLY; NO RID",
+    "code": 6,
+    "text": "SQE-LAB-AUTEL-EC5BCDE"
+  },
+  {
+    "id": "OUI-PARROT-00121C",
+    "carrier": "WIFI",
+    "kind": "WifiAp",
+    "expected": "DRONE",
+    "description": "Parrot SA 00121C | LAB OUI ONLY; NO RID",
+    "code": 6,
+    "text": "SQE-LAB-PARROT-00121C"
+  },
+  {
+    "id": "OUI-PARROT-00267E",
+    "carrier": "WIFI",
+    "kind": "WifiAp",
+    "expected": "DRONE",
+    "description": "Parrot SA 00267E | LAB OUI ONLY; NO RID",
+    "code": 6,
+    "text": "SQE-LAB-PARROT-00267E"
+  },
+  {
+    "id": "OUI-PARROT-9003B7",
+    "carrier": "WIFI",
+    "kind": "WifiAp",
+    "expected": "DRONE",
+    "description": "Parrot SA 9003B7 | LAB OUI ONLY; NO RID",
+    "code": 6,
+    "text": "SQE-LAB-PARROT-9003B7"
+  },
+  {
+    "id": "OUI-PARROT-903AE6",
+    "carrier": "WIFI",
+    "kind": "WifiAp",
+    "expected": "DRONE",
+    "description": "Parrot SA 903AE6 | LAB OUI ONLY; NO RID",
+    "code": 6,
+    "text": "SQE-LAB-PARROT-903AE6"
+  },
+  {
+    "id": "OUI-PARROT-A0143D",
+    "carrier": "WIFI",
+    "kind": "WifiAp",
+    "expected": "DRONE",
+    "description": "Parrot SA A0143D | LAB OUI ONLY; NO RID",
+    "code": 6,
+    "text": "SQE-LAB-PARROT-A0143D"
+  },
+  {
+    "id": "OUI-SKYDIO-381D14",
+    "carrier": "WIFI",
+    "kind": "WifiAp",
+    "expected": "DRONE",
+    "description": "Skydio Inc. 381D14 | LAB OUI ONLY; NO RID",
+    "code": 6,
+    "text": "SQE-LAB-SKYDIO-381D14"
+  },
+  {
+    "id": "OUI-DJIB-9C5A8A",
+    "carrier": "WIFI",
+    "kind": "WifiAp",
+    "expected": "DRONE",
+    "description": "DJI Baiwang 9C5A8A | LAB OUI ONLY; NO RID",
+    "code": 6,
+    "text": "SQE-LAB-DJIB-9C5A8A"
+  },
+  {
+    "id": "OUI-DJIB-EC72F7",
+    "carrier": "WIFI",
+    "kind": "WifiAp",
+    "expected": "DRONE",
+    "description": "DJI Baiwang EC72F7 | LAB OUI ONLY; NO RID",
+    "code": 6,
+    "text": "SQE-LAB-DJIB-EC72F7"
+  },
+  {
+    "id": "OUI-QUANTUM-AC86D17",
+    "carrier": "WIFI",
+    "kind": "WifiAp",
+    "expected": "DRONE",
+    "description": "Quantum-Systems AC86D17 | LAB OUI ONLY; NO RID",
+    "code": 6,
+    "text": "SQE-LAB-QUANTUM-AC86D17"
+  },
+  {
+    "id": "OUI-INSITU-0050C2C35",
+    "carrier": "WIFI",
+    "kind": "WifiAp",
+    "expected": "DRONE",
+    "description": "Insitu 0050C2C35 | LAB OUI ONLY; NO RID",
+    "code": 6,
+    "text": "SQE-LAB-INSITU-0050C2C35"
+  },
+  {
+    "id": "OUI-INSITU-0050C2FD4",
+    "carrier": "WIFI",
+    "kind": "WifiAp",
+    "expected": "DRONE",
+    "description": "Insitu 0050C2FD4 | LAB OUI ONLY; NO RID",
+    "code": 6,
+    "text": "SQE-LAB-INSITU-0050C2FD4"
+  },
+  {
+    "id": "OUI-INSITU-70B3D57AD",
+    "carrier": "WIFI",
+    "kind": "WifiAp",
+    "expected": "DRONE",
+    "description": "Insitu 70B3D57AD | LAB OUI ONLY; NO RID",
+    "code": 6,
+    "text": "SQE-LAB-INSITU-70B3D57AD"
+  },
+  {
+    "id": "OUI-INSITU-70B3D5865",
+    "carrier": "WIFI",
+    "kind": "WifiAp",
+    "expected": "DRONE",
+    "description": "Insitu 70B3D5865 | LAB OUI ONLY; NO RID",
+    "code": 6,
+    "text": "SQE-LAB-INSITU-70B3D5865"
+  },
+  {
+    "id": "OUI-INSITU-70B3D5B3B",
+    "carrier": "WIFI",
+    "kind": "WifiAp",
+    "expected": "DRONE",
+    "description": "Insitu 70B3D5B3B | LAB OUI ONLY; NO RID",
+    "code": 6,
+    "text": "SQE-LAB-INSITU-70B3D5B3B"
+  },
+  {
+    "id": "OUI-INSITU-70B3D5D36",
+    "carrier": "WIFI",
+    "kind": "WifiAp",
+    "expected": "DRONE",
+    "description": "Insitu 70B3D5D36 | LAB OUI ONLY; NO RID",
+    "code": 6,
+    "text": "SQE-LAB-INSITU-70B3D5D36"
+  },
+  {
+    "id": "OUI-INSITU-70B3D5DD2",
+    "carrier": "WIFI",
+    "kind": "WifiAp",
+    "expected": "DRONE",
+    "description": "Insitu 70B3D5DD2 | LAB OUI ONLY; NO RID",
+    "code": 6,
+    "text": "SQE-LAB-INSITU-70B3D5DD2"
+  },
+  {
+    "id": "OUI-FLIR-00407F",
+    "carrier": "WIFI",
+    "kind": "WifiAp",
+    "expected": "NONE",
+    "description": "FLIR Systems 00407F | LAB OUI ONLY; NO RID",
+    "code": 6,
+    "text": "SQE-LAB-FLIR-00407F"
+  },
+  {
+    "id": "OUI-XAG-A45129",
+    "carrier": "WIFI",
+    "kind": "WifiAp",
+    "expected": "DRONE",
+    "description": "XAG A45129 | LAB OUI ONLY; NO RID",
+    "code": 6,
+    "text": "SQE-LAB-XAG-A45129"
+  },
+  {
+    "id": "OUI-UAVNAV-B44D43A",
+    "carrier": "WIFI",
+    "kind": "WifiAp",
+    "expected": "NONE",
+    "description": "UAV Navigation B44D43A | LAB OUI ONLY; NO RID",
+    "code": 6,
+    "text": "SQE-LAB-UAVNAV-B44D43A"
+  },
+  {
+    "id": "OUI-UAVIONIX-04714B1",
+    "carrier": "WIFI",
+    "kind": "WifiAp",
+    "expected": "NONE",
+    "description": "uAvionix 04714B1 | LAB OUI ONLY; NO RID",
+    "code": 6,
+    "text": "SQE-LAB-UAVIONIX-04714B1"
+  },
+  {
+    "id": "OUI-UAVIONIX-546F71",
+    "carrier": "WIFI",
+    "kind": "WifiAp",
+    "expected": "NONE",
+    "description": "uAvionix 546F71 | LAB OUI ONLY; NO RID",
+    "code": 6,
+    "text": "SQE-LAB-UAVIONIX-546F71"
+  },
+  {
+    "id": "OUI-MICROH-000F92",
+    "carrier": "WIFI",
+    "kind": "WifiAp",
+    "expected": "NONE",
+    "description": "Microhard Systems 000F92 | LAB OUI ONLY; NO RID",
+    "code": 6,
+    "text": "SQE-LAB-MICROH-000F92"
+  },
+  {
+    "id": "OUI-HUBSAN-98AAFC7",
+    "carrier": "WIFI",
+    "kind": "WifiAp",
+    "expected": "DRONE",
+    "description": "Hubsan 98AAFC7 | LAB OUI ONLY; NO RID",
+    "code": 6,
+    "text": "SQE-LAB-HUBSAN-98AAFC7"
+  },
+  {
+    "id": "OUI-YUNEEC-E0B6F58",
+    "carrier": "WIFI",
+    "kind": "WifiAp",
+    "expected": "DRONE",
+    "description": "Yuneec E0B6F58 | LAB OUI ONLY; NO RID",
+    "code": 6,
+    "text": "SQE-LAB-YUNEEC-E0B6F58"
+  },
+  {
+    "id": "OUI-FIMI-6CDFFBE",
+    "carrier": "WIFI",
+    "kind": "WifiAp",
+    "expected": "DRONE",
+    "description": "FIMI 6CDFFBE | LAB OUI ONLY; NO RID",
+    "code": 6,
+    "text": "SQE-LAB-FIMI-6CDFFBE"
   }
 ]

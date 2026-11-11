@@ -22,6 +22,9 @@ generic BLE radio category. Negative-control tests are grouped with their
 target family, while genuinely generic controls are in GENERAL / CONTROLS.
 
 BLE versus Wi-Fi remains visible in serial truth and case metadata, and is
-not a top-level library category. The 95 synthetic on-air cases, bounded
-transmit behavior, scenario IDs, test identities, and suite remain unchanged.
+not a top-level library category. The proposed 172-case LAB extends the 145-case merged main library with
+27 additional manufacturer OUI-only Wi-Fi fixtures. All tests retain
+user-triggered bounded transmissions and appear in exactly one device type.
+These vendor-prefix-only beacons are **not** ASTM Remote ID, even though
+they live under DRONES / REMOTE ID for test-library convenience.
 No SquachWatch receiver code is altered. Hardware GUI verification required.

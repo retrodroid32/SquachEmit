@@ -7,6 +7,7 @@
 #include "ap_mac_lifecycle.h"
 #include "identity.h"
 #include "dji_oui_lab.h"
+#include "uav_vendor_oui_lab.h"
 #if defined(SQE_WAVESHARE_C5)
 #include "c5_ui.h"
 #elif defined(SQE_CYD32)
@@ -57,8 +58,9 @@ static void truth(const char* event, const Scenario* s, const char* status = "ok
 }
 
 
-// Each catalog scenario gets its own reproducible test identity. Never write
-// to eFuse or claim a globally assigned manufacturer's OUI.
+// Each scenario gets a reproducible identity. Only explicit OUI-only
+// lab fixtures replace the local test MAC with a vendor-registered prefix.
+// Never alter eFuse or claim a real vendor-issued device identity.
 static bool deriveIdentity(const Scenario* s, bool wifi, uint8_t out[6]) {
   if (!s) return false;
   size_t index = kScenarioCount;
@@ -68,10 +70,13 @@ static bool deriveIdentity(const Scenario* s, bool wifi, uint8_t out[6]) {
   g_radioIdentity = (uint32_t)index + 1u;
   SquachIdentity::derive(ESP.getEfuseMac(), index,
         wifi ? SquachIdentity::Radio::Wifi : SquachIdentity::Radio::Ble, out);
-  // ONLY explicit OUI-DJI-XXXXXX test cases select a DJI-registered
-  // 24-bit prefix. All other Wi-Fi/BLE cases retain local lab MACs.
+  // Only selected OUI-only cases use allocated vendor prefixes.
+// Other Wi-Fi and BLE tests retain locally administered lab identities.
   if (wifi && SquachDjiOuiLab::find(s->id)) {
     if (!SquachDjiOuiLab::apply(s->id,out)) return false;
+  }
+  if (wifi && SquachUavVendorLab::find(s->id)) {
+    if (!SquachUavVendorLab::apply(s->id,out)) return false;
   }
   SquachIdentity::text(out, g_address);
   return true;
@@ -360,6 +365,11 @@ static void cancelAll() {
   Serial.println("STATE,IDLE");
 }
 
+static bool isOuiOnly(const Scenario* s) {
+  return s && (SquachDjiOuiLab::find(s->id)!=nullptr ||
+               SquachUavVendorLab::find(s->id)!=nullptr);
+}
+
 static bool startScenario(const Scenario* s, uint32_t duration = kDefaultMs) {
   if (!s) return false;
   if (g_active) finish("interrupted");
@@ -368,7 +378,7 @@ static bool startScenario(const Scenario* s, uint32_t duration = kDefaultMs) {
   g_address[0] = '\0';
   bool ok = false;
   if (s->kind == Kind::WifiAp) {
-    const bool ouiTest=SquachDjiOuiLab::find(s->id)!=nullptr;
+    const bool ouiTest=isOuiOnly(s);
     // The vendor-OUI fixtures contain NO Remote ID; the BSSID is the
     // selected registry prefix with a generated, synthetic 3-byte suffix.
     if (!beginWifiIdentity(s)) {
@@ -402,13 +412,13 @@ static bool startScenario(const Scenario* s, uint32_t duration = kDefaultMs) {
     ok = advertiseBle(s);
   }
   if (!ok) {
-    if(s->kind == Kind::WifiRemoteId || SquachDjiOuiLab::find(s->id))
+    if(s->kind == Kind::WifiRemoteId || isOuiOnly(s))
       Serial.printf("ERROR,WIFI_CASE,%s,%s,%d\n",s->id,g_wifiFailureStage,(int)g_wifiFailureCode);
     truth("ERROR", s, "radio_start_failed");
     stopTx();
 #if defined(SQE_CYD32)
     cyd32UiSetRadioError((s->kind == Kind::WifiRemoteId ||
-          SquachDjiOuiLab::find(s->id)) ? g_wifiFailureStage : "RADIO_START");
+          isOuiOnly(s)) ? g_wifiFailureStage : "RADIO_START");
 #endif
     return false;
   }
@@ -419,7 +429,7 @@ static bool startScenario(const Scenario* s, uint32_t duration = kDefaultMs) {
   g_started = millis();
   g_duration = duration;
   truth("BEGIN", s);
-  if(SquachDjiOuiLab::find(s->id))
+  if(isOuiOnly(s))
     Serial.printf("TEST,OUI_ONLY,%s,%s,NO_REMOTE_ID\n",s->id,g_address);
   Serial.printf("INFO,%s,%s,%s\n", s->id, s->expected, s->description);
   Serial.printf("IDENTITY,%s,%s\n", s->id, g_address);
@@ -575,7 +585,7 @@ void loop() {
     case Cyd32UiAction::Run: {
       const Scenario* chosen = cyd32UiSelection();
       if(chosen) {
-        const bool ouiCase=SquachDjiOuiLab::find(chosen->id)!=nullptr;
+        const bool ouiCase=isOuiOnly(chosen);
         Serial.printf("UI,RUN_TAP,%s,%s\n",chosen->id,
               ouiCase?"WIFI_OUI":chosen->kind==Kind::WifiRemoteId?"WIFI_RID":"OTHER");
         g_suite=false;
