@@ -62,3 +62,12 @@ The pack has Basic ID, Location, System, Self-ID and Operator ID, all with
 explicitly synthetic identities; the source header is
 `include/rid_wifi_pack.h`. Actual on-air frame timing, receiver behavior,
 trusted UTC/GNSS, and formal ASTM conformity remain unverified.
+
+## DJI MAC prefixes — vendor context, not a drone signature
+
+The 10 independently cross-checked DJI MA-L prefixes are recorded in
+[DJI OUI Reference](DJI_OUI_REFERENCE.md). An optional, explicit short-duration
+LAB now transmits ordinary beacons with these prefixes for testing the
+legacy vendor-OUI heuristic; this is not Remote ID. Other emitter identities
+remain locally administered. A registered prefix cannot establish drone presence,
+ASTM Remote ID validity, or a DJI model from an OUI alone.

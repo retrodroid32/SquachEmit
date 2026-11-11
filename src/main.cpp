@@ -6,6 +6,7 @@
 #include "rid_wifi_pack.h"
 #include "ap_mac_lifecycle.h"
 #include "identity.h"
+#include "dji_oui_lab.h"
 #if defined(SQE_WAVESHARE_C5)
 #include "c5_ui.h"
 #elif defined(SQE_CYD32)
@@ -67,6 +68,11 @@ static bool deriveIdentity(const Scenario* s, bool wifi, uint8_t out[6]) {
   g_radioIdentity = (uint32_t)index + 1u;
   SquachIdentity::derive(ESP.getEfuseMac(), index,
         wifi ? SquachIdentity::Radio::Wifi : SquachIdentity::Radio::Ble, out);
+  // ONLY explicit OUI-DJI-XXXXXX test cases select a DJI-registered
+  // 24-bit prefix. All other Wi-Fi/BLE cases retain local lab MACs.
+  if (wifi && SquachDjiOuiLab::find(s->id)) {
+    if (!SquachDjiOuiLab::apply(s->id,out)) return false;
+  }
   SquachIdentity::text(out, g_address);
   return true;
 }
@@ -362,14 +368,24 @@ static bool startScenario(const Scenario* s, uint32_t duration = kDefaultMs) {
   g_address[0] = '\0';
   bool ok = false;
   if (s->kind == Kind::WifiAp) {
-    // One ordinary WPA2 SoftAP with a distinct synthetic BSSID.
+    const bool ouiTest=SquachDjiOuiLab::find(s->id)!=nullptr;
+    // The vendor-OUI fixtures contain NO Remote ID; the BSSID is the
+    // selected registry prefix with a generated, synthetic 3-byte suffix.
     if (!beginWifiIdentity(s)) {
+      if(ouiTest) {
+        Serial.printf("ERROR,WIFI_OUI_CASE,%s,%s,%d\n",
+                      s->id,g_wifiFailureStage,(int)g_wifiFailureCode);
+#if defined(SQE_CYD32)
+        cyd32UiSetRadioError(g_wifiFailureStage);
+#endif
+      }
       truth("ERROR",s,"identity_failed");stopTx();return false;
     }
     // Channel 0 is the legacy channel-1 profile; explicit 1..11 for LAB.
     const uint8_t channel = s->code ? static_cast<uint8_t>(s->code) : 1;
     if (channel >= 1 && channel <= 11)
       ok = WiFi.softAP(s->text, "SquachLab2026!", channel, false, 1);
+    if(ouiTest && !ok) wifiFailure("SOFTAP_START");
   } else if (s->kind == Kind::WifiRemoteId) {
     // One bounded recovery after a failed Wi-Fi mode transition.
     for(unsigned attempt=1; attempt<=2 && !ok; ++attempt){
@@ -386,12 +402,13 @@ static bool startScenario(const Scenario* s, uint32_t duration = kDefaultMs) {
     ok = advertiseBle(s);
   }
   if (!ok) {
-    if(s->kind == Kind::WifiRemoteId)
+    if(s->kind == Kind::WifiRemoteId || SquachDjiOuiLab::find(s->id))
       Serial.printf("ERROR,WIFI_CASE,%s,%s,%d\n",s->id,g_wifiFailureStage,(int)g_wifiFailureCode);
     truth("ERROR", s, "radio_start_failed");
     stopTx();
 #if defined(SQE_CYD32)
-    cyd32UiSetRadioError(s->kind == Kind::WifiRemoteId ? g_wifiFailureStage : "RADIO_START");
+    cyd32UiSetRadioError((s->kind == Kind::WifiRemoteId ||
+          SquachDjiOuiLab::find(s->id)) ? g_wifiFailureStage : "RADIO_START");
 #endif
     return false;
   }
@@ -402,6 +419,8 @@ static bool startScenario(const Scenario* s, uint32_t duration = kDefaultMs) {
   g_started = millis();
   g_duration = duration;
   truth("BEGIN", s);
+  if(SquachDjiOuiLab::find(s->id))
+    Serial.printf("TEST,OUI_ONLY,%s,%s,NO_REMOTE_ID\n",s->id,g_address);
   Serial.printf("INFO,%s,%s,%s\n", s->id, s->expected, s->description);
   Serial.printf("IDENTITY,%s,%s\n", s->id, g_address);
   if (s->kind == Kind::WifiAp || s->kind == Kind::WifiRemoteId)
@@ -556,10 +575,11 @@ void loop() {
     case Cyd32UiAction::Run: {
       const Scenario* chosen = cyd32UiSelection();
       if(chosen) {
+        const bool ouiCase=SquachDjiOuiLab::find(chosen->id)!=nullptr;
         Serial.printf("UI,RUN_TAP,%s,%s\n",chosen->id,
-              chosen->kind==Kind::WifiRemoteId?"WIFI_RID":"OTHER");
+              ouiCase?"WIFI_OUI":chosen->kind==Kind::WifiRemoteId?"WIFI_RID":"OTHER");
         g_suite=false;
-        if(chosen->kind==Kind::WifiRemoteId) {
+        if(chosen->kind==Kind::WifiRemoteId || ouiCase) {
           cyd32UiSetRadioStarting(chosen->id);
           // Render the accepted touch before the potentially blocking Wi-Fi
           // init, so an operator sees a response even when startup fails.

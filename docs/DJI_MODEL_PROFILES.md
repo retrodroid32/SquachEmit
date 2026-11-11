@@ -1,6 +1,6 @@
-# SquachEmit — DJI model Remote ID coverage (draft LAB)
+# SquachEmit — DJI model synthetic Remote ID test coverage
 
-**v1.0.0 publicly released baseline:** 95 cases. **This draft LAB: 135 cases**,
+**Merged main:** 135 synthetic test cases (earlier baseline: 95),
 including 40 new synthetic on-air model-label cases across 20 named DJI
 aircraft (20 BLE4 and 20 Wi-Fi beacon).
 
@@ -79,4 +79,21 @@ independent decoder output with SquachWatch.
 
 Do not claim actual DJI model transmissions from generic ASTM messages,
 or RF features unsupported by this ESP32, until separately hardware tested.
-No firmware release, merge or tag is authorized by this document.
+This document records the current merged test catalog; further firmware or release changes require separate approval.
+
+## Vendor MACs are not model identification
+
+See [DJI OUI Reference](DJI_OUI_REFERENCE.md) for 10 source-verified
+MA-L manufacturer blocks. A matching MAC is only a vendor-registry clue;
+model selection in SquachEmit remains a synthetic test label. The emitter
+continues using locally administered MACs. One Air 2S Wi-Fi test was
+reported independently received by SquachWatch, but other models and
+complete ASTM conformance still require validation.
+
+## Separate manufacturer-prefix Wi-Fi LAB
+
+An unmerged LAB branch adds ten manufacturer-OUI test beacons using
+DJI registered MA-L prefixes. These are deliberately **not Remote ID**;
+they test only SquachWatch's manufacturer-prefix detection heuristic.
+The established forty model-labeled Remote ID cases are unchanged.
+See [DJI OUI Reference](DJI_OUI_REFERENCE.md) for prefixes and caveats.

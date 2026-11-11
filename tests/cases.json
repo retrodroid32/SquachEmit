@@ -1213,5 +1213,95 @@
     "description": "DJI Phantom 4 RTK | SYNTHETIC WIFI BEACON Basic ID; not actual DJI RF",
     "code": 6,
     "text": "SQE-DJI-P4RTK-W"
+  },
+  {
+    "id": "OUI-DJI-04A85A",
+    "carrier": "WIFI",
+    "kind": "WifiAp",
+    "expected": "DRONE",
+    "description": "DJI OUI 04:A8:5A | LAB WIFI MAC ONLY; NO RID",
+    "code": 6,
+    "text": "SQE-LAB-DJI-04A85A"
+  },
+  {
+    "id": "OUI-DJI-0C9AE6",
+    "carrier": "WIFI",
+    "kind": "WifiAp",
+    "expected": "DRONE",
+    "description": "DJI OUI 0C:9A:E6 | LAB WIFI MAC ONLY; NO RID",
+    "code": 6,
+    "text": "SQE-LAB-DJI-0C9AE6"
+  },
+  {
+    "id": "OUI-DJI-34D262",
+    "carrier": "WIFI",
+    "kind": "WifiAp",
+    "expected": "DRONE",
+    "description": "DJI OUI 34:D2:62 | LAB WIFI MAC ONLY; NO RID",
+    "code": 6,
+    "text": "SQE-LAB-DJI-34D262"
+  },
+  {
+    "id": "OUI-DJI-481CB9",
+    "carrier": "WIFI",
+    "kind": "WifiAp",
+    "expected": "DRONE",
+    "description": "DJI OUI 48:1C:B9 | LAB WIFI MAC ONLY; NO RID",
+    "code": 6,
+    "text": "SQE-LAB-DJI-481CB9"
+  },
+  {
+    "id": "OUI-DJI-4C43F6",
+    "carrier": "WIFI",
+    "kind": "WifiAp",
+    "expected": "DRONE",
+    "description": "DJI OUI 4C:43:F6 | LAB WIFI MAC ONLY; NO RID",
+    "code": 6,
+    "text": "SQE-LAB-DJI-4C43F6"
+  },
+  {
+    "id": "OUI-DJI-58B858",
+    "carrier": "WIFI",
+    "kind": "WifiAp",
+    "expected": "DRONE",
+    "description": "DJI OUI 58:B8:58 | LAB WIFI MAC ONLY; NO RID",
+    "code": 6,
+    "text": "SQE-LAB-DJI-58B858"
+  },
+  {
+    "id": "OUI-DJI-60601F",
+    "carrier": "WIFI",
+    "kind": "WifiAp",
+    "expected": "DRONE",
+    "description": "DJI OUI 60:60:1F | LAB WIFI MAC ONLY; NO RID",
+    "code": 6,
+    "text": "SQE-LAB-DJI-60601F"
+  },
+  {
+    "id": "OUI-DJI-882985",
+    "carrier": "WIFI",
+    "kind": "WifiAp",
+    "expected": "DRONE",
+    "description": "DJI OUI 88:29:85 | LAB WIFI MAC ONLY; NO RID",
+    "code": 6,
+    "text": "SQE-LAB-DJI-882985"
+  },
+  {
+    "id": "OUI-DJI-8C5823",
+    "carrier": "WIFI",
+    "kind": "WifiAp",
+    "expected": "DRONE",
+    "description": "DJI OUI 8C:58:23 | LAB WIFI MAC ONLY; NO RID",
+    "code": 6,
+    "text": "SQE-LAB-DJI-8C5823"
+  },
+  {
+    "id": "OUI-DJI-E47A2C",
+    "carrier": "WIFI",
+    "kind": "WifiAp",
+    "expected": "DRONE",
+    "description": "DJI OUI E4:7A:2C | LAB WIFI MAC ONLY; NO RID",
+    "code": 6,
+    "text": "SQE-LAB-DJI-E47A2C"
   }
 ]
