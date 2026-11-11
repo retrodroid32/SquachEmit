@@ -24,7 +24,7 @@ class DjiOuiOnAirTests(unittest.TestCase):
     def test_ten_ui_transmitter_cases_and_no_remoteid_data(self):
         cases=json.loads((ROOT/"tests/cases.json").read_text())
         by_id={x["id"]:x for x in cases}
-        self.assertEqual(len(cases),145)
+        self.assertEqual(len(cases),172)
         for key,prefix in EXPECTED:
             case=by_id["OUI-DJI-"+key]
             self.assertEqual((case["carrier"],case["kind"],case["expected"],case["code"]),
