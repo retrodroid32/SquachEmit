@@ -28,7 +28,7 @@ jobs:
           path: _squachwatch_native
           persist-credentials: false
       - name: Exercise real SquachWatch decoder against offline DJI OUI vectors
-        run: python tools/verify_native.py _squachwatch_native
+        run: python tools/verify_native.py --dji-oui-only _squachwatch_native
       - run: python tools/generate_drone_vectors.py --output /tmp/sqe-drone-vectors.json
       - run: python tools/score_trials.py tests/trials.csv --output /tmp/sqe-trials.md --json /tmp/sqe-trials.json
   firmware:
