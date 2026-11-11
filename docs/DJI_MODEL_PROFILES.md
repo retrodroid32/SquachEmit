@@ -106,3 +106,27 @@ FIMI, Hubsan, XAG, and avionics/payload suppliers. These emit only ordinary
 Wi-Fi beacons, never verified aircraft Remote ID. See
 [Extended UAV Vendor OUI LAB](UAV_VENDOR_OUI_LAB.md) for exact 24/28/36-bit
 allocations and rejected misattributions.
+
+## Full DJI OUI receiver-decoder fixture matrix (offline)
+
+The accompanying `tests/dji_oui_registry.json` records all ten known
+SZ DJI TECHNOLOGY CO.,LTD MA-L /24 manufacturer prefixes with source
+registration dates. `tools/generate_vectors.py` produces ten additional
+**offline-only** 802.11 beacon frames from this snapshot. Those frames contain
+the registered prefixes in the transmitter and BSSID bytes and allow the
+SquachWatch receiver decoder to be checked using
+`python tools/verify_native.py ../SquachWatch-CYD`.
+
+This feature **does not introduce additional transmitted test scenarios**.
+Mainline already includes ten separate `OUI-DJI-...` *on-air test labels*
+among its 172 catalog entries. Their ordinary Wi-Fi test beacons use
+board/case-unique **locally administered** MAC identities and synthetic
+`SQE-LAB-DJI-...` SSIDs, **not** the registered DJI MAC bytes from the
+offline fixtures. Those two sets deliberately use related test IDs, but
+exercise different mechanisms.
+
+A matched vendor OUI supports only **manufacturer attribution**. It does not
+establish a flying aircraft, genuine DJI Remote ID, an exact model, DJI's
+proprietary protocol, or authenticity. No drone-specific radio hardware,
+RF profile, scenario count, installer behavior or release is altered by these
+offline additions.

@@ -40,6 +40,86 @@
     "rf_transmitted": false
   },
   {
+    "id": "OUI-DJI-04A85A",
+    "class": "WIFI_OUI",
+    "expected": "DRONE",
+    "frame_hex": "80000000ffffffffffff04a85a00000104a85a000001000000000000000000006400010000075351452d4c4142",
+    "notes": "DJI registered MA-L 2025-01-09; vendor hint only, not aircraft/Remote ID; offline-only",
+    "rf_transmitted": false
+  },
+  {
+    "id": "OUI-DJI-0C9AE6",
+    "class": "WIFI_OUI",
+    "expected": "DRONE",
+    "frame_hex": "80000000ffffffffffff0c9ae60000010c9ae6000001000000000000000000006400010000075351452d4c4142",
+    "notes": "DJI registered MA-L 2025-08-14; vendor hint only, not aircraft/Remote ID; offline-only",
+    "rf_transmitted": false
+  },
+  {
+    "id": "OUI-DJI-34D262",
+    "class": "WIFI_OUI",
+    "expected": "DRONE",
+    "frame_hex": "80000000ffffffffffff34d26200000134d262000001000000000000000000006400010000075351452d4c4142",
+    "notes": "DJI registered MA-L 2019-08-13; vendor hint only, not aircraft/Remote ID; offline-only",
+    "rf_transmitted": false
+  },
+  {
+    "id": "OUI-DJI-481CB9",
+    "class": "WIFI_OUI",
+    "expected": "DRONE",
+    "frame_hex": "80000000ffffffffffff481cb9000001481cb9000001000000000000000000006400010000075351452d4c4142",
+    "notes": "DJI registered MA-L 2022-05-07; vendor hint only, not aircraft/Remote ID; offline-only",
+    "rf_transmitted": false
+  },
+  {
+    "id": "OUI-DJI-4C43F6",
+    "class": "WIFI_OUI",
+    "expected": "DRONE",
+    "frame_hex": "80000000ffffffffffff4c43f60000014c43f6000001000000000000000000006400010000075351452d4c4142",
+    "notes": "DJI registered MA-L 2025-12-01; vendor hint only, not aircraft/Remote ID; offline-only",
+    "rf_transmitted": false
+  },
+  {
+    "id": "OUI-DJI-58B858",
+    "class": "WIFI_OUI",
+    "expected": "DRONE",
+    "frame_hex": "80000000ffffffffffff58b85800000158b858000001000000000000000000006400010000075351452d4c4142",
+    "notes": "DJI registered MA-L 2024-07-26; vendor hint only, not aircraft/Remote ID; offline-only",
+    "rf_transmitted": false
+  },
+  {
+    "id": "OUI-DJI-60601F",
+    "class": "WIFI_OUI",
+    "expected": "DRONE",
+    "frame_hex": "80000000ffffffffffff60601f00000160601f000001000000000000000000006400010000075351452d4c4142",
+    "notes": "DJI registered MA-L 2013-03-11; vendor hint only, not aircraft/Remote ID; offline-only",
+    "rf_transmitted": false
+  },
+  {
+    "id": "OUI-DJI-882985",
+    "class": "WIFI_OUI",
+    "expected": "DRONE",
+    "frame_hex": "80000000ffffffffffff882985000001882985000001000000000000000000006400010000075351452d4c4142",
+    "notes": "DJI registered MA-L 2025-10-29; vendor hint only, not aircraft/Remote ID; offline-only",
+    "rf_transmitted": false
+  },
+  {
+    "id": "OUI-DJI-8C5823",
+    "class": "WIFI_OUI",
+    "expected": "DRONE",
+    "frame_hex": "80000000ffffffffffff8c58230000018c5823000001000000000000000000006400010000075351452d4c4142",
+    "notes": "DJI registered MA-L 2025-05-27; vendor hint only, not aircraft/Remote ID; offline-only",
+    "rf_transmitted": false
+  },
+  {
+    "id": "OUI-DJI-E47A2C",
+    "class": "WIFI_OUI",
+    "expected": "DRONE",
+    "frame_hex": "80000000ffffffffffffe47a2c000001e47a2c000001000000000000000000006400010000075351452d4c4142",
+    "notes": "DJI registered MA-L 2023-10-19; vendor hint only, not aircraft/Remote ID; offline-only",
+    "rf_transmitted": false
+  },
+  {
     "id": "OUI-AUTEL-28",
     "class": "WIFI_OUI",
     "expected": "DRONE",
