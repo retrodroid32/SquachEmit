@@ -8,7 +8,7 @@
   // Never unlock flashing/download until this selected build's exact four
   // published segments and manifest have passed checksum/offset validation.
   let integrityVerified = false, verificationRequest = 0;
-  ui.channelBadge.textContent = lab ? 'LAB CHANNEL · UNVERIFIED' : 'PUBLIC RELEASE · HW UNVERIFIED';
+  ui.channelBadge.textContent = lab ? 'LAB CHANNEL · UNVERIFIED' : 'MAINLINE CHANNEL · HW UNVERIFIED';
   ui.channelBadge.classList.toggle('lab', lab);
   ui.enterLab.hidden = lab;
   ui.exitLab.hidden = !lab;
@@ -27,11 +27,10 @@
     const arr = visible.filter(x=>x.board === b).sort((a,c)=>c.created_at.localeCompare(a.created_at));
     ui.build.replaceChildren(opt('', arr.length ? 'Select a firmware build…' : 'No builds available for this board'));
     arr.forEach(entry => {
-      const title = entry.title || 'Uncatalogued firmware — review changes';
+      const title = entry.title || `SquachEmit ${boardLabel(entry.board)} · build ${entry.short_sha}`;
       const version = entry.version_label ? ` · ${entry.version_label}` : '';
-      // User-facing menu shows a human title only. Keep SHA and branch in
-      // technical details below, where they are useful for diagnostics.
-      const option = opt(entry.id, title);
+      // Show actual features and version together, with exact source SHA below.
+      const option = opt(entry.id, title + version);
       option.title = entry.summary || title;
       ui.build.appendChild(option);
     });
@@ -48,12 +47,12 @@
     if (!selected) {
       txt(ui.buildDetails, 'Choose a firmware build above. No device is modified until you explicitly connect and approve flashing.');
     } else {
-      const title = selected.title || 'Uncatalogued firmware — review changes';
+      const title = selected.title || `SquachEmit ${boardLabel(selected.board)} · build ${selected.short_sha}`;
       const features = Array.isArray(selected.highlights)
         ? selected.highlights.filter(s => typeof s === 'string').slice(0, 7) : [];
       const fragments = [
         `FIRMWARE: ${title}`,
-        `VERSION: ${selected.version_label || 'Unknown LAB version'}`,
+        `VERSION: ${selected.version_label || ('Build ' + selected.short_sha)}`,
         `WHAT CHANGED: ${selected.summary || 'No reviewed feature summary exists for this commit. Check the CI run before flashing.'}`
       ];
       if (features.length) fragments.push('FEATURES:\n' + features.map(x => '  • ' + x).join('\n'));
@@ -62,7 +61,7 @@
       if (selected.board === 'cyd32-st7798')
         fragments.push('WARNING: THIS REPLACES SQUACHWATCH ON YOUR 3.2 CYD. You need another physical board to observe detections. Backup settings; verify ST7798/XPT2046 and ESP32-WROOM-32 (NOT ESP32-C5).');
       fragments.push(
-        `CHANNEL: ${selected.channel.toUpperCase()} / HARDWARE-UNVERIFIED`,
+        `CHANNEL: ${selected.channel === 'stable' ? 'CURRENT MAINLINE' : 'EXPERIMENTAL LAB'} / HARDWARE-UNVERIFIED`,
         `DEVICE: ${boardLabel(selected.board)}`,
         `COMMIT: ${selected.sha}`,
         `SOURCE: ${selected.branch}`,
@@ -188,15 +187,15 @@
       }
       visible = [...newestByBoard.values()];
       const boards = [...new Set(visible.map(x=>x.board))];
-      ui.board.replaceChildren(opt('',boards.length?'Choose a target board…':'No public release firmware available yet'));
+      ui.board.replaceChildren(opt('',boards.length?'Choose a target board…':'No current mainline builds available yet'));
       boards.forEach(b => ui.board.appendChild(opt(b,boardLabel(b))));
       ui.board.disabled = !boards.length;
       if (lab) {
         notice(`LAB mode enabled. ${visible.length} build(s) loaded. These builds compile in CI but have NOT passed physical RF/display verification.`, 'warn');
         if (boards.length) { ui.board.value = boards.includes('c5-waveshare-28')?'c5-waveshare-28':boards[0]; buildOptions(); }
       } else if (!boards.length) {
-        notice('No public firmware release published yet. The LAB channel contains development builds.', 'warn');
-      } else notice(`SquachEmit v1.0.0 public release: ${visible.length} board builds available. Hardware verification is pending.`, 'warn');
+        notice('No current mainline firmware build published. The LAB channel contains experimental builds.', 'warn');
+      } else notice(`SquachEmit mainline: ${visible.length} board builds available. Select a build to see exact version and changes. Hardware verification may be incomplete.`, 'warn');
       if (!navigator.serial || !window.isSecureContext) notice('Browser serial requires HTTPS and Web Serial (desktop Chrome or Edge). Firmware catalog is available for viewing.', 'warn');
     } catch (e) { notice(`Firmware catalog unavailable: ${e.message}. Check the GitHub Actions Pages deployment.`, 'error'); }
   }

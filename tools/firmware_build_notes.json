@@ -116,6 +116,50 @@
         "Retains Squachy animated character, bounded emissions, per-case synthetic MAC identity and browser-based flashing.",
         "No physical hardware verification yet. No receiver firmware changes."
       ]
+    },
+    "ffc08d1b65bf261ec4dad7bb6b44da05650ad98e": {
+      "title": "SquachEmit CYD 3.2 — 172-Case UAV Vendor Suite + Smooth Touch",
+      "version": "LAB 172-R3 · ffc08d1b",
+      "summary": "Adds 27 UAS manufacturer-prefix Wi-Fi beacon tests to reach 172 scenarios. The CYD 3.2 has a saved 3–30-second TX-time editor and reduced full-screen touch flashing. These are synthetic signal tests; an OUI match alone does not prove aircraft identity.",
+      "highlights": [
+        "172 bounded synthetic BLE/Wi-Fi test cases, including 27 vendor-prefix Wi-Fi beacons.",
+        "CYD 3.2 TX TIME [SET]: +/-1 second, reset to 12 seconds, saved on reboot.",
+        "Touch interactions no longer cause unnecessary full-screen redraws.",
+        "RUN, SUITE and serial RUN without an explicit time use the saved duration.",
+        "Uses locally administered test MACs; vendor registrations are not authentic drone broadcasts."
+      ]
+    },
+    "09b4b0519eb411391a51a0ea6dc5283428d3f62f": {
+      "title": "SquachEmit Mainline — 172-Case Suite + Safe Flasher + TX Time",
+      "version": "MAINLINE 172-R3 · 09b4b051",
+      "summary": "Mainline 172-case detection test firmware with UAV vendor-prefix beacon cases, CYD 3.2 saved 3–30-second TX time and reduced redraws. The web installer verifies four flash segments by SHA-256, and README animations were regenerated from current C++ UI. This is not the original tagged v1.0.0 95-case firmware.",
+      "highlights": [
+        "172 synthetic scenarios, including 27 UAV vendor-prefix test beacons.",
+        "CYD 3.2 saved TX-time editor and touch flashing fix.",
+        "Installer verifies bootloader, partitions, OTA and application checksums.",
+        "Four current firmware-rendered README animations, including TX-time demo.",
+        "This mainline CI build is not the historical v1.0.0 release."
+      ]
+    },
+    "ff8bf732aa92406d11610142e6a71cb7021be1a6": {
+      "title": "SquachEmit Mainline — 172-Test Suite + SHA-256 Safe Flasher",
+      "version": "MAINLINE 172-R2 · ff8bf732",
+      "summary": "172-case firmware with UAV vendor beacon tests and saved CYD 3.2 transmit time. Adds web installer SHA-256 verification of bootloader, partition table, OTA selector and application before flashing. Not the historical tagged v1.0.0 95-case image.",
+      "highlights": [
+        "172 bounded BLE/Wi-Fi synthetic test cases.",
+        "CYD 3.2 saved 3–30-second transmit duration and reduced redraws.",
+        "Four-segment firmware SHA-256 verification before flashing."
+      ]
+    },
+    "b1755ef84bc4d9ba86c73a472c7750407a04c7d4": {
+      "title": "SquachEmit Mainline — 172-Case UAV Beacon Suite + TX Time",
+      "version": "MAINLINE 172-R1 · b1755ef",
+      "summary": "Merged the 172-case UAV vendor-prefix test matrix, 3–30-second saved transmit duration and CYD 3.2 no-full-screen-touch-flash improvement. This commit predates the new four-segment installer integrity feature.",
+      "highlights": [
+        "172 bounded test cases including 27 UAS vendor Wi-Fi beacons.",
+        "Saved CYD 3.2 TX-time editor and improved touch redraw behavior.",
+        "Synthetic test identities are not authentic vendor devices."
+      ]
     }
   }
 }
