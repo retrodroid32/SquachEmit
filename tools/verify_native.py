@@ -65,6 +65,9 @@ def main():
         if klass=='WIFI_OUI':
             t='UNKNOWN' if exp=='NONE' else exp
             lines.append(f'CK("{id}", lookupOui(f+16)==DetectionType::{t});')
+            if id.startswith('OUI-DJI-'):
+                # OUI identifies a registrant; no claim of actual drone/RID.
+                lines.append(f'CK("{id}-vendor", ouiVendorName(f+16) && strcmp(ouiVendorName(f+16),"DJI")==0);')
         elif klass=='WIFI_PROBE':
             lines.append(f'CK("{id}", isWifiWildcardProbe(f,sizeof(f)));')
             if exp=='FLOCK':

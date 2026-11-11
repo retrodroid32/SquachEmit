@@ -52,6 +52,18 @@ add("OUI-RING", "WIFI_OUI", beacon("ac:9f:c3:00:00:01", "SQE-LAB"),
     "RING", "Ring MA-L; offline-only")
 add("OUI-DRONE", "WIFI_OUI", beacon("04:a8:5a:00:00:01", "SQE-LAB"),
     "DRONE", "DJI MA-L; offline-only")
+
+# All ten registered SZ DJI TECHNOLOGY MA-L prefixes. OUI is *manufacturer*
+# evidence, not confirmed aircraft/RID. These beacons exist only in the file;
+# on-air scenarios retain locally administered 02:/C2: test identities.
+with (ROOT / "tests" / "dji_oui_registry.json").open(encoding="utf-8") as f:
+    dji_oui_registry = json.load(f)
+for record in dji_oui_registry["allocations"]:
+    prefix = record["prefix"].lower()
+    add("OUI-DJI-" + prefix.replace(":", ""), "WIFI_OUI",
+        beacon(prefix + ":00:00:01", "SQE-LAB"), "DRONE",
+        "DJI registered MA-L " + record["registered"] +
+        "; vendor hint only, not aircraft/Remote ID; offline-only")
 add("OUI-AUTEL-28", "WIFI_OUI", beacon("ec:5b:cd:e0:00:01", "SQE-LAB"),
     "DRONE", "Autel 28-bit registration fourth high nibble E")
 add("OUI-AUTEL-NEIGHBOR", "WIFI_OUI", beacon("ec:5b:cd:d0:00:01", "SQE-LAB"),

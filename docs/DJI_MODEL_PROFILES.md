@@ -68,6 +68,43 @@ separately rather than attributing it to aircraft-native DJI firmware.
 DJI's support and firmware requirements are published at:
 https://support.dji.com/help/content?customId=en-us03400007747&lang=en&re=US&spaceId=34
 
+## DJI IEEE MA-L/OUI reference (offline-only)
+
+The independent public registry lists **10 SZ DJI TECHNOLOGY CO.,LTD
+MA-L /24 blocks**. SquachEmit's exact machine-readable snapshot is
+[`tests/dji_oui_registry.json`](../tests/dji_oui_registry.json)
+and its reproducible, **offline-only** 802.11 Wi-Fi beacon matrix is
+[`tests/offline_vectors.json`](../tests/offline_vectors.json).
+The generator `tools/generate_vectors.py` builds one additional
+`OUI-DJI-XXXXXX` test vector per registration, with a synthetic MAC
+suffix; the CI test checks all ten. See
+[the SquachWatch receiver reference](https://github.com/retrodroid32/SquachWatch-CYD/blob/master/docs/DJI_OUI_REGISTRY.md)
+for dates and the matching interpretation.
+
+**Prefixes:** `04:A8:5A`, `0C:9A:E6`, `34:D2:62`,
+`48:1C:B9`, `4C:43:F6`, `58:B8:58`, `60:60:1F`,
+`88:29:85`, `8C:58:23`, `E4:7A:2C`.
+Source: https://maclookup.app/vendors/sz-dji-technology-co-ltd
+
+An OUI match supports **DJI vendor attribution only**. It does not
+prove a drone, flight, model, operating frequency, actual Remote ID,
+or authentic DJI proprietary broadcast. The current SquachWatch
+decoder labels these prefixes in the DRONE family, so the offline
+test vectors retain that expected classification strictly as a
+**compatibility check**, not an authentication claim.
+
+SquachEmit's **on-air** BLE/Wi-Fi identities continue to use
+locally administered `C2:`/`02:` prefixes unique to board/case.
+**Registered DJI OUIs are never emitted on air by these tests.**
+No new on-air scenario, channel, firmware RF mode or proprietary
+DJI RF impersonation is introduced here. To validate against the
+actual SquachWatch OUI table in a local checkout, run:
+
+```bash
+python tools/generate_vectors.py
+python tools/verify_native.py ../SquachWatch-CYD
+```
+
 ## Next: evidence-based realistic profiles
 
 Collect authorized **passive** captures of the operator's own aircraft,
