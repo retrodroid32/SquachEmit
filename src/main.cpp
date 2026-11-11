@@ -4,6 +4,7 @@
 #include <NimBLEDevice.h>
 #include "scenarios.h"
 #include "rid_wifi_pack.h"
+#include "ap_mac_lifecycle.h"
 #include "identity.h"
 #if defined(SQE_WAVESHARE_C5)
 #include "c5_ui.h"
@@ -89,28 +90,33 @@ static bool setBleIdentity(const Scenario* s) {
   return true;
 }
 
+// Configure a synthetic AP MAC with the target interface in AP mode but
+// disabled. Previous STA-only -> esp_wifi_set_mac(WIFI_IF_AP) caused AP_MAC_SET.
+struct WiFiApMacDriver {
+  bool startSta() { return WiFi.mode(WIFI_STA); }
+  int32_t stop() { return (int32_t)esp_wifi_stop(); }
+  int32_t setApMode() { return (int32_t)esp_wifi_set_mode(WIFI_MODE_AP); }
+  int32_t setMac(const uint8_t mac[6]) {
+    return (int32_t)esp_wifi_set_mac(WIFI_IF_AP, mac);
+  }
+  int32_t restart() { return (int32_t)esp_wifi_start(); }
+  int32_t getMac(uint8_t out[6]) {
+    return (int32_t)esp_wifi_get_mac(WIFI_IF_AP, out);
+  }
+};
 static bool beginWifiIdentity(const Scenario* s) {
   uint8_t mac[6];
-  if (!deriveIdentity(s, true, mac)) return false;
-  // IDF esp_wifi_set_mac requires the target AP interface to be OFF.
-  // Init in STA-only mode, configure AP BSSID, then enable AP.
-  if (!WiFi.mode(WIFI_STA)) { wifiFailure("STA_MODE"); return false; }
-  const esp_err_t err=esp_wifi_set_mac(WIFI_IF_AP, mac);
-  if (err != ESP_OK) {
-    wifiFailure("AP_MAC_SET",err);
+  if (!deriveIdentity(s,true,mac)) {
+    wifiFailure("AP_IDENTITY"); return false;
+  }
+  WiFiApMacDriver driver;
+  const SquachApMac::Result result=SquachApMac::configure(driver,mac);
+  if (!result.ok()) {
+    wifiFailure(SquachApMac::stageName(result.stage),(esp_err_t)result.code);
     WiFi.mode(WIFI_OFF);
     return false;
   }
-  if (!WiFi.mode(WIFI_AP)) {
-    wifiFailure("AP_MODE"); WiFi.mode(WIFI_OFF); return false;
-  }
-  uint8_t actual[6]={0};
-  if (esp_wifi_get_mac(WIFI_IF_AP,actual)!=ESP_OK ||
-      memcmp(mac,actual,6)!=0) {
-    wifiFailure("AP_MAC_READBACK");
-    WiFi.mode(WIFI_OFF);
-    return false;
-  }
+  Serial.printf("RADIO,AP_MAC_READY,%s,%s\n",s->id,g_address);
   return true;
 }
 
