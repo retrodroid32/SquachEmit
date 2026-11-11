@@ -89,3 +89,11 @@ model selection in SquachEmit remains a synthetic test label. The emitter
 continues using locally administered MACs. One Air 2S Wi-Fi test was
 reported independently received by SquachWatch, but other models and
 complete ASTM conformance still require validation.
+
+## Separate manufacturer-prefix Wi-Fi LAB
+
+An unmerged LAB branch adds ten manufacturer-OUI test beacons using
+DJI registered MA-L prefixes. These are deliberately **not Remote ID**;
+they test only SquachWatch's manufacturer-prefix detection heuristic.
+The established forty model-labeled Remote ID cases are unchanged.
+See [DJI OUI Reference](DJI_OUI_REFERENCE.md) for prefixes and caveats.

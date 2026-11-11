@@ -1,4 +1,4 @@
-"""Verify DJI OUIs as weak passive vendor context; never emulate vendor MACs."""
+"""Verify DJI OUIs as weak passive vendor context; bounded lab OUI-only beacons."""
 from pathlib import Path
 import importlib.util
 import json
@@ -44,6 +44,8 @@ class DjiOuiTests(unittest.TestCase):
         main=(ROOT/"src/main.cpp").read_text()
         self.assertIn("SquachIdentity::derive(",main)
         self.assertNotIn("dji_oui_reference",main)
+        # OUI on-air cases are separate from the synthetic Air 2S Remote ID.
+        self.assertIn("SquachDjiOuiLab::find(s->id)",main)
 
     def test_unknown_is_not_proof_of_no_drone(self):
         for mac in ("00:11:22:33:44:55","02:11:22:33:44:55","FF:FF:FF:FF:FF:FF"):

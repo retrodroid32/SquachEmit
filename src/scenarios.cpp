@@ -37,6 +37,18 @@ const Scenario kScenarios[] = {
   {"WIFI-NEG-CH6", Kind::WifiAp, "NONE", "Benign WPA2 AP on Wi-Fi channel 6", 6, "SQE-BENIGN"},
   {"WIFI-NEG-CH11", Kind::WifiAp, "NONE", "Benign WPA2 AP on Wi-Fi channel 11", 11, "SQE-BENIGN"},
   // Synthetic Remote ID family/model profiles; not vendor radio impersonation.
+  // Dedicated 2.4 GHz DJI manufacturer OUI test beacons. NO Remote ID.
+  // User-started lab fixtures; last 3 MAC octets are per-board/per-case.
+  {"OUI-DJI-04A85A", Kind::WifiAp, "DRONE", "DJI OUI 04:A8:5A | LAB WIFI MAC ONLY; NO RID", 6, "SQE-LAB-DJI-04A85A"},
+  {"OUI-DJI-0C9AE6", Kind::WifiAp, "DRONE", "DJI OUI 0C:9A:E6 | LAB WIFI MAC ONLY; NO RID", 6, "SQE-LAB-DJI-0C9AE6"},
+  {"OUI-DJI-34D262", Kind::WifiAp, "DRONE", "DJI OUI 34:D2:62 | LAB WIFI MAC ONLY; NO RID", 6, "SQE-LAB-DJI-34D262"},
+  {"OUI-DJI-481CB9", Kind::WifiAp, "DRONE", "DJI OUI 48:1C:B9 | LAB WIFI MAC ONLY; NO RID", 6, "SQE-LAB-DJI-481CB9"},
+  {"OUI-DJI-4C43F6", Kind::WifiAp, "DRONE", "DJI OUI 4C:43:F6 | LAB WIFI MAC ONLY; NO RID", 6, "SQE-LAB-DJI-4C43F6"},
+  {"OUI-DJI-58B858", Kind::WifiAp, "DRONE", "DJI OUI 58:B8:58 | LAB WIFI MAC ONLY; NO RID", 6, "SQE-LAB-DJI-58B858"},
+  {"OUI-DJI-60601F", Kind::WifiAp, "DRONE", "DJI OUI 60:60:1F | LAB WIFI MAC ONLY; NO RID", 6, "SQE-LAB-DJI-60601F"},
+  {"OUI-DJI-882985", Kind::WifiAp, "DRONE", "DJI OUI 88:29:85 | LAB WIFI MAC ONLY; NO RID", 6, "SQE-LAB-DJI-882985"},
+  {"OUI-DJI-8C5823", Kind::WifiAp, "DRONE", "DJI OUI 8C:58:23 | LAB WIFI MAC ONLY; NO RID", 6, "SQE-LAB-DJI-8C5823"},
+  {"OUI-DJI-E47A2C", Kind::WifiAp, "DRONE", "DJI OUI E4:7A:2C | LAB WIFI MAC ONLY; NO RID", 6, "SQE-LAB-DJI-E47A2C"},
   {"RID-DJI-MINI", Kind::BleRemoteId, "DRONE", "DJI Mini family | GENERIC SYNTHETIC BLE4; no model RF", 0, "SQE-DJI-MINI-LAB01"},
   {"RID-DJI-AIR", Kind::BleRemoteId, "DRONE", "DJI Air family | GENERIC SYNTHETIC BLE4; no model RF", 0, "SQE-DJI-AIR-LAB001"},
   {"RID-DJI-MAVIC", Kind::BleRemoteId, "DRONE", "DJI Mavic family | GENERIC SYNTHETIC BLE4; no model RF", 0, "SQE-DJI-MAVIC-LAB1"},

@@ -65,8 +65,9 @@ trusted UTC/GNSS, and formal ASTM conformity remain unverified.
 
 ## DJI MAC prefixes — vendor context, not a drone signature
 
-The 10 independently cross-checked DJI MA-L prefixes have been recorded
-in [DJI OUI Reference](DJI_OUI_REFERENCE.md). Use them only for passive
-vendor context. The offline lookup (`tools/dji_oui_reference.py`) does not
-change the emitter's synthetic MACs and cannot establish drone presence,
+The 10 independently cross-checked DJI MA-L prefixes are recorded in
+[DJI OUI Reference](DJI_OUI_REFERENCE.md). An optional, explicit short-duration
+LAB now transmits ordinary beacons with these prefixes for testing the
+legacy vendor-OUI heuristic; this is not Remote ID. Other emitter identities
+remain locally administered. A registered prefix cannot establish drone presence,
 ASTM Remote ID validity, or a DJI model from an OUI alone.
