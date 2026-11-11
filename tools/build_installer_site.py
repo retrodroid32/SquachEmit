@@ -198,7 +198,7 @@ def load_source(src: dict, output: Path, notes: dict | None = None) -> dict:
         'builds': [{'chipFamily':BOARDS[board]['chip'],
                     'parts':[{'path':name,'offset':off} for name,off,_ in parts]}],
     }
-    (dest / 'manifest.json').write_text(json.dumps(manifest,indent=2)+'\\n', encoding='utf-8')
+    (dest / 'manifest.json').write_text(json.dumps(manifest,indent=2)+'\n', encoding='utf-8')
     # Integrity manifest: the browser must verify *all four* flash segments.
     # The human-readable application hash alone cannot protect bootloader,
     # partition table or OTA selection bytes from a truncated Pages upload.
