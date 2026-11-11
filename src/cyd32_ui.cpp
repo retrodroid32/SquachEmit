@@ -39,6 +39,8 @@ bool panelInverted=false;
 uint32_t lastPoll=0,lastPress=0,lastCount=UINT32_MAX,colorBarsUntil=0;
 uint8_t talkIndex=0;
 char previousActive[56]={0};
+char radioStartError[28]={0}; // visible radio-start failure stage
+char radioStartingProfile[56]={0}; // visible acknowledgement of requested Wi-Fi RUN
 
 void label(int x,int y,const char* s,uint16_t col,uint8_t font=1) {
   lcd.setTextFont(font);
@@ -217,13 +219,23 @@ void bigSquachy(bool emitting,bool suite){
   if(squachSpriteReady)drawSquachyFrame(emitting,suite,millis());
   else oldSquachy(emitting,suite);
 }
+// Right-side status is ONE label on ONE baseline.  During an active test,
+// countdown REPLACES the case total; never render both in the same 15px band.
+void rightStatus(bool emitting,uint32_t count){
+  constexpr int kRightX=236,kRightY=183,kRightW=kW-kRightX,kRightH=15;
+  lcd.fillRect(kRightX,kRightY,kRightW,kRightH,kBg);
+  char text[24];
+  if(emitting)snprintf(text,sizeof(text),"%lus LEFT",(unsigned long)count);
+  else snprintf(text,sizeof(text),"%u CASES",(unsigned)kScenarioCount);
+  lcd.setTextFont(1);
+  lcd.setTextSize(1);
+  const int textX=kW-12-lcd.textWidth(text);
+  // Both labels share y=186.  No glyph touches the separator at y=198.
+  label(textX,186,text,emitting?kPink:kVaporPink);
+}
 void countdownOnly(uint32_t count){
-  // Exactly one small patch changes per second; the full screen never
-  // clears during an active test.
-  lcd.fillRect(240,191,72,11,kBg);
-  char buf[18];
-  snprintf(buf,sizeof(buf),"%lus LEFT",(unsigned long)count);
-  label(247,193,buf,kPink);
+  // Only redraw the right status slot once per second, preserving mascot FPS.
+  rightStatus(true,count);
 }
 
 void speechBubble(const char* active,bool suite){
@@ -231,22 +243,27 @@ void speechBubble(const char* active,bool suite){
   lcd.drawRoundRect(7,20,306,44,4,kVaporPink);
   lcd.drawRoundRect(9,22,302,40,3,kPurple);
   const Scenario* chosen=selected<kScenarioCount?&kScenarios[selected]:nullptr;
-  const char* phrase=(active&&*active)?"RF LAB TRANSMITTING":suite?"TEST SUITE RUNNING":
+  const bool failed=!(active&&*active) && radioStartError[0];
+  const bool starting=!(active&&*active) && !failed && radioStartingProfile[0];
+  const char* phrase=failed?"WIFI START FAILED":
+      starting?"STARTING WIFI TRANSMISSION":
+      (active&&*active)?"RF LAB TRANSMITTING":suite?"TEST SUITE RUNNING":
       "READY TO TEST. PICK A PROFILE.";
-  fit(16,25,phrase,285,kWhite,2);
-  fit(16,47,active&&*active?active:chosen?chosen->id:"NO PROFILE",
-      288,active&&*active?kPink:kCyan,1);
+  fit(16,25,phrase,285,failed?kPink:(starting?kYellow:kWhite),2);
+  fit(16,47,failed?radioStartError:
+      starting?radioStartingProfile:
+      (active&&*active)?active:chosen?chosen->id:"NO PROFILE",
+      288,failed?kYellow:(starting?kYellow:(active&&*active?kPink:kCyan)),1);
 }
 
 void statusStrip(const char* active,bool suite){
   lcd.fillRect(0,183,320,29,kBg);
   lcd.drawFastHLine(6,182,308,kPurple);
-  label(12,186,active&&*active?"ON AIR":suite?"SUITE":"LAB READY",
-        active&&*active?kPink:kGreen);
+  const bool starting=!(active&&*active) && radioStartingProfile[0];
+  label(12,186,active&&*active?"ON AIR":starting?"STARTING":suite?"SUITE":"LAB READY",
+        active&&*active?kPink:(starting?kYellow:kGreen));
   label(97,186,"BLE / WIFI / RID",kCyan);
-  char totalText[18];
-  snprintf(totalText,sizeof(totalText),"%u CASES",(unsigned)kScenarioCount);
-  label(244,186,totalText,kVaporPink);
+  if(!(active&&*active))rightStatus(false,0);
   lcd.drawFastHLine(6,198,308,kPurple);
   label(12,201,"PROFILE",kVaporPink);
   const Scenario* chosen=selected<kScenarioCount?&kScenarios[selected]:nullptr;
@@ -317,8 +334,25 @@ void libraryScreen(const char* active,bool suite){
     const Scenario* s=atRank(page*4+row,&raw);
     char title[55]={0},hint[45]={0};
     if(s){
-      snprintf(title,sizeof(title),"%02u  %.42s",(unsigned)(page*4+row+1),s->id);
-      snprintf(hint,sizeof(hint),"EXPECTED: %.24s",s->expected);
+      const bool djiBle = startsWith(s->id,"RID-DJI-");
+      const bool djiWifi = startsWith(s->id,"RID-WIFI-DJI-");
+      if(djiBle || djiWifi) {
+        // Clearly identify the model name and transport. These are lab labels,
+        // not a signature proven to identify an actual DJI aircraft.
+        const char* end = strstr(s->description," | ");
+        if(end) snprintf(title,sizeof(title),"%02u  %.*s",
+                         (unsigned)(page*4+row+1),
+                         (int)(end-s->description),s->description);
+        else snprintf(title,sizeof(title),"%02u  %.42s",
+                      (unsigned)(page*4+row+1),s->id);
+        snprintf(hint,sizeof(hint),"%s",
+                 djiWifi?"SYNTHETIC WIFI BEACON / BASIC ID":
+                          "SYNTHETIC BLE4 / EXPECT DRONE");
+      } else {
+        snprintf(title,sizeof(title),"%02u  %.42s",
+                 (unsigned)(page*4+row+1),s->id);
+        snprintf(hint,sizeof(hint),"EXPECTED: %.24s",s->expected);
+      }
     }
     menuRow(48+(int)row*36,title,hint,s&&raw==selected);
   }
@@ -426,6 +460,17 @@ void rgbBars(){
 }
 } // namespace
 
+void cyd32UiSetRadioStarting(const char* scenarioId){
+  radioStartError[0]='\0';
+  snprintf(radioStartingProfile,sizeof(radioStartingProfile),"%s",
+           scenarioId?scenarioId:"");
+  redraw=true;
+}
+void cyd32UiSetRadioError(const char* stage){
+  radioStartingProfile[0]='\0';
+  snprintf(radioStartError,sizeof(radioStartError),"%s",stage?stage:"");
+  redraw=true;
+}
 void cyd32UiBegin(){
   pinMode(TFT_BL,OUTPUT);
   digitalWrite(TFT_BL,LOW);

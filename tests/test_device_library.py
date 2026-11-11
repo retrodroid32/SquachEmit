@@ -55,8 +55,8 @@ int main() {
         self.assertEqual(category_names, sorted(category_names))
         self.assertEqual(len(grouped), 10)
         all_ids=[case for values in grouped.values() for case in values]
-        self.assertEqual(len(all_ids),95)
-        self.assertEqual(len(set(all_ids)),95)
+        self.assertEqual(len(all_ids),135)
+        self.assertEqual(len(set(all_ids)),135)
         self.assertEqual(set(all_ids),set(known))
         for cases in grouped.values():
             self.assertEqual(cases,sorted(cases))
