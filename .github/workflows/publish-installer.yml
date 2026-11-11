@@ -6,6 +6,7 @@ on:
       - 'web-installer/**'
       - 'tools/build_installer_site.py'
       - 'tools/firmware_build_notes.json'
+      - 'tools/active_firmware_profile.json'
       - '.github/workflows/publish-installer.yml'
       - '.github/workflows/ci.yml'
   workflow_run:
@@ -48,7 +49,7 @@ jobs:
           REPO: ${{ github.repository }}
         run: |
           python - <<'PY'
-          import json, os, pathlib, subprocess, sys
+          import base64, json, os, pathlib, subprocess, sys
           repo=os.environ['REPO']
           root=pathlib.Path('_incoming')
           root.mkdir(exist_ok=True)
@@ -57,6 +58,23 @@ jobs:
           runs=api(f'repos/{repo}/actions/workflows/ci.yml/runs?per_page=100&status=success')['workflow_runs']
           sources=[]
           seen=set()
+          source_profiles={}
+          def mainline_profile(sha):
+              # This exact SHA produced the four flashed firmware segments.
+              # Never fetch the description from the current main branch.
+              if sha not in source_profiles:
+                  try:
+                      obj=api(f'repos/{repo}/contents/tools/active_firmware_profile.json?ref={sha}')
+                  except subprocess.CalledProcessError as err:
+                      print(f'::warning::No source-profile for {sha[:8]}: {err}',file=sys.stderr)
+                      source_profiles[sha]=None
+                  else:
+                      data=json.loads(base64.b64decode(obj['content']).decode('utf-8'))
+                      if data.get('schema') != 1:
+                          raise ValueError('invalid source profile schema')
+                      data['source_commit_sha']=sha
+                      source_profiles[sha]=data
+              return source_profiles[sha]
           for run in runs:
               if run['conclusion']!='success' or run.get('event')!='push':
                   continue
@@ -96,8 +114,10 @@ jobs:
                       print(f'::warning::Could not download run {run["id"]}: {e}',file=sys.stderr)
                       continue
                   seen.add(key)
+                  profile=mainline_profile(sha) if branch=='main' else None
                   sources.append(dict(board=board,sha=sha,branch=branch,channel=channel,
-                                      run_id=run['id'],created_at=run['created_at'],path=str(directory)))
+                                      run_id=run['id'],created_at=run['created_at'],path=str(directory),
+                                      source_profile=profile))
           (root/'sources.json').write_text(json.dumps({'sources':sources},indent=2),encoding='utf-8')
           print('Downloaded firmware:',[(x['board'],x['sha'][:8],x['run_id']) for x in sources])
           if not sources:

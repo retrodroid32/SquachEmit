@@ -177,3 +177,33 @@ the trusted site, confirm the exact board, and back up the existing firmware.
    build cannot unlock the new selection.
 6. Confirm baud selector and current build descriptions still work.
 7. Test a known-good physical CYD 3.2 and receiver smoke test before merge.
+
+## Latest firmware naming, version and "What Changed"
+
+**The regular installer shows current mainline builds, not necessarily the
+historic tagged v1.0.0 release.** The original v1.0.0 tag contains 95 cases;
+the current mainline contains 172. The default channel labels the latest
+actual CI source with its own product name, version and What Changed instead
+of presenting the 172-case build as v1.0.0 (95 cases).
+
+For current mainline, `tools/active_firmware_profile.json` has separate
+descriptive firmware names and change summaries for CYD 3.2, Waveshare C5
+and ESP32-S3. The Pages publisher reads this file **from the exact commit
+whose CI produced the binaries**, not from nearby commits. Its version
+includes the eight-character source SHA for clear traceability.
+
+The `host-fixtures` CI tests check both the current scenario count and
+the Git object identities of `src/`, `include/`, `lib/`,
+`SquachEmit.ino` and `platformio.ini`. A future firmware change
+without a reviewed profile update fails CI. This avoids silently displaying
+stale firmware capabilities as a newer build.
+
+Older LAB builds without this profile retain exact-SHA notes in
+`tools/firmware_build_notes.json`. The physically flashed CYD 3.2 LAB
+commit `ffc08d1b` is explicitly described as the 172-case UAV Vendor
+Suite with saved TX-time and the touchscreen redraw fix. Truly unknown
+sources are visibly marked as **needs changelog**, with board name and
+commit ID; the publisher must not invent feature or version claims.
+
+No transmitter logic, release tag, hardware verification status, flash
+segments or RF behavior is changed by this naming improvement.
