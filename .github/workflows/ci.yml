@@ -20,6 +20,15 @@ jobs:
       - run: node tests/verify_installer_browser.cjs
       - run: g++ -std=c++11 -Wall -Wextra -Werror tests/test_identity.cpp -o /tmp/sqe_identity && /tmp/sqe_identity
       - run: python tools/generate_vectors.py && git diff --exit-code tests/offline_vectors.json
+      - name: Fetch pinned SquachWatch decoder for native verification
+        uses: actions/checkout@v4
+        with:
+          repository: retrodroid32/SquachWatch-CYD
+          ref: 8c9972ad866932fcf183552d00d812d302b258c0
+          path: _squachwatch_native
+          persist-credentials: false
+      - name: Exercise real SquachWatch decoder against offline DJI OUI vectors
+        run: python tools/verify_native.py _squachwatch_native
       - run: python tools/generate_drone_vectors.py --output /tmp/sqe-drone-vectors.json
       - run: python tools/score_trials.py tests/trials.csv --output /tmp/sqe-trials.md --json /tmp/sqe-trials.json
   firmware:
