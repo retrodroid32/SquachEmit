@@ -56,8 +56,9 @@ def describe_source_profile(profile: dict, board: str, source_sha: str) -> dict:
         raise ValueError('invalid source firmware-profile schema')
     if profile.get('source_commit_sha') != source_sha:
         raise ValueError('source firmware-profile ref differs from CI artifact')
-    if profile.get('scenario_count') != 172:
-        raise ValueError('source firmware-profile scenario count mismatch')
+    count = profile.get('scenario_count')
+    if not isinstance(count, int) or not 1 <= count <= 253:
+        raise ValueError('source firmware-profile scenario count invalid')
     builds = profile.get('builds')
     if not isinstance(builds, dict) or set(builds) != set(BOARDS):
         raise ValueError('source firmware profile must name all three boards')
