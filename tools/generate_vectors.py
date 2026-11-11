@@ -60,7 +60,7 @@ with (ROOT / "tests" / "dji_oui_registry.json").open(encoding="utf-8") as f:
     dji_oui_registry = json.load(f)
 for record in dji_oui_registry["allocations"]:
     prefix = record["prefix"].lower()
-    add("OUI-DJI-" + prefix.replace(":", ""), "WIFI_OUI",
+    add("OUI-DJI-" + prefix.replace(":", "").upper(), "WIFI_OUI",
         beacon(prefix + ":00:00:01", "SQE-LAB"), "DRONE",
         "DJI registered MA-L " + record["registered"] +
         "; vendor hint only, not aircraft/Remote ID; offline-only")
