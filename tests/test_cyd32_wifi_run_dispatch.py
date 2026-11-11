@@ -10,10 +10,10 @@ class TouchWifiRunTests(unittest.TestCase):
         run=s[a:b]
         for item in ('UI,RUN_TAP,%s,%s','cyd32UiSetRadioStarting(chosen->id)',
                      'cyd32UiTick(nullptr,0,false)','UI,RUN_DISPATCH,%s',
-                     'startScenario(chosen);','ERROR,UI_RUN_NO_SELECTION'):
+                     'startScenario(chosen,selectedDurationMs());','ERROR,UI_RUN_NO_SELECTION'):
             self.assertIn(item,run)
-        self.assertLess(run.index("UI,RUN_TAP"),run.index("startScenario(chosen);"))
-        self.assertLess(run.index("cyd32UiSetRadioStarting"),run.index("startScenario(chosen);"))
+        self.assertLess(run.index("UI,RUN_TAP"),run.index("startScenario(chosen,selectedDurationMs());"))
+        self.assertLess(run.index("cyd32UiSetRadioStarting"),run.index("startScenario(chosen,selectedDurationMs());"))
     def test_cyd_running_state_clears_on_result(self):
         ui=(ROOT/"src/cyd32_ui.cpp").read_text()
         header=(ROOT/"include/cyd32_ui.h").read_text()

@@ -19,7 +19,7 @@ class TestFixtures(unittest.TestCase):
             self.assertIn(f'"{s["id"]}"', source)
             self.assertIn(f'"{s["expected"]}"', source)
         self.assertEqual(len({s['id'] for s in self.cases}), len(self.cases))
-        self.assertEqual(len(self.cases), 135)
+        self.assertEqual(len(self.cases), 172)
         self.assertEqual(len(self.cases), len(__import__('re').findall(r'^\s*\{"', source, __import__('re').M)))
         self.assertEqual(next(s for s in self.cases if s['id']=='BLE-GOOGLE')['expected'], 'NONE')
         self.assertLess(len(self.cases), 254)  # synthetic per-case MAC identity limit

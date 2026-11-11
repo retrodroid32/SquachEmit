@@ -53,8 +53,16 @@ class DjiOuiRegistryTests(unittest.TestCase):
         identity = (ROOT / "include/identity.h").read_text()
         self.assertIn("? 0xC2 : 0x02", identity)
         self.assertIn("Stable, locally administered lab identities", identity)
+        # Mainline now has ten on-air *test labels* named OUI-DJI-*, but
+        # their transmitted MACs are still locally administered. Registered
+        # OUIs occur only in these offline receiver-decoder frame vectors.
         onair = json.loads((ROOT / "tests/cases.json").read_text())
-        self.assertTrue(all("OUI-DJI-" not in s["id"] for s in onair))
+        dji_cases = [s for s in onair if s["id"].startswith("OUI-DJI-")]
+        self.assertEqual(len(dji_cases), 10)
+        self.assertEqual({s["id"] for s in dji_cases},
+                         {"OUI-DJI-" + p.replace(":", "") for p in EXPECTED})
+        self.assertTrue(all(s["kind"] == "WifiAp" and
+                            s["text"].startswith("SQE-LAB-DJI-") for s in dji_cases))
 
 if __name__ == "__main__":
     unittest.main()

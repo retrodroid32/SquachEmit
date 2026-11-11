@@ -17,6 +17,7 @@ public:
  int w=320,h=240;
  std::vector<uint16_t> pixel;
  uint16_t fg=0xffff;
+ unsigned fillScreenCalls=0; // test-only counter: detect visible full-screen clears
  int cx=0,cy=0,font=1,size=1;
  explicit TFT_eSPI(int width=320,int height=240,bool root=true)
  :w(width),h(height),pixel(size_t(width)*height,0){
@@ -40,7 +41,7 @@ public:
  void drawPixel(int x,int y,uint16_t c){
   if(x>=0&&x<w&&y>=0&&y<h)pixel[size_t(y)*w+x]=c;
  }
- void fillScreen(uint16_t c){std::fill(pixel.begin(),pixel.end(),c);}
+ void fillScreen(uint16_t c){++fillScreenCalls;std::fill(pixel.begin(),pixel.end(),c);}
  void fillRect(int x,int y,int ww,int hh,uint16_t c){
   int x0=std::max(0,x),y0=std::max(0,y);
   int x1=std::min(w,x+ww),y1=std::min(h,y+hh);

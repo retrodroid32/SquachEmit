@@ -24,7 +24,8 @@ inline bool startsWith(const char* s,const char* p) {
 inline DeviceCategory deviceCategory(const Scenario& s) {
   const char* id=s.id;
   // Negative and malformed fixtures stay with the device family they test.
-  if(startsWith(id,"RID-") || strcmp(id,"BLE-DRONE")==0 ||
+  if(startsWith(id,"RID-") || startsWith(id,"OUI-") ||
+     strcmp(id,"BLE-DRONE")==0 ||
      strcmp(id,"BLE-NEG-DRONE-UUID")==0) return DeviceCategory::Drones;
   if(startsWith(id,"BLE-AXON") || startsWith(id,"WIFI-AXON") ||
      strcmp(id,"WIFI-NEG-AXON-NOHYPHEN")==0) return DeviceCategory::Axon;

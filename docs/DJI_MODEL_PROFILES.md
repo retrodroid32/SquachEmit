@@ -1,6 +1,6 @@
-# SquachEmit — DJI model Remote ID coverage (draft LAB)
+# SquachEmit — DJI model synthetic Remote ID test coverage
 
-**v1.0.0 publicly released baseline:** 95 cases. **This draft LAB: 135 cases**,
+**Original DJI model expansion:** 135 cases (earlier baseline: 95),
 including 40 new synthetic on-air model-label cases across 20 named DJI
 aircraft (20 BLE4 and 20 Wi-Fi beacon).
 
@@ -68,43 +68,6 @@ separately rather than attributing it to aircraft-native DJI firmware.
 DJI's support and firmware requirements are published at:
 https://support.dji.com/help/content?customId=en-us03400007747&lang=en&re=US&spaceId=34
 
-## DJI IEEE MA-L/OUI reference (offline-only)
-
-The independent public registry lists **10 SZ DJI TECHNOLOGY CO.,LTD
-MA-L /24 blocks**. SquachEmit's exact machine-readable snapshot is
-[`tests/dji_oui_registry.json`](../tests/dji_oui_registry.json)
-and its reproducible, **offline-only** 802.11 Wi-Fi beacon matrix is
-[`tests/offline_vectors.json`](../tests/offline_vectors.json).
-The generator `tools/generate_vectors.py` builds one additional
-`OUI-DJI-XXXXXX` test vector per registration, with a synthetic MAC
-suffix; the CI test checks all ten. See
-[the SquachWatch receiver reference](https://github.com/retrodroid32/SquachWatch-CYD/blob/master/docs/DJI_OUI_REGISTRY.md)
-for dates and the matching interpretation.
-
-**Prefixes:** `04:A8:5A`, `0C:9A:E6`, `34:D2:62`,
-`48:1C:B9`, `4C:43:F6`, `58:B8:58`, `60:60:1F`,
-`88:29:85`, `8C:58:23`, `E4:7A:2C`.
-Source: https://maclookup.app/vendors/sz-dji-technology-co-ltd
-
-An OUI match supports **DJI vendor attribution only**. It does not
-prove a drone, flight, model, operating frequency, actual Remote ID,
-or authentic DJI proprietary broadcast. The current SquachWatch
-decoder labels these prefixes in the DRONE family, so the offline
-test vectors retain that expected classification strictly as a
-**compatibility check**, not an authentication claim.
-
-SquachEmit's **on-air** BLE/Wi-Fi identities continue to use
-locally administered `C2:`/`02:` prefixes unique to board/case.
-**Registered DJI OUIs are never emitted on air by these tests.**
-No new on-air scenario, channel, firmware RF mode or proprietary
-DJI RF impersonation is introduced here. To validate against the
-actual SquachWatch OUI table in a local checkout, run:
-
-```bash
-python tools/generate_vectors.py
-python tools/verify_native.py ../SquachWatch-CYD
-```
-
 ## Next: evidence-based realistic profiles
 
 Collect authorized **passive** captures of the operator's own aircraft,
@@ -116,4 +79,54 @@ independent decoder output with SquachWatch.
 
 Do not claim actual DJI model transmissions from generic ASTM messages,
 or RF features unsupported by this ESP32, until separately hardware tested.
-No firmware release, merge or tag is authorized by this document.
+This document records the current merged test catalog; further firmware or release changes require separate approval.
+
+## Vendor MACs are not model identification
+
+See [DJI OUI Reference](DJI_OUI_REFERENCE.md) for 10 source-verified
+MA-L manufacturer blocks. A matching MAC is only a vendor-registry clue;
+model selection in SquachEmit remains a synthetic test label. The emitter
+continues using locally administered MACs. One Air 2S Wi-Fi test was
+reported independently received by SquachWatch, but other models and
+complete ASTM conformance still require validation.
+
+## Separate manufacturer-prefix Wi-Fi LAB
+
+Merged main includes ten DJI manufacturer-OUI test beacons using
+DJI registered MA-L prefixes. These are deliberately **not Remote ID**;
+they test only SquachWatch's manufacturer-prefix detection heuristic.
+The established forty model-labeled Remote ID cases are unchanged.
+See [DJI OUI Reference](DJI_OUI_REFERENCE.md) for prefixes and caveats.
+
+## Extended UAS vendor allocations — separate 172-case LAB
+
+A separate unmerged CYD 3.2 LAB adds 27 precisely verified prefixes for
+Autel, Parrot, Skydio, DJI Baiwang, Quantum-Systems, Insitu, Yuneec,
+FIMI, Hubsan, XAG, and avionics/payload suppliers. These emit only ordinary
+Wi-Fi beacons, never verified aircraft Remote ID. See
+[Extended UAV Vendor OUI LAB](UAV_VENDOR_OUI_LAB.md) for exact 24/28/36-bit
+allocations and rejected misattributions.
+
+## Full DJI OUI receiver-decoder fixture matrix (offline)
+
+The accompanying `tests/dji_oui_registry.json` records all ten known
+SZ DJI TECHNOLOGY CO.,LTD MA-L /24 manufacturer prefixes with source
+registration dates. `tools/generate_vectors.py` produces ten additional
+**offline-only** 802.11 beacon frames from this snapshot. Those frames contain
+the registered prefixes in the transmitter and BSSID bytes and allow the
+SquachWatch receiver decoder to be checked using
+`python tools/verify_native.py ../SquachWatch-CYD`.
+
+This feature **does not introduce additional transmitted test scenarios**.
+Mainline already includes ten separate `OUI-DJI-...` *on-air test labels*
+among its 172 catalog entries. Their ordinary Wi-Fi test beacons use
+board/case-unique **locally administered** MAC identities and synthetic
+`SQE-LAB-DJI-...` SSIDs, **not** the registered DJI MAC bytes from the
+offline fixtures. Those two sets deliberately use related test IDs, but
+exercise different mechanisms.
+
+A matched vendor OUI supports only **manufacturer attribution**. It does not
+establish a flying aircraft, genuine DJI Remote ID, an exact model, DJI's
+proprietary protocol, or authenticity. No drone-specific radio hardware,
+RF profile, scenario count, installer behavior or release is altered by these
+offline additions.

@@ -9,7 +9,7 @@ MODELS = ["AIR2S","AIR3","AVATA","FPV","MATRICE300RTK","MATRICE30","MATRICE350RT
 class DjiModelMatrixTests(unittest.TestCase):
     def test_forty_synthetic_dji_cases(self):
         scenarios = json.loads((ROOT/"tests/cases.json").read_text())
-        self.assertEqual(len(scenarios), 135)
+        self.assertEqual(len(scenarios), 172)
         by_id = {s["id"]:s for s in scenarios}
         self.assertEqual(len(by_id), len(scenarios))
         observed_serials = set()
