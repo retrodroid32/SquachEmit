@@ -469,13 +469,14 @@
   async function sendEmitter(command){
     var port=devices.emitter.port;
     if(!port||!port.writable){notice('Connect SquachEmit before sending a command.',true);return false;}
-    var writer=port.writable.getWriter();
+    var writer=null;
     try{
+      writer=port.writable.getWriter();
       await writer.write(new TextEncoder().encode(command+'\n'));
       append('emitter','> '+command+'\n');
       return true;
     }catch(e){notice('Serial write failed: '+e.message,true);return false;}
-    finally{try{writer.releaseLock();}catch(_){}}
+    finally{if(writer)try{writer.releaseLock();}catch(_){}}
   }
   async function run(){
     var c=catalog[ui.caseSelect.value],duration=Number(ui.duration.value);
@@ -614,6 +615,43 @@
       ui.caseSelect.replaceChildren(option('','Case catalog unavailable'));
     }
   }
+  function applySessionShas(){
+    var receiverSha=ui.receiverSha.value.trim();
+    var emitterSha=ui.emitterSha.value.trim();
+    if(!validSha(receiverSha)||!validSha(emitterSha)){
+      text('shaNotice','Enter real 7–40-character hexadecimal commit SHAs for both boards first.');
+      return;
+    }
+    // Never silently change imported trials, previous emitter connections,
+    // another receiver board, or a valid SHA that is already recorded.
+    var changed=0;
+    trials.forEach(function(t){
+      if(t.seq==null||t._epoch!==epoch||t.receiver!==ui.receiverBoard.value)return;
+      var did=false;
+      if(!validSha(t.receiver_sha)){t.receiver_sha=receiverSha;did=true;}
+      if(!validSha(t.emitter_sha)){t.emitter_sha=emitterSha;did=true;}
+      if(did)changed++;
+    });
+    redrawTrials();selectTrial();
+    text('shaNotice',changed+' current-session trial(s) updated with verified SHAs. '+
+      'Previously detected cases can now score without retransmitting; '+
+      'imported and earlier-device-session trials were left unchanged.');
+    notice('Firmware provenance updated on '+changed+' current-session trial(s). '+
+      'No observations or detector results were invented.',false);
+  }
+  ui.applyShas.addEventListener('click',applySessionShas);
+  ['receiverSha','emitterSha'].forEach(function(id){
+    ui[id].addEventListener('input',function(){
+      updateButtons();
+      if(validSha(ui.receiverSha.value)&&validSha(ui.emitterSha.value)){
+        text('shaNotice','Both commit SHAs look valid. Click Apply to score '+
+          'existing session trials; new trials will capture these automatically.');
+      }else{
+        text('shaNotice','Both firmware commit SHAs are required for scoring. '+
+          'Detected cases are preserved but marked UNTESTED until then.');
+      }
+    });
+  });
   ui.caseSelect.addEventListener('change',chooseCase);
   ui.authorization.addEventListener('change',updateButtons);
   ui.duration.addEventListener('input',updateButtons);
@@ -624,6 +662,9 @@
   ui.runCase.addEventListener('click',function(){void run();});
   ui.stopCase.addEventListener('click',function(){
     runToken++;devices.receiver.preRun=null;
+    cancelRunAck();transmitting=false;
+    runProgress('STOP requested. Waiting for emitter to stop.');
+    updateButtons();
     void sendEmitter('STOP');
   });
   ui.pollNow.addEventListener('click',function(){void requestWatchSnapshot();});
