@@ -535,10 +535,10 @@
           if(token!==runToken || !awaitingBegin)return;
           awaitingBegin=false;
           runAwaitTimer=null;
-          runProgress('RUN was sent but no TRUTH BEGIN arrived within 3 seconds. '+
+          runProgress('RUN was sent but no TRUTH BEGIN arrived within 7 seconds. '+
             'Check SquachEmit serial log or try again; no transmission was confirmed.');
           updateButtons();
-        },3000);
+        },7000);
       }
       notice('RUN command sent. '+(baseline?'Automatic receiver detection is armed.':
         'Receiver baseline unavailable: use manual detection verification.'),!baseline&&!!receiver.port);
@@ -622,22 +622,31 @@
       text('shaNotice','Enter real 7–40-character hexadecimal commit SHAs for both boards first.');
       return;
     }
-    // Never silently change imported trials, previous emitter connections,
-    // another receiver board, or a valid SHA that is already recorded.
-    var changed=0;
-    trials.forEach(function(t){
-      if(t.seq==null||t._epoch!==epoch||t.receiver!==ui.receiverBoard.value)return;
-      var did=false;
-      if(!validSha(t.receiver_sha)){t.receiver_sha=receiverSha;did=true;}
-      if(!validSha(t.emitter_sha)){t.emitter_sha=emitterSha;did=true;}
-      if(did)changed++;
+    // Never rewrite existing valid firmware identities or another board.
+    // CSV imports and previous connections may belong to OTHER firmware
+    // builds; require an explicit user confirmation before backfilling them.
+    var candidates=trials.filter(function(t){
+      return t.receiver===ui.receiverBoard.value &&
+        (!validSha(t.receiver_sha)||!validSha(t.emitter_sha));
+    });
+    var historical=candidates.filter(function(t){
+      return t.seq==null||t._epoch!==epoch;
+    });
+    if(historical.length && !window.confirm(
+      'You have '+historical.length+' imported/earlier-connection trials for '+
+      ui.receiverBoard.value+'. Apply these firmware SHAs to them ONLY if '+
+      'both devices were running exactly these builds for every affected '+
+      'trial? Existing valid SHAs are never overwritten.'))return;
+    candidates.forEach(function(t){
+      if(!validSha(t.receiver_sha))t.receiver_sha=receiverSha;
+      if(!validSha(t.emitter_sha))t.emitter_sha=emitterSha;
     });
     redrawTrials();selectTrial();
-    text('shaNotice',changed+' current-session trial(s) updated with verified SHAs. '+
-      'Previously detected cases can now score without retransmitting; '+
-      'imported and earlier-device-session trials were left unchanged.');
-    notice('Firmware provenance updated on '+changed+' current-session trial(s). '+
-      'No observations or detector results were invented.',false);
+    text('shaNotice',candidates.length+' trial(s) for '+ui.receiverBoard.value+
+      ' updated with the specified firmware identities. Imported/historical '+
+      'trials were only modified with explicit confirmation.');
+    notice('Verified firmware SHAs recorded for '+candidates.length+
+      ' trial(s). Receiver results were preserved; no detections were invented.',false);
   }
   ui.applyShas.addEventListener('click',applySessionShas);
   ['receiverSha','emitterSha'].forEach(function(id){
@@ -645,7 +654,7 @@
       updateButtons();
       if(validSha(ui.receiverSha.value)&&validSha(ui.emitterSha.value)){
         text('shaNotice','Both commit SHAs look valid. Click Apply to score '+
-          'existing session trials; new trials will capture these automatically.');
+          'current or imported trials; new trials capture them automatically.');
       }else{
         text('shaNotice','Both firmware commit SHAs are required for scoring. '+
           'Detected cases are preserved but marked UNTESTED until then.');
