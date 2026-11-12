@@ -26,6 +26,7 @@
   var opening={emitter:false,receiver:false};
   var epoch=0;
   var startingRun=false;
+  var runToken=0; // STOP/disconnect cancels any outstanding LOG preflight
   ui.runId.value=new Date().toISOString().slice(0,10)+'-session-01';
   function text(id,value){ui[id].textContent=String(value);}
   function notice(message,isError){
@@ -403,6 +404,7 @@
     if(!p)return;
     d.port=null;
     if(role==='receiver')stopWatchPolling();
+    if(role==='emitter'){runToken++;devices.receiver.preRun=null;}
     updateButtons();
     try{if(d.reader)await d.reader.cancel();}catch(_){}
     try{if(d.reading)await d.reading;}catch(_){}
@@ -425,12 +427,15 @@
     var c=catalog[ui.caseSelect.value],duration=Number(ui.duration.value);
     if(startingRun||!c||!ui.authorization.checked||!Number.isInteger(duration)||
        duration<3||duration>30||!devices.emitter.port)return;
-    startingRun=true;updateButtons();
+    startingRun=true;
+    var token=++runToken;
+    updateButtons();
     try{
       var receiver=devices.receiver;
       if(receiver.port){
         autoStatus('Taking fresh SquachWatch LOG baseline before RUN…');
         var baseline=await requestWatchSnapshot();
+        if(token!==runToken || !devices.emitter.port)return;
         if(!baseline){
           notice('SquachWatch LOG baseline did not respond. Confirm its 2,000,000 baud port '+
             'and reconnect, or disconnect the receiver for manual-only testing. RUN not sent.',true);
@@ -440,6 +445,8 @@
       }else{
         receiver.preRun=null;
       }
+      // STOP or disconnect can cancel a pending receiver LOG preflight.
+      if(token!==runToken || !devices.emitter.port)return;
       // Never mark detection or emission from a button click. Only actual
       // TRUTH BEGIN/END and a fresh receiver LOG can complete a scored hit.
       var sent=await sendEmitter('RUN '+c.id+' '+duration);
@@ -527,7 +534,10 @@
   ui.emitDisconnect.addEventListener('click',function(){void disconnect('emitter');});
   ui.recvDisconnect.addEventListener('click',function(){void disconnect('receiver');});
   ui.runCase.addEventListener('click',function(){void run();});
-  ui.stopCase.addEventListener('click',function(){void sendEmitter('STOP');});
+  ui.stopCase.addEventListener('click',function(){
+    runToken++;devices.receiver.preRun=null;
+    void sendEmitter('STOP');
+  });
   ui.pollNow.addEventListener('click',function(){void requestWatchSnapshot();});
   ui.trialSelect.addEventListener('change',selectTrial);
   ui.saveObservation.addEventListener('click',saveObservation);
