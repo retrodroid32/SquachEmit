@@ -20,7 +20,7 @@
     <section class="intro">
       <div class="eyebrow">RECEIVER ACCURACY // CONTROLLED RF TESTING</div>
       <h1>Emit. Observe. <em>Verify.</em></h1>
-      <p>Coordinate SquachEmit test cases with independently observed SquachWatch detections. Transmitter logs are <b>intent only</b>; no case counts as a receiver hit until you verify it.</p>
+      <p>Automatically match SquachWatch's live <b>LOG snapshots</b> to SquachEmit's exact transmitted MAC address and scenario. Preexisting detections are excluded; transmitter truth alone never counts as a receiver hit.</p>
       <div class="callout" id="securityNotice" role="status">All data stays in your browser until you export it. No device connection or transmission occurs automatically. Use only equipment you control or have permission to test.</div>
     </section>
     <section class="metrics" aria-label="Trial metrics">
@@ -56,7 +56,10 @@
         <div class="sectionhead"><span class="num">03</span><div><h2 id="receivertitle">Receiver evidence</h2><p>SquachWatch · Web Serial · typically 2,000,000 baud</p></div></div>
         <div class="connection"><span id="recvState" class="state">DISCONNECTED</span><div class="buttons"><button id="recvConnect" class="outlined">Connect</button><button id="recvDisconnect" disabled>Disconnect</button></div></div>
         <div class="formrow"><label for="receiverBaud">Receiver baud</label><select id="receiverBaud"><option value="2000000">2,000,000 (CYD default)</option><option value="115200">115,200</option><option value="921600">921,600</option><option value="1000000">1,000,000</option></select></div>
-        <div class="footnote">Receiver output is preserved for evidence. The workbench deliberately does not guess an alert from unknown serial strings. Confirm the actual event using the SquachWatch display or LOG screen.</div>
+        <div class="footnote">After you connect SquachWatch, the Workbench automatically sends <code>LOG</code> about every 1.5 seconds and parses its existing structured device table. A match requires the exact emitted MAC and a new or reappearing receiver entry after a pre-test snapshot. Preexisting entries, ambiguous matches and negative/no-detection outcomes still need manual review. No SquachWatch firmware change is required.</div>
+        <div class="auto-log"><div class="mini">AUTOMATIC RECEIVER DETECTION</div><div id="autoLogState" role="status">Connect SquachWatch to begin LOG polling.</div><button id="pollNow" class="outlined" type="button" disabled>Poll LOG now</button></div>
+        <label class="loglabel" for="autoDetectionFeed">Matched receiver events</label>
+        <pre id="autoDetectionFeed" class="terminal" aria-label="Automatically matched SquachWatch detections">No matched SquachWatch detections recorded yet.</pre>
         <label class="loglabel" for="recvLog">Receiver serial log</label>
         <pre id="recvLog" class="terminal" aria-label="SquachWatch serial log">No receiver connected. Review the physical SquachWatch UI and logs for each case.</pre>
         <button id="copyReceiver" class="outlined full">Copy receiver log</button>
@@ -65,14 +68,14 @@
       <section class="panel" aria-labelledby="recordtitle">
         <div class="sectionhead"><span class="num">04</span><div><h2 id="recordtitle">Verify an observation</h2><p>Count only evidence confirmed by the tester.</p></div></div>
         <div class="formrow"><label for="trialSelect">Recorded emitter trial</label><select id="trialSelect"><option value="">No TRUTH BEGIN observed yet</option></select></div>
-        <div id="trialDetails" class="casebox">A trial is created only when SquachEmit emits a valid TRUTH BEGIN record.</div>
+        <div id="trialDetails" class="casebox">A trial is created only when SquachEmit emits a valid TRUTH BEGIN record. Matched fresh SquachWatch LOG rows are filled automatically.</div>
         <div class="formrow"><label for="emissionStatus">Emitter-reported end status (live records locked)</label><select id="emissionStatus"><option value="">Not established</option><option value="ok">Emitter reports ended normally</option><option value="failed">Emitter failed / stopped / interrupted</option></select></div>
         <div class="formrow"><label for="listenWindow">Receiver listening window</label><select id="listenWindow"><option value="">Not verified</option><option value="complete">Complete verified window</option><option value="incomplete">Incomplete / interrupted — exclude</option></select></div>
         <div class="formrow"><label for="observed">SquachWatch observed classification</label><select id="observed"><option value="">Not observed / not evaluated</option></select></div>
         <div class="formrow"><label for="latencyMs">Latency to first confirmed hit</label><div class="inline"><input type="number" id="latencyMs" min="0" step="1" placeholder="Optional, TP only"><span>milliseconds</span></div></div>
         <div class="formrow"><label for="evidenceNotes">Observation notes</label><textarea id="evidenceNotes" rows="3" maxlength="700" placeholder="Where in the receiver log? Evidence code, confidence, missing scans, interference…"></textarea></div>
         <button id="saveObservation" class="primary full" disabled>Save verified observation</button>
-        <p class="footnote" id="observationNotice" role="status">Use NONE only when a complete listening window confirmed no matching receiver event.</p>
+        <p class="footnote" id="observationNotice" role="status">Fresh exact-MAC SquachWatch hits are auto-recorded. Use NONE only after manually verifying a complete listening window; absence from one LOG snapshot does not prove no detection.</p>
       </section>
     </div>
 
@@ -81,7 +84,7 @@
         <div class="buttons"><button id="importCsv" class="outlined">Import trial CSV</button><input type="file" id="csvFile" accept=".csv,text/csv" hidden><button id="exportCsv" class="primary">Export CSV</button><button id="clearTrials" class="danger">Clear session</button></div>
       </div>
       <div class="tablewrap"><table><thead><tr><th>CASE ID</th><th>EXPECTED</th><th>ACTUAL</th><th>TRANSMITTER</th><th>WINDOW</th><th>RESULT</th><th>LATENCY</th></tr></thead><tbody id="trialRows"><tr><td colspan="7" class="empty">No trials yet. Connect an emitter or import a trial CSV.</td></tr></tbody></table></div>
-      <p class="footnote">CSV columns match <code>tools/score_trials.py</code>: run ID, receiver, both SHAs, case, emission, listening window, observation, latency, notes. WRONG counts as both a false alarm and a missed target when calculating precision/recall. All data remains local to this page.</p>
+      <p class="footnote">Automatic positives use the actual SquachWatch LOG table (type + exact MAC) and only score after a successful emitter END and a fresh pre-test baseline. Missing results, stale devices and ambiguous multiple types remain untested until reviewed. CSV columns match <code>tools/score_trials.py</code>: run ID, receiver, both SHAs, case, emission, listening window, observation, latency, notes. WRONG counts as both a false alarm and a missed target when calculating precision/recall. All data remains local to this page.</p>
     </section>
     <footer><span>SquachEmit Detection Workbench / Preview</span><span>No automatic transmit · No fabricated receiver hits · No cloud upload</span></footer>
   </main>
