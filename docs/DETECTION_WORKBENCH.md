@@ -118,6 +118,42 @@ records what the human tester verified; it is not an RF power meter,
 certified aviation Remote ID verification device, or an independent
 SquachWatch hardware test result by itself.
 
+## Physical-test feedback: one-click RUN and UNTESTED results
+
+In an earlier hardware test the owner reported that some RUN clicks failed
+to transmit, and that cases with `ACTUAL = EXPECTED`, emitter `ok`, and
+receiver window `complete` still displayed `UNTESTED`.
+
+The first issue was traced to the Workbench **refusing to send RUN at all**
+if its periodic SquachWatch `LOG` query did not complete. The revised
+Workbench uses a recent complete LOG baseline if available, otherwise gives
+a receiver refresh **at most 1.2 seconds** before sending RUN anyway.
+If no fresh baseline can be confirmed, that trial can still transmit but
+**automatic receiver correlation is disabled for it** rather than allowing
+a false positive. The button explicitly progresses through **Preparing
+receiver → RUN sent → TRUTH BEGIN confirmed → TRUTH END**, and it refuses
+duplicate clicks while a command is awaiting confirmation or transmitting.
+It never silently repeats or invents an RF transmission; slow radio starts
+have a seven-second acknowledgement window and the separate STOP button.
+
+The second issue was the intentionally strict **firmware provenance gate**.
+Receiver matches can be real while their statistical result is UNTESTED if
+either `receiver_sha` or `emitter_sha` is missing or invalid. Results
+now show the actual missing requirement below UNTESTED and the summary
+counts auto-observed detections awaiting provenance. Enter **both actual
+Git commit SHAs of the firmware flashed on the devices**, then click
+**Apply verified firmware SHAs to ledger**. Current-device trials update
+without retransmitting, and imported/earlier-connection trials are updated
+only after confirming that *all affected rows* used these exact builds.
+Existing valid SHAs are never overwritten. Missing negative detections
+still require manual receiver-window review.
+
+**Before updating the downloaded PR preview**, export the old session's
+CSV; the browser intentionally does not retain sessions across page reloads.
+In the new preview, import the CSV, enter the real SHAs, and use the Apply
+button. Do not assume the GitHub repository's latest commit is the same
+binary already flashed onto a device.
+
 ## How automatic detection matching works
 
 The Workbench uses an already available SquachWatch serial command
