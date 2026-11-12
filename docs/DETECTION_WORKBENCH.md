@@ -7,6 +7,23 @@ will become available **only after this PR is approved and merged**, followed by
 a successful Pages deployment. No server receives logs, MAC addresses,
 device serial numbers, or other captured RF information.
 
+## Testing this draft PR before merge
+
+GitHub CI on PR #36 creates the downloadable artifact
+`squachemit-detection-workbench-review-preview`. Open the PR's successful
+Actions run, download that artifact and extract it to a folder on your PC.
+From **PowerShell**, inside the extracted folder, run:
+
+```powershell
+py -m http.server 8000
+```
+
+Open `http://localhost:8000/workbench/` in desktop Chrome or Edge.
+Localhost is a trustworthy origin for Web Serial. This preview intentionally
+does **not** change or deploy the public firmware installer, and it includes
+**no firmware binaries**. Disconnect any other serial console before
+connecting either board.
+
 ## Hardware and browser
 
 - Desktop Chrome or Edge, HTTPS (or localhost), USB data cables.
