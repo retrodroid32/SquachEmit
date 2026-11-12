@@ -33,7 +33,7 @@
     <div class="workspace">
       <section class="panel" aria-labelledby="setuptitle">
         <div class="sectionhead"><span class="num">01</span><div><h2 id="setuptitle">Session setup</h2><p>Keep firmware IDs with every scored observation.</p></div></div>
-        <div class="formrow"><label for="runId">Run ID</label><input id="runId" autocomplete="off" maxlength="80" placeholder="2026-11-11-test-01"></div>
+        <div class="formrow"><label for="runId">Run ID prefix (unique suffix added per trial)</label><input id="runId" autocomplete="off" maxlength="80" placeholder="2026-11-11-test-01"></div>
         <div class="formrow"><label for="receiverBoard">SquachWatch receiver</label><select id="receiverBoard"><option value="CYD-2.8">CYD-2.8</option><option value="CYD-3.2">CYD-3.2</option></select></div>
         <div class="formrow"><label for="receiverSha">SquachWatch firmware SHA</label><input id="receiverSha" maxlength="40" spellcheck="false" placeholder="7–40 hexadecimal characters"></div>
         <div class="formrow"><label for="emitterSha">SquachEmit firmware SHA</label><input id="emitterSha" maxlength="40" spellcheck="false" placeholder="7–40 hexadecimal characters"></div>
@@ -66,7 +66,7 @@
         <div class="sectionhead"><span class="num">04</span><div><h2 id="recordtitle">Verify an observation</h2><p>Count only evidence confirmed by the tester.</p></div></div>
         <div class="formrow"><label for="trialSelect">Recorded emitter trial</label><select id="trialSelect"><option value="">No TRUTH BEGIN observed yet</option></select></div>
         <div id="trialDetails" class="casebox">A trial is created only when SquachEmit emits a valid TRUTH BEGIN record.</div>
-        <div class="formrow"><label for="emissionStatus">Emission result</label><select id="emissionStatus"><option value="">Not established</option><option value="ok">Emitter reports ended normally</option><option value="failed">Emitter failed / stopped / interrupted</option></select></div>
+        <div class="formrow"><label for="emissionStatus">Emitter-reported end status (live records locked)</label><select id="emissionStatus"><option value="">Not established</option><option value="ok">Emitter reports ended normally</option><option value="failed">Emitter failed / stopped / interrupted</option></select></div>
         <div class="formrow"><label for="listenWindow">Receiver listening window</label><select id="listenWindow"><option value="">Not verified</option><option value="complete">Complete verified window</option><option value="incomplete">Incomplete / interrupted — exclude</option></select></div>
         <div class="formrow"><label for="observed">SquachWatch observed classification</label><select id="observed"><option value="">Not observed / not evaluated</option></select></div>
         <div class="formrow"><label for="latencyMs">Latency to first confirmed hit</label><div class="inline"><input type="number" id="latencyMs" min="0" step="1" placeholder="Optional, TP only"><span>milliseconds</span></div></div>
