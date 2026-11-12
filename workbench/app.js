@@ -479,34 +479,68 @@
   }
   async function run(){
     var c=catalog[ui.caseSelect.value],duration=Number(ui.duration.value);
-    if(startingRun||!c||!ui.authorization.checked||!Number.isInteger(duration)||
-       duration<3||duration>30||!devices.emitter.port)return;
+    if(startingRun||awaitingBegin||transmitting||!c||!ui.authorization.checked||
+       !Number.isInteger(duration)||duration<3||duration>30||!devices.emitter.port)return;
     startingRun=true;
     var token=++runToken;
     updateButtons();
+    runProgress('Preparing to transmit '+c.id+'…');
     try{
-      var receiver=devices.receiver;
+      var receiver=devices.receiver,baseline=null;
       if(receiver.port){
-        autoStatus('Taking fresh SquachWatch LOG baseline before RUN…');
-        var baseline=await requestWatchSnapshot();
-        if(token!==runToken || !devices.emitter.port)return;
-        if(!baseline){
-          notice('SquachWatch LOG baseline did not respond. Confirm its 2,000,000 baud port '+
-            'and reconnect, or disconnect the receiver for manual-only testing. RUN not sent.',true);
-          return;
+        var now=Date.now();
+        // Reuse a complete fresh receiver poll if available; waiting for a
+        // second LOG response was causing unnecessary delay and missed runs.
+        if(receiver.lastSnapshot && receiver.lastSnapshot.finishedAt<=now &&
+           now-receiver.lastSnapshot.finishedAt<=1800){
+          baseline=receiver.lastSnapshot;
+          runProgress('Using fresh SquachWatch baseline; sending RUN…');
+        }else{
+          runProgress('Refreshing SquachWatch LOG baseline (max 1.2 seconds)…');
+          var timer;
+          try{
+            baseline=await Promise.race([
+              requestWatchSnapshot(),
+              new Promise(function(resolve){
+                timer=setTimeout(function(){resolve(null);},1200);
+              })
+            ]);
+          }finally{if(timer)clearTimeout(timer);}
         }
+        if(token!==runToken || !devices.emitter.port)return;
+        // Explicit null means auto-matching is disabled for this run. Never
+        // prevent a valid user-requested RUN just because receiver LOG is late.
         receiver.preRun={id:c.id,snapshot:baseline,expiresAt:Date.now()+5000};
-      }else{
-        receiver.preRun=null;
-      }
-      // STOP or disconnect can cancel a pending receiver LOG preflight.
+        if(!baseline){
+          autoStatus('Receiver LOG baseline unavailable: RUN will be sent, but '+
+            'its detection cannot be auto-scored without a fresh baseline.');
+        }
+      }else receiver.preRun=null;
       if(token!==runToken || !devices.emitter.port)return;
-      // Never mark detection or emission from a button click. Only actual
-      // TRUTH BEGIN/END and a fresh receiver LOG can complete a scored hit.
+      runProgress('Sending RUN '+c.id+' '+duration+' to SquachEmit…');
+      // Only TRUTH BEGIN establishes actual emitter acceptance, not a click.
+      awaitingBegin=true;updateButtons();
       var sent=await sendEmitter('RUN '+c.id+' '+duration);
-      if(!sent){receiver.preRun=null;return;}
-      notice('RUN sent. Awaiting emitter TRUTH BEGIN and fresh exact-MAC '+
-        (receiver.port?'SquachWatch LOG matches.':'manual receiver observation.'),false);
+      if(token!==runToken)return;
+      if(!sent){
+        awaitingBegin=false;receiver.preRun=null;
+        runProgress('RUN write failed. Check the emitter connection.');
+        return;
+      }
+      // TRUTH BEGIN may already arrive while awaiting the serial write.
+      if(awaitingBegin){
+        runProgress('RUN sent to emitter. Waiting for TRUTH BEGIN confirmation…');
+        runAwaitTimer=setTimeout(function(){
+          if(token!==runToken || !awaitingBegin)return;
+          awaitingBegin=false;
+          runAwaitTimer=null;
+          runProgress('RUN was sent but no TRUTH BEGIN arrived within 3 seconds. '+
+            'Check SquachEmit serial log or try again; no transmission was confirmed.');
+          updateButtons();
+        },3000);
+      }
+      notice('RUN command sent. '+(baseline?'Automatic receiver detection is armed.':
+        'Receiver baseline unavailable: use manual detection verification.'),!baseline&&!!receiver.port);
     }finally{startingRun=false;updateButtons();}
   }
   function saveObservation(){
