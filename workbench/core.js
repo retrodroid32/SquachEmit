@@ -32,6 +32,106 @@
       status:trim(data.status).toLowerCase(),
       carrier:trim(data.carrier).toUpperCase(), mac:trim(data.mac) };
   }
+  // SquachWatch (master, 2026-11-11) responds to a serial "LOG" request:
+  // [log] N rows, newest first
+  // row,type,mac,rssi,hits,state,when
+  // 0,DRONE,04:a8:5a:12:34:56,-48,1,here,+0:11
+  // This is a *snapshot*, NOT a push stream of individual detections.
+  var WATCH_MAC = /^[0-9a-f]{2}(?::[0-9a-f]{2}){5}$/i;
+  function normalizeMac(value) {
+    var mac=trim(value).toUpperCase();
+    return WATCH_MAC.test(mac)?mac:'';
+  }
+  function parseWatchLogCount(line) {
+    var m=/^\[log\] (0|[1-9][0-9]{0,2}) rows, newest first$/.exec(trim(line));
+    if(!m)return null;
+    var n=Number(m[1]);
+    return n<=64?n:null;
+  }
+  function parseWatchLogRow(line) {
+    if(typeof line!=='string'||line.length>320)return null;
+    var x=line.trim().split(',');
+    if(x.length!==7||!/^(0|[1-9]\d{0,2})$/.test(x[0]))return null;
+    var type=trim(x[1]).toUpperCase().replace(/ /g,'');
+    var mac=normalizeMac(x[2]);
+    if(!mac||!LABELS.includes(type)||type==='NONE'||type==='UNKNOWN')return null;
+    if(!/^-?\d{1,3}$/.test(x[3])||!/^\d{1,6}$/.test(x[4]))return null;
+    var rssi=Number(x[3]),hits=Number(x[4]),state=trim(x[5]);
+    if(rssi< -127||rssi>0||hits<0||hits>65535||
+      !['here','gone','KEPT'].includes(state)||
+      x[6].length>50||!x[6].trim())return null;
+    return {index:Number(x[0]),type:type,mac:mac,rssi:rssi,hits:hits,
+      state:state,when:trim(x[6])};
+  }
+  function newWatchLogParser() {
+    var pending=null;
+    return {
+      start:function(requestedAt) {
+        if(pending)return false;
+        pending={requestedAt:requestedAt,expected:null,header:false,rows:[]};
+        return true;
+      },
+      cancel:function(){pending=null;},
+      waiting:function(){return !!pending;},
+      read:function(line,now) {
+        if(!pending)return null;
+        // A new banner restarts only a response to our own pending request.
+        var count=parseWatchLogCount(line);
+        if(count!==null){
+          pending.expected=count;
+          pending.header=false;
+          pending.rows=[];
+          return null;
+        }
+        if(pending.expected===null)return null;
+        if(!pending.header){
+          if(trim(line)!=='row,type,mac,rssi,hits,state,when')return null;
+          pending.header=true;
+        }else{
+          var row=parseWatchLogRow(line);
+          if(!row||row.index!==pending.rows.length){
+            pending=null;return null; // malformed or interleaved response: fail closed
+          }
+          pending.rows.push(row);
+        }
+        if(pending.rows.length===pending.expected){
+          var completed={requestedAt:pending.requestedAt,finishedAt:now,
+            rows:pending.rows};
+          pending=null;
+          return completed;
+        }
+        return null;
+      }
+    };
+  }
+  // A matching *type* alone is never proof: we require the exact MAC the
+  // emitter reported via TRUTH BEGIN, a complete pre-run receiver baseline,
+  // a later LOG snapshot, and a genuinely new/reappearing log entry.
+  function matchWatchDetection(trial,before,after) {
+    if(!trial||!before||!after||!normalizeMac(trial._mac))return null;
+    if(!Number.isFinite(trial._startedAt)||
+       before.finishedAt>trial._startedAt||
+       after.requestedAt<trial._startedAt||
+       trial._startedAt-before.finishedAt>5000)return null;
+    var mac=normalizeMac(trial._mac);
+    var recent=(after.rows||[]).filter(function(x){
+      return x.mac===mac && x.state==='here';
+    }).filter(function(x){
+      var old=(before.rows||[]).find(function(y){
+        return y.mac===x.mac && y.type===x.type;
+      });
+      // Ignore an unchanged preexisting device; it might have been in the
+      // room before the test. Reappearance increments hits.
+      return !old || (x.hits>old.hits && old.state!=='KEPT');
+    });
+    if(!recent.length)return null;
+    var types=new Set(recent.map(function(x){return x.type;}));
+    if(types.size>1)return {ambiguous:true,mac:mac,types:Array.from(types)};
+    var item=recent[0];
+    return {observed:item.type,mac:item.mac,rssi:item.rssi,
+      hits:item.hits,when:item.when,requestedAt:after.requestedAt,
+      finishedAt:after.finishedAt};
+  }
   function status(row, catalog) {
     var emission = trim(row.emission).toLowerCase();
     var windowState = trim(row.window).toLowerCase();
@@ -150,6 +250,9 @@
     });
   }
   return {CSV_HEADER:CSV_HEADER,LABELS:LABELS,parseTruth:parseTruth,
+    normalizeMac:normalizeMac,parseWatchLogCount:parseWatchLogCount,
+    parseWatchLogRow:parseWatchLogRow,newWatchLogParser:newWatchLogParser,
+    matchWatchDetection:matchWatchDetection,
     status:status,score:score,makeTrial:makeTrial,applyEnd:applyEnd,
     exportCsv:exportCsv,parseCsv:parseCsv};
 });
