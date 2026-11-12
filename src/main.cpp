@@ -58,9 +58,12 @@ static void truth(const char* event, const Scenario* s, const char* status = "ok
 }
 
 
-// Each scenario gets a reproducible identity. Only explicit OUI-only
-// lab fixtures replace the local test MAC with a vendor-registered prefix.
-// Never alter eFuse or claim a real vendor-issued device identity.
+// Default identity is reproducible per chip and case. The 10 DJI + 27 other
+// named OUI-only Wi-Fi cases override the *temporary on-air AP MAC* with a
+// registered 24/28/36-bit manufacturer prefix and synthetic suffix. They
+// carry NO Remote ID and do not authenticate aircraft or vendor equipment.
+// Other cases retain local Wi-Fi or static-random BLE identities; no eFuse
+// identity is modified.
 static bool deriveIdentity(const Scenario* s, bool wifi, uint8_t out[6]) {
   if (!s) return false;
   size_t index = kScenarioCount;
@@ -70,8 +73,8 @@ static bool deriveIdentity(const Scenario* s, bool wifi, uint8_t out[6]) {
   g_radioIdentity = (uint32_t)index + 1u;
   SquachIdentity::derive(ESP.getEfuseMac(), index,
         wifi ? SquachIdentity::Radio::Wifi : SquachIdentity::Radio::Ble, out);
-  // Only selected OUI-only cases use allocated vendor prefixes.
-// Other Wi-Fi and BLE tests retain locally administered lab identities.
+  // Only the 37 explicit OUI-only Wi-Fi cases use registered prefixes.
+  // Other Wi-Fi cases retain LAA; BLE retains a static-random address.
   if (wifi && SquachDjiOuiLab::find(s->id)) {
     if (!SquachDjiOuiLab::apply(s->id,out)) return false;
   }
