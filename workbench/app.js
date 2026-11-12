@@ -9,9 +9,10 @@
   if(!core) throw new Error('Workbench core.js missing');
   function byId(id){var el=document.getElementById(id);if(!el)throw new Error('Missing '+id);return el;}
   var ids=['securityNotice','scoredCount','pendingCount','recall','precision','latency',
-    'runId','receiverBoard','receiverSha','emitterSha','emitState','emitConnect',
+    'runId','receiverBoard','receiverSha','emitterSha','applyShas','shaNotice',
+    'emitState','emitConnect',
     'emitDisconnect','caseSelect','caseDetails','duration','authorization','runCase',
-    'stopCase','emitLog','recvState','recvConnect','recvDisconnect','receiverBaud',
+    'stopCase','runFeedback','emitLog','recvState','recvConnect','recvDisconnect','receiverBaud',
     'recvLog','copyReceiver','autoLogState','autoDetectionFeed','pollNow',
     'trialSelect','trialDetails','emissionStatus','listenWindow',
     'observed','latencyMs','evidenceNotes','saveObservation','observationNotice',
@@ -27,6 +28,14 @@
   var epoch=0;
   var startingRun=false;
   var runToken=0; // STOP/disconnect cancels any outstanding LOG preflight
+  var runAwaitTimer=null;
+  var awaitingBegin=false;
+  var transmitting=false;
+  function runProgress(message){text('runFeedback',message);}
+  function cancelRunAck(){
+    if(runAwaitTimer!==null){clearTimeout(runAwaitTimer);runAwaitTimer=null;}
+    awaitingBegin=false;
+  }
   ui.runId.value=new Date().toISOString().slice(0,10)+'-session-01';
   function text(id,value){ui[id].textContent=String(value);}
   function notice(message,isError){
@@ -57,7 +66,12 @@
   function refreshMetric(){
     var m=core.score(trials,catalog);
     text('scoredCount',m.scored);
-    text('pendingCount',m.count.UNTESTED+' untested · '+m.count.EXCLUDED+' excluded');
+    var evidenced=trials.filter(function(t){
+      return t.emission==='ok'&&t.window==='complete'&&!!t.observed &&
+        core.status(t,catalog)==='UNTESTED';
+    }).length;
+    text('pendingCount',m.count.UNTESTED+' untested · '+m.count.EXCLUDED+
+      ' excluded'+(evidenced?' · '+evidenced+' detections awaiting firmware SHAs':''));
     text('recall',formatPct(m.recall));
     text('precision',formatPct(m.precision));
     text('latency',m.medianMs===null?'—':Math.round(m.medianMs)+' ms');
@@ -79,7 +93,14 @@
       addCell(row,t.id);addCell(row,(catalog[t.id]||{}).expected||'Unknown');
       addCell(row,t.observed||'—');addCell(row,t.emission||'—');addCell(row,t.window||'—');
       var td=document.createElement('td'),badge=document.createElement('span');
-      badge.className='result '+status;badge.textContent=status;td.appendChild(badge);row.appendChild(td);
+      badge.className='result '+status;badge.textContent=status;td.appendChild(badge);
+      var why=core.pendingReason(t,catalog);
+      if(why){
+        var reason=document.createElement('div');
+        reason.className='result-reason';reason.textContent=why;td.appendChild(reason);
+        row.title=why;
+      }
+      row.appendChild(td);
       addCell(row,t.latency_ms?String(t.latency_ms)+' ms':'—');
       ui.trialRows.appendChild(row);
     });
@@ -118,6 +139,10 @@
       ui.latencyMs.value=t.latency_ms||'';
       ui.evidenceNotes.value=t.notes||'';
     }
+    if(t && core.status(t,catalog)==='UNTESTED' && t.observed){
+      text('observationNotice','Receiver result recorded: '+t.observed+
+        '. '+core.pendingReason(t,catalog));
+    }
     updateButtons();
   }
   function updateButtons(){
@@ -136,8 +161,13 @@
     ui.receiverBaud.disabled=receiver||opening.receiver;
     ui.pollNow.disabled=!receiver;
     var duration=Number(ui.duration.value);
-    ui.runCase.disabled=!connected||startingRun||!catalog[ui.caseSelect.value]||
-      !ui.authorization.checked||!Number.isInteger(duration)||duration<3||duration>30;
+    ui.runCase.disabled=!connected||startingRun||awaitingBegin||transmitting||
+      !catalog[ui.caseSelect.value]||!ui.authorization.checked||
+      !Number.isInteger(duration)||duration<3||duration>30;
+    ui.runCase.textContent=startingRun?'Preparing receiver…':
+      awaitingBegin?'Waiting for emitter…':
+      transmitting?'Transmitting…':'Run selected case';
+    ui.applyShas.disabled=!(validSha(ui.receiverSha.value)&&validSha(ui.emitterSha.value));
     ui.stopCase.disabled=!connected;
     ui.saveObservation.disabled=!(selectedTrial>=0 && trials[selectedTrial]);
   }
