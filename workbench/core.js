@@ -147,6 +147,21 @@
     if (observed === 'NONE') return 'FN';
     return observed === expected ? 'TP' : 'WRONG';
   }
+  function pendingReason(row, catalog) {
+    var result=status(row,catalog);
+    if(result==='EXCLUDED')return 'Excluded: emission failed or listening window incomplete';
+    if(result!=='UNTESTED')return '';
+    if(trim(row.emission).toLowerCase()!=='ok')return 'Waiting for actual SquachEmit TRUTH END (ok)';
+    if(trim(row.window).toLowerCase()!=='complete')return 'Waiting for a verified complete receiver window';
+    if(!trim(row.observed))return 'No receiver observation recorded yet';
+    var receiver=HEX_SHA.test(trim(row.receiver_sha));
+    var emitter=HEX_SHA.test(trim(row.emitter_sha));
+    if(!receiver && !emitter)return 'Missing/invalid SquachWatch and SquachEmit firmware SHAs';
+    if(!receiver)return 'Missing/invalid SquachWatch firmware SHA';
+    if(!emitter)return 'Missing/invalid SquachEmit firmware SHA';
+    if(!catalog[trim(row.id)])return 'Unknown case ID';
+    return 'Incomplete trial evidence';
+  }
   function score(rows, catalog) {
     var count={TP:0,TN:0,FP:0,FN:0,WRONG:0,UNTESTED:0,EXCLUDED:0};
     var latency=[];
@@ -253,6 +268,6 @@
     normalizeMac:normalizeMac,parseWatchLogCount:parseWatchLogCount,
     parseWatchLogRow:parseWatchLogRow,newWatchLogParser:newWatchLogParser,
     matchWatchDetection:matchWatchDetection,
-    status:status,score:score,makeTrial:makeTrial,applyEnd:applyEnd,
+    status:status,pendingReason:pendingReason,score:score,makeTrial:makeTrial,applyEnd:applyEnd,
     exportCsv:exportCsv,parseCsv:parseCsv};
 });
