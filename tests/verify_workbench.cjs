@@ -59,7 +59,9 @@ assert.equal(pendingImported.length,1);
 assert.equal(pendingImported[0].emission,'',
  'pending internal UI state must export blank for Python score_trials.py');
 assert.equal(core.status(pendingImported[0],catalog),'UNTESTED');
-assert.throws(()=>core.parseCsv(pendingCsv.replace(',,incomplete',',pending,incomplete')),/Invalid emission/);
+const invalidPendingCsv=pendingCsv.replace(/(BLE-FLOCK-MFG),,/, '$1,pending,');
+assert.notEqual(invalidPendingCsv,pendingCsv);
+assert.throws(()=>core.parseCsv(invalidPendingCsv),/Invalid emission/);
 const parsed=core.parseCsv(csv);
 assert.equal(parsed.length,2);
 assert.equal(parsed[0].notes,chars.notes);
