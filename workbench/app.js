@@ -364,6 +364,7 @@
     }catch(e){append(role,'\n[serial read stopped: '+e.message+']\n');}
     finally{
       if(d.port===port){
+        if(role==='receiver')stopWatchPolling();
         d.port=null;
         try{await port.close();}catch(_){}
         updateButtons();
@@ -386,8 +387,10 @@
       var d=devices[role];d.port=port;d.baud=baud;d.buffer='';
       if(role==='emitter')epoch++;
       opening[role]=false;updateButtons();
-      append(role,'\n[connected at '+baud+' baud; no commands sent]\n');
+      append(role,'\n[connected at '+baud+' baud; '+
+        (role==='receiver'?'automatic LOG polling enabled':'no commands sent')+']\n');
       d.reading=readPort(role,port);
+      if(role==='receiver')startWatchPolling();
     }catch(e){
       opening[role]=false;
       if(port)try{await port.close();}catch(_){}
@@ -398,7 +401,9 @@
   async function disconnect(role){
     var d=devices[role],p=d.port;
     if(!p)return;
-    d.port=null;updateButtons();
+    d.port=null;
+    if(role==='receiver')stopWatchPolling();
+    updateButtons();
     try{if(d.reader)await d.reader.cancel();}catch(_){}
     try{if(d.reading)await d.reading;}catch(_){}
     try{await p.close();}catch(_){}
@@ -407,21 +412,41 @@
   }
   async function sendEmitter(command){
     var port=devices.emitter.port;
-    if(!port||!port.writable){notice('Connect SquachEmit before sending a command.',true);return;}
+    if(!port||!port.writable){notice('Connect SquachEmit before sending a command.',true);return false;}
     var writer=port.writable.getWriter();
     try{
       await writer.write(new TextEncoder().encode(command+'\n'));
       append('emitter','> '+command+'\n');
-    }catch(e){notice('Serial write failed: '+e.message,true);}
+      return true;
+    }catch(e){notice('Serial write failed: '+e.message,true);return false;}
     finally{try{writer.releaseLock();}catch(_){}}
   }
   async function run(){
     var c=catalog[ui.caseSelect.value],duration=Number(ui.duration.value);
-    if(!c||!ui.authorization.checked||!Number.isInteger(duration)||
+    if(startingRun||!c||!ui.authorization.checked||!Number.isInteger(duration)||
        duration<3||duration>30||!devices.emitter.port)return;
-    // Never mark detection from the user clicking RUN.
-    await sendEmitter('RUN '+c.id+' '+duration);
-    notice('RUN command sent. Trial appears only after actual emitter TRUTH BEGIN; verify physical receiver.',false);
+    startingRun=true;updateButtons();
+    try{
+      var receiver=devices.receiver;
+      if(receiver.port){
+        autoStatus('Taking fresh SquachWatch LOG baseline before RUN…');
+        var baseline=await requestWatchSnapshot();
+        if(!baseline){
+          notice('SquachWatch LOG baseline did not respond. Confirm its 2,000,000 baud port '+
+            'and reconnect, or disconnect the receiver for manual-only testing. RUN not sent.',true);
+          return;
+        }
+        receiver.preRun={id:c.id,snapshot:baseline,expiresAt:Date.now()+5000};
+      }else{
+        receiver.preRun=null;
+      }
+      // Never mark detection or emission from a button click. Only actual
+      // TRUTH BEGIN/END and a fresh receiver LOG can complete a scored hit.
+      var sent=await sendEmitter('RUN '+c.id+' '+duration);
+      if(!sent){receiver.preRun=null;return;}
+      notice('RUN sent. Awaiting emitter TRUTH BEGIN and fresh exact-MAC '+
+        (receiver.port?'SquachWatch LOG matches.':'manual receiver observation.'),false);
+    }finally{startingRun=false;updateButtons();}
   }
   function saveObservation(){
     var old=trials[selectedTrial];if(!old)return;
@@ -450,6 +475,7 @@
     if(trials.some(function(t,i){return i!==selectedTrial&&trialKey(t)===key;})){
       text('observationNotice','Duplicate run ID / receiver / case: this CSV would be rejected by score_trials.py.');return;
     }
+    result._manual=true; // future automated polling cannot overwrite a reviewed record
     trials[selectedTrial]=result;
     redrawTrials();selectTrial();
     var status=core.status(result,catalog);
@@ -502,6 +528,7 @@
   ui.recvDisconnect.addEventListener('click',function(){void disconnect('receiver');});
   ui.runCase.addEventListener('click',function(){void run();});
   ui.stopCase.addEventListener('click',function(){void sendEmitter('STOP');});
+  ui.pollNow.addEventListener('click',function(){void requestWatchSnapshot();});
   ui.trialSelect.addEventListener('change',selectTrial);
   ui.saveObservation.addEventListener('click',saveObservation);
   ui.copyReceiver.addEventListener('click',function(){
@@ -552,6 +579,7 @@
     notice('Local trial ledger cleared.',false);
   });
   window.addEventListener('beforeunload',function(){
+    stopWatchPolling();
     Object.keys(devices).forEach(function(role){var r=devices[role].reader;if(r)r.cancel().catch(function(){});});
   });
   redrawTrials();updateButtons();void loadCases();
