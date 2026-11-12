@@ -63,7 +63,9 @@ for(const required of [
   'navigator.serial.requestPort()','TRUTH BEGIN','core.makeTrial(',
   'core.applyEnd(','saveObservation','core.status(','core.exportCsv(',
   'core.parseCsv(','new TextDecoder','receiver raw log','no commands sent',
-  'window.confirm(','authorization.checked','runCase','stopCase']){
+  'window.confirm(','authorization.checked','runCase','stopCase',
+  'uniqueRunId()','t.seq!=null','old.seq==null?',
+  'Duplicate (run_id, receiver, case)']){
   assert.ok(app.toLowerCase().includes(required.toLowerCase()),'missing: '+required);
 }
 const html=fs.readFileSync('workbench/index.html','utf8');
