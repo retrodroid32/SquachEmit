@@ -100,7 +100,12 @@
   function exportCsv(rows) {
     var lines=[CSV_HEADER.join(',')];
     (rows||[]).forEach(function(r){
-      lines.push(CSV_HEADER.map(function(k){return csvEscape(r[k]);}).join(','));
+      lines.push(CSV_HEADER.map(function(k){
+        // Python score_trials.py accepts blank/ok/failed; pending is an
+        // internal UI state only, never a valid exported emission token.
+        return csvEscape(k==='emission' && trim(r[k]).toLowerCase()==='pending'
+          ? '' : r[k]);
+      }).join(','));
     });
     return lines.join('\r\n')+'\r\n';
   }
@@ -134,7 +139,7 @@
       if(cells.length!==header.length)throw new Error('CSV field count at row '+(i+2));
       var data={};
       CSV_HEADER.forEach(function(k){data[k]=trim(cells[header.indexOf(k)]);});
-      if(data.emission && !['ok','failed','pending'].includes(data.emission))
+      if(data.emission && !['ok','failed'].includes(data.emission))
         throw new Error('Invalid emission at row '+(i+2));
       if(data.window && !['complete','incomplete'].includes(data.window))
         throw new Error('Invalid window at row '+(i+2));
