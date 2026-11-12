@@ -37,7 +37,9 @@
         <div class="formrow"><label for="receiverBoard">SquachWatch receiver</label><select id="receiverBoard"><option value="CYD-2.8">CYD-2.8</option><option value="CYD-3.2">CYD-3.2</option></select></div>
         <div class="formrow"><label for="receiverSha">SquachWatch firmware SHA</label><input id="receiverSha" maxlength="40" spellcheck="false" placeholder="7–40 hexadecimal characters"></div>
         <div class="formrow"><label for="emitterSha">SquachEmit firmware SHA</label><input id="emitterSha" maxlength="40" spellcheck="false" placeholder="7–40 hexadecimal characters"></div>
-        <div class="footnote">A public version name alone does not uniquely identify a build. Enter the actual Git commit SHA from each device/build. Trials without both SHAs are not scored.</div>
+        <div class="footnote">Both fields need the actual Git commit SHA of the firmware flashed to that device (7–40 hexadecimal characters). The release version alone is not enough. <strong>Detected signals stay UNTESTED until both are provided.</strong> No firmware identity is guessed.</div>
+        <button id="applyShas" class="outlined full" type="button" disabled>Apply these firmware SHAs to existing session trials</button>
+        <p class="footnote" id="shaNotice" role="status">Enter both firmware SHAs to score confirmed observations. You can update today's existing trials without rerunning them.</p>
       </section>
 
       <section class="panel" aria-labelledby="emittertitle">
@@ -48,6 +50,7 @@
         <div class="formrow"><label for="duration">Transmit duration</label><div class="inline"><input id="duration" type="number" min="3" max="30" step="1" value="12"><span>seconds (3–30)</span></div></div>
         <label class="check"><input id="authorization" type="checkbox"> This is an authorized, controlled RF test. I understand vendor-OUI and model labels are synthetic and may be spoofed.</label>
         <div class="buttons wide"><button id="runCase" class="primary" disabled>Run selected case</button><button id="stopCase" class="danger" disabled>■ STOP</button></div>
+        <p class="footnote" id="runFeedback" role="status">One click sends RUN after a short receiver-baseline check; a receiver timeout cannot silently cancel transmission.</p>
         <label class="loglabel" for="emitLog">Transmitter serial log</label>
         <pre id="emitLog" class="terminal" aria-label="SquachEmit serial log">Connect to observe TRUTH BEGIN / END. Sending a RUN command does not imply successful emission.</pre>
       </section>
@@ -84,7 +87,7 @@
         <div class="buttons"><button id="importCsv" class="outlined">Import trial CSV</button><input type="file" id="csvFile" accept=".csv,text/csv" hidden><button id="exportCsv" class="primary">Export CSV</button><button id="clearTrials" class="danger">Clear session</button></div>
       </div>
       <div class="tablewrap"><table><thead><tr><th>CASE ID</th><th>EXPECTED</th><th>ACTUAL</th><th>TRANSMITTER</th><th>WINDOW</th><th>RESULT</th><th>LATENCY</th></tr></thead><tbody id="trialRows"><tr><td colspan="7" class="empty">No trials yet. Connect an emitter or import a trial CSV.</td></tr></tbody></table></div>
-      <p class="footnote">Automatic positives use the actual SquachWatch LOG table (type + exact MAC) and only score after a successful emitter END and a fresh pre-test baseline. Missing results, stale devices and ambiguous multiple types remain untested until reviewed. CSV columns match <code>tools/score_trials.py</code>: run ID, receiver, both SHAs, case, emission, listening window, observation, latency, notes. WRONG counts as both a false alarm and a missed target when calculating precision/recall. All data remains local to this page.</p>
+      <p class="footnote">The ledger distinguishes <strong>receiver detected</strong> from <strong>evidence eligible for scoring</strong>. If ACTUAL and EXPECTED match but RESULT is UNTESTED, look at the reason under the result—usually a missing firmware SHA. Automatic positives use the actual SquachWatch LOG table (type + exact MAC) and only score after a successful emitter END and a fresh pre-test baseline. Missing results, stale devices and ambiguous multiple types remain untested until reviewed. CSV columns match <code>tools/score_trials.py</code>: run ID, receiver, both SHAs, case, emission, listening window, observation, latency, notes. WRONG counts as both a false alarm and a missed target when calculating precision/recall. All data remains local to this page.</p>
     </section>
     <footer><span>SquachEmit Detection Workbench / Preview</span><span>No automatic transmit · No fabricated receiver hits · No cloud upload</span></footer>
   </main>
