@@ -236,7 +236,9 @@
       if(t.emission==='ok')finishAutoMatch(t);
       matchedLog(new Date(hit.finishedAt).toLocaleTimeString()+
         '  '+t.id+'  '+hit.observed+'  MAC '+hit.mac+
-        '  '+hit.rssi+' dBm  '+(t.emission==='ok'?'SCORED':'WAIT END'));
+        '  '+hit.rssi+' dBm  '+(t.emission==='ok'?
+          core.status(t,catalog)+' ('+(core.pendingReason(t,catalog)||'scored')+')':
+          'WAIT END'));
       change=true;
       break; // one receiver sighting belongs to one active test
     }
@@ -313,6 +315,8 @@
         runId:uniqueRunId(),receiver:ui.receiverBoard.value,
         receiverSha:ui.receiverSha.value,emitterSha:ui.emitterSha.value
       },catalog);
+      cancelRunAck();
+      transmitting=true;
       t._epoch=epoch;
       t._receiverSession=devices.receiver.port?devices.receiver.session:-1;
       t._mac=core.normalizeMac(event.mac);
@@ -321,12 +325,16 @@
       // UI-controlled runs have a dedicated LOG preflight baseline.
       // Externally started tests can use a recently completed poll.
       var ready=receiver.preRun;
+      // A UI RUN with an explicitly missing baseline must NOT fall back to
+      // an unrelated older snapshot, which could fabricate a match.
       t._baseline=(ready && ready.id===event.id &&
         ready.expiresAt>=t._startedAt ? ready.snapshot :
-        receiver.lastSnapshot && receiver.lastSnapshot.finishedAt<=t._startedAt &&
+        !ready && receiver.lastSnapshot &&
+        receiver.lastSnapshot.finishedAt<=t._startedAt &&
         t._startedAt-receiver.lastSnapshot.finishedAt<=5000 ?
         receiver.lastSnapshot : null);
       receiver.preRun=null;
+      runProgress('TRANSMITTING confirmed by SquachEmit TRUTH BEGIN · '+event.id);
       trials.push(t);
       selectedTrial=trials.length-1;
       redrawTrials();selectTrial();
@@ -348,6 +356,11 @@
           }
           break;
         }
+      }
+      if(event.event==='END'||event.event==='ERROR'){
+        cancelRunAck();transmitting=false;
+        runProgress('Emitter '+event.event+' ('+(event.status||'unknown')+
+          '). '+(found?'Trial updated.':'No matching BEGIN record.'));
       }
       if(!found && event.event==='ERROR'){
         // Error without BEGIN is an actual recorded emission failure,
@@ -422,7 +435,7 @@
         throw new Error('Unsupported baud rate.');
       await port.open({baudRate:baud});
       var d=devices[role];d.port=port;d.baud=baud;d.buffer='';
-      if(role==='emitter')epoch++;
+      if(role==='emitter'){epoch++;transmitting=false;cancelRunAck();}
       else d.session++;
       opening[role]=false;updateButtons();
       append(role,'\n[connected at '+baud+' baud; '+
@@ -441,7 +454,11 @@
     if(!p)return;
     d.port=null;
     if(role==='receiver')stopWatchPolling();
-    if(role==='emitter'){runToken++;devices.receiver.preRun=null;}
+    if(role==='emitter'){
+      runToken++;devices.receiver.preRun=null;
+      transmitting=false;cancelRunAck();
+      runProgress('Transmitter disconnected. Connect again to run a case.');
+    }
     updateButtons();
     try{if(d.reader)await d.reader.cancel();}catch(_){}
     try{if(d.reading)await d.reading;}catch(_){}
