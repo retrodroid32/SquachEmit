@@ -126,6 +126,21 @@
     ui.stopCase.disabled=!connected;
     ui.saveObservation.disabled=!(selectedTrial>=0 && trials[selectedTrial]);
   }
+  function uniqueRunId(){
+    // The existing Python scorer requires (run_id, receiver, case ID) unique.
+    // Each repeated physical trial therefore receives its own run suffix.
+    var base=ui.runId.value.trim()||'workbench-session';
+    var index=trials.length+1;
+    var id=base+'-trial-'+String(index).padStart(4,'0');
+    while(trials.some(function(t){return t.run_id===id;})){
+      index++;
+      id=base+'-trial-'+String(index).padStart(4,'0');
+    }
+    return id;
+  }
+  function trialKey(t){
+    return [t.run_id,t.receiver,t.id].join('\u0000');
+  }
   function recordEmitter(line){
     var event=core.parseTruth(line);
     if(!event || !catalog[event.id])return;
@@ -133,7 +148,7 @@
       if(trials.some(function(t){return t.seq===event.seq&&t.id===event.id&&
         t._epoch===epoch;}))return;
       var t=core.makeTrial(event,{
-        runId:ui.runId.value,receiver:ui.receiverBoard.value,
+        runId:uniqueRunId(),receiver:ui.receiverBoard.value,
         receiverSha:ui.receiverSha.value,emitterSha:ui.emitterSha.value
       },catalog);
       t._epoch=epoch;
@@ -151,7 +166,7 @@
         // Error without BEGIN is an actual recorded emission failure,
         // not an invented received detection.
         var row=core.makeTrial({event:'BEGIN',id:event.id,seq:event.seq,ms:event.ms},
-          {runId:ui.runId.value,receiver:ui.receiverBoard.value,
+          {runId:uniqueRunId(),receiver:ui.receiverBoard.value,
            receiverSha:ui.receiverSha.value,emitterSha:ui.emitterSha.value},catalog);
         row.emission='failed';row.window='incomplete';row._epoch=epoch;
         row.notes='Emitter reported ERROR before TRUTH BEGIN; exclude from RF accuracy.';
@@ -258,7 +273,9 @@
   function saveObservation(){
     var old=trials[selectedTrial];if(!old)return;
     var result=Object.assign({},old,{
-      run_id:ui.runId.value.trim()||old.run_id,
+      // Preserve the unique per-trial run ID rather than replacing it with
+      // the session prefix when saving an observation.
+      run_id:old.run_id,
       receiver:ui.receiverBoard.value,
       receiver_sha:ui.receiverSha.value.trim()||old.receiver_sha,
       emitter_sha:ui.emitterSha.value.trim()||old.emitter_sha,
@@ -275,6 +292,10 @@
       if(!isFinite(ms)||ms<0||core.status(result,catalog)!=='TP'){
         text('observationNotice','Latency must be a nonnegative number on a true-positive trial with both firmware SHAs.');return;
       }
+    }
+    var key=trialKey(result);
+    if(trials.some(function(t,i){return i!==selectedTrial&&trialKey(t)===key;})){
+      text('observationNotice','Duplicate run ID / receiver / case: this CSV would be rejected by score_trials.py.');return;
     }
     trials[selectedTrial]=result;
     redrawTrials();selectTrial();
@@ -349,10 +370,21 @@
     try{
       if(f.size>4000000)throw new Error('File exceeds 4 MB.');
       var imported=core.parseCsv(await f.text());
+      var seen=new Set(trials.map(trialKey));
+      var labels=new Set(cases.map(function(c){return c.expected;})
+        .concat(['NONE','ALPR','CAMERA','DEAUTH','EVILTWIN','RING','AXON']));
       imported.forEach(function(row){
         if(!catalog[row.id])throw new Error('Unknown case: '+row.id);
         if(!['CYD-2.8','CYD-3.2'].includes(row.receiver))
           throw new Error('Unknown receiver board');
+        if(!row.run_id)throw new Error('A run ID is required');
+        if(row.observed&&!labels.has(row.observed))
+          throw new Error('Unknown observed classification: '+row.observed);
+        if(row.latency_ms&&core.status(row,catalog)!=='TP')
+          throw new Error('Latency is allowed only on complete true-positive trials');
+        var key=trialKey(row);
+        if(seen.has(key))throw new Error('Duplicate (run_id, receiver, case): '+row.id);
+        seen.add(key);
       });
       if(imported.length+trials.length>5000)throw new Error('Maximum 5,000 trials.');
       trials.push.apply(trials,imported);
