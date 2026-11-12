@@ -22,7 +22,7 @@
   var devices={emitter:{port:null,reader:null,reading:null,buffer:'',log:'',baud:115200},
                receiver:{port:null,reader:null,reading:null,buffer:'',log:'',baud:2000000,
                  parser:core.newWatchLogParser(),lastSnapshot:null,pending:null,
-                 pollTimer:null,preRun:null,autoLog:''}};
+                 pollTimer:null,preRun:null,autoLog:'',session:0}};
   var opening={emitter:false,receiver:false};
   var epoch=0;
   var startingRun=false;
@@ -189,8 +189,9 @@
     var change=false;
     for(var i=trials.length-1;i>=0;i--){
       var t=trials[i];
-      if(t._epoch!==epoch || !t._baseline || !t._mac ||
-         t._autoHit || t._manual || t.emission==='failed')continue;
+      if(t._epoch!==epoch || t._receiverSession!==d.session ||
+         !t._baseline || !t._mac || t._autoHit || t._manual ||
+         t.emission==='failed')continue;
       if(t._endedAt && snapshot.requestedAt>t._endedAt+5000)continue;
       var hit=core.matchWatchDetection(t,t._baseline,snapshot);
       if(!hit)continue;
@@ -283,6 +284,7 @@
         receiverSha:ui.receiverSha.value,emitterSha:ui.emitterSha.value
       },catalog);
       t._epoch=epoch;
+      t._receiverSession=devices.receiver.port?devices.receiver.session:-1;
       t._mac=core.normalizeMac(event.mac);
       t._startedAt=Date.now();
       var receiver=devices.receiver;
@@ -387,6 +389,7 @@
       await port.open({baudRate:baud});
       var d=devices[role];d.port=port;d.baud=baud;d.buffer='';
       if(role==='emitter')epoch++;
+      else d.session++;
       opening[role]=false;updateButtons();
       append(role,'\n[connected at '+baud+' baud; '+
         (role==='receiver'?'automatic LOG polling enabled':'no commands sent')+']\n');
