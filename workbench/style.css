@@ -70,6 +70,10 @@ button.full{width:100%}
 #autoDetectionFeed{min-height:84px;max-height:150px;font-size:11px;color:#7fe5b6}
 #pollNow{white-space:nowrap}
 @media(max-width:590px){.auto-log{grid-template-columns:1fr}#pollNow{width:100%}}
+#runFeedback{padding:9px 12px;border:1px solid #355b71;border-radius:8px;background:#0d2131;margin:0 0 16px;min-height:38px;color:#abcdd6}
+#shaNotice{padding:7px 10px;border-left:3px solid #ffbc75;background:#e8b76509;color:#dfd2ae}
+.result-reason{font-size:10px;line-height:1.4;color:#ffc58c;margin-top:4px;max-width:220px;white-space:normal}
+tr[title]{cursor:pointer}
 .results{margin-top:18px}
 .resultshead{display:flex;align-items:center;justify-content:space-between;gap:20px;margin-bottom:18px;flex-wrap:wrap}
 .resultshead .mini{margin-bottom:5px}
