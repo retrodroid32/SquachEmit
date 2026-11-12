@@ -112,6 +112,17 @@ Coverage notes: [original 95-case detection matrix](docs/DETECTION_MATRIX_95.md)
 
 **Interpretation matters:** A generic Bluetooth serial module is not necessarily a card skimmer. A Meta company ID is not proof of camera glasses. The generic Eddystone UUID `0xFEAA` alone is **not** proof of a Google tracker. Negative cases exist to catch such false positives.
 
+## Detection Workbench (separate development PR)
+
+The [web-based Detection Workbench](https://retrodroid32.github.io/SquachEmit/workbench/)
+pairs **SquachEmit serial TRUTH BEGIN/END** with actual, separately confirmed
+**SquachWatch observations**. It has independent Web Serial connections for
+both devices, manual receiver evidence recording, reproducible TP/TN/FP/FN
+scoring, and CSV import/export compatible with `tools/score_trials.py`.
+**It never claims that transmitter intent is proof of receiver detection.**
+This UI is under development in PR #36 and will not appear on the live
+installer until approved and deployed. See [setup and limitations](docs/DETECTION_WORKBENCH.md).
+
 ## Running a test
 
 Select a profile on the touchscreen or use the **Serial Test Console** in the web installer:
