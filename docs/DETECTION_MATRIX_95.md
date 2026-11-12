@@ -1,4 +1,11 @@
-# SquachEmit: SquachWatch detection matrix (95 on-air cases)
+# SquachEmit: historical SquachWatch detection matrix (95 on-air cases)
+
+**Historical v1.0.0 snapshot; not current v1.1.0 behavior.**
+Current public firmware has 172 cases, including **37 explicit on-air
+manufacturer-OUI Wi-Fi beacon tests** (10 DJI + 27 other UAS-related /24,
+/28 and /36 allocations). Other cases use locally administered Wi-Fi or
+static-random BLE identities. An OUI is only a spoofable vendor hint,
+never evidence of real equipment, exact drone model, flight or Remote ID.
 
 Source comparison: SquachWatch-CYD `src/signatures.cpp` and
 `docs/LAB_V141_SOI_FULL_HWTEST.md`, inspected 2026-11-10.
@@ -12,8 +19,9 @@ SSIDs, Hak5 Pineapple Pager exact SSIDs and negatives, Wi-Fi channels
 
 ## Important interpretation
 
-These transmit ordinary BLE legacy advertisements and ESP32 Wi-Fi SoftAP
-beacons only, with per-case locally-administered synthetic MAC addresses.
+The original 95 cases transmitted ordinary BLE legacy advertisements and
+Wi-Fi SoftAP beacons with synthetic locally administered MAC addresses.
+The **172-case public v1.1.0** has 37 exceptions noted above.
 **Detection of a marker does not authenticate a product or imply criminal
 activity.** Generic serial modules are not confirmed skimmers. Meta and
 Snap company IDs are not proof of smart glasses. The generic Eddystone
@@ -23,9 +31,11 @@ counts.
 
 ## Other SquachWatch detections: not supported by on-air transmitter
 
-- Wi-Fi vendor OUI (ALPR/Motorola/Genetec, Ring, cameras, DJI/Autel and
-  more): synthetic LAA MAC addresses cannot validly prove an IEEE OUI.
-  Use offline frames and receiver fixture tests, **not forged vendor MACs**.
+- Historical v1.0.0 did not contain on-air manufacturer-OUI cases.
+  Current v1.1.0 explicitly emits only 37 named UAS/vendor Wi-Fi beacons
+  with registered prefixes and synthetic suffixes for OUI-only tests;
+  other vendor families remain offline-only fixtures. These prefixes
+  do not authenticate any manufacturer or aircraft.
 - Pwnagotchi vendor-IE handshake counter, NAN Remote ID, Wi-Fi deauth
   threshold and evil-twin correlation require different 802.11 frames or
   multiple senders/observations; existing test/offline_vectors.json covers
@@ -41,12 +51,13 @@ counts.
 ## Hardware gate
 
 1. Use the web installer `?lab=1` on the CYD 3.2 ST7798 board.
-2. Check banner reports 95 cases, no touch/display/color regression.
+2. Check 95 cases only on the archived v1.0.0 baseline, or 172 on
+   current v1.1.0, including its smooth-touch and TX-time editor.
 3. Exercise representative BLE, Wi-Fi and Remote ID positives and negatives
    against a separate SquachWatch 2.8 or 3.2 receiver.
 4. Check per-case MACs, STOP and expiry, roundtrip results and frame rate.
-5. Run SUITE only when attended: 95 tests x 12s plus gaps can take
-   approximately 23 minutes; interrupt with STOP as needed.
+5. Run SUITE only when attended; the case count and per-case duration
+   differ by release. Interrupt with STOP as needed.
 6. Physical RF validation is **not** supplied by CI. Do not merge firmware
    unless explicitly approved by the owner.
 
