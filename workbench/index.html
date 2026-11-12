@@ -1,0 +1,89 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#0b1120">
+  <meta name="description" content="SquachEmit Detection Workbench: pair transmitter truth with independently observed SquachWatch detections.">
+  <title>SquachEmit // Detection Workbench</title>
+  <link rel="stylesheet" href="./style.css">
+  <script src="./core.js" defer></script>
+  <script src="./app.js" defer></script>
+</head>
+<body>
+  <header class="topbar">
+    <a class="brand" href="../"><span class="mark">◈</span> SQUACH<span>EMIT</span></a>
+    <div class="product-tag">DETECTION <b>WORKBENCH</b> <span class="tag">LAB / V1</span></div>
+    <nav><a href="../">Firmware Installer</a><a href="https://github.com/retrodroid32/SquachEmit" target="_blank" rel="noopener noreferrer">Source</a></nav>
+  </header>
+  <main>
+    <section class="intro">
+      <div class="eyebrow">RECEIVER ACCURACY // CONTROLLED RF TESTING</div>
+      <h1>Emit. Observe. <em>Verify.</em></h1>
+      <p>Coordinate SquachEmit test cases with independently observed SquachWatch detections. Transmitter logs are <b>intent only</b>; no case counts as a receiver hit until you verify it.</p>
+      <div class="callout" id="securityNotice" role="status">All data stays in your browser until you export it. No device connection or transmission occurs automatically. Use only equipment you control or have permission to test.</div>
+    </section>
+    <section class="metrics" aria-label="Trial metrics">
+      <div class="metric"><div class="mini">VALID OBSERVATIONS</div><strong id="scoredCount">0</strong><small id="pendingCount">0 untested · 0 excluded</small></div>
+      <div class="metric"><div class="mini">RECALL / DETECTION</div><strong id="recall">—</strong><small>Confirmed positives only</small></div>
+      <div class="metric"><div class="mini">PRECISION</div><strong id="precision">—</strong><small>Wrong classes count as false alarms</small></div>
+      <div class="metric"><div class="mini">MEDIAN LATENCY</div><strong id="latency">—</strong><small>Reported TP latency only</small></div>
+    </section>
+
+    <div class="workspace">
+      <section class="panel" aria-labelledby="setuptitle">
+        <div class="sectionhead"><span class="num">01</span><div><h2 id="setuptitle">Session setup</h2><p>Keep firmware IDs with every scored observation.</p></div></div>
+        <div class="formrow"><label for="runId">Run ID</label><input id="runId" autocomplete="off" maxlength="80" placeholder="2026-11-11-test-01"></div>
+        <div class="formrow"><label for="receiverBoard">SquachWatch receiver</label><select id="receiverBoard"><option value="CYD-2.8">CYD-2.8</option><option value="CYD-3.2">CYD-3.2</option></select></div>
+        <div class="formrow"><label for="receiverSha">SquachWatch firmware SHA</label><input id="receiverSha" maxlength="40" spellcheck="false" placeholder="7–40 hexadecimal characters"></div>
+        <div class="formrow"><label for="emitterSha">SquachEmit firmware SHA</label><input id="emitterSha" maxlength="40" spellcheck="false" placeholder="7–40 hexadecimal characters"></div>
+        <div class="footnote">A public version name alone does not uniquely identify a build. Enter the actual Git commit SHA from each device/build. Trials without both SHAs are not scored.</div>
+      </section>
+
+      <section class="panel" aria-labelledby="emittertitle">
+        <div class="sectionhead"><span class="num">02</span><div><h2 id="emittertitle">Transmitter</h2><p>SquachEmit · Web Serial · 115,200 baud</p></div></div>
+        <div class="connection"><span id="emitState" class="state">DISCONNECTED</span><div class="buttons"><button id="emitConnect" class="outlined">Connect</button><button id="emitDisconnect" disabled>Disconnect</button></div></div>
+        <div class="formrow"><label for="caseSelect">Test scenario</label><select id="caseSelect"><option value="">Loading the 172-case catalog…</option></select></div>
+        <div id="caseDetails" class="casebox">Choose a case to inspect its expected classification.</div>
+        <div class="formrow"><label for="duration">Transmit duration</label><div class="inline"><input id="duration" type="number" min="3" max="30" step="1" value="12"><span>seconds (3–30)</span></div></div>
+        <label class="check"><input id="authorization" type="checkbox"> This is an authorized, controlled RF test. I understand vendor-OUI and model labels are synthetic and may be spoofed.</label>
+        <div class="buttons wide"><button id="runCase" class="primary" disabled>Run selected case</button><button id="stopCase" class="danger" disabled>■ STOP</button></div>
+        <label class="loglabel" for="emitLog">Transmitter serial log</label>
+        <pre id="emitLog" class="terminal" aria-label="SquachEmit serial log">Connect to observe TRUTH BEGIN / END. Sending a RUN command does not imply successful emission.</pre>
+      </section>
+
+      <section class="panel" aria-labelledby="receivertitle">
+        <div class="sectionhead"><span class="num">03</span><div><h2 id="receivertitle">Receiver evidence</h2><p>SquachWatch · Web Serial · typically 2,000,000 baud</p></div></div>
+        <div class="connection"><span id="recvState" class="state">DISCONNECTED</span><div class="buttons"><button id="recvConnect" class="outlined">Connect</button><button id="recvDisconnect" disabled>Disconnect</button></div></div>
+        <div class="formrow"><label for="receiverBaud">Receiver baud</label><select id="receiverBaud"><option value="2000000">2,000,000 (CYD default)</option><option value="115200">115,200</option><option value="921600">921,600</option><option value="1000000">1,000,000</option></select></div>
+        <div class="footnote">Receiver output is preserved for evidence. The workbench deliberately does not guess an alert from unknown serial strings. Confirm the actual event using the SquachWatch display or LOG screen.</div>
+        <label class="loglabel" for="recvLog">Receiver serial log</label>
+        <pre id="recvLog" class="terminal" aria-label="SquachWatch serial log">No receiver connected. Review the physical SquachWatch UI and logs for each case.</pre>
+        <button id="copyReceiver" class="outlined full">Copy receiver log</button>
+      </section>
+
+      <section class="panel" aria-labelledby="recordtitle">
+        <div class="sectionhead"><span class="num">04</span><div><h2 id="recordtitle">Verify an observation</h2><p>Count only evidence confirmed by the tester.</p></div></div>
+        <div class="formrow"><label for="trialSelect">Recorded emitter trial</label><select id="trialSelect"><option value="">No TRUTH BEGIN observed yet</option></select></div>
+        <div id="trialDetails" class="casebox">A trial is created only when SquachEmit emits a valid TRUTH BEGIN record.</div>
+        <div class="formrow"><label for="emissionStatus">Emission result</label><select id="emissionStatus"><option value="">Not established</option><option value="ok">Emitter reports ended normally</option><option value="failed">Emitter failed / stopped / interrupted</option></select></div>
+        <div class="formrow"><label for="listenWindow">Receiver listening window</label><select id="listenWindow"><option value="">Not verified</option><option value="complete">Complete verified window</option><option value="incomplete">Incomplete / interrupted — exclude</option></select></div>
+        <div class="formrow"><label for="observed">SquachWatch observed classification</label><select id="observed"><option value="">Not observed / not evaluated</option></select></div>
+        <div class="formrow"><label for="latencyMs">Latency to first confirmed hit</label><div class="inline"><input type="number" id="latencyMs" min="0" step="1" placeholder="Optional, TP only"><span>milliseconds</span></div></div>
+        <div class="formrow"><label for="evidenceNotes">Observation notes</label><textarea id="evidenceNotes" rows="3" maxlength="700" placeholder="Where in the receiver log? Evidence code, confidence, missing scans, interference…"></textarea></div>
+        <button id="saveObservation" class="primary full" disabled>Save verified observation</button>
+        <p class="footnote" id="observationNotice" role="status">Use NONE only when a complete listening window confirmed no matching receiver event.</p>
+      </section>
+    </div>
+
+    <section class="panel results">
+      <div class="resultshead"><div><div class="mini">05 / RECORDS</div><h2>Trial ledger</h2><p>Unverified trials never inflate performance metrics.</p></div>
+        <div class="buttons"><button id="importCsv" class="outlined">Import trial CSV</button><input type="file" id="csvFile" accept=".csv,text/csv" hidden><button id="exportCsv" class="primary">Export CSV</button><button id="clearTrials" class="danger">Clear session</button></div>
+      </div>
+      <div class="tablewrap"><table><thead><tr><th>CASE ID</th><th>EXPECTED</th><th>ACTUAL</th><th>TRANSMITTER</th><th>WINDOW</th><th>RESULT</th><th>LATENCY</th></tr></thead><tbody id="trialRows"><tr><td colspan="7" class="empty">No trials yet. Connect an emitter or import a trial CSV.</td></tr></tbody></table></div>
+      <p class="footnote">CSV columns match <code>tools/score_trials.py</code>: run ID, receiver, both SHAs, case, emission, listening window, observation, latency, notes. WRONG counts as both a false alarm and a missed target when calculating precision/recall. All data remains local to this page.</p>
+    </section>
+    <footer><span>SquachEmit Detection Workbench / Preview</span><span>No automatic transmit · No fabricated receiver hits · No cloud upload</span></footer>
+  </main>
+</body>
+</html>
