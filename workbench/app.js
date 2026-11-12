@@ -311,7 +311,11 @@
           found=true;
           trials[i]._endedAt=Date.now();
           if(trials[i].emission==='failed')trials[i].window='incomplete';
-          else finishAutoMatch(trials[i]);
+          else if(finishAutoMatch(trials[i])){
+            matchedLog(new Date().toLocaleTimeString()+'  '+trials[i].id+
+              '  FINAL '+core.status(trials[i],catalog)+
+              '  receiver '+trials[i].observed+' · emitter END ok');
+          }
           break;
         }
       }
