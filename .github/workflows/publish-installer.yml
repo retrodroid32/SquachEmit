@@ -4,6 +4,8 @@ on:
     branches: [main]
     paths:
       - 'web-installer/**'
+      - 'workbench/**'
+      - 'tests/cases.json'
       - 'tools/build_installer_site.py'
       - 'tools/firmware_build_notes.json'
       - 'tools/active_firmware_profile.json'
