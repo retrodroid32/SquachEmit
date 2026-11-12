@@ -154,6 +154,122 @@
   function trialKey(t){
     return [t.run_id,t.receiver,t.id].join('\u0000');
   }
+  function autoStatus(message) {
+    text('autoLogState',message);
+  }
+  function matchedLog(message) {
+    var d=devices.receiver;
+    d.autoLog=(d.autoLog+message+'\n').slice(-9000);
+    ui.autoDetectionFeed.textContent=d.autoLog;
+    ui.autoDetectionFeed.scrollTop=ui.autoDetectionFeed.scrollHeight;
+  }
+  function finishAutoMatch(t) {
+    if(!t._autoHit || t._manual || t.emission!=='ok')return false;
+    t.observed=t._autoHit.observed;
+    t.window='complete'; // one independently observed hit is enough for a positive
+    t.latency_ms=''; // the two device clocks are NOT synchronized
+    t.notes='AUTO SquachWatch LOG: fresh exact MAC '+t._autoHit.mac+
+      ', class '+t._autoHit.observed+', RSSI '+t._autoHit.rssi+
+      ' dBm, hits '+t._autoHit.hits+', receiver snapshot '+new Date(t._autoHit.finishedAt).toISOString()+
+      '. Emission END ok reported; polling cadence is not precise detection latency.';
+    return true;
+  }
+  function onWatchSnapshot(snapshot) {
+    var d=devices.receiver;
+    d.lastSnapshot=snapshot;
+    autoStatus('AUTO LOG ACTIVE · '+snapshot.rows.length+' receiver rows · latest snapshot '+
+      new Date(snapshot.finishedAt).toLocaleTimeString()+' · polling every 1.5 s');
+    if(d.pending){
+      var ready=d.pending;d.pending=null;
+      clearTimeout(ready.timeout);
+      ready.resolve(snapshot);
+    }
+    var change=false;
+    for(var i=trials.length-1;i>=0;i--){
+      var t=trials[i];
+      if(t._epoch!==epoch || !t._baseline || !t._mac ||
+         t._autoHit || t._manual || t.emission==='failed')continue;
+      if(t._endedAt && snapshot.requestedAt>t._endedAt+5000)continue;
+      var hit=core.matchWatchDetection(t,t._baseline,snapshot);
+      if(!hit)continue;
+      if(hit.ambiguous){
+        autoStatus('AMBIGUOUS: '+hit.mac+' appeared under multiple classifications; inspect LOG manually.');
+        continue;
+      }
+      t._autoHit=hit;
+      t.observed=hit.observed;
+      t.notes='SquachWatch matched '+hit.mac+' as '+hit.observed+
+        ' in a fresh LOG snapshot. Awaiting emitter END for scoring.';
+      if(t.emission==='ok')finishAutoMatch(t);
+      matchedLog(new Date(hit.finishedAt).toLocaleTimeString()+
+        '  '+t.id+'  '+hit.observed+'  MAC '+hit.mac+
+        '  '+hit.rssi+' dBm  '+(t.emission==='ok'?'SCORED':'WAIT END'));
+      change=true;
+      break; // one receiver sighting belongs to one active test
+    }
+    if(change){
+      redrawTrials();selectTrial();
+      notice('SquachWatch automatically logged a fresh exact-MAC detection. '+
+        'Only confirmed emitter END can complete the score.',false);
+    }
+  }
+  function onWatchLine(line) {
+    var d=devices.receiver;
+    var snapshot=d.parser.read(line,Date.now());
+    if(snapshot)onWatchSnapshot(snapshot);
+  }
+  function stopWatchPolling() {
+    var d=devices.receiver;
+    if(d.pollTimer!==null){clearInterval(d.pollTimer);d.pollTimer=null;}
+    d.parser.cancel();
+    if(d.pending){
+      var pending=d.pending;d.pending=null;
+      clearTimeout(pending.timeout);
+      pending.resolve(null);
+    }
+    d.lastSnapshot=null;
+    d.preRun=null;
+    autoStatus('Receiver LOG polling stopped. Reconnect SquachWatch to resume automatic matching.');
+  }
+  async function requestWatchSnapshot() {
+    var d=devices.receiver;
+    if(!d.port||!d.port.writable)return null;
+    if(d.pending)return d.pending.promise;
+    var requestedAt=Date.now();
+    if(!d.parser.start(requestedAt))return null;
+    var pending={promise:null,resolve:null,timeout:null};
+    pending.promise=new Promise(function(resolve){pending.resolve=resolve;});
+    d.pending=pending;
+    pending.timeout=setTimeout(function(){
+      if(d.pending===pending){
+        d.pending=null;d.parser.cancel();
+        autoStatus('LOG response timed out. Confirm SquachWatch serial baud and connection.');
+        pending.resolve(null);
+      }
+    },3800);
+    try{
+      var writer=d.port.writable.getWriter();
+      try{await writer.write(new TextEncoder().encode('LOG\n'));}
+      finally{writer.releaseLock();}
+    }catch(e){
+      if(d.pending===pending){
+        d.pending=null;d.parser.cancel();clearTimeout(pending.timeout);
+        pending.resolve(null);
+      }
+      autoStatus('Cannot request LOG from SquachWatch: '+e.message);
+    }
+    return pending.promise;
+  }
+  function startWatchPolling() {
+    var d=devices.receiver;
+    stopWatchPolling();
+    // Explicitly connected port is the only trigger. No radio commands here.
+    autoStatus('Connected. Requesting the initial SquachWatch LOG baseline…');
+    void requestWatchSnapshot();
+    d.pollTimer=setInterval(function(){
+      if(d.port && !d.pending)void requestWatchSnapshot();
+    },1500);
+  }
   function recordEmitter(line){
     var event=core.parseTruth(line);
     if(!event || !catalog[event.id])return;
