@@ -69,6 +69,70 @@ assert.equal(parsed[0].id,'BLE-FLOCK-MFG');
 assert.equal(parsed[1].observed,'NONE');
 assert.throws(()=>core.parseCsv('bad,header\n1,2\n'),/Missing CSV column/);
 assert.throws(()=>core.parseCsv(csv.replace('emission','oops')),/Missing CSV column/);
+// Actual SquachWatch master LOG command response, not arbitrary debug-text guesses.
+assert.equal(core.parseWatchLogCount('[log] 2 rows, newest first'),2);
+assert.equal(core.parseWatchLogCount('[log] 0 rows, newest first'),0);
+assert.equal(core.parseWatchLogCount('[frame] ble 20, det 1'),null);
+assert.equal(core.parseWatchLogCount('[log] 999 rows, newest first'),null);
+const row=core.parseWatchLogRow('0,DRONE,04:a8:5a:12:34:56,-53,1,here,+1:04');
+assert.equal(row.type,'DRONE');
+assert.equal(row.mac,'04:A8:5A:12:34:56');
+assert.equal(row.rssi,-53);
+assert.equal(core.parseWatchLogRow('0,DRONE,not-a-mac,-53,1,here,+1:04'),null);
+assert.equal(core.parseWatchLogRow('0,UNKNOWN,04:a8:5a:12:34:56,-53,1,here,+1:04'),null);
+assert.equal(core.parseWatchLogRow('0,EVIL TWIN,04:a8:5a:12:34:56,-53,1,here,+1:04').type,'EVILTWIN');
+const snapParser=core.newWatchLogParser();
+assert.equal(snapParser.start(950),true);
+assert.equal(snapParser.start(951),false,'overlapping LOG commands must not mix');
+assert.equal(snapParser.read('[log] 2 rows, newest first',960),null);
+assert.equal(snapParser.read('row,type,mac,rssi,hits,state,when',965),null);
+assert.equal(snapParser.read('0,DRONE,04:a8:5a:12:34:56,-53,1,here,+1:04',970),null);
+const after=snapParser.read('1,FLOCK,02:11:22:33:44:55,-81,2,here,+1:09',985);
+assert.equal(after.requestedAt,950);
+assert.equal(after.finishedAt,985);
+assert.equal(after.rows.length,2);
+assert.equal(snapParser.waiting(),false);
+assert.equal(snapParser.start(1050),true);
+snapParser.read('[log] 0 rows, newest first',1055);
+const zero=snapParser.read('row,type,mac,rssi,hits,state,when',1060);
+assert.equal(zero.rows.length,0);
+const matchingTrial={_mac:'04:a8:5a:12:34:56',_startedAt:1100};
+const baseline={requestedAt:990,finishedAt:1000,rows:[]};
+const positive={requestedAt:1150,finishedAt:1180,rows:[row]};
+const hit=core.matchWatchDetection(matchingTrial,baseline,positive);
+assert.equal(hit.observed,'DRONE');
+assert.equal(hit.mac,'04:A8:5A:12:34:56');
+assert.equal(core.matchWatchDetection(matchingTrial,baseline,
+  {...positive,rows:[{...row,mac:'04:A8:5A:AA:BB:CC'}]}),null,
+  'same vendor OUI with different MAC is not a receiver hit');
+assert.equal(core.matchWatchDetection(matchingTrial,baseline,
+  {...positive,rows:[{...row,state:'KEPT'}]}),null,
+  'restored flash record must not count');
+assert.equal(core.matchWatchDetection(matchingTrial,
+  {...baseline,rows:[row]},positive),null,
+  'preexisting unchanged MAC must not count');
+assert.equal(core.matchWatchDetection(matchingTrial,
+  {...baseline,rows:[{...row,hits:1,state:'gone'}]},
+  {...positive,rows:[{...row,hits:2}]}).observed,'DRONE',
+  'verified reappearance after baseline can count');
+assert.equal(core.matchWatchDetection(matchingTrial,
+  {...baseline,finishedAt:1099},
+  {...positive,requestedAt:1098}),null,
+  'poll requested before emitter BEGIN is not fresh evidence');
+assert.equal(core.matchWatchDetection(matchingTrial,
+  {...baseline,finishedAt:1000},
+  {...positive,requestedAt:1105,rows:[]}),null,
+  'absence cannot be auto-scored as NONE');
+const amb=core.matchWatchDetection(matchingTrial,baseline,
+  {...positive,rows:[row,{...row,type:'FLOCK'}]});
+assert.equal(amb.ambiguous,true,'two classifications for one MAC require review');
+const malformed=core.newWatchLogParser();
+malformed.start(100);
+malformed.read('[log] 1 rows, newest first',105);
+malformed.read('row,type,mac,rssi,hits,state,when',106);
+assert.equal(malformed.read('0,DRONE,not a mac,-53,1,here,+1:04',107),null);
+assert.equal(malformed.waiting(),false,
+  'malformed receiver rows must fail closed, never auto-detect');
 const app=fs.readFileSync('workbench/app.js','utf8');
 for(const required of [
   'navigator.serial.requestPort()','TRUTH BEGIN','core.makeTrial(',
@@ -76,7 +140,9 @@ for(const required of [
   'core.parseCsv(','new TextDecoder','receiver raw log','no commands sent',
   'window.confirm(','authorization.checked','runCase','stopCase',
   'uniqueRunId()','t.seq!=null','old.seq==null?',
-  'Duplicate (run_id, receiver, case)']){
+  'Duplicate (run_id, receiver, case)','requestWatchSnapshot()',
+  'core.matchWatchDetection(','onWatchSnapshot(','startWatchPolling()',
+  "new TextEncoder().encode('LOG\\n')",'if(t.emission===\'ok\')finishAutoMatch(t)']){
   assert.ok(app.toLowerCase().includes(required.toLowerCase()),'missing: '+required);
 }
 const html=fs.readFileSync('workbench/index.html','utf8');
