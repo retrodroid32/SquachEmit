@@ -91,7 +91,8 @@
     var t=trials[selectedTrial];
     if(!t){
       text('trialDetails','Select a TRUTH BEGIN trial or import existing CSV records.');
-      ui.emissionStatus.value='';ui.listenWindow.value='';ui.observed.value='';
+      ui.emissionStatus.value='';ui.emissionStatus.disabled=true;
+      ui.listenWindow.value='';ui.observed.value='';
       ui.latencyMs.value='';ui.evidenceNotes.value='';
     }else{
       text('trialDetails',t.id+' · expected '+((catalog[t.id]||{}).expected||'UNKNOWN')+
@@ -99,6 +100,9 @@
         '\nEmitter result: '+(t.emission||'pending')+
         '\nYou must independently confirm the SquachWatch event (or NONE).');
       ui.emissionStatus.value=t.emission==='ok'||t.emission==='failed'?t.emission:'';
+      // Live serial attempts can only be successful after an actual
+      // matched TRUTH END. Manual 'ok' is permitted only for imported CSV.
+      ui.emissionStatus.disabled=t.seq!=null;
       ui.listenWindow.value=t.window||'';
       ui.observed.value=t.observed||'';
       ui.latencyMs.value=t.latency_ms||'';
@@ -279,7 +283,7 @@
       receiver:ui.receiverBoard.value,
       receiver_sha:ui.receiverSha.value.trim()||old.receiver_sha,
       emitter_sha:ui.emitterSha.value.trim()||old.emitter_sha,
-      emission:ui.emissionStatus.value||old.emission,
+      emission:old.seq==null?(ui.emissionStatus.value||old.emission):old.emission,
       window:ui.listenWindow.value||'',
       observed:ui.observed.value,latency_ms:ui.latencyMs.value.trim(),
       notes:ui.evidenceNotes.value.trim()
