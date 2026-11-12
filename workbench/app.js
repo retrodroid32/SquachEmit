@@ -1,6 +1,7 @@
 /* SquachEmit Detection Workbench — browser-side observation UI.
  * Hardware is touched ONLY after a user clicks Connect/Run/STOP.
- * The receiver console is unstructured evidence, never auto-classification.
+ * Structured receiver LOG snapshots provide correlated, fresh exact-MAC
+ * detections; never guess an alert from unrelated debug text or old rows.
  */
 (function () {
   'use strict';
@@ -11,14 +12,17 @@
     'runId','receiverBoard','receiverSha','emitterSha','emitState','emitConnect',
     'emitDisconnect','caseSelect','caseDetails','duration','authorization','runCase',
     'stopCase','emitLog','recvState','recvConnect','recvDisconnect','receiverBaud',
-    'recvLog','copyReceiver','trialSelect','trialDetails','emissionStatus','listenWindow',
+    'recvLog','copyReceiver','autoLogState','autoDetectionFeed','pollNow',
+    'trialSelect','trialDetails','emissionStatus','listenWindow',
     'observed','latencyMs','evidenceNotes','saveObservation','observationNotice',
     'trialRows','importCsv','csvFile','exportCsv','clearTrials'];
   var ui={};
   ids.forEach(function(id){ui[id]=byId(id);});
   var catalog={},cases=[],trials=[],selectedTrial=-1;
   var devices={emitter:{port:null,reader:null,reading:null,buffer:'',log:'',baud:115200},
-               receiver:{port:null,reader:null,reading:null,buffer:'',log:'',baud:2000000}};
+               receiver:{port:null,reader:null,reading:null,buffer:'',log:'',baud:2000000,
+                 parser:core.newWatchLogParser(),lastSnapshot:null,pending:null,
+                 pollTimer:null,preRun:null,autoLog:''}};
   var opening={emitter:false,receiver:false};
   var epoch=0;
   ui.runId.value=new Date().toISOString().slice(0,10)+'-session-01';
@@ -98,7 +102,11 @@
       text('trialDetails',t.id+' · expected '+((catalog[t.id]||{}).expected||'UNKNOWN')+
         '\nEmitter sequence: '+(t.seq==null?'Imported':t.seq)+
         '\nEmitter result: '+(t.emission||'pending')+
-        '\nYou must independently confirm the SquachWatch event (or NONE).');
+        '\nReceiver: '+(t._autoHit ? 'AUTO MATCH '+t._autoHit.observed+
+            ' at '+t._autoHit.mac+' (fresh LOG row)' :
+            t._baseline ? 'Watching for new MAC match in LOG' :
+            'No pre-test LOG baseline; manual review required')+
+        '\nNo automatic NONE is inferred from absent entries.');
       ui.emissionStatus.value=t.emission==='ok'||t.emission==='failed'?t.emission:'';
       // Live serial attempts can only be successful after an actual
       // matched TRUTH END. Manual 'ok' is permitted only for imported CSV.
@@ -124,6 +132,7 @@
     ui.recvConnect.disabled=receiver||opening.receiver;
     ui.recvDisconnect.disabled=!receiver||opening.receiver;
     ui.receiverBaud.disabled=receiver||opening.receiver;
+    ui.pollNow.disabled=!receiver;
     var duration=Number(ui.duration.value);
     ui.runCase.disabled=!connected||!catalog[ui.caseSelect.value]||
       !ui.authorization.checked||!Number.isInteger(duration)||duration<3||duration>30;
