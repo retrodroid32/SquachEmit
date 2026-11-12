@@ -25,6 +25,7 @@
                  pollTimer:null,preRun:null,autoLog:''}};
   var opening={emitter:false,receiver:false};
   var epoch=0;
+  var startingRun=false;
   ui.runId.value=new Date().toISOString().slice(0,10)+'-session-01';
   function text(id,value){ui[id].textContent=String(value);}
   function notice(message,isError){
@@ -134,7 +135,7 @@
     ui.receiverBaud.disabled=receiver||opening.receiver;
     ui.pollNow.disabled=!receiver;
     var duration=Number(ui.duration.value);
-    ui.runCase.disabled=!connected||!catalog[ui.caseSelect.value]||
+    ui.runCase.disabled=!connected||startingRun||!catalog[ui.caseSelect.value]||
       !ui.authorization.checked||!Number.isInteger(duration)||duration<3||duration>30;
     ui.stopCase.disabled=!connected;
     ui.saveObservation.disabled=!(selectedTrial>=0 && trials[selectedTrial]);
@@ -281,15 +282,35 @@
         receiverSha:ui.receiverSha.value,emitterSha:ui.emitterSha.value
       },catalog);
       t._epoch=epoch;
+      t._mac=core.normalizeMac(event.mac);
+      t._startedAt=Date.now();
+      var receiver=devices.receiver;
+      // UI-controlled runs have a dedicated LOG preflight baseline.
+      // Externally started tests can use a recently completed poll.
+      var ready=receiver.preRun;
+      t._baseline=(ready && ready.id===event.id &&
+        ready.expiresAt>=t._startedAt ? ready.snapshot :
+        receiver.lastSnapshot && receiver.lastSnapshot.finishedAt<=t._startedAt &&
+        t._startedAt-receiver.lastSnapshot.finishedAt<=5000 ?
+        receiver.lastSnapshot : null);
+      receiver.preRun=null;
       trials.push(t);
       selectedTrial=trials.length-1;
       redrawTrials();selectTrial();
-      notice('Emitter reported BEGIN for '+event.id+'. Verify the actual receiver evidence separately.',false);
+      notice('Emitter BEGIN '+event.id+' ('+(t._mac||'no MAC')+'). '+
+        (t._baseline?'Automatic SquachWatch LOG correlation active.':
+        'No fresh pre-test LOG baseline; verify any receiver detection manually.'),false);
     }else{
       var found=false;
       for(var i=trials.length-1;i>=0;i--){
         if(trials[i]._epoch!==epoch)continue;
-        if(core.applyEnd(trials[i],event)){found=true;break;}
+        if(core.applyEnd(trials[i],event)){
+          found=true;
+          trials[i]._endedAt=Date.now();
+          if(trials[i].emission==='failed')trials[i].window='incomplete';
+          else finishAutoMatch(trials[i]);
+          break;
+        }
       }
       if(!found && event.event==='ERROR'){
         // Error without BEGIN is an actual recorded emission failure,
@@ -304,7 +325,9 @@
       }
       redrawTrials();selectTrial();
       notice('Emitter '+event.event+' ('+(event.status||'unspecified')+
-        '). This is not proof of receiving a signal.',false);
+        '). '+(trials[selectedTrial]&&trials[selectedTrial]._autoHit ?
+        'SquachWatch exact-MAC detection also recorded.' :
+        'Waiting for independent SquachWatch LOG detection; no automatic NONE.'),false);
     }
   }
   function consume(role,chunk){
@@ -316,6 +339,7 @@
     lines.forEach(function(line){
       append(role,line+'\n');
       if(role==='emitter')recordEmitter(line.trim());
+      else onWatchLine(line.trim());
     });
   }
   async function readPort(role,port){
