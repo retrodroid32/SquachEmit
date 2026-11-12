@@ -2,11 +2,12 @@
 #include <stdint.h>
 #include <stddef.h>
 
-// Stable, locally administered lab identities. No real vendor MACs,
-// no modification of the chip's permanent eFuse address.
-// scenarioIndex is the index in the shared catalog (0..48).
-// The last octet makes each case distinct even when payloads/SSIDs match.
-// Device-specific eFuse bytes separate identical cases on different boards.
+// Default identities are deterministic, locally administered (Wi-Fi) or
+// static-random (BLE), with no modification of permanent eFuse addresses.
+// Catalog indices 0..171 fit the nonzero final-octet scheme (max 253).
+// Exception: 37 named OUI-only Wi-Fi cases in src/main.cpp replace their
+// temporary SoftAP MAC's 24/28/36-bit prefix with a registered manufacturer
+// allocation. An OUI match is only a spoofable vendor clue, NOT device proof.
 namespace SquachIdentity {
 enum class Radio : uint8_t { Ble, Wifi };
 inline void derive(uint64_t efuse, size_t scenarioIndex, Radio radio, uint8_t out[6]) {
