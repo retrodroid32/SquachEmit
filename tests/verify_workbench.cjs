@@ -133,6 +133,19 @@ malformed.read('row,type,mac,rssi,hits,state,when',106);
 assert.equal(malformed.read('0,DRONE,not a mac,-53,1,here,+1:04',107),null);
 assert.equal(malformed.waiting(),false,
   'malformed receiver rows must fail closed, never auto-detect');
+// An actual AUTO SquachWatch hit is real evidence, but missing commit SHAs
+// must not silently turn it into a counted benchmark result.
+const missingBoth={...trial,receiver_sha:'',emitter_sha:''};
+assert.equal(core.status(missingBoth,catalog),'UNTESTED');
+assert.match(core.pendingReason(missingBoth,catalog),/SquachWatch and SquachEmit firmware SHAs/);
+assert.equal(core.pendingReason({...missingBoth,receiver_sha:sha},catalog),
+  'Missing/invalid SquachEmit firmware SHA');
+assert.equal(core.pendingReason({...missingBoth,emitter_sha:sha},catalog),
+  'Missing/invalid SquachWatch firmware SHA');
+assert.equal(core.status({...missingBoth,emitter_sha:sha,receiver_sha:sha},catalog),'TP');
+assert.equal(core.pendingReason(trial,catalog),'');
+assert.match(core.pendingReason({...trial,emission:'pending'},catalog),/Waiting for actual/);
+assert.match(core.pendingReason({...trial,window:''},catalog),/receiver window/);
 const app=fs.readFileSync('workbench/app.js','utf8');
 for(const required of [
   'navigator.serial.requestPort()','TRUTH BEGIN','core.makeTrial(',
@@ -140,12 +153,21 @@ for(const required of [
   'core.parseCsv(','new TextDecoder','receiver raw log','no commands sent',
   'window.confirm(','authorization.checked','runCase','stopCase',
   'uniqueRunId()','t.seq!=null','old.seq==null?',
+  'applySessionShas()','core.pendingReason(','runProgress(',
+  'Promise.race([','receiver.preRun={id:c.id,snapshot:baseline',
+  'RUN was sent but no TRUTH BEGIN arrived',
   'Duplicate (run_id, receiver, case)','requestWatchSnapshot()',
   'core.matchWatchDetection(','onWatchSnapshot(','startWatchPolling()',
   "new TextEncoder().encode('LOG\\n')",'if(t.emission===\'ok\')finishAutoMatch(t)']){
   assert.ok(app.toLowerCase().includes(required.toLowerCase()),'missing: '+required);
 }
+assert.ok(!app.includes('RUN not sent.'),'receiver LOG timeout must not suppress a user RUN');
+assert.ok(app.includes("if(!baseline){\n          autoStatus("),
+  'missing receiver baseline should downgrade automatic scoring, not prevent RUN');
 const html=fs.readFileSync('workbench/index.html','utf8');
+assert.match(html,/id="applyShas"/);
+assert.match(html,/id="shaNotice"/);
+assert.match(html,/id="runFeedback"/);
 assert.match(html,/id="receiverSha"/);
 assert.match(html,/id="emitterSha"/);
 assert.match(html,/id="recvConnect"/);
