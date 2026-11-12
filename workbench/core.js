@@ -76,7 +76,7 @@
     var o=opts||{};
     return {run_id:trim(o.runId),receiver:trim(o.receiver),
       receiver_sha:trim(o.receiverSha),emitter_sha:trim(o.emitterSha),
-      id:event.id,emission:'pending',window:'incomplete',observed:'',
+      id:event.id,emission:'pending',window:'',observed:'',
       latency_ms:'',notes:'Emitter reported BEGIN, seq '+event.seq+
       '; no receiver event has been verified.',seq:event.seq,
       started_ms:event.ms,ended_ms:null};
@@ -93,6 +93,8 @@
   }
   function csvEscape(value) {
     var s=trim(value);
+    // Spreadsheet formula injection protection for user-supplied notes/IDs.
+    if (/^[=+@\t]/.test(s) || /^-[^0-9]/.test(s)) s="'"+s;
     return /[",\r\n]/.test(s) ? '"'+s.replace(/"/g,'""')+'"' : s;
   }
   function exportCsv(rows) {
