@@ -115,11 +115,15 @@ Coverage notes: [original 95-case detection matrix](docs/DETECTION_MATRIX_95.md)
 ## Detection Workbench (separate development PR)
 
 The [web-based Detection Workbench](https://retrodroid32.github.io/SquachEmit/workbench/)
-pairs **SquachEmit serial TRUTH BEGIN/END** with actual, separately confirmed
-**SquachWatch observations**. It has independent Web Serial connections for
-both devices, manual receiver evidence recording, reproducible TP/TN/FP/FN
-scoring, and CSV import/export compatible with `tools/score_trials.py`.
-**It never claims that transmitter intent is proof of receiver detection.**
+pairs **SquachEmit serial TRUTH BEGIN/END** with actual SquachWatch detections.
+It opens independent Web Serial connections and **automatically polls SquachWatch's
+built-in `LOG` command every 1.5 seconds**, comparing exact transmitter MACs
+against fresh receiver records after a pre-test baseline. New matched detections
+automatically populate the observation, RSSI and expected-class accuracy result
+after a successful emitter END. Existing/stale entries and missing detections
+still require manual review; the tool does **not** fabricate a negative result
+or treat transmitter intent as proof of receiving. Includes TP/TN/FP/FN scoring
+and CSV import/export compatible with `tools/score_trials.py`.
 This UI is under development in PR #36 and will not appear on the live
 installer until approved and deployed. See [setup and limitations](docs/DETECTION_WORKBENCH.md).
 
