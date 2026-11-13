@@ -105,7 +105,8 @@ assert.equal(row.type,'DRONE');
 assert.equal(row.mac,'04:A8:5A:12:34:56');
 assert.equal(row.rssi,-53);
 assert.equal(core.parseWatchLogRow('0,DRONE,not-a-mac,-53,1,here,+1:04'),null);
-assert.equal(core.parseWatchLogRow('0,UNKNOWN,04:a8:5a:12:34:56,-53,1,here,+1:04'),null);
+assert.equal(core.parseWatchLogRow('0,UNKNOWN,04:a8:5a:12:34:56,-53,1,here,+1:04').type,'UNKNOWN',
+  'an UNKNOWN receiver row must not invalidate an otherwise valid LOG snapshot');
 assert.equal(core.parseWatchLogRow('0,EVIL TWIN,04:a8:5a:12:34:56,-53,1,here,+1:04').type,'EVILTWIN');
 const snapParser=core.newWatchLogParser();
 assert.equal(snapParser.start(950),true);
@@ -118,6 +119,21 @@ assert.equal(after.requestedAt,950);
 assert.equal(after.finishedAt,985);
 assert.equal(after.rows.length,2);
 assert.equal(snapParser.waiting(),false);
+// Periodic firmware diagnostics can interleave LOG table rows while
+// another task sends data over the same USB serial port. They must not
+// destroy a legitimate receiver snapshot or ACTUAL stays blank.
+const interleaved=core.newWatchLogParser();
+assert.equal(interleaved.start(1200),true);
+assert.equal(interleaved.read('[log] 2 rows, newest first',1202),null);
+assert.equal(interleaved.read('row,type,mac,rssi,hits,state,when',1203),null);
+assert.equal(interleaved.read('[gps] bytes=1200 UBX=17 SAT=4 fix=1',1204),null);
+assert.equal(interleaved.read('0,DRONE,04:a8:5a:12:34:56,-55,1,here,+1:09',1205),null);
+assert.equal(interleaved.read('[queue] ble q 0 hi 2 drop 0',1206),null);
+const interleavedResult=interleaved.read('1,FLOCK,02:11:22:33:44:55,-81,2,gone,+1:08',1207);
+assert.equal(interleavedResult.rows.length,2);
+assert.equal(interleavedResult.rows[1].state,'gone');
+assert.equal(interleaved.waiting(),false);
+
 assert.equal(snapParser.start(1050),true);
 snapParser.read('[log] 0 rows, newest first',1055);
 const zero=snapParser.read('row,type,mac,rssi,hits,state,when',1060);
@@ -134,6 +150,28 @@ assert.equal(core.matchWatchDetection(matchingTrial,baseline,
 assert.equal(core.matchWatchDetection(matchingTrial,baseline,
   {...positive,rows:[{...row,state:'KEPT'}]}),null,
   'restored flash record must not count');
+assert.equal(core.matchWatchDetection(matchingTrial,baseline,
+  {...positive,rows:[{...row,state:'gone'}]}).observed,'DRONE',
+  'a new exact-MAC detection must be reported even after the signal stopped');
+assert.equal(core.matchWatchDetection(matchingTrial,baseline,
+  {...positive,rows:[{...row,type:'UNKNOWN'}]}),null,
+  'UNKNOWN receiver classification is not a positive detection');
+assert.equal(core.matchWatchDetection(matchingTrial,null,positive),null,
+  'missing baseline cannot count toward accuracy');
+const provisional=core.findUnverifiedWatchObservation(matchingTrial,positive);
+assert.equal(provisional.observed,'DRONE');
+assert.equal(provisional.verified,false);
+assert.equal(core.status({...trial,observed:provisional.observed,window:''},catalog),
+  'UNTESTED','ACTUAL may be populated without inventing a verified listening window');
+assert.equal(core.findUnverifiedWatchObservation(matchingTrial,{
+  ...positive,rows:[{...row,mac:'04:A8:5A:AA:BB:CC'}]}),null,
+  'classification alone cannot populate ACTUAL when the MAC does not match');
+assert.equal(core.findUnverifiedWatchObservation(matchingTrial,{
+  ...positive,requestedAt:1099}),null,
+  'a pre-RUN receiver snapshot is not evidence of this transmission');
+assert.equal(core.findUnverifiedWatchObservation(matchingTrial,{
+  ...positive,rows:[{...row,state:'gone'}]}).observed,'DRONE',
+  'post-run exact-MAC gone rows can be shown as unverified receiver evidence');
 assert.equal(core.matchWatchDetection(matchingTrial,
   {...baseline,rows:[row]},positive),null,
   'preexisting unchanged MAC must not count');
@@ -183,12 +221,17 @@ for(const required of [
   'Promise.race([','receiver.preRun={id:c.id,snapshot:baseline',
   'RUN was sent but no TRUTH BEGIN arrived',
   'Duplicate (run_id, receiver, case)','requestWatchSnapshot()',
-  'core.matchWatchDetection(','onWatchSnapshot(','startWatchPolling()',
+  'core.matchWatchDetection(','core.findUnverifiedWatchObservation(',
+  'onWatchSnapshot(','startWatchPolling()',
   'core.signalName(','core.batchPlan(','onBatchTruth(','startBatchStep()',
   'endBatch(','batchDuration','batchGap','batchScope',
-  "new TextEncoder().encode('LOG\\n')",'if(t.emission===\'ok\')finishAutoMatch(t)']){
+  "sendReceiver('LOG')",'if(t.emission===\'ok\')finishAutoMatch(t)']){
   assert.ok(app.toLowerCase().includes(required.toLowerCase()),'missing: '+required);
 }
+assert.ok(app.includes('var receiverWrites=Promise.resolve()'),
+  'LOG polling and Windows GUI commands must share one serialized receiver writer');
+assert.ok(app.includes("if(!(await sendReceiver('LOG')))"),
+  'automatic receiver polling must use the queued serial LOG path');
 assert.ok(!app.includes('RUN not sent.'),'receiver LOG timeout must not suppress a user RUN');
 assert.ok(app.includes("if(!baseline){\n          autoStatus("),
   'missing receiver baseline should downgrade automatic scoring, not prevent RUN');
@@ -210,4 +253,4 @@ assert.match(src,/publish_workbench/);
 assert.match(src,/cases\.json/);
 const workflow=fs.readFileSync('.github/workflows/ci.yml','utf8');
 assert.match(workflow,/node tests\/verify_workbench\.cjs/);
-console.log('PASS workbench: strict TRUTH, manual receiver scoring, CSV, UI and publication guards');
+console.log('PASS workbench: TRUTH, exact-MAC ACTUAL (live/gone), unverified baseline safety, CSV, UI and publication guards');
