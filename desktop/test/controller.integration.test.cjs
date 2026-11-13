@@ -5,6 +5,7 @@ const fs=require('node:fs');
 const path=require('node:path');
 const vm=require('node:vm');
 const mirrorCodec=require('../public/mirror.js');
+const native=require('../public/native-emitter.js');
 
 test('Windows rail renders authentic USB frame and translates canvas pointer to MIRROR TOUCH',async()=>{
   const elements=new Map(),windowEvents=new Map(),timers=new Map();
@@ -19,7 +20,15 @@ test('Windows rail renders authentic USB frame and translates canvas pointer to 
       setAttribute(){},pause(){},play(){return Promise.resolve();},
       setPointerCapture(){},
       getBoundingClientRect(){return {left:0,top:0,width:this.width,height:this.height};},
-      getContext(){return {putImageData:(image)=>{this.lastImage=image;}};},
+      getContext(){
+        const el=this;
+        return {canvas:el,putImageData:(image)=>{el.lastImage=image;},
+          fillRect(){el.drawCount=(el.drawCount||0)+1;},beginPath(){},
+          moveTo(){},lineTo(){},stroke(){},fill(){},arc(){},rect(){},
+          roundRect(){},ellipse(){},closePath(){},save(){},restore(){},
+          translate(){},clip(){},fillText(){},measureText(x){return {width:String(x).length*6};}
+        };
+      },
       querySelectorAll(){return [];},
       width:320,height:240
     };
@@ -45,7 +54,7 @@ test('Windows rail renders authentic USB frame and translates canvas pointer to 
     setEmitterBaud:()=>true,runSelected:()=>Promise.resolve(),exportCsv:()=>{}
   };
   const win={
-    SQEWorkbenchDesktop:api,SQEMirrorCodec:mirrorCodec,
+    SQEWorkbenchDesktop:api,SQEMirrorCodec:mirrorCodec,SQECydNative:native,
     addEventListener:(name,callback)=>windowEvents.set(name,callback)
   };
   const context={
@@ -123,43 +132,41 @@ test('Windows rail renders authentic USB frame and translates canvas pointer to 
   assert.equal(commands.filter(([r,c])=>r==='receiver'&&c==='MIRROR OFF').length,oldOff,
     'detection runner, not UI, owns the already-sent MIRROR OFF');
 
-  // Independent CYD3.2 panel: a real RGB565 frame followed by a differential
-  // transfer must reproduce the exact full image without any synthetic redraw.
+  // Independent SquachEmit panel is PC-drawn. No TFT screenshot command.
   click('mirror-on','emitter');
   await drain();
-  const rx=line=>windowEvents.get('sqe:mirror')({detail:{role:'emitter',line}});
-  rx('MIRROR READY RGB565 320x240 TOUCH DELTA');
+  assert.ok(commands.some(([r,c])=>r==='emitter'&&c==='UI ON'));
+  assert.ok(!commands.some(([r,c])=>r==='emitter'&&c==='MIRROR FRAME'));
+  const rx=line=>windowEvents.get('sqe:native-ui')({detail:{role:'emitter',line}});
+  rx('UI READY 1 320 240 MODEL');
   await drain();
-  assert.ok(commands.some(([r,c])=>r==='emitter'&&c==='MIRROR FRAME'));
-  rx('MIRROR BEGIN 20 2 2 RGB565');
-  rx('MIRROR ROW 20 0 '+Buffer.from([0x00,0xf8,0xe0,0x07]).toString('base64'));
-  rx('MIRROR ROW 20 1 '+Buffer.from([0x1f,0x00,0xff,0xff]).toString('base64'));
-  rx('MIRROR END 20');
+  assert.ok(commands.some(([r,c])=>r==='emitter'&&c==='UI GET'));
+  const syncState='UI STATE 1 HOME 2 0 0 BLE-FLOCK-MFG 12 IDLE 0 0 1 NONE NONE 0 22000';
+  windowEvents.get('sqe:catalog')({detail:{cases:[
+    {id:'BLE-FLOCK-MFG',expected:'FLOCK',description:'Flock supplier',carrier:'BLE'}
+  ]}});
+  rx(syncState);
+  await drain();
   const ec=elements.get('dc-canvas-emitter');
-  assert.equal(ec.hidden,false);
-  assert.deepEqual(Array.from(ec.lastImage.pixels),[
-    255,0,0,255,0,255,0,255,0,0,255,255,255,255,255,255
-  ]);
-  // Trigger the next short poll, verifying it names the host's accepted seq.
-  for(const [id,timer] of Array.from(timers)){
-    if(timer.ms===65){timers.delete(id);timer.fn();}
-  }
+  assert.equal(ec.hidden,false,'locally rendered device state is visible');
+  assert.equal(ec.width,320);
+  assert.equal(ec.height,240);
+  assert.ok(ec.drawCount>40,'procedural graphics drawn by the desktop Canvas');
+  assert.match(elements.get('dc-frame-emitter').textContent,/PC-DRAWN UI/);
+  // Physical board state changes (no mouse interaction) appear immediately.
+  rx('UI STATE 1 DURATION 2 0 0 BLE-FLOCK-MFG 18 IDLE 0 0 1 NONE NONE 0 22300');
   await drain();
-  assert.ok(commands.some(([r,c])=>r==='emitter'&&c==='MIRROR FRAME 20'));
-  rx('MIRROR DELTA 21 20 2 2 RGB565');
-  rx('MIRROR ROW 21 1 '+Buffer.from([0x00,0x00,0x1f,0x00]).toString('base64'));
-  rx('MIRROR END 21');
-  assert.deepEqual(Array.from(ec.lastImage.pixels),[
-    255,0,0,255,0,255,0,255,0,0,0,255,0,0,255,255
-  ]);
-  // Holding a button must be released before the serial MIRROR OFF.
-  ec.listeners.pointerdown({pointerId:7,clientX:0,clientY:0,preventDefault(){}});
+  assert.match(elements.get('dc-frame-emitter').textContent,/DURATION/);
+  ec.listeners.pointerdown({pointerId:7,clientX:60,clientY:110,preventDefault(){}});
   await drain();
+  assert.ok(commands.some(([r,c])=>r==='emitter'&&c==='UI TOUCH 60 110 DOWN'));
   click('mirror-off','emitter');
   await drain();
-  const down=commands.findIndex(([r,c])=>r==='emitter'&&c==='MIRROR TOUCH 0 0 DOWN');
-  const up=commands.findIndex(([r,c])=>r==='emitter'&&c==='MIRROR TOUCH 0 0 UP');
-  const off=commands.findIndex(([r,c])=>r==='emitter'&&c==='MIRROR OFF');
-  assert.ok(down>=0&&up>down&&off>up,'stop must release physical touch first');
+  const down=commands.findIndex(([r,c])=>r==='emitter'&&c==='UI TOUCH 60 110 DOWN');
+  const up=commands.findIndex(([r,c])=>r==='emitter'&&c==='UI TOUCH 60 110 UP');
+  const off=commands.findIndex(([r,c])=>r==='emitter'&&c==='UI OFF');
+  assert.ok(down>=0&&up>down&&off>up,'STOP must release native pointer before disconnect');
   assert.equal(ec.hidden,true);
+  assert.equal(commands.some(([r,c])=>r==='emitter'&&c==='MIRROR ON'),false,
+    'no TFT pixel-capture command may be sent to SquachEmit');
 });

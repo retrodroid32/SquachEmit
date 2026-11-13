@@ -654,129 +654,33 @@ Cyd32UiAction cyd32UiTick(const char* active,uint32_t remaining,bool suite){
   return action;
 }
 
-// Frame-by-frame authenticated LCD readback over USB. A 320x240 RGB565
-// frame is ~205KB in base64: never block touch/radio processing for it.
-// After a complete keyframe, unchanged lines are omitted, with the exact
-// previously accepted sequence required by the host before using a delta.
-// No synthetic interface, screenshot or inferred pixels are constructed.
-namespace {
-bool mirrorPending=false,mirrorDelta=false,mirrorHasPrevious=false;
-uint16_t mirrorRow=0,mirrorWidth=0,mirrorHeight=0;
-uint32_t mirrorBase=0,mirrorCurrent=0,mirrorLastSent=0;
-uint8_t mirrorSinceKey=0;
-uint32_t mirrorPreviousRows[kH]={0},mirrorNewRows[kH]={0};
-uint16_t mirrorPixels[kW];
-char mirrorBase64[860];
-uint16_t mirrorFirstPixel=0;
-bool mirrorDiverse=false;
-
-uint32_t rowDigest(const uint8_t* data,size_t length){
-  // Streamed row signature saves RAM (two 240-entry hash tables vs. 150KB).
-  uint32_t result=2166136261UL;
-  for(size_t i=0;i<length;++i){result^=data[i];result*=16777619UL;}
-  return result;
-}
-void writeMirrorRow(uint16_t row,uint32_t sequence,uint16_t width){
-  static const char chars[]="ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
-  const uint8_t* raw=(const uint8_t*)mirrorPixels;
-  const int bytes=width*2;
-  int n=0;
-  for(int i=0;i<bytes;i+=3){
-    const uint8_t a=raw[i],b=(i+1<bytes)?raw[i+1]:0,c=(i+2<bytes)?raw[i+2]:0;
-    mirrorBase64[n++]=chars[a>>2];
-    mirrorBase64[n++]=chars[((a&3)<<4)|(b>>4)];
-    mirrorBase64[n++]=(i+1<bytes)?chars[((b&15)<<2)|(c>>6)]:'=';
-    mirrorBase64[n++]=(i+2<bytes)?chars[c&63]:'=';
-  }
-  Serial.printf("MIRROR ROW %lu %u ",(unsigned long)sequence,(unsigned)row);
-  Serial.write((const uint8_t*)mirrorBase64,n);
-  Serial.println();
-}
-} // namespace
-
-void cyd32UiMirrorDiag(unsigned long baud){
-  if(!ready){Serial.println("MIRROR DIAG LCD_NOT_READY");return;}
-  uint16_t samples[32]={0};
-  lcd.readRect(0,0,32,1,samples);
-  unsigned int diverse=0;
-  for(int i=1;i<32;++i)if(samples[i]!=samples[0])++diverse;
-  // Avoid Arduino-only ESP globals so native host LCD tests also compile.
-  Serial.printf("MIRROR DIAG READY=1 CAL=%u SIZE=%dx%d BAUD=%lu TFT_FIRST=%04X TFT_DIFFERENT=%u\n",
-    calibrated?1u:0u,lcd.width(),lcd.height(),baud,
-    (unsigned)samples[0],diverse);
-  if(diverse==0)Serial.println("MIRROR DIAG WARN TFT_READBACK_SUSPECT");
-}
-void cyd32UiMirrorStop(){
-  mirrorPending=false;
-  mirrorHasPrevious=false;
-  mirrorLastSent=0;
-  mirrorSinceKey=0;
-  remoteDown=false;
-}
-
-void cyd32UiMirrorFrame(uint32_t acceptedSequence){
-  // Calibration UI is still a real physical LCD: allow it to be mirrored.
-  // Remote input is rejected until touch calibration is complete.
-  if(!ready){
-    Serial.println("MIRROR ERROR LCD_NOT_READY");return;
-  }
-  if(mirrorPending){
-    Serial.println("MIRROR ERROR BUSY");return;
-  }
-  const int w=lcd.width(),h=lcd.height();
-  if(w<1||w>kW||h<1||h>kH){
-    Serial.println("MIRROR ERROR BAD_DISPLAY_SIZE");return;
-  }
-  mirrorDelta=mirrorHasPrevious && acceptedSequence &&
-      acceptedSequence==mirrorLastSent && mirrorSinceKey<18;
-  mirrorCurrent=++mirrorSequence;
-  if(!mirrorCurrent)mirrorCurrent=++mirrorSequence;
-  mirrorBase=mirrorLastSent;
-  mirrorWidth=(uint16_t)w;mirrorHeight=(uint16_t)h;
-  mirrorRow=0;mirrorPending=true;mirrorDiverse=false;
-  if(mirrorDelta){
-    Serial.printf("MIRROR DELTA %lu %lu %u %u RGB565\n",
-       (unsigned long)mirrorCurrent,(unsigned long)mirrorBase,
-       (unsigned)mirrorWidth,(unsigned)mirrorHeight);
-  }else{
-    Serial.printf("MIRROR BEGIN %lu %u %u RGB565\n",
-       (unsigned long)mirrorCurrent,(unsigned)mirrorWidth,(unsigned)mirrorHeight);
-  }
-}
-
-void cyd32UiMirrorPump(){
-  if(!mirrorPending)return;
-  // At most two rows per loop keeps native touch processing responsive while
-  // the USB serial channel is saturated. An interrupted frame is never shown.
-  for(uint8_t lines=0;lines<2 && mirrorRow<mirrorHeight;++lines){
-    const uint16_t y=mirrorRow++;
-    lcd.readRect(0,y,mirrorWidth,1,mirrorPixels);
-    if(y==0)mirrorFirstPixel=mirrorPixels[0];
-    if(y<16 && !mirrorDiverse){
-      for(uint16_t x=0;x<mirrorWidth;++x)
-        if(mirrorPixels[x]!=mirrorFirstPixel){mirrorDiverse=true;break;}
-    }
-    // The SquachEmit top bar contains a multi-color gradient on every screen.
-    // If even its first sixteen rows read as a single word, this hardware
-    // cannot supply trustworthy TFT GRAM pixels. Never display a fake image.
-    if(y==15 && !mirrorDiverse){
-      mirrorPending=false;mirrorHasPrevious=false;
-      Serial.println("MIRROR ERROR LCD_READ_UNAVAILABLE");
-      return;
-    }
-    const uint32_t hash=rowDigest((const uint8_t*)mirrorPixels,(size_t)mirrorWidth*2);
-    mirrorNewRows[y]=hash;
-    if(!mirrorDelta || !mirrorHasPrevious || hash!=mirrorPreviousRows[y])
-      writeMirrorRow(y,mirrorCurrent,mirrorWidth);
-  }
-  if(mirrorRow==mirrorHeight){
-    memcpy(mirrorPreviousRows,mirrorNewRows,sizeof(mirrorPreviousRows));
-    mirrorLastSent=mirrorCurrent;
-    mirrorHasPrevious=true;
-    mirrorSinceKey=mirrorDelta?(uint8_t)(mirrorSinceKey+1):0;
-    mirrorPending=false;
-    Serial.printf("MIRROR END %lu\n",(unsigned long)mirrorCurrent);
-  }
+// Small view-model protocol; the Windows app draws its own canvas from
+// the same logical navigation state as the physical TFT UI. This function
+// NEVER reads pixels, invokes readRect, or transmits a screenshot.
+void cyd32UiStreamState(const char* activeId,uint32_t remainingMs,
+                        bool suiteRunning,bool force){
+  if(!ready)return;
+  static uint32_t sentAt=0;
+  const uint32_t now=millis();
+  if(!force&&now-sentAt<180u)return;
+  sentAt=now;
+  const char* screenName=
+      !calibrated?"CALIBRATION":
+      colorBarsUntil?"COLORS":
+      screen==Screen::Categories?"CATEGORIES":
+      screen==Screen::Library?"LIBRARY":
+      screen==Screen::Duration?"DURATION":"HOME";
+  const Scenario* chosen=selected<kScenarioCount?&kScenarios[selected]:nullptr;
+  const uint32_t petMs=(int32_t)(petUntil-now)>0?petUntil-now:0;
+  Serial.printf("UI STATE 1 %s %u %u %u %s %u %s %lu %u %u %s %s %lu %lu\n",
+    screenName,(unsigned)static_cast<uint8_t>(category),
+    (unsigned)page,(unsigned)categoryPage,
+    chosen?chosen->id:"NONE",(unsigned)durationSeconds,
+    activeId&&*activeId?activeId:"IDLE",
+    (unsigned long)remainingMs,suiteRunning?1u:0u,calibrated?1u:0u,
+    radioStartingProfile[0]?radioStartingProfile:"NONE",
+    radioStartError[0]?radioStartError:"NONE",
+    (unsigned long)petMs,(unsigned long)now);
 }
 bool cyd32UiRemoteTouch(uint16_t x,uint16_t y,const char* phase){
   if(!ready||!calibrated||!phase)return false;

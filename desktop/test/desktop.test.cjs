@@ -9,6 +9,7 @@ const read=rel=>fs.readFileSync(path.join(root,rel),'utf8');
 
 test('all desktop JS is syntactically valid',()=>{
   for(const file of ['desktop/main.cjs','desktop/public/controller.js','desktop/public/mirror.js',
+    'desktop/public/native-emitter.js',
     'workbench/app.js','workbench/core.js']){
     assert.doesNotThrow(()=>new vm.Script(read(file),{filename:file}),file);
   }
@@ -32,7 +33,7 @@ test('desktop is local only with restricted renderer and USB chooser',()=>{
     "'Content-Security-Policy'","'X-Content-Type-Options'",
     "event.preventDefault()","dialog.showMessageBox",
     "file:path.join(roots.workbench,'index.html')",
-    "'/desktop/controller.js'","'/desktop/mirror.js'","'webSecurity'"]){
+    "'/desktop/controller.js'","'/desktop/mirror.js'","'/desktop/native-emitter.js'","'webSecurity'"]){
     if(required==="'webSecurity'")assert.match(s,/webSecurity:true/);
     else assert.ok(s.includes(required),'missing desktop contract: '+required);
   }
@@ -50,7 +51,7 @@ test('all 172 device-first names are compatible with the existing Workbench',()=
   assert.match(core.signalName(all.find(x=>x.id==='BLE-HACKER-NAME')),/^Flipper Zero/);
   assert.match(core.signalName(all.find(x=>x.id==='BLE-HACKER-UUID')),/^Flipper Zero/);
 });
-test('USB LCD frames use real decoded pixels and pointer touchscreen input',()=>{
+test('Software-rendered emitter UI and optional receiver LCD mode use native touch',()=>{
   const ui=read('desktop/public/controller.js');
   const wb=read('workbench/app.js');
   const main=read('desktop/main.cjs');
@@ -63,14 +64,21 @@ test('USB LCD frames use real decoded pixels and pointer touchscreen input',()=>
     assert.ok(ui.includes(key),'missing real LCD and remote-control feature: '+key);
   for(const command of ['STATUS|IDENTITY|LIST|HELP|COLORS|STOP',
     'RADIO SCAN','SCAN (?:AUTO|ACTIVE|PASSIVE)','CLOCK [01] [0-2] [0-6]',
-    'MIRROR (?:ON|OFF|FRAME','BAUD (?:115200|2000000)'])
+    'MIRROR (?:ON|OFF|FRAME','UI (?:ON|OFF|GET'])
     assert.ok(wb.includes(command),'missing serial control: '+command);
   assert.match(wb,/if\(batch\.active&&!\//);
   assert.ok(main.includes('/desktop/mirror.js')&&main.indexOf(
     '<script src="/desktop/mirror.js"')<main.indexOf(
     '<script src="/desktop/controller.js"'));
+  assert.ok(main.includes('/desktop/native-emitter.js')&&main.indexOf(
+    '<script src="/desktop/native-emitter.js"')<main.indexOf(
+    '<script src="/desktop/controller.js"'));
+  assert.match(ui,/native\.render\(/);
+  assert.match(ui,/UI TOUCH /);
+  assert.match(wb,/desktopEvent\('native-ui'/);
+  assert.doesNotMatch(wb,/MIRROR BAUD 2000000/);
   assert.match(ui,/NO LIVE LCD FRAME/);
-  assert.match(ui,/not a recreated UI/);
+  assert.match(ui,/PC-drawn SquachEmit UI/);
   assert.doesNotMatch(ui,/LIVE SERIAL TELEMETRY/);
   assert.doesNotMatch(ui,/dc-screenmetric/);
   assert.doesNotMatch(wb,/getUserMedia\(\{audio:true/);
