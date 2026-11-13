@@ -1,4 +1,4 @@
-# SquachEmit Detection Workbench — Windows Desktop LAB R4
+# SquachEmit Detection Workbench — Windows Desktop LAB R5
 
 A standalone Windows x64 Electron GUI for 172 synthetic transmitter tests and exact-MAC receiver validation. The main workspace tracks ACTUAL classifications, baseline evidence, emitter TRUTH records, firmware SHAs, unverified results, batch progress, and CSV export. The right-hand desk has two **real LCD pixel canvases**, one per USB device, with pointer-to-touch support.
 
@@ -50,3 +50,9 @@ GitHub Actions builds unsigned Setup and portable x64 EXEs for review artifacts 
 - Validate STOP, reconnect, serial fault recovery, manual CSV import/export and no accidental RF emissions.
 
 PR #37 remains a draft stacked on #36; PR #35 is an independent audit. No merge without explicit approval.
+
+## R5 troubleshooting — no screen image
+
+The R5 EXE now waits for the real firmware's `MIRROR READY` acknowledgment instead of treating a successful USB serial write as successful mirroring. A wrong UART baud or device reset is shown as an error, not a blank endless spinner. The **Diagnose physical LCD and USB baud** button sends `MIRROR DIAG` and displays the actual returned baud, calibration, dimensions and RGB565 TFT readback sample diversity.
+
+The CYD32 firmware no longer rejects LCD screenshots just because the touch panel is not calibrated. TFT SPI read frequency is 6 MHz, improving chances of usable readback. For failure to reconnect at 2Mbps, `MIRROR FRAME` can now work at 115200 with exact RGB565 pixels, but a full initial frame may take 20–40 seconds. It is for diagnosis and slow compatibility, **not** a substitute for a responsive live screen. If the diagnostic reports `TFT_READBACK_SUSPECT` or frame capture reports `LCD_READ_UNAVAILABLE`, this ST7798 board may not expose display GRAM readback; hardware-specific framebuffer capture would be needed for exact live mirroring.

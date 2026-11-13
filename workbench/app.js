@@ -1072,7 +1072,7 @@
         return sendReceiver(value);
       }
       if(role==='emitter'){
-        if(!/^(STATUS|IDENTITY|LIST|HELP|COLORS|STOP|MIRROR (?:ON|OFF|FRAME(?: [0-9]{1,10})?|BAUD (?:115200|2000000)|TOUCH [0-9]{1,3} [0-9]{1,3} (?:DOWN|MOVE|UP)))$/.test(value))
+        if(!/^(STATUS|IDENTITY|LIST|HELP|COLORS|STOP|MIRROR (?:ON|OFF|DIAG|FRAME(?: [0-9]{1,10})?|BAUD (?:115200|2000000)|TOUCH [0-9]{1,3} [0-9]{1,3} (?:DOWN|MOVE|UP)))$/.test(value))
           return Promise.resolve(false);
         if(batch.active&&value!=='STATUS'&&value!=='STOP')return Promise.resolve(false);
         if(value==='STOP'){ui.stopCase.click();return Promise.resolve(true);}
