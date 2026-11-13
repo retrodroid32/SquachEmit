@@ -1,0 +1,48 @@
+/* Desktop Workbench: left testing workspace and sticky right USB control rail. */
+main.desktop-workbench{max-width:1920px;display:grid;grid-template-columns:minmax(0,1fr) 455px;gap:18px;padding:20px 22px 44px;align-items:start}
+#desktopWorkbenchLeft{min-width:0}
+#desktopControlRail{min-width:0;position:sticky;top:12px;max-height:calc(100vh - 24px);overflow:auto;scrollbar-width:thin;scrollbar-color:#385767 transparent;padding:0 3px 14px}
+.dc-railhead{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:19px 16px;margin:0 0 13px;background:linear-gradient(115deg,#10273a,#111d32);border:1px solid #2b5260;border-radius:14px}
+.dc-overline{color:#62e3d4;font-size:10px;font-weight:850;letter-spacing:.17em}
+.dc-railhead h2{margin:4px 0 0;font-size:21px}
+.dc-railhead p{color:#9ab6c8;font-size:11px;margin:4px 0 0}
+.dc-railhead button{white-space:nowrap;background:#62e3d4;color:#0b1d28;border-color:#84e7df}
+.dc-card{background:linear-gradient(155deg,#101e32,#0c182a);border:1px solid #284759;border-radius:15px;margin-bottom:13px;padding:16px;box-shadow:0 12px 25px #05091022}
+.dc-cardhead{display:flex;gap:10px;align-items:center;margin-bottom:15px}
+.dc-icon{display:grid;place-items:center;border:1px solid #376c71;background:#0c2e38;color:#66e9d8;width:36px;height:36px;border-radius:10px;font-size:23px}
+.dc-category{color:#84a5bd;font-size:9px;letter-spacing:.11em;font-weight:800}
+.dc-cardhead h3{margin:1px 0 0;font-size:17px}
+.dc-state{margin-left:auto;color:#96a5b3;background:#14283b;border:1px solid #334a5b;border-radius:5px;padding:3px 6px;font:700 9px ui-monospace,Consolas,monospace;white-space:nowrap}
+.dc-state.online{color:#8ee8b0;border-color:#418164}
+.dc-display{background:#04101b;border:9px solid #172f40;box-shadow:0 0 0 1px #405668,0 8px 20px #030713 inset;border-radius:14px;aspect-ratio:320/198;overflow:hidden;position:relative}
+.dc-screen{height:100%;padding:11px 13px;background:radial-gradient(circle at 70% 100%,#381c59 0,transparent 50%),linear-gradient(145deg,#10162b,#0a1f31 60%,#071122);display:flex;flex-direction:column}
+.dc-screenbar{font:700 9px ui-monospace,Consolas,monospace;color:#75c4d0;letter-spacing:.1em;display:flex;justify-content:space-between;border-bottom:1px solid #385772;padding-bottom:7px}
+.dc-screenbar span:last-child{color:#485a6b}
+.dc-screenbar span:last-child.online{color:#75e8b4}
+.dc-screenname{font:850 18px ui-monospace,Consolas,monospace;color:#ecdcff;margin-top:17px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.dc-screenmetric{font:750 13px ui-monospace,Consolas,monospace;color:#61eddb;margin-top:8px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.dc-screensub{font:11px ui-monospace,Consolas,monospace;color:#a8c6db;margin-top:9px;line-height:1.4;overflow-wrap:anywhere;display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;overflow:hidden}
+.dc-screenfoot{font:700 9px ui-monospace,Consolas,monospace;color:#92a0b4;margin-top:auto}
+.dc-display video{width:100%;height:100%;object-fit:contain;background:#000}
+.dc-displaymode{color:#a0b2c5;font-size:10px;margin:9px 2px 13px;line-height:1.45}
+.dc-camera{border-top:1px solid #2c4156;border-bottom:1px solid #2c4156;padding:12px 0}
+.dc-camera label,.dc-actiontitle,.dc-advanced label{display:block;color:#93a9c2;font-size:10px;font-weight:800;letter-spacing:.11em;margin:0 0 8px}
+.dc-camera select{padding:8px 12px;font-size:12px}
+.dc-camera-actions{display:grid;grid-template-columns:1.3fr 1fr 1fr;gap:5px;margin-top:7px}
+.dc-camera-actions button{padding:8px 5px;font-size:10px}
+.dc-connections{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:13px 0 15px}
+.dc-connections button:first-child{background:#214e55;color:#a2fcf0;border-color:#3f8b89}
+.dc-actiontitle{margin:13px 0 8px}
+.dc-actions{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px}
+.dc-actions button{font-size:10px;padding:9px 4px;line-height:1.1;white-space:normal;min-height:35px}
+.dc-advanced{background:#0b2636;border:1px solid #28556a;padding:10px;margin-top:13px;border-radius:9px}
+.dc-advanced small{display:block;color:#a4b9c8;font-size:10px;margin-top:7px}
+.dc-clock-controls{display:grid;grid-template-columns:repeat(3,1fr);gap:5px}
+.dc-clock-controls select{padding:7px 4px;font-size:11px}
+.dc-advanced button{margin-top:8px;width:100%;font-size:11px}
+.dc-terminal{font:10px/1.45 "Cascadia Code",Consolas,monospace;max-height:112px;min-height:77px;white-space:pre-wrap;overflow:auto;color:#9fe3d0;background:#040f1a;border:1px solid #275663;border-radius:8px;padding:9px;margin:0}
+.dc-feedback{color:#95b5c9;font-size:10px;min-height:21px;margin-top:10px}
+.dc-footnote{font-size:11px;color:#b8c8d5;line-height:1.6;border:1px solid #6b5547;background:#221d26;border-radius:11px;padding:15px}
+.dc-footnote b{color:#ffca92}
+@media(max-width:1400px){main.desktop-workbench{grid-template-columns:minmax(0,1fr)}#desktopControlRail{position:static;max-height:none;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}#desktopControlRail>.dc-railhead,#desktopControlRail>.dc-footnote{grid-column:1 / -1}.dc-card{margin-bottom:0}}
+@media(max-width:800px){#desktopControlRail{display:block}.dc-card{margin-bottom:14px}main.desktop-workbench{padding:12px}}
