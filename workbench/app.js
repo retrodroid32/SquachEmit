@@ -1029,9 +1029,29 @@
         if(!/^(LOG|RADIO|RADIO SCAN|MEM|WIFI|BLACKBOX|ROT|SCAN (?:AUTO|ACTIVE|PASSIVE)|CLOCK [01] [0-2] [0-6]|BG (?:[0-9]|1[0-9])|MIRROR (?:ON|OFF|FRAME|TOUCH [0-9]{1,3} [0-9]{1,3} (?:DOWN|MOVE|UP)))$/.test(value))
           return Promise.resolve(false);
         if(batch.active&&!/^(?:RADIO|MEM)$/.test(value))return Promise.resolve(false);
-        if(value==='MIRROR ON')receiverMirror=true;
-        if(value==='MIRROR OFF')receiverMirror=false;
-        if(value==='LOG')return requestWatchSnapshot().then(function(r){return !!r;});
+        if(value==='MIRROR ON'){
+          if(receiverMirror)return Promise.resolve(true);
+          receiverMirror=true;
+          // Prevent the structured LOG poller and binary image transport
+          // competing for the same serial channel. The caller explicitly
+          // chose LCD mirroring, not automated signal scoring.
+          stopWatchPolling();
+          return sendReceiver(value).then(function(ok){
+            if(!ok){receiverMirror=false;startWatchPolling();}
+            return ok;
+          });
+        }
+        if(value==='MIRROR OFF'){
+          return sendReceiver(value).then(function(ok){
+            receiverMirror=false;
+            if(devices.receiver.port)startWatchPolling();
+            return ok;
+          });
+        }
+        if(value==='LOG'){
+          if(receiverMirror)return Promise.resolve(false);
+          return requestWatchSnapshot().then(function(r){return !!r;});
+        }
         return sendReceiver(value);
       }
       if(role==='emitter'){
