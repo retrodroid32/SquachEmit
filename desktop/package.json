@@ -1,0 +1,67 @@
+{
+  "name": "squachemit-workbench-desktop",
+  "version": "0.2.0",
+  "private": true,
+  "description": "SquachEmit Detection Workbench for Windows with dual-device serial control and optional live camera previews",
+  "main": "main.cjs",
+  "license": "GPL-3.0-only",
+  "scripts": {
+    "start": "electron .",
+    "test": "node --test test/*.test.cjs",
+    "dist:win": "electron-builder --win nsis portable --x64 --publish never"
+  },
+  "devDependencies": {
+    "electron": "^44.0.0",
+    "electron-builder": "^26.0.12"
+  },
+  "build": {
+    "appId": "com.retrodroid32.squachemit.workbench",
+    "productName": "SquachEmit Workbench",
+    "directories": {
+      "output": "dist"
+    },
+    "asar": true,
+    "files": [
+      "main.cjs",
+      "package.json",
+      "public/**/*"
+    ],
+    "extraResources": [
+      {
+        "from": "../workbench",
+        "to": "workbench",
+        "filter": [
+          "**/*"
+        ]
+      },
+      {
+        "from": "../tests/cases.json",
+        "to": "workbench/cases.json"
+      },
+      {
+        "from": "./public",
+        "to": "desktop-panel"
+      }
+    ],
+    "win": {
+      "target": [
+        {
+          "target": "nsis",
+          "arch": [
+            "x64"
+          ]
+        },
+        {
+          "target": "portable",
+          "arch": [
+            "x64"
+          ]
+        }
+      ]
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true
+    }
+  }
+}
