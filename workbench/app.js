@@ -145,7 +145,7 @@
         '\nReceiver: '+(t._autoHit ? 'AUTO MATCH '+t._autoHit.observed+
             ' at '+t._autoHit.mac+' (new exact-MAC LOG entry)' :
             t._autoCandidate ? 'ACTUAL '+t._autoCandidate.observed+
-              ' at '+t._autoCandidate.mac+' (missing baseline; NOT SCORED)' :
+              ' at '+t._autoCandidate.mac+' (unverified repeat/baseline; NOT SCORED)' :
             t._baseline ? 'Watching for new exact-MAC LOG entry' :
             'No baseline; exact-MAC sightings will be marked unverified')+
         '\nNo automatic NONE is inferred from absent entries.');
@@ -280,16 +280,19 @@
       var usableBaseline=t._baseline &&
         t._baseline.finishedAt<=t._startedAt &&
         t._startedAt-t._baseline.finishedAt<=5000;
-      var hit=usableBaseline?
-        core.matchWatchDetection(t,t._baseline,snapshot):
-        core.findUnverifiedWatchObservation(t,snapshot);
+      var verifiedHit=usableBaseline?
+        core.matchWatchDetection(t,t._baseline,snapshot):null;
+      // Even a previously seen MAC is an ACTUAL receiver classification;
+      // it just cannot prove a *new* detection in this run. Preserve the
+      // observation as UNVERIFIED instead of showing a blank ACTUAL cell.
+      var hit=verifiedHit||core.findUnverifiedWatchObservation(t,snapshot);
       if(!hit)continue;
       if(hit.ambiguous){
         autoStatus('AMBIGUOUS: '+hit.mac+
           ' appeared under multiple receiver classifications; inspect LOG manually.');
         continue;
       }
-      var verified=!!usableBaseline;
+      var verified=!!verifiedHit;
       if(verified){
         t._autoHit=hit;
         t.observed=hit.observed;
@@ -305,8 +308,10 @@
         t.window=''; // no verified pre-RUN listening baseline
         t.notes='UNVERIFIED SquachWatch LOG: exact MAC '+hit.mac+
           ' classified '+hit.observed+', RSSI '+hit.rssi+
-          ' dBm, state '+hit.state+'; pre-test LOG baseline unavailable. '+
-          'The entry could predate RUN; accuracy NOT scored.';
+          ' dBm, state '+hit.state+'; '+(usableBaseline?
+            'entry already existed in the baseline without proof of a new hit. ':
+            'pre-test LOG baseline unavailable. ')+
+          'Receiver classification observed, but this run is NOT scored.';
       }
       matchedLog(new Date(hit.finishedAt).toLocaleTimeString()+
         '  '+t.id+'  ACTUAL '+hit.observed+'  MAC '+hit.mac+
