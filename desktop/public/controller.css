@@ -1,4 +1,4 @@
-/* Desktop Workbench: left testing workspace and sticky right USB control rail. */
+/* Real USB device screens on the right, validated Workbench on the left. */
 main.desktop-workbench{max-width:1920px;display:grid;grid-template-columns:minmax(0,1fr) 455px;gap:18px;padding:20px 22px 44px;align-items:start}
 #desktopWorkbenchLeft{min-width:0}
 #desktopControlRail{min-width:0;position:sticky;top:12px;max-height:calc(100vh - 24px);overflow:auto;scrollbar-width:thin;scrollbar-color:#385767 transparent;padding:0 3px 14px}
@@ -14,22 +14,30 @@ main.desktop-workbench{max-width:1920px;display:grid;grid-template-columns:minma
 .dc-cardhead h3{margin:1px 0 0;font-size:17px}
 .dc-state{margin-left:auto;color:#96a5b3;background:#14283b;border:1px solid #334a5b;border-radius:5px;padding:3px 6px;font:700 9px ui-monospace,Consolas,monospace;white-space:nowrap}
 .dc-state.online{color:#8ee8b0;border-color:#418164}
-.dc-display{background:#04101b;border:9px solid #172f40;box-shadow:0 0 0 1px #405668,0 8px 20px #030713 inset;border-radius:14px;aspect-ratio:320/198;overflow:hidden;position:relative}
-.dc-screen{height:100%;padding:11px 13px;background:radial-gradient(circle at 70% 100%,#381c59 0,transparent 50%),linear-gradient(145deg,#10162b,#0a1f31 60%,#071122);display:flex;flex-direction:column}
-.dc-screenbar{font:700 9px ui-monospace,Consolas,monospace;color:#75c4d0;letter-spacing:.1em;display:flex;justify-content:space-between;border-bottom:1px solid #385772;padding-bottom:7px}
-.dc-screenbar span:last-child{color:#485a6b}
-.dc-screenbar span:last-child.online{color:#75e8b4}
-.dc-screenname{font:850 18px ui-monospace,Consolas,monospace;color:#ecdcff;margin-top:17px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.dc-screenmetric{font:750 13px ui-monospace,Consolas,monospace;color:#61eddb;margin-top:8px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.dc-screensub{font:11px ui-monospace,Consolas,monospace;color:#a8c6db;margin-top:9px;line-height:1.4;overflow-wrap:anywhere;display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;overflow:hidden}
-.dc-screenfoot{font:700 9px ui-monospace,Consolas,monospace;color:#92a0b4;margin-top:auto}
+.dc-display{background:#020608;border:9px solid #172f40;box-shadow:0 0 0 1px #405668,0 8px 20px #030713 inset;border-radius:14px;aspect-ratio:320 / 240;overflow:hidden;position:relative;display:flex;align-items:center;justify-content:center;min-height:165px}
+.dc-lcd{width:100%;height:100%;display:flex;align-items:center;justify-content:center;background:#000}
+.dc-display canvas{display:block;width:100%;height:auto;max-width:100%;max-height:100%;object-fit:contain;image-rendering:pixelated;touch-action:none;cursor:crosshair;background:#000}
+.dc-display canvas[hidden],.dc-placeholder[hidden],.dc-lcd[hidden],.dc-display video[hidden]{display:none!important}
+.dc-display canvas:focus-visible{outline:3px solid #65edda;outline-offset:-3px}
+.dc-placeholder{display:flex;flex-direction:column;justify-content:center;align-items:center;text-align:center;gap:7px;width:100%;height:100%;padding:17px;color:#bed2df;font:700 12px ui-monospace,Consolas,monospace}
+.dc-placeholder-icon{font-size:29px;color:#3d6e80}
+.dc-placeholder small{font-size:10px;font-weight:400;color:#8298a7;max-width:280px;line-height:1.45}
 .dc-display video{width:100%;height:100%;object-fit:contain;background:#000}
-.dc-displaymode{color:#a0b2c5;font-size:10px;margin:9px 2px 13px;line-height:1.45}
+.dc-frame-meta{color:#8cf1d7;font:10px/1.45 ui-monospace,Consolas,monospace;margin-top:8px;min-height:16px;overflow-wrap:anywhere}
+.dc-mirror-actions{display:grid;grid-template-columns:1fr 1fr .7fr;gap:7px;margin:8px 0 11px}
+.dc-mirror-actions button{font-size:11px;padding:9px 4px}
+.dc-mirror-actions button:first-child{background:#225b57;color:#a0fff3;border-color:#3f8b89;font-weight:800}
+.dc-displaymode{color:#a0b2c5;font-size:10px;margin:9px 2px 13px;line-height:1.5}
 .dc-camera{border-top:1px solid #2c4156;border-bottom:1px solid #2c4156;padding:12px 0}
-.dc-camera label,.dc-actiontitle,.dc-advanced label{display:block;color:#93a9c2;font-size:10px;font-weight:800;letter-spacing:.11em;margin:0 0 8px}
+.dc-camera label,.dc-actiontitle,.dc-advanced label,.dc-baud label{display:block;color:#93a9c2;font-size:10px;font-weight:800;letter-spacing:.11em;margin:0 0 8px}
 .dc-camera select{padding:8px 12px;font-size:12px}
 .dc-camera-actions{display:grid;grid-template-columns:1.3fr 1fr 1fr;gap:5px;margin-top:7px}
 .dc-camera-actions button{padding:8px 5px;font-size:10px}
+.dc-baud{border:1px solid #254456;border-radius:9px;padding:11px;margin:10px 0;background:#0b1b2b}
+.dc-baud-row{display:grid;grid-template-columns:1.4fr 1fr;gap:6px}
+.dc-baud select,.dc-baud button{font-size:11px;min-width:0;padding:8px 5px}
+.dc-baud>button{margin:8px 0 0;width:100%;font-size:11px}
+.dc-baud small{display:block;color:#9ab0c3;line-height:1.5;font-size:10px;margin-top:8px}
 .dc-connections{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:13px 0 15px}
 .dc-connections button:first-child{background:#214e55;color:#a2fcf0;border-color:#3f8b89}
 .dc-actiontitle{margin:13px 0 8px}
