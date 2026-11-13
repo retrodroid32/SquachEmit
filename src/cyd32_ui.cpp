@@ -700,9 +700,10 @@ void cyd32UiMirrorDiag(unsigned long baud){
   lcd.readRect(0,0,32,1,samples);
   unsigned int diverse=0;
   for(int i=1;i<32;++i)if(samples[i]!=samples[0])++diverse;
-  Serial.printf("MIRROR DIAG READY=1 CAL=%u SIZE=%dx%d BAUD=%lu TFT_FIRST=%04X TFT_DIFFERENT=%u FREE_HEAP=%u\n",
+  // Avoid Arduino-only ESP globals so native host LCD tests also compile.
+  Serial.printf("MIRROR DIAG READY=1 CAL=%u SIZE=%dx%d BAUD=%lu TFT_FIRST=%04X TFT_DIFFERENT=%u\n",
     calibrated?1u:0u,lcd.width(),lcd.height(),baud,
-    (unsigned)samples[0],diverse,(unsigned)ESP.getFreeHeap());
+    (unsigned)samples[0],diverse);
   if(diverse==0)Serial.println("MIRROR DIAG WARN TFT_READBACK_SUSPECT");
 }
 void cyd32UiMirrorStop(){

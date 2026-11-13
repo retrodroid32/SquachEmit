@@ -2,7 +2,7 @@
   "schema": 1,
   "scenario_count": 172,
   "firmware_sources": {
-    "src": "0aa404384ec602f1db51b0c708815bcddb0beecf",
+    "src": "f61093f0a6c015affaacc795887348aedba51712",
     "include": "56dddad06a2caea22b1d2ea7ce74aaa3e39b67b5",
     "lib": "bd0df45f7747bc9971aa4b379a12940dd2d7d98f",
     "SquachEmit.ino": "90b4205813a2f7885bc1e12ce7431eebf7249f45",
@@ -10,18 +10,17 @@
   },
   "builds": {
     "cyd32-st7798": {
-      "title": "SquachEmit v1.1.0 CYD 3.2 LAB — 172 Cases · Mirror Diagnostics + Touch R5",
+      "title": "SquachEmit v1.1.0 CYD 3.2 LAB — 172 Cases · Mirror Diagnostics + Remote Touch R5",
       "version": "v1.1.0 MAINLINE · 172 cases",
-      "summary": "Unmerged 172-case LAB R5 for CYD 3.2 ST7798. Improves the experimental real-RGB565 LCD mirror: conservative 6 MHz TFT GRAM SPI read clock, captures actual calibration screen before touch calibration, MIRROR DIAG reports hardware readback/baud, and accepts a slow but authentic 115200 fallback when Windows COM reconnect resets 2Mbps UART. Windows Workbench v0.4.1 requires firmware MIRROR READY before requesting frames, reports bad baud or unreadable LCD explicitly, and maps mouse DOWN/MOVE/UP to native touch controls. TFT readback, colors, latency and physical touch are unverified. Stable production v1.1.0 unchanged; SHA-256 segment preflight mandatory.",
+      "summary": "LAB R5 for CYD 3.2 ST7798: 172 synthetic cases and actual RGB565 TFT LCD mirroring. A 6MHz SPI read clock and MIRROR DIAG report panel state, UART speed and TFT pixel variation. LCD capture works before touch calibration. The slow 115200 mode supports USB reconnects that reset the 2Mbps baud. Windows Workbench R6 requires MIRROR READY and automatically pauses SquachWatch screen streaming for exact-MAC LOG detection while preserving the SquachEmit mirror. Physical TFT readback, color fidelity and remote touch remain unverified. SHA-256 flashing preflight required.",
       "highlights": [
-        "R5 LCD diagnostic: MIRROR DIAG returns READY, CAL, physical LCD SIZE, real BAUD, TFT RGB565 sample variation and free heap.",
-        "LCD GRAM read clock reduced from 20MHz to 6MHz to improve reliability on ST7798/ST7789-compatible boards.",
-        "Real LCD capture works even before touchscreen calibration; remote touch still requires calibration.",
-        "Slow authentic RGB565 full-frame capture is available at default 115200 if USB COM reconnect resets UART; allow 20–40s for first frame.",
-        "Windows EXE 0.4.1 requires actual MIRROR READY acknowledgment, and clearly reports unsupported firmware, wrong baud, panel-readback failure.",
-        "Live 2Mbps mode retains nonblocking two-row streaming and exact changed-row deltas and touch release; do not fabricate screenshots.",
-        "172 bounded synthetic BLE/Wi-Fi cases; selected 3–30s duration; unique synthetic identities; verify four firmware segments by SHA-256.",
-        "Real hardware validation of GRAM readback, touchscreen navigation and full-motion latency is still pending."
+        "Real RGB565 LCD pixels with nonblocking two-row transport and sequence-checked changed-row updates.",
+        "6MHz TFT read clock; MIRROR DIAG reports UART baud, LCD size, calibration and pixel variation.",
+        "Capture real physical LCD before touch calibration; remote touch requires calibration.",
+        "115200 compatibility screenshot mode after USB reset; first full frame may take 20–40 seconds.",
+        "Windows Workbench R6 waits for actual MIRROR READY and displays readback failures instead of fake screens.",
+        "SquachWatch receiver mirror pauses automatically for exact-MAC LOG tests; SquachEmit mirror stays independent.",
+        "172 synthetic BLE/Wi-Fi profiles, 3–30-second TX controls, SHA-256 integrity and hardware tests required."
       ]
     },
     "c5-waveshare-28": {
