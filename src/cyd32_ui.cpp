@@ -36,6 +36,9 @@ Screen screen=Screen::Home;
 DeviceCategory category=DeviceCategory::Axon;
 size_t selected=0,page=0,categoryPage=0;
 uint8_t durationSeconds=12; // 3..30s, saved independently of touch calibration
+bool remoteDown=false;
+uint16_t remoteX=0,remoteY=0;
+uint32_t remoteAt=0,mirrorSequence=0;
 bool ready=false,calibrated=false,redraw=true,wasPressed=false,previousSuite=false;
 bool panelInverted=false;
 uint32_t lastPoll=0,lastPress=0,lastCount=UINT32_MAX,colorBarsUntil=0;
@@ -632,7 +635,11 @@ Cyd32UiAction cyd32UiTick(const char* active,uint32_t remaining,bool suite){
     return Cyd32UiAction::None;
   }
   uint16_t x=0,y=0;
-  const bool pressed=lcd.getTouch(&x,&y,450);
+  bool pressed=lcd.getTouch(&x,&y,450);
+  if(remoteDown){
+    if(now-remoteAt>4000u)remoteDown=false;
+    else {x=remoteX;y=remoteY;pressed=true;}
+  }
   Cyd32UiAction action=Cyd32UiAction::None;
   if(pressed&&!wasPressed&&now-lastPress>=240&&x<kW&&y<kH){
     if(screen==Screen::Home)action=touchHome(x,y,active&&*active,suite);
@@ -645,5 +652,49 @@ Cyd32UiAction cyd32UiTick(const char* active,uint32_t remaining,bool suite){
   }
   wasPressed=pressed;
   return action;
+}
+
+void cyd32UiMirrorFrame(){
+  // This returns actual physical TFT readback. Some ST7798 variants may not
+  // support GRAM read on their wiring: physical validation is mandatory.
+  if(!ready || !calibrated){
+    Serial.println("MIRROR ERROR LCD_NOT_READY");return;
+  }
+  const int w=lcd.width(),h=lcd.height();
+  if(w<1||w>320||h<1||h>320){
+    Serial.println("MIRROR ERROR BAD_DISPLAY_SIZE");return;
+  }
+  static const char alphabet[]="ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
+  uint16_t pixels[320];
+  char encoded[860];
+  const unsigned long seq=++mirrorSequence;
+  Serial.printf("MIRROR BEGIN %lu %d %d RGB565\n",seq,w,h);
+  for(int row=0;row<h;row++){
+    lcd.readRect(0,row,w,1,pixels);
+    // Export native RGB565 words, little-endian. Host draws exactly the
+    // returned GRAM values; there is no intermediate illustrative UI.
+    int n=0;
+    for(int i=0;i<w*2;i+=3){
+      const uint8_t a=((uint8_t*)pixels)[i];
+      const uint8_t b=(i+1<w*2)?((uint8_t*)pixels)[i+1]:0;
+      const uint8_t c=(i+2<w*2)?((uint8_t*)pixels)[i+2]:0;
+      encoded[n++]=alphabet[a>>2];
+      encoded[n++]=alphabet[((a&3)<<4)|(b>>4)];
+      encoded[n++]=(i+1<w*2)?alphabet[((b&15)<<2)|(c>>6)]:'=';
+      encoded[n++]=(i+2<w*2)?alphabet[c&63]:'=';
+    }
+    Serial.printf("MIRROR ROW %lu %d ",seq,row);
+    Serial.write((const uint8_t*)encoded,n);
+    Serial.println();
+  }
+  Serial.printf("MIRROR END %lu\n",seq);
+}
+bool cyd32UiRemoteTouch(uint16_t x,uint16_t y,const char* phase){
+  if(!ready||!calibrated||!phase)return false;
+  if(strcmp(phase,"UP")==0){remoteDown=false;return true;}
+  if(x>=lcd.width()||y>=lcd.height())return false;
+  if(strcmp(phase,"DOWN")!=0&&strcmp(phase,"MOVE")!=0)return false;
+  remoteX=x;remoteY=y;remoteAt=millis();remoteDown=true;
+  return true;
 }
 #endif
