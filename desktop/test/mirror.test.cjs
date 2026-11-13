@@ -53,7 +53,7 @@ test('missing, duplicate, wrong-sequence and corrupt rows never publish a frame'
   asm.feed('MIRROR BEGIN 4 1 1 RGB332');
   assert.equal(asm.feed(row(4,0,[0,1])).kind,'error');
   asm.feed('MIRROR BEGIN 5 1 1 RGB332');
-  assert.equal(asm.feed('MIRROR ROW 5 0 not_base64!!').kind,'info');
+  assert.equal(asm.feed('MIRROR ROW 5 0 not_base64!!').kind,'error');
   assert.equal(asm.feed('MIRROR ERROR FRAME_ORDER 5').kind,'error');
   asm.feed('MIRROR BEGIN 7 1 2 RGB332');
   assert.equal(asm.feed(row(7,0,[0])).kind,'row');
@@ -69,4 +69,47 @@ test('oversized dimensions and explicit stream errors fail closed',()=>{
   asm.feed('MIRROR BEGIN 8 1 1 RGB565');
   assert.equal(asm.feed('MIRROR ERROR LCD_NOT_READY').kind,'error');
   assert.equal(asm.pending,null);
+});
+
+test('RGB565 changed-row delta is lossless and preserves every other real pixel',()=>{
+  const asm=new MirrorAssembler();
+  const first=image(asm,8,3,2,'RGB565',[
+    [0x00,0xf8,0xe0,0x07,0x1f,0x00],
+    [0xff,0xff,0x00,0x00,0xe0,0x07]
+  ]);
+  const baseline=Array.from(first.frame.pixels);
+  assert.equal(asm.feed('MIRROR DELTA 9 8 3 2 RGB565').kind,'begin');
+  assert.equal(asm.feed(row(9,1,[0x00,0x00,0xff,0xff,0x1f,0x00])).kind,'row');
+  const updated=asm.feed('MIRROR END 9');
+  assert.equal(updated.kind,'frame');
+  assert.equal(updated.frame.delta,true);
+  assert.equal(updated.frame.changedRows,1);
+  assert.deepEqual(Array.from(updated.frame.pixels.slice(0,12)),baseline.slice(0,12));
+  assert.deepEqual(Array.from(updated.frame.pixels.slice(12)),[
+    0,0,0,255,255,255,255,255,0,0,255,255
+  ]);
+  assert.deepEqual(Array.from(first.frame.pixels),baseline,'previous full frame remains unchanged');
+  assert.equal(asm.feed('MIRROR DELTA 10 9 3 2 RGB565').kind,'begin');
+  const noChange=asm.feed('MIRROR END 10');
+  assert.equal(noChange.kind,'frame');
+  assert.equal(noChange.frame.changedRows,0);
+  assert.deepEqual(Array.from(noChange.frame.pixels),Array.from(updated.frame.pixels));
+});
+test('delta to missing baseline or wrong size fails closed; full frame restores sync',()=>{
+  const asm=new MirrorAssembler();
+  assert.equal(asm.feed('MIRROR DELTA 11 10 1 1 RGB565').kind,'error');
+  image(asm,14,2,1,'RGB565',[[0x00,0xf8,0x1f,0x00]]);
+  assert.equal(asm.feed('MIRROR DELTA 15 12 2 1 RGB565').kind,'error');
+  assert.equal(asm.feed('MIRROR DELTA 15 14 3 1 RGB565').kind,'error');
+  assert.equal(asm.feed('MIRROR DELTA 13 14 2 1 RGB565').kind,'error');
+  const fixed=image(asm,16,1,1,'RGB565',[[0xe0,0x07]]);
+  assert.equal(fixed.frame.pixels[1],255);
+  assert.equal(asm.feed('MIRROR DELTA 17 16 1 1 RGB565').kind,'begin');
+  assert.equal(asm.feed('MIRROR ROW 17 0 malformed!').kind,'error');
+  assert.equal(asm.last.sequence,16,'corrupt delta must never destroy last valid base');
+  assert.equal(asm.feed('MIRROR DELTA 18 16 1 1 RGB565').kind,'begin');
+  assert.equal(asm.feed('MIRROR END 18').kind,'frame');
+  asm.reset();
+  assert.equal(asm.feed('MIRROR DELTA 19 18 1 1 RGB565').kind,'error',
+    'reconnecting requires fresh full keyframe');
 });
