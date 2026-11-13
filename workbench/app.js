@@ -16,7 +16,9 @@
     'recvLog','copyReceiver','autoLogState','autoDetectionFeed','pollNow',
     'trialSelect','trialDetails','emissionStatus','listenWindow',
     'observed','latencyMs','evidenceNotes','saveObservation','observationNotice',
-    'trialRows','importCsv','csvFile','exportCsv','clearTrials'];
+    'trialRows','importCsv','csvFile','exportCsv','clearTrials',
+    'batchScope','batchDuration','batchGap','batchStart','batchStop',
+    'batchProgress','batchCount','batchCurrent'];
   var ui={};
   ids.forEach(function(id){ui[id]=byId(id);});
   var catalog={},cases=[],trials=[],selectedTrial=-1;
@@ -31,6 +33,9 @@
   var runAwaitTimer=null;
   var awaitingBegin=false;
   var transmitting=false;
+  var batch={active:false,queue:[],index:0,completed:0,current:null,
+    duration:8,gap:5,timer:null,endTimer:null,failures:0,message:'Ready to start'};
+  var emitterWrites=Promise.resolve();
   function runProgress(message){text('runFeedback',message);}
   function cancelRunAck(){
     if(runAwaitTimer!==null){clearTimeout(runAwaitTimer);runAwaitTimer=null;}
@@ -55,8 +60,8 @@
     var c=catalog[ui.caseSelect.value];
     if(!c){text('caseDetails','Select a catalog case to inspect its expected classification.');}
     else{
-      text('caseDetails',c.id+' · '+c.carrier+
-        '\nEXPECTED: '+c.expected+
+      text('caseDetails',core.signalName(c)+'\nID: '+c.id+' · '+c.carrier+
+        '\nSQUACHWATCH EXPECTED: '+c.expected+
         '\n'+c.description+
         (c.id.startsWith('OUI-')?
         '\nCAUTION: selected case transmits a registered vendor MAC prefix; this is NOT proof of a genuine device or Remote ID.':''));
@@ -90,7 +95,9 @@
     trials.forEach(function(t,i){
       var row=document.createElement('tr'),status=core.status(t,catalog);
       row.addEventListener('click',function(){ui.trialSelect.value=String(i);selectTrial();});
-      addCell(row,t.id);addCell(row,(catalog[t.id]||{}).expected||'Unknown');
+      addCell(row,(catalog[t.id]?core.signalName(catalog[t.id]):'Unknown device')+
+        '\n'+t.id);
+      addCell(row,(catalog[t.id]||{}).expected||'Unknown');
       addCell(row,t.observed||'—');addCell(row,t.emission||'—');addCell(row,t.window||'—');
       var td=document.createElement('td'),badge=document.createElement('span');
       badge.className='result '+status;badge.textContent=status;td.appendChild(badge);
@@ -107,8 +114,9 @@
     refreshMetric();
     ui.trialSelect.replaceChildren(option('','Select a trial…'));
     trials.forEach(function(t,i){
-      ui.trialSelect.appendChild(option(String(i),String(i+1)+' · '+t.id+
-        ' · '+core.status(t,catalog)));
+      ui.trialSelect.appendChild(option(String(i),String(i+1)+' · '+
+        (catalog[t.id]?core.signalName(catalog[t.id]):t.id)+
+        ' ['+t.id+'] · '+core.status(t,catalog)));
     });
     if(selectedTrial>=0 && selectedTrial<trials.length)ui.trialSelect.value=String(selectedTrial);
     updateButtons();
@@ -122,7 +130,8 @@
       ui.listenWindow.value='';ui.observed.value='';
       ui.latencyMs.value='';ui.evidenceNotes.value='';
     }else{
-      text('trialDetails',t.id+' · expected '+((catalog[t.id]||{}).expected||'UNKNOWN')+
+      text('trialDetails',(catalog[t.id]?core.signalName(catalog[t.id]):'Unknown device')+
+        '\nCASE: '+t.id+' · expected '+((catalog[t.id]||{}).expected||'UNKNOWN')+
         '\nEmitter sequence: '+(t.seq==null?'Imported':t.seq)+
         '\nEmitter result: '+(t.emission||'pending')+
         '\nReceiver: '+(t._autoHit ? 'AUTO MATCH '+t._autoHit.observed+
@@ -161,7 +170,7 @@
     ui.receiverBaud.disabled=receiver||opening.receiver;
     ui.pollNow.disabled=!receiver;
     var duration=Number(ui.duration.value);
-    ui.runCase.disabled=!connected||startingRun||awaitingBegin||transmitting||
+    ui.runCase.disabled=!connected||batch.active||startingRun||awaitingBegin||transmitting||
       !catalog[ui.caseSelect.value]||!ui.authorization.checked||
       !Number.isInteger(duration)||duration<3||duration>30;
     ui.runCase.textContent=startingRun?'Preparing receiver…':
@@ -169,7 +178,29 @@
       transmitting?'Transmitting…':'Run selected case';
     ui.applyShas.disabled=!(validSha(ui.receiverSha.value)&&validSha(ui.emitterSha.value));
     ui.stopCase.disabled=!connected;
+    updateBatchUi();
     ui.saveObservation.disabled=!(selectedTrial>=0 && trials[selectedTrial]);
+    ui.clearTrials.disabled=batch.active;
+    ui.importCsv.disabled=batch.active;
+  }
+  function updateBatchUi(){
+    var ready=!!devices.emitter.port&&!!devices.receiver.port&&
+      !opening.emitter&&!opening.receiver&&ui.authorization.checked&&
+      !startingRun&&!awaitingBegin&&!transmitting&&cases.length===172;
+    var duration=Number(ui.batchDuration.value),gap=Number(ui.batchGap.value);
+    var valid=Number.isInteger(duration)&&duration>=3&&duration<=30&&
+      Number.isInteger(gap)&&gap>=3&&gap<=30;
+    ui.batchStart.disabled=batch.active||!ready||!valid;
+    ui.batchStop.disabled=!batch.active;
+    ['batchScope','batchDuration','batchGap','caseSelect','duration'].forEach(function(id){
+      ui[id].disabled=batch.active;
+    });
+    ui.batchProgress.max=batch.queue.length||cases.length||172;
+    ui.batchProgress.value=batch.completed;
+    text('batchCount',batch.completed+' / '+(batch.queue.length||cases.length||172)+
+      ' completed · '+batch.failures+' transmitter failures'+
+      (batch.active?' · RUNNING':''));
+    text('batchCurrent',batch.message);
   }
   function uniqueRunId(){
     // The existing Python scorer requires (run_id, receiver, case ID) unique.
@@ -596,19 +627,20 @@
         if(!c||typeof c.id!=='string'||ids.has(c.id)||
            !/^[A-Z0-9][A-Z0-9_-]{1,100}$/.test(c.id)||!c.expected)
           throw new Error('Invalid or duplicated case in catalog');
+        core.signalName(c); // fail closed if device name is missing
         ids.add(c.id);catalog[c.id]=c;
       });
       cases=data;
       cases.sort(function(a,b){return a.id.localeCompare(b.id);});
       ui.caseSelect.replaceChildren(option('','Choose a test case…'));
       cases.forEach(function(c){
-        ui.caseSelect.appendChild(option(c.id,c.id+' · '+c.expected));
+        ui.caseSelect.appendChild(option(c.id,core.signalName(c)+'  ['+c.id+']'));
       });
       var values=Array.from(new Set(cases.map(function(c){return c.expected;})
         .concat(['NONE','ALPR','CAMERA','DEAUTH','EVILTWIN','RING','AXON']))).sort();
       ui.observed.replaceChildren(option('','Not evaluated'));
       values.forEach(function(s){ui.observed.appendChild(option(s,s));});
-      chooseCase();redrawTrials();
+      chooseCase();redrawTrials();updateBatchUi();
       notice('Loaded the 172-case catalog. No hardware is connected or transmitting.',false);
     }catch(e){
       notice('Catalog could not load: '+e.message+'. Run the published workbench site or the build-installer static output.',true);
