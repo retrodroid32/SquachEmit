@@ -54,7 +54,9 @@
     if(x.length!==7||!/^(0|[1-9]\d{0,2})$/.test(x[0]))return null;
     var type=trim(x[1]).toUpperCase().replace(/ /g,'');
     var mac=normalizeMac(x[2]);
-    if(!mac||!LABELS.includes(type)||type==='NONE'||type==='UNKNOWN')return null;
+    // UNKNOWN can appear in a real LOG table. Keep the full snapshot
+    // intact, but never treat UNKNOWN/NONE as a positive detection.
+    if(!mac||!LABELS.includes(type))return null;
     if(!/^-?\d{1,3}$/.test(x[3])||!/^\d{1,6}$/.test(x[4]))return null;
     var rssi=Number(x[3]),hits=Number(x[4]),state=trim(x[5]);
     if(rssi< -127||rssi>0||hits<0||hits>65535||
@@ -88,9 +90,15 @@
           if(trim(line)!=='row,type,mac,rssi,hits,state,when')return null;
           pending.header=true;
         }else{
+          // Background SquachWatch tasks can print [gps], [frame],
+          // [queue], etc. between LOG rows. Such diagnostics are not
+          // part of the CSV; discarding the entire snapshot on one was
+          // causing repeated baseline timeouts and empty ACTUAL cells.
+          // A malformed numbered row still invalidates the snapshot.
+          if(/^\[[a-z][a-z0-9_ -]*\]/i.test(trim(line)))return null;
           var row=parseWatchLogRow(line);
           if(!row||row.index!==pending.rows.length){
-            pending=null;return null; // malformed or interleaved response: fail closed
+            pending=null;return null; // malformed LOG row: fail closed
           }
           pending.rows.push(row);
         }
@@ -115,7 +123,11 @@
        trial._startedAt-before.finishedAt>5000)return null;
     var mac=normalizeMac(trial._mac);
     var recent=(after.rows||[]).filter(function(x){
-      return x.mac===mac && x.state==='here';
+      // The LOG ring records detected devices long after the signal stops.
+      // A new exact-MAC row marked "gone" is still independent evidence
+      // of a real detection. KEPT is restored flash history, never live.
+      return x.mac===mac && (x.state==='here'||x.state==='gone') &&
+        x.type!=='UNKNOWN' && x.type!=='NONE';
     }).filter(function(x){
       var old=(before.rows||[]).find(function(y){
         return y.mac===x.mac && y.type===x.type;
@@ -131,6 +143,29 @@
     return {observed:item.type,mac:item.mac,rssi:item.rssi,
       hits:item.hits,when:item.when,requestedAt:after.requestedAt,
       finishedAt:after.finishedAt};
+  }
+  // This is an observed exact-MAC receiver classification, but NOT a
+  // verified benchmark match. Use only when no valid pre-transmission LOG
+  // baseline exists. It may be an older detection that happens to be in
+  // the receiver ring, so never mark the listening window complete.
+  function findUnverifiedWatchObservation(trial,after) {
+    if(!trial||!after||!normalizeMac(trial._mac)||
+       !Number.isFinite(trial._startedAt)||
+       !Number.isFinite(after.requestedAt)||
+       after.requestedAt<trial._startedAt)return null;
+    const mac=normalizeMac(trial._mac);
+    const found=(after.rows||[]).filter(function(x){
+      return x.mac===mac && (x.state==='here'||x.state==='gone') &&
+        LABELS.includes(x.type) && x.type!=='UNKNOWN' && x.type!=='NONE';
+    });
+    if(!found.length)return null;
+    const types=new Set(found.map(function(x){return x.type;}));
+    if(types.size!==1)return {ambiguous:true,mac:mac,
+      types:Array.from(types)};
+    const item=found[0];
+    return {observed:item.type,mac:item.mac,rssi:item.rssi,hits:item.hits,
+      state:item.state,when:item.when,requestedAt:after.requestedAt,
+      finishedAt:after.finishedAt,verified:false};
   }
   function status(row, catalog) {
     var emission = trim(row.emission).toLowerCase();
@@ -366,7 +401,9 @@
   return {CSV_HEADER:CSV_HEADER,LABELS:LABELS,parseTruth:parseTruth,
     normalizeMac:normalizeMac,parseWatchLogCount:parseWatchLogCount,
     parseWatchLogRow:parseWatchLogRow,newWatchLogParser:newWatchLogParser,
-    matchWatchDetection:matchWatchDetection,signalName:signalName,batchPlan:batchPlan,
+    matchWatchDetection:matchWatchDetection,
+    findUnverifiedWatchObservation:findUnverifiedWatchObservation,
+    signalName:signalName,batchPlan:batchPlan,
     status:status,pendingReason:pendingReason,score:score,makeTrial:makeTrial,applyEnd:applyEnd,
     exportCsv:exportCsv,parseCsv:parseCsv};
 });
