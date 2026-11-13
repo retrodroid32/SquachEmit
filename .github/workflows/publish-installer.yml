@@ -1,7 +1,7 @@
 name: Publish SquachEmit web installer
 on:
   push:
-    branches: [main, maintenance/lab-172r4-pages-publish-20261113]
+    branches: [main]
     paths:
       - 'web-installer/**'
       - 'tools/build_installer_site.py'
@@ -38,7 +38,9 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          ref: ${{ github.sha }}
+          # A deploy must always originate from approved main, even if
+          # the source firmware was compiled on a feature/LAB branch.
+          ref: main
           persist-credentials: false
       - uses: actions/setup-python@v5
         with:
@@ -81,25 +83,20 @@ jobs:
               if (run.get('head_repository') or {}).get('full_name')!=repo:
                   continue
               branch=run.get('head_branch') or ''
-              # Exactly one user-approved feature commit may be published as LAB.
-              # Avoid implicit promotion of later/other feature-branch builds.
-              pinned_workbench_lab = (
-                  branch == 'feature/windows-desktop-control-center-20261112' and
-                  run['head_sha'] == '0b7a2edcd8f7de6fc45ad320a7c0b9f6fa2e8974'
-              )
-              targets = (
-                  [('cyd32-st7798','squachemit-cyd32-st7798-firmware-unverified','stable'),
-                   ('c5-waveshare-28','squachemit-waveshare-c5-28-firmware-unverified','stable'),
-                   ('s3-devkit','squachemit-esp32s3-firmware-unverified','stable')]
-                  if branch=='main' else
-                  [('cyd32-st7798','squachemit-cyd32-st7798-firmware-unverified','lab'),
-                   ('c5-waveshare-28','squachemit-waveshare-c5-28-firmware-unverified','lab'),
-                   ('s3-devkit','squachemit-esp32s3-firmware-unverified','lab')]
-                  if pinned_workbench_lab else
-                  [('cyd32-st7798','squachemit-cyd32-st7798-firmware-unverified','lab')]
-                  if branch.startswith('lab/cyd32-') else
-                  [('c5-waveshare-28','squachemit-waveshare-c5-28-firmware-unverified','lab')]
-                  if branch.startswith('lab/') else [])
+              # No individual SHA or branch-name exceptions: only successful
+              # CI runs from this repository and approved branch categories.
+              # Production builds always come from main; dev builds stay LAB.
+              if branch=='main':
+                  channel='stable'
+              elif branch.startswith(('feature/','lab/')):
+                  channel='lab'
+              else:
+                  continue
+              targets = [
+                  ('cyd32-st7798','squachemit-cyd32-st7798-firmware-unverified',channel),
+                  ('c5-waveshare-28','squachemit-waveshare-c5-28-firmware-unverified',channel),
+                  ('s3-devkit','squachemit-esp32s3-firmware-unverified',channel),
+              ]
               if not targets: continue
               sha=run['head_sha']
               for board, artifact, channel in targets:
@@ -124,7 +121,9 @@ jobs:
                       print(f'::warning::Could not download run {run["id"]}: {e}',file=sys.stderr)
                       continue
                   seen.add(key)
-                  profile=mainline_profile(sha) if (branch=='main' or pinned_workbench_lab) else None
+                  # Metadata is fetched from the exact artifact commit,
+                  # never borrowed from the current production branch.
+                  profile=mainline_profile(sha)
                   sources.append(dict(board=board,sha=sha,branch=branch,channel=channel,
                                       run_id=run['id'],created_at=run['created_at'],path=str(directory),
                                       source_profile=profile))

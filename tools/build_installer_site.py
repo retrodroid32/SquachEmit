@@ -21,10 +21,8 @@ BOARDS = {
     's3-devkit': {'chip': 'ESP32-S3', 'label': 'ESP32-S3 DevKitC-1'},
     'cyd32-st7798': {'chip': 'ESP32', 'label': 'CYD 3.2 ST7798 ESP32-2432S032R'},
 }
-# Exactly one approved Workbench feature revision is permitted as LAB.
-PINNED_LAB_BRANCH = 'feature/windows-desktop-control-center-20261112'
-PINNED_LAB_SHA = '0b7a2edcd8f7de6fc45ad320a7c0b9f6fa2e8974'
-ALLOWED_BRANCH = re.compile(r'^(main|lab/[A-Za-z0-9._/-]{1,110}|feature/windows-desktop-control-center-20261112)$')
+# Development branch *categories*, not hard-coded branch names or SHAs.
+ALLOWED_BRANCH = re.compile(r'^(main|(?:lab|feature)/[A-Za-z0-9._/-]{1,110})$')
 SHA = re.compile(r'^[a-f0-9]{40}$')
 
 NOTES_PATH = Path(__file__).resolve().with_name('firmware_build_notes.json')
@@ -140,8 +138,8 @@ def load_source(src: dict, output: Path, notes: dict | None = None) -> dict:
     sha = src['sha'].lower()
     if not SHA.fullmatch(sha) or not ALLOWED_BRANCH.fullmatch(src['branch']):
         raise ValueError(f'invalid trusted source ref: {src}')
-    if src['branch'] == PINNED_LAB_BRANCH and sha != PINNED_LAB_SHA:
-        raise ValueError('Workbench LAB artifact SHA not explicitly approved')
+    if src['branch'] != 'main' and src.get('channel') != 'lab':
+        raise ValueError('development-branch firmware must publish to LAB only')
     channel = src.get('channel')
     if channel not in ('lab', 'stable'):
         raise ValueError('unsupported firmware channel')
@@ -197,10 +195,8 @@ def load_source(src: dict, output: Path, notes: dict | None = None) -> dict:
                    if src.get('source_profile') is not None
                    else describe_build(sha, src['branch'], board,
                                        notes if notes is not None else load_build_notes()))
-    if channel == 'lab' and src['branch'] == PINNED_LAB_BRANCH:
-        if src.get('source_profile') is None:
-            raise ValueError('pinned LAB artifact requires an exact source profile')
-        description['version_label'] = f'LAB 172-R4 · {sha[:8]}'
+    if channel == 'lab' and src.get('source_profile') is not None:
+        description['version_label'] = f"LAB {src['source_profile']['scenario_count']} cases · {sha[:8]}"
     manifest={
         'name': description['title'],
         'version': description['version_label'],
@@ -239,7 +235,7 @@ def build(source_manifest: Path, output: Path) -> dict:
         builds.append(load_source(src,output,notes))
     builds.sort(key=lambda x:x['created_at'],reverse=True)
     catalog={'schema':1,'project':'SquachEmit','generated_from':'successful GitHub CI artifacts',
-             'builds':builds,'production_policy':'Public v1.0.0 approved by owner; physical hardware verification remains pending'}
+             'builds':builds,'production_policy':'Stable only from successful main CI; LAB only from successful same-repo feature/lab CI and requires physical verification'}
     (output/'catalog.json').write_text(json.dumps(catalog,indent=2)+'\n',encoding='utf-8')
     if not builds: raise ValueError('refusing to publish a Pages site with no validated CI source artifacts')
     print(f'Prepared {len(builds)} firmware builds (public and LAB; hardware verification pending): '+', '.join(x['id'] for x in builds))
