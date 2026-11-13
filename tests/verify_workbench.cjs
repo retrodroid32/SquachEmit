@@ -8,6 +8,32 @@ const catalog={
   'BLE-NEG-DRONE-UUID':{id:'BLE-NEG-DRONE-UUID',expected:'NONE'},
   'OUI-DJI-04A85A':{id:'OUI-DJI-04A85A',expected:'DRONE'}
 };
+// Every one of the firmware's 172 real signal IDs must have a descriptive
+// device-first label, including vendor-OUI and negative-control fixtures.
+const allCases=JSON.parse(fs.readFileSync('tests/cases.json','utf8'));
+assert.equal(allCases.length,172);
+const names=new Map();
+for(const c of allCases){
+  const name=core.signalName(c);
+  assert.ok(name.includes(' — '),'missing device-first label: '+c.id);
+  assert.ok(!name.startsWith('Unknown signal'),'anonymous signal: '+c.id);
+  assert.ok(!name.includes('undefined'),'incomplete device label: '+c.id);
+  assert.ok(!names.has(c.id),'duplicate fixture ID: '+c.id);
+  names.set(c.id,name);
+}
+assert.match(names.get('BLE-HACKER-NAME'),/^Flipper Zero — advertised BLE name$/);
+assert.match(names.get('BLE-HACKER-UUID'),/^Flipper Zero — service UUID 0x3081$/);
+assert.match(names.get('BLE-META-LUXOTTICA'),/^Luxottica \/ Ray-Ban —/);
+assert.match(names.get('OUI-AUTEL-18D7936'),/^Autel Intelligent/);
+assert.match(names.get('BLE-NEG-FLIP-MFG'),/^Flipper Zero —/);
+assert.throws(()=>core.signalName({id:'BLE-UNKNOWN-NEW',description:'x'}),/No device name/);
+const fullPlan=core.batchPlan(allCases,'all');
+assert.equal(fullPlan.length,172);
+assert.equal(core.batchPlan(allCases,'BLE').length,88);
+assert.equal(core.batchPlan(allCases,'WIFI').length,84);
+assert.equal(new Set(fullPlan.map(x=>x.id)).size,172);
+assert.deepEqual(fullPlan.map(x=>x.id),core.batchPlan(allCases,'all').map(x=>x.id));
+assert.throws(()=>core.batchPlan(allCases,'unknown'),/scope/);
 const sha='a'.repeat(40);
 const sample={event:'BEGIN',id:'BLE-FLOCK-MFG',expected:'FLOCK',
   seq:42,ms:1200,carrier:'BLE',mac:'C2:00:01:02:03:04',status:'ok'};
@@ -158,6 +184,8 @@ for(const required of [
   'RUN was sent but no TRUTH BEGIN arrived',
   'Duplicate (run_id, receiver, case)','requestWatchSnapshot()',
   'core.matchWatchDetection(','onWatchSnapshot(','startWatchPolling()',
+  'core.signalName(','core.batchPlan(','onBatchTruth(','startBatchStep()',
+  'endBatch(','batchDuration','batchGap','batchScope',
   "new TextEncoder().encode('LOG\\n')",'if(t.emission===\'ok\')finishAutoMatch(t)']){
   assert.ok(app.toLowerCase().includes(required.toLowerCase()),'missing: '+required);
 }
@@ -174,6 +202,9 @@ assert.match(html,/id="recvConnect"/);
 assert.match(html,/id="emitConnect"/);
 assert.match(html,/id="observed"/);
 assert.match(html,/id="trialRows"/);
+for(const id of ['batchStart','batchStop','batchScope','batchDuration',
+    'batchGap','batchProgress','batchCount','batchCurrent'])
+  assert.ok(html.includes('id="'+id+'"'),'missing automation control: '+id);
 const src=fs.readFileSync('tools/build_installer_site.py','utf8');
 assert.match(src,/publish_workbench/);
 assert.match(src,/cases\.json/);
