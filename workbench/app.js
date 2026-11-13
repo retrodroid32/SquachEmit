@@ -517,6 +517,11 @@
       !(event.event==='END'&&event.status==='ok'),false);
   }
   function startBatch(){
+    if(receiverMirror){
+      batch.message='Stop SquachWatch LCD mirroring before starting the automated '+
+        'detection suite; LOG snapshots and LCD frames share the USB serial channel.';
+      updateBatchUi();return;
+    }
     if(batch.active||startingRun||awaitingBegin||transmitting||
        !devices.emitter.port||!devices.receiver.port||!ui.authorization.checked)return;
     var duration=Number(ui.batchDuration.value),gap=Number(ui.batchGap.value);
@@ -633,10 +638,17 @@
   }
   function consume(role,chunk){
     var d=devices[role];
+    // A complete TFT screenshot can be more than 200 KB of serial data.
+    // Split complete lines FIRST: trimming the aggregate chunk before
+    // splitting discarded authentic MIRROR BEGIN/ROW lines on fast COM
+    // ports and made the Windows screen remain blank.
     d.buffer+=chunk;
-    if(d.buffer.length>65000)d.buffer=d.buffer.slice(-40000);
     var lines=d.buffer.split(/\r?\n/);
     d.buffer=lines.pop();
+    if(d.buffer.length>20000){
+      d.buffer='';
+      append(role,'[serial line too long; discarded incomplete row]\n');
+    }
     lines.forEach(function(line){
       if(desktopMode&&line.startsWith('MIRROR ')){
         desktopEvent('mirror',{role:role,line:line});
@@ -744,6 +756,11 @@
     return pending;
   }
   async function run(fromBatch){
+    if(receiverMirror){
+      runProgress('Stop SquachWatch LCD mirror first to restore exact-MAC LOG '+
+        'correlation; a screenshot is not detection evidence.');
+      return;
+    }
     if(batch.active&&!fromBatch)return;
     if(fromBatch&&(!batch.active||!batch.current||batch.current.id!==ui.caseSelect.value))return;
     var c=catalog[ui.caseSelect.value],duration=Number(ui.duration.value);
