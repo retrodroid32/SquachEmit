@@ -154,6 +154,52 @@ In the new preview, import the CSV, enter the real SHAs, and use the Apply
 button. Do not assume the GitHub repository's latest commit is the same
 binary already flashed onto a device.
 
+## Automated all-signal testing and device-first names (draft)
+
+PR #36 now includes an **AUTOMATED TEST SEQUENCE** panel with All (172),
+BLE-only (88) and Wi-Fi-only (84) modes. The operator must connect **both**
+SquachEmit and SquachWatch, check authorized testing and explicitly start
+the sequence in the browser. All-mode includes 37 registered-manufacturer
+Wi-Fi OUI-only laboratory beacon cases and requires a separate confirmation.
+The synthetic beacon IDs are not actual Remote ID or proof of a vendor device.
+
+The runner executes **one selected signal at a time** with a configurable
+3–30-second transmit duration and 3–30-second off-air cooldown. It waits
+for the actual matching emitter `TRUTH BEGIN` followed by `TRUTH END`
+or `TRUTH ERROR`, and it never advances based solely on a button click
+or inferred receiver event. A transmitter-reported ERROR is recorded as a
+failed emission and the sequence moves on after cooldown; a failed serial
+write, missing BEGIN/END, missing completed receiver LOG baseline, or
+disconnect **halts the queue** for operator review. Both STOP controls
+cancel outstanding automation and request an emitter STOP. The firmware's
+own hard 30-second limit remains in effect if the browser is closed.
+
+Every one of the 172 catalog entries has a **device-first descriptive
+display name** in the Workbench dropdown, progress panel, observation
+details and ledger. The native CYD 3.2 and C5 transmitter screens also
+show the device name as the primary label, retaining the case ID on
+the second line. For example, `BLE-HACKER-NAME` displays **Flipper Zero —
+advertised BLE name** in the Workbench and **Flipper Zero** on the device;
+`BLE-HACKER-UUID` displays **Flipper Zero — service UUID 0x3081**.
+Stable IDs, expected classifications, serial commands, CSV columns and
+on-air signal payloads are **unchanged**. Device names describe synthetic
+test fixtures; they do not authenticate an actual product.
+
+Receiver evidence remains independent. Each test starts with a fresh,
+completed SquachWatch LOG baseline; only a later new/reappearing exact-MAC
+sighting can be correlated automatically. Prior detections, missing
+receiver windows and absent negative-control observations are *not*
+automatically marked as passes. With repeated MACs, SquachWatch may
+retain an active log row even when new advertisements arrive; the
+Workbench deliberately does not count stale data. Review and export
+unverified results instead of treating missing LOG evidence as a miss.
+
+**Limitations:** Web Serial is browser-session only; keep both boards
+connected, Chrome/Edge awake, and the test attended. The Workbench does
+not retain or upload trials automatically; export CSV before reload.
+Firmware-specific build CI and native display compilation do not replace
+on-device verification.
+
 ## How automatic detection matching works
 
 The Workbench uses an already available SquachWatch serial command
