@@ -1,8 +1,8 @@
 {
   "name": "squachemit-workbench-desktop",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "private": true,
-  "description": "SquachEmit Detection Workbench for Windows with dual-device serial control and optional live camera previews",
+  "description": "SquachEmit Windows 172-case Detection Workbench with real dual USB LCD mirroring, pointer touch and validated receiver ACTUAL evidence",
   "main": "main.cjs",
   "license": "GPL-3.0-only",
   "scripts": {
