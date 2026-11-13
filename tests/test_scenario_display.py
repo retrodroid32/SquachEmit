@@ -61,6 +61,8 @@ int main() {
         self.assertIn('scenarioDeviceName(*chosen,friendly,sizeof(friendly))', cyd)
         self.assertIn('deviceCaption(kScenarios[index],name,sizeof(name))', c5)
         self.assertIn('kScenarios[index].id', c5)
+        self.assertIn('NO REMOTE ID', cyd)
+        self.assertIn('NO RID', c5)
 
 
 if __name__ == "__main__":
