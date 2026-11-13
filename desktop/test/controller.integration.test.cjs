@@ -129,7 +129,7 @@ test('Windows rail renders authentic USB frame and translates canvas pointer to 
   rx('MIRROR ROW 21 1 '+Buffer.from([0x00,0x00,0x1f,0x00]).toString('base64'));
   rx('MIRROR END 21');
   assert.deepEqual(Array.from(ec.lastImage.pixels),[
-    255,0,0,255,0,255,0,255,0,0,0,0,255,0,0,255,255
+    255,0,0,255,0,255,0,255,0,0,0,255,0,0,255,255
   ]);
   // Holding a button must be released before the serial MIRROR OFF.
   ec.listeners.pointerdown({pointerId:7,clientX:0,clientY:0,preventDefault(){}});
