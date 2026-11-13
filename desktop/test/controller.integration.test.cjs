@@ -26,6 +26,10 @@ test('Windows rail renders authentic USB frame and translates canvas pointer to 
     Object.defineProperty(e,'innerHTML',{set(value){
       this._html=value;
       for(const m of value.matchAll(/id="([^"]+)"/g))element(m[1]);
+      // The real browser honors the canvas "hidden" attribute. The
+      // minimal DOM fake must honor it too before any USB frame arrives.
+      for(const m of value.matchAll(/<canvas[^>]*id="([^"]+)"[^>]*>/g))
+        element(m[1]).hidden=/\shidden(?:\s|>)/.test(m[0]);
     },get(){return this._html||'';}});
     elements.set(id,e);
     return e;
