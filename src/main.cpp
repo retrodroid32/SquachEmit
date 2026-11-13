@@ -694,8 +694,9 @@ void loop() {
       break;
     default: break;
   }
-#if defined(SQE_CYD32)
+#endif
   // A bounded chunk each pass leaves Serial commands, RF and touch responsive.
+#if defined(SQE_CYD32)
   if(g_mirrorOn)cyd32UiMirrorPump();
 #endif
 #endif
