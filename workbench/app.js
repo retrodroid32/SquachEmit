@@ -325,6 +325,31 @@
       redrawTrials();selectTrial();
       notice('SquachWatch LOG classification populated ACTUAL. '+
         'Only a verified baseline plus emitter END allows accuracy scoring.',false);
+    }else if(trials.length){
+      // Distinguish a parser/polling issue from SquachWatch correctly
+      // identifying some OTHER device in the same category. Never turn
+      // category-only correlation into an automatic benchmark result.
+      var current=trials[trials.length-1];
+      if(current._epoch===epoch && current._receiverSession===d.session &&
+         current._mac && !current._autoHit && !current._autoCandidate &&
+         snapshot.requestedAt>=current._startedAt &&
+         (!current._endedAt||snapshot.requestedAt<=current._endedAt+5000)){
+        var expected=(catalog[current.id]||{}).expected;
+        var other=(snapshot.rows||[]).filter(function(r){
+          return expected && expected!=='NONE' && r.type===expected &&
+            r.mac!==current._mac && r.state!=='KEPT';
+        });
+        if(other.length){
+          autoStatus('SquachWatch LOG has '+expected+' detections, but none '+
+            'matched this test MAC '+current._mac+'. ACTUAL stays blank '+
+            'until an attributable receiver entry is received. '+
+            'Review LOG MACs and SquachEmit TRUTH.');
+        }else{
+          autoStatus('SquachWatch LOG received ('+snapshot.rows.length+
+            ' rows); waiting for test MAC '+current._mac+
+            '. ACTUAL is not inferred from a category counter or screen alert.');
+        }
+      }
     }
   }
   function onWatchLine(line) {
