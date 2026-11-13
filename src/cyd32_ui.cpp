@@ -694,6 +694,17 @@ void writeMirrorRow(uint16_t row,uint32_t sequence,uint16_t width){
 }
 } // namespace
 
+void cyd32UiMirrorDiag(unsigned long baud){
+  if(!ready){Serial.println("MIRROR DIAG LCD_NOT_READY");return;}
+  uint16_t samples[32]={0};
+  lcd.readRect(0,0,32,1,samples);
+  unsigned int diverse=0;
+  for(int i=1;i<32;++i)if(samples[i]!=samples[0])++diverse;
+  Serial.printf("MIRROR DIAG READY=1 CAL=%u SIZE=%dx%d BAUD=%lu TFT_FIRST=%04X TFT_DIFFERENT=%u FREE_HEAP=%u\n",
+    calibrated?1u:0u,lcd.width(),lcd.height(),baud,
+    (unsigned)samples[0],diverse,(unsigned)ESP.getFreeHeap());
+  if(diverse==0)Serial.println("MIRROR DIAG WARN TFT_READBACK_SUSPECT");
+}
 void cyd32UiMirrorStop(){
   mirrorPending=false;
   mirrorHasPrevious=false;
@@ -703,7 +714,9 @@ void cyd32UiMirrorStop(){
 }
 
 void cyd32UiMirrorFrame(uint32_t acceptedSequence){
-  if(!ready || !calibrated){
+  // Calibration UI is still a real physical LCD: allow it to be mirrored.
+  // Remote input is rejected until touch calibration is complete.
+  if(!ready){
     Serial.println("MIRROR ERROR LCD_NOT_READY");return;
   }
   if(mirrorPending){

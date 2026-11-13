@@ -468,7 +468,7 @@ static void help() {
   Serial.println("BLE5 extended/coded PHY and Wi-Fi NAN: OFFLINE FIXTURES ONLY.");
   Serial.println("Single 2.4GHz radio: BLE and Wi-Fi scenarios are exclusive.");
 #if defined(SQE_CYD32)
-  Serial.println("MIRROR ON/OFF, MIRROR BAUD 2000000, MIRROR FRAME [last_seq], MIRROR TOUCH x y DOWN|MOVE|UP");
+  Serial.println("MIRROR ON/OFF/DIAG, MIRROR BAUD 2000000, MIRROR FRAME [last_seq], MIRROR TOUCH x y DOWN|MOVE|UP");
   Serial.println("MIRROR is real nonblocking LCD GRAM capture; deltas use the accepted USB sequence.");
 #endif
 #if defined(SQE_CYD32)
@@ -498,6 +498,10 @@ static void command(String cmd) {
       Serial.printf("MIRROR BAUD %lu\n",requested);
       return;
     }
+    if(cmd=="MIRROR DIAG"){
+      cyd32UiMirrorDiag(g_serialBaud);
+      return;
+    }
     if(cmd=="MIRROR ON"){
       cyd32UiMirrorStop();
       g_mirrorOn=true;
@@ -512,7 +516,9 @@ static void command(String cmd) {
     }
     if(!g_mirrorOn){Serial.println("MIRROR ERROR DISABLED");return;}
     if(cmd=="MIRROR FRAME" || cmd.startsWith("MIRROR FRAME ")){
-      if(g_serialBaud!=2000000UL){Serial.println("MIRROR ERROR NEED_2M_BAUD");return;}
+      // Exact RGB565 at 115200 is functional but the initial full frame
+      // takes many seconds. 2Mbps remains the recommended LIVE setting.
+      // A compatible slow path is vital when COM reconnect resets UART.
       uint32_t received=0;
       if(cmd!="MIRROR FRAME"){
         unsigned long seq=0;
