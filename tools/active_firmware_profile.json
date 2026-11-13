@@ -10,7 +10,7 @@
   },
   "builds": {
     "cyd32-st7798": {
-      "title": "SquachEmit CYD 3.2 LAB — 172 Cases · Live USB LCD Mirror + Remote Touch R4",
+      "title": "SquachEmit v1.1.0 CYD 3.2 LAB — 172 Cases · Live LCD Mirror + Remote Touch R4",
       "version": "v1.1.0 MAINLINE · 172 cases",
       "summary": "Unmerged CYD 3.2 ST7798 LAB: 172 synthetic BLE/Wi-Fi cases, device-first menus, stored 3–30-second TX time, actual RGB565 TFT GRAM pixels streamed incrementally over USB at 2 Mbps and mouse-to-native touch events. Full keyframes and sequence-checked changed-row updates avoid freezing touch/radio handling; flat LCD reads fail closed. Real ST7798 readback, UART reconnect, timing and remote gestures require physical validation. Four-part SHA-256 flashing preflight remains mandatory. Not a public release.",
       "highlights": [
