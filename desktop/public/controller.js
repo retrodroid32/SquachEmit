@@ -1,6 +1,6 @@
 /* Windows SquachEmit + SquachWatch control desk.
- * Pixel canvases are decoded from real USB MIRROR frame rows only.
- * No synthetic replica screens, inferred receiver signals or network video.
+ * SquachEmit renders locally from UI STATE, never a TFT screenshot.
+ * Receiver optional screenshot mode stays on the independent USB port.
  */
 (function(){
   'use strict';
@@ -152,6 +152,12 @@
       ' · #'+frame.sequence+' · '+new Date().toLocaleTimeString());
   }
   async function requestMirrorFrame(role){
+    if(role==='emitter'){
+      if(!mirrors.emitter.active||!isConnected(role,api.getState()))return;
+      const ok=await api.send('emitter','UI GET');
+      if(!ok)info('emitter','UI GET failed; check USB and firmware.');
+      return;
+    }
     const s=mirrors[role],state=api.getState();
     if(!s.active||!s.ready||s.waiting||!isConnected(role,state)||
        (role==='receiver'&&state.testActive))return;
@@ -184,6 +190,25 @@
   }
   async function startMirror(role){
     const state=api.getState();
+    if(role==='emitter'){
+      if(!isConnected('emitter',state)){
+        info('emitter','Connect at 115200 to synchronize the native UI.');return;
+      }
+      const s=mirrors.emitter;
+      resetRole('emitter');s.active=true;
+      info('emitter','Requesting real navigation state (not LCD pixels)…');
+      const ok=await api.send('emitter','UI ON');
+      if(!ok){resetRole('emitter');info('emitter','UI ON failed.');return;}
+      mirrorNote('emitter','Waiting for UI READY from R7 firmware…');
+      s.handshake=setTimeout(()=>{
+        s.handshake=null;
+        if(!s.active||s.ready)return;
+        resetRole('emitter');
+        const err='No UI READY: flash the R7 LAB firmware and connect at 115200.';
+        mirrorNote('emitter',err);info('emitter',err);
+      },6000);
+      return;
+    }
     if(role==='receiver'&&state.testActive){
       info(role,'SquachWatch LCD mirroring pauses during detection tests so '+
         'its USB connection can deliver exact-MAC LOG results. Re-enable afterward.');
@@ -494,6 +519,50 @@
   });
   get('dc-export').addEventListener('click',()=>api.exportCsv());
   window.addEventListener('sqe:serial',e=>appendLine(e.detail.role,e.detail.line));
+  function renderEmitter(){
+    const s=mirrors.emitter;
+    if(!s.active||!s.ready||!local.model)return;
+    if(Date.now()-local.receivedAt>2500){
+      get('dc-canvas-emitter').hidden=true;
+      get('dc-placeholder-emitter').hidden=false;
+      s.lastFrame=false;
+      mirrorNote('emitter','Device UI state stale; check USB and power.');
+      return;
+    }
+    const canvas=get('dc-canvas-emitter');
+    const ctx=canvas.getContext('2d',{alpha:false});
+    if(!ctx)return;
+    const now=local.model.uptime+(Date.now()-local.receivedAt);
+    if(!native.render(ctx,local.model,local.catalog,now))return;
+    canvas.hidden=false;
+    get('dc-placeholder-emitter').hidden=true;
+    s.lastFrame=true;
+  }
+  function onNativeUi({role,line}){
+    if(role!=='emitter')return;
+    const s=mirrors.emitter;
+    if(line==='UI READY 1 320 240 MODEL'){
+      if(!s.active)return;
+      s.ready=true;
+      if(s.handshake!==null){clearTimeout(s.handshake);s.handshake=null;}
+      mirrorNote('emitter','Connected · rendering UI locally from device state');
+      if(s.animation===null)s.animation=setInterval(renderEmitter,120);
+      void api.send('emitter','UI GET');
+      return;
+    }
+    if(/^UI ERROR/.test(line)){info('emitter',line);return;}
+    const state=native.parse(line);
+    if(!state||!s.active||!s.ready)return;
+    local.model=state;local.receivedAt=Date.now();
+    mirrorNote('emitter','PC-DRAWN UI · '+state.screen+' · '+state.selected+
+      ' · '+state.duration+'s · device '+state.uptime+'ms');
+    renderEmitter();
+  }
+  window.addEventListener('sqe:catalog',e=>{
+    local.catalog=native.prepare(e.detail.cases);
+    renderEmitter();
+  });
+  window.addEventListener('sqe:native-ui',e=>onNativeUi(e.detail));
   window.addEventListener('sqe:mirror',e=>onMirror(e.detail));
   window.addEventListener('sqe:mirror-paused',e=>{
     const detail=e.detail||{};
