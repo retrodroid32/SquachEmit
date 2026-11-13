@@ -385,7 +385,9 @@ void libraryScreen(const char* active,bool suite){
       // the second line for reproducible Web Serial/CSV test evidence.
       snprintf(title,sizeof(title),"%02u  %.48s",
                (unsigned)(page*4+row+1),name);
-      snprintf(hint,sizeof(hint),"%s  |  %s",s->id,s->expected);
+      if(sqeStarts(s->id,"OUI-"))
+        snprintf(hint,sizeof(hint),"NO REMOTE ID | %s",s->id);
+      else snprintf(hint,sizeof(hint),"%s  |  %s",s->id,s->expected);
     }
     menuRow(48+(int)row*36,title,hint,s&&raw==selected);
   }
