@@ -5,8 +5,8 @@
 (function(){
   'use strict';
   if(new URLSearchParams(location.search).get('desktop')!=='1')return;
-  const api=window.SQEWorkbenchDesktop,codec=window.SQEMirrorCodec;
-  if(!api||!codec)throw Error('Windows USB workbench bridge/mirror decoder missing');
+  const api=window.SQEWorkbenchDesktop,codec=window.SQEMirrorCodec,native=window.SQECydNative;
+  if(!api||!codec||!native)throw Error('Windows USB native UI or mirror decoder missing');
   const main=document.querySelector('main');
   if(!main)throw Error('Workbench content unavailable');
   main.classList.add('desktop-workbench');
@@ -21,10 +21,11 @@
   const names={receiver:'SquachWatch',emitter:'SquachEmit'};
   const cameras={receiver:null,emitter:null};
   const terminals={receiver:'',emitter:''};
+  const local={model:null,catalog:native.prepare([]),receivedAt:0};
   const mirrors={};
   for(const role of ['receiver','emitter']){
     mirrors[role]={active:false,waiting:false,lastFrame:false,lastFrameSequence:0,failures:0,
-      assembler:new codec.MirrorAssembler(),timeout:null,next:null,handshake:null,ready:false,
+      assembler:new codec.MirrorAssembler(),timeout:null,next:null,handshake:null,animation:null,ready:false,
       touchDown:false,touchAt:0,touchTimer:null,pendingUp:null,lastPoint:{x:0,y:0},
       lastMove:0};
   }
@@ -59,23 +60,13 @@
       '<div class="dc-frame-meta" id="dc-frame-'+role+'" role="status">'+
       'LCD framebuffer: not connected</div>'+
       '<div class="dc-mirror-actions">'+
-      '<button type="button" data-role="'+role+'" data-action="mirror-on">Mirror live</button>'+
-      '<button type="button" data-role="'+role+'" data-action="mirror-frame">Get frame</button>'+
+      '<button type="button" data-role="'+role+'" data-action="mirror-on">'+(emitter?'Sync device UI':'Mirror live')+'</button>'+
+      '<button type="button" data-role="'+role+'" data-action="mirror-frame">'+(emitter?'Refresh state':'Get frame')+'</button>'+
       '<button type="button" data-role="'+role+'" data-action="mirror-off">Stop</button></div>'+
-      (emitter?'<button type="button" data-role="emitter" data-action="mirror-diag">Diagnose physical LCD and USB baud</button>':'')+
-      '<div class="dc-displaymode">Actual decoded USB LCD pixels, not a recreated UI. '+
-      'Click, hold or drag on the displayed screen to use the device touchscreen. '+
-      'The receiver requires SquachWatch LAB PR #225; both firmware mirrors require physical verification.</div>'+
-      (emitter?
-        '<div class="dc-baud"><label for="dc-baud-select">Emitter USB baud</label>'+
-        '<div class="dc-baud-row"><select id="dc-baud-select">'+
-        '<option value="115200">115,200 (boot default)</option>'+
-        '<option value="2000000">2,000,000 (LCD frames)</option></select>'+
-        '<button type="button" data-role="emitter" data-action="set-baud">Use for next connect</button></div>'+
-        '<button type="button" data-role="emitter" data-action="switch-baud">Switch device UART to 2 Mbps</button>'+
-        '<small>For SquachEmit CYD 3.2 only: first connect at 115,200, switch the device UART, '+
-        'disconnect, set 2,000,000 above, reconnect, then Mirror live. A reboot resets the UART. '+
-        'No LCD mirror exists yet on the S3/C5 builds.</small></div>':'')+
+      (emitter?'<button type="button" data-role="emitter" data-action="mirror-diag">Check device UI state</button>':'')+
+      '<div class="dc-displaymode">'+(emitter?
+        'PC-drawn SquachEmit UI, synchronized with device navigation and RF state. No screenshots or 2Mbps switch. Click, hold or drag to operate the physical touchscreen.':
+        'Optional SquachWatch USB pixel mirror; pause it for receiver LOG tests.')+'</div>'+
       '<div class="dc-camera"><label for="dc-source-'+role+'">OPTIONAL PHYSICAL CAMERA</label>'+
       '<select id="dc-source-'+role+'"><option value="">Choose camera…</option></select>'+
       '<div class="dc-camera-actions">'+
@@ -102,13 +93,10 @@
       '</section>';
   }
   rail.innerHTML='<div class="dc-railhead"><div><div class="dc-overline">WINDOWS CONTROL CENTER</div>'+
-    '<h2>Live USB screens</h2><p>Two real-device LCD captures · pointer-to-touch control</p></div>'+
+    '<h2>Interactive device screens</h2><p>SquachEmit drawn locally · hardware authoritative</p></div>'+
     '<button type="button" id="dc-export">Export CSV</button></div>'+
     markup('receiver')+markup('emitter')+
-    '<div class="dc-footnote"><b>PHYSICAL VALIDATION REQUIRED.</b> Pixel streaming and '+
-    'remote touchscreen actions require compatible LAB firmware. SquachWatch #225 '+
-    'must be verified separately on both CYD sizes. SquachEmit CYD 3.2 uses experimental LCD readback. '+
-    'The Workbench never presents serial telemetry as an actual screenshot.</div>';
+    '<div class="dc-footnote"><b>NATIVE SQUACHEMIT UI.</b> The right-side interface is drawn on the PC from real hardware state, not captured LCD pixels. Procedural artwork and font fidelity require device testing. SquachWatch receiver mirroring remains optional and separate.</div>';
   function info(role,message){get('dc-feedback-'+role).textContent=message;}
   function mirrorNote(role,message){get('dc-frame-'+role).textContent=message;}
   function cancelFrameTimers(role){
@@ -116,7 +104,8 @@
     if(s.timeout!==null)clearTimeout(s.timeout);
     if(s.next!==null)clearTimeout(s.next);
     if(s.handshake!==null)clearTimeout(s.handshake);
-    s.timeout=null;s.next=null;s.handshake=null;
+    if(s.animation!==null)clearInterval(s.animation);
+    s.timeout=null;s.next=null;s.handshake=null;s.animation=null;
   }
   function resetRole(role){
     const s=mirrors[role];
@@ -124,7 +113,8 @@
     s.active=false;s.waiting=false;s.ready=false;s.failures=0;
     s.lastFrame=false;s.lastFrameSequence=0;
     s.assembler.reset();
-    // Never leave an old image looking like a live physical display.
+    if(role==='emitter'){local.model=null;local.receivedAt=0;}
+    // Do not present a stale screen as live.
     get('dc-canvas-'+role).hidden=true;
     get('dc-placeholder-'+role).hidden=false;
     if(s.touchTimer!==null)clearInterval(s.touchTimer);
@@ -137,10 +127,10 @@
     // Deliver an explicit UP before switching off or disconnecting. A lost
     // pointer capture must not leave the physical device pressed.
     if(send&&was&&connected&&(s.touchDown||s.pendingUp!==null))
-      await api.send(role,'MIRROR TOUCH '+s.lastPoint.x+' '+s.lastPoint.y+' UP');
+      await api.send(role,(role==='emitter'?'UI TOUCH ':'MIRROR TOUCH ')+s.lastPoint.x+' '+s.lastPoint.y+' UP');
     resetRole(role);
     if(send&&was&&connected){
-      const ok=await api.send(role,'MIRROR OFF');
+      const ok=await api.send(role,role==='emitter'?'UI OFF':'MIRROR OFF');
       mirrorNote(role,ok?'USB mirror stopped. LCD view disconnected.':
         'USB mirror stop was not acknowledged; view is disconnected.');
     }else mirrorNote(role,'USB mirror offline. Connect to show real LCD pixels.');
@@ -285,8 +275,7 @@
       resetRole(role);
       mirrorNote(role,'USB disconnected — no live LCD image.');
     }
-    if(role==='emitter'&&document.activeElement!==get('dc-baud-select'))
-      get('dc-baud-select').value=String(state.emitterBaud);
+    // Normal 115200 baud carries UI states; no forced 2Mbps handoff.
   }
   function refreshState(){
     const state=api.getState();
@@ -384,7 +373,7 @@
   }
   function sendTouch(role,point,phase){
     if(!isConnected(role,api.getState()))return;
-    void api.send(role,'MIRROR TOUCH '+point.x+' '+point.y+' '+phase)
+    void api.send(role,(role==='emitter'?'UI TOUCH ':'MIRROR TOUCH ')+point.x+' '+point.y+' '+phase)
       .then(ok=>{if(!ok)info(role,'Remote touch rejected; check PIN or USB mirror firmware.');})
       .catch(err=>info(role,'Remote touch error: '+err.message));
   }
@@ -444,8 +433,8 @@
     if(action==='stop-camera'){stopCamera(role);return;}
     if(action==='mirror-on'){await startMirror(role);return;}
     if(role==='emitter'&&action==='mirror-diag'){
-      const ok=await api.send(role,'MIRROR DIAG');
-      if(!ok)info(role,'Cannot send MIRROR DIAG; check USB connection.');
+      const ok=await api.send(role,'UI GET');
+      if(!ok)info(role,'Cannot read device UI state. Use R7 firmware at 115200.');
       return;
     }
     if(action==='mirror-frame'){
@@ -465,34 +454,13 @@
       info(role,'Choose the '+names[role]+' Windows COM port…');
       await api.connect(role);refreshState();
       const state=api.getState();
-      // A USB-selected receiver can show real pixels immediately; the CYD32
-      // emitter can do so only after the operator's explicit 2 Mbps handoff.
-      if(isConnected(role,state)&&(role==='receiver'||state.emitterBaud===2000000))
-        await startMirror(role);
+      // Emitters sync automatically; receivers stay on LOG by default.
+      if(role==='emitter'&&isConnected(role,state))await startMirror(role);
       return;
     }
     if(action==='disconnect'){
       await stopMirror(role,true);await api.disconnect(role);
       refreshState();return;
-    }
-    if(role==='emitter'&&action==='set-baud'){
-      const baud=Number(get('dc-baud-select').value);
-      const ok=api.setEmitterBaud(baud);
-      info(role,ok?'Next emitter USB connection: '+baud+' baud.':
-        'Disconnect SquachEmit first to change the host COM baud.');
-      return;
-    }
-    if(role==='emitter'&&action==='switch-baud'){
-      const state=api.getState();
-      if(!state.emitterConnected||state.emitterBaud!==115200){
-        info(role,'Connect the CYD 3.2 emitter at 115200 before switching its UART.');
-        return;
-      }
-      const ok=await api.send(role,'MIRROR BAUD 2000000');
-      info(role,ok?'Device UART switch requested. Disconnect, set host baud '+
-        'to 2000000, then reconnect to the same COM port.':
-        'Device UART switch was rejected.');
-      return;
     }
     if(role==='emitter'&&action==='run'){
       await api.runSelected();
