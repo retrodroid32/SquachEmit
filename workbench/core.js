@@ -90,9 +90,15 @@
           if(trim(line)!=='row,type,mac,rssi,hits,state,when')return null;
           pending.header=true;
         }else{
+          // Background SquachWatch tasks can print [gps], [frame],
+          // [queue], etc. between LOG rows. Such diagnostics are not
+          // part of the CSV; discarding the entire snapshot on one was
+          // causing repeated baseline timeouts and empty ACTUAL cells.
+          // A malformed numbered row still invalidates the snapshot.
+          if(/^\[[a-z][a-z0-9_ -]*\]/i.test(trim(line)))return null;
           var row=parseWatchLogRow(line);
           if(!row||row.index!==pending.rows.length){
-            pending=null;return null; // malformed or interleaved response: fail closed
+            pending=null;return null; // malformed LOG row: fail closed
           }
           pending.rows.push(row);
         }
