@@ -2,18 +2,19 @@
   "schema": 1,
   "scenario_count": 172,
   "firmware_sources": {
-    "src": "fb8fbb624edef33f44e05f2badf6c98c59bd7ee1",
-    "include": "3156fb5cd46069b9839d7c4150e1320ca20514d0",
+    "src": "291089bae16b2eac1a2d9f5039e18fac06a4dd93",
+    "include": "b1fda0352a3f4c8da37ebd4b8b851adfadcd2768",
     "lib": "bd0df45f7747bc9971aa4b379a12940dd2d7d98f",
     "SquachEmit.ino": "90b4205813a2f7885bc1e12ce7431eebf7249f45",
     "platformio.ini": "bd67af3ecd6de05f4cef015fe97e17b29ceed574"
   },
   "builds": {
     "cyd32-st7798": {
-      "title": "SquachEmit v1.1.0 CYD 3.2 — 172 Synthetic Signals + Device-First Names",
-      "version": "v1.1.0 MAINLINE · 172 cases",
-      "summary": "Public v1.1.0 firmware for CYD 3.2 ST7798: 172 synthetic BLE/Wi-Fi test cases including 27 UAS vendor-prefix beacons, saved 3–30-second TX-time editor, reduced touchscreen flashing, and animated Squachy. Browser installer verifies all four flash segments by SHA-256. Actual CYD hardware was flashed during development; no device certification. Draft PR #36 displays recognizable per-scenario device names in the native test library, active signal and selected status. Original RUN IDs, payloads and receiver categories stay unchanged.",
+      "title": "SquachEmit CYD 3.2 LAB — 172 Cases · Device Names · USB LCD Mirror / Remote Touch",
+      "version": "v1.1.0 MAINLINE · 172 cases · USB MIRROR LAB (unmerged)",
+      "summary": "Unmerged CYD 3.2 ST7798 LAB firmware: 172 time-limited synthetic BLE/Wi-Fi signal scenarios, device-first native names, 3–30-second TX-time editor, and experimental USB LCD RGB565 readback plus remote touch controls. LCD GRAM readback on the physical ST7798 and 2,000,000 baud handoff still require on-device verification. Four-part SHA-256 flashing preflight remains mandatory; this is NOT a public released firmware build.",
       "highlights": [
+        "LAB USB screen protocol: MIRROR BAUD 2000000 / MIRROR ON / MIRROR FRAME / MIRROR TOUCH x y DOWN|MOVE|UP; physical LCD and touch unverified.",
         "Device-first labels on all 172 transmitter signals, including Flipper Zero UUID/name, negative controls and manufacturer OUI cases; stable technical IDs preserved.",
         "172 bounded synthetic BLE/Wi-Fi scenarios; per-case locally administered MAC IDs.",
         "TX TIME [SET] with +/- 1 second, RESET 12 and DONE; persists after reboot.",
@@ -24,10 +25,11 @@
       ]
     },
     "c5-waveshare-28": {
-      "title": "SquachEmit v1.1.0 Waveshare C5 — 172 Signals + Device-First Names",
-      "version": "v1.1.0 MAINLINE · 172 cases",
-      "summary": "Public v1.1.0 firmware for the exact Waveshare ESP32-C5 2.8-inch touchscreen board: 172 synthetic BLE/Wi-Fi test cases including UAV vendor-prefix beacons, controlled RF tests, and SHA-256 verified browser flashing. CYD 3.2-only TX TIME screen is not a C5 feature. Build passes CI; physical C5 hardware verification is still required. Draft PR #36 adds uppercase recognizable device-first names in the native C5 test list and active signal while retaining exact technical IDs.",
+      "title": "SquachEmit Waveshare C5 LAB — 172 Synthetic Signals · Named Scenarios",
+      "version": "v1.1.0 MAINLINE · 172 cases · USB MIRROR LAB (unmerged)",
+      "summary": "Unmerged Waveshare ESP32-C5 2.8-inch LAB build with 172 time-limited synthetic BLE/Wi-Fi cases and descriptive device-first signal names. USB LCD mirroring is NOT implemented for this board; the experimental MIRROR command returns unsupported on non-CYD builds. Four-part SHA-256 flashing preflight remains required; physical C5 verification is pending.",
       "highlights": [
+        "USB mirror work is CYD 3.2 specific; C5 physical screen mirroring is not yet supported.",
         "Native list names all 172 synthetic signals by device; case IDs remain below each label.",
         "172 shared detection cases and negative controls.",
         "27 UAV vendor Wi-Fi test beacons; no genuine drone RF claim.",
@@ -37,10 +39,11 @@
       ]
     },
     "s3-devkit": {
-      "title": "SquachEmit v1.1.0 ESP32-S3 — 172-Case Serial Test Suite",
-      "version": "v1.1.0 MAINLINE · 172 cases",
-      "summary": "Public v1.1.0 firmware for ESP32-S3 DevKitC-1 with 172 synthetic BLE/Wi-Fi detection test cases, on-demand serial RUN/STOP/SUITE control, UAV vendor-prefix test scenarios, and SHA-256 verified browser flashing. No CYD touchscreen is included. Build passes CI; physical S3 hardware verification is still required.",
+      "title": "SquachEmit ESP32-S3 LAB — 172-Case Serial Detection Matrix",
+      "version": "v1.1.0 MAINLINE · 172 cases · USB MIRROR LAB (unmerged)",
+      "summary": "Unmerged ESP32-S3 LAB firmware with 172 synthetic BLE/Wi-Fi scenarios, bounded serial RUN/STOP/SUITE commands and tracked on-air identities. This S3 devkit build does not expose CYD LCD framebuffer or touch control; MIRROR is unsupported. Four-part SHA-256 verified flashing preflight remains required; physical S3 verification is pending.",
       "highlights": [
+        "No screen mirroring on ESP32-S3 DevKit without a display: unsupported MIRROR command.",
         "172 shared synthetic scenarios and negative controls.",
         "USB serial RUN, STOP and SUITE for bounded transmitter tests.",
         "Vendor OUI-only beacons are not authentic aircraft broadcasts.",
