@@ -34,8 +34,15 @@
   var awaitingBegin=false;
   var transmitting=false;
   var batch={active:false,queue:[],index:0,completed:0,current:null,
-    duration:8,gap:5,timer:null,endTimer:null,failures:0,message:'Ready to start'};
+    duration:8,gap:5,timer:null,endTimer:null,failures:0,unverified:0,
+    message:'Ready to start'};
   var emitterWrites=Promise.resolve();
+  var receiverWrites=Promise.resolve();
+  var receiverMirror=false;
+  var desktopMode=(new URLSearchParams(window.location.search)).get('desktop')==='1';
+  function desktopEvent(type,detail){
+    if(desktopMode)window.dispatchEvent(new CustomEvent('sqe:'+type,{detail:detail}));
+  }
   function runProgress(message){text('runFeedback',message);}
   function cancelRunAck(){
     if(runAwaitTimer!==null){clearTimeout(runAwaitTimer);runAwaitTimer=null;}
@@ -52,6 +59,7 @@
     d.log=(d.log+line).slice(-60000);
     el.textContent=d.log;
     el.scrollTop=el.scrollHeight;
+    desktopEvent('serial',{role:role,line:line});
   }
   function option(value,label){var o=document.createElement('option');o.value=value;o.textContent=label;return o;}
   function formatPct(x){return x===null?'—':(x*100).toFixed(1)+'%';}
@@ -135,9 +143,11 @@
         '\nEmitter sequence: '+(t.seq==null?'Imported':t.seq)+
         '\nEmitter result: '+(t.emission||'pending')+
         '\nReceiver: '+(t._autoHit ? 'AUTO MATCH '+t._autoHit.observed+
-            ' at '+t._autoHit.mac+' (fresh LOG row)' :
-            t._baseline ? 'Watching for new MAC match in LOG' :
-            'No pre-test LOG baseline; manual review required')+
+            ' at '+t._autoHit.mac+' (new exact-MAC LOG entry)' :
+            t._autoCandidate ? 'ACTUAL '+t._autoCandidate.observed+
+              ' at '+t._autoCandidate.mac+' (unverified repeat/baseline; NOT SCORED)' :
+            t._baseline ? 'Watching for new exact-MAC LOG entry' :
+            'No baseline; exact-MAC sightings will be marked unverified')+
         '\nNo automatic NONE is inferred from absent entries.');
       ui.emissionStatus.value=t.emission==='ok'||t.emission==='failed'?t.emission:'';
       // Live serial attempts can only be successful after an actual
@@ -157,7 +167,7 @@
   function updateButtons(){
     var connected=!!devices.emitter.port && !opening.emitter;
     var eBusy=opening.emitter;
-    ui.emitState.textContent=connected?'CONNECTED · 115,200':eBusy?'CONNECTING':'DISCONNECTED';
+    ui.emitState.textContent=connected?'CONNECTED · '+devices.emitter.baud.toLocaleString('en-US'):eBusy?'CONNECTING':'DISCONNECTED';
     ui.emitState.classList.toggle('connected',connected);
     ui.emitConnect.disabled=connected||eBusy;
     ui.emitDisconnect.disabled=!connected||eBusy;
@@ -182,6 +192,12 @@
     ui.saveObservation.disabled=!(selectedTrial>=0 && trials[selectedTrial]);
     ui.clearTrials.disabled=batch.active;
     ui.importCsv.disabled=batch.active;
+    desktopEvent('state',{
+      emitterConnected:connected,
+      receiverConnected:receiver,
+      receiverBaud:devices.receiver.baud,batchActive:batch.active,
+      transmitting:transmitting
+    });
   }
   function updateBatchUi(){
     var ready=!!devices.emitter.port&&!!devices.receiver.port&&
@@ -198,7 +214,8 @@
     ui.batchProgress.max=batch.queue.length||cases.length||172;
     ui.batchProgress.value=batch.completed;
     text('batchCount',batch.completed+' / '+(batch.queue.length||cases.length||172)+
-      ' completed · '+batch.failures+' transmitter failures'+
+      ' completed · '+batch.failures+' transmitter failures · '+
+      batch.unverified+' unverified recoveries'+
       (batch.active?' · RUNNING':''));
     text('batchCurrent',batch.message);
   }
@@ -227,7 +244,7 @@
     ui.autoDetectionFeed.scrollTop=ui.autoDetectionFeed.scrollHeight;
   }
   function finishAutoMatch(t) {
-    if(!t._autoHit || t._manual || t.emission!=='ok')return false;
+    if(!t._autoHit || t._autoCandidate || t._manual || t.emission!=='ok')return false;
     t.observed=t._autoHit.observed;
     t.window='complete'; // one independently observed hit is enough for a positive
     t.latency_ms=''; // the two device clocks are NOT synchronized
@@ -240,6 +257,9 @@
   function onWatchSnapshot(snapshot) {
     var d=devices.receiver;
     d.lastSnapshot=snapshot;
+    desktopEvent('snapshot',{rows:snapshot.rows.slice(0,20).map(function(r){
+      return {type:r.type,mac:r.mac,rssi:r.rssi,hits:r.hits,state:r.state};
+    }),rowCount:snapshot.rows.length,when:snapshot.finishedAt});
     autoStatus('AUTO LOG ACTIVE · '+snapshot.rows.length+' receiver rows · latest snapshot '+
       new Date(snapshot.finishedAt).toLocaleTimeString()+' · polling every 1.5 s');
     if(d.pending){
@@ -251,32 +271,85 @@
     for(var i=trials.length-1;i>=0;i--){
       var t=trials[i];
       if(t._epoch!==epoch || t._receiverSession!==d.session ||
-         !t._baseline || !t._mac || t._autoHit || t._manual ||
+         !t._mac || t._autoHit || t._autoCandidate || t._manual ||
          t.emission==='failed')continue;
       if(t._endedAt && snapshot.requestedAt>t._endedAt+5000)continue;
-      var hit=core.matchWatchDetection(t,t._baseline,snapshot);
+      // A fresh pre-RUN baseline is mandatory for accuracy scoring, but
+      // ACTUAL may show an unverified exact-MAC receiver observation when
+      // the pre-test LOG baseline was temporarily unavailable.
+      var usableBaseline=t._baseline &&
+        t._baseline.finishedAt<=t._startedAt &&
+        t._startedAt-t._baseline.finishedAt<=5000;
+      var verifiedHit=usableBaseline?
+        core.matchWatchDetection(t,t._baseline,snapshot):null;
+      // Even a previously seen MAC is an ACTUAL receiver classification;
+      // it just cannot prove a *new* detection in this run. Preserve the
+      // observation as UNVERIFIED instead of showing a blank ACTUAL cell.
+      var hit=verifiedHit||core.findUnverifiedWatchObservation(t,snapshot);
       if(!hit)continue;
       if(hit.ambiguous){
-        autoStatus('AMBIGUOUS: '+hit.mac+' appeared under multiple classifications; inspect LOG manually.');
+        autoStatus('AMBIGUOUS: '+hit.mac+
+          ' appeared under multiple receiver classifications; inspect LOG manually.');
         continue;
       }
-      t._autoHit=hit;
-      t.observed=hit.observed;
-      t.notes='SquachWatch matched '+hit.mac+' as '+hit.observed+
-        ' in a fresh LOG snapshot. Awaiting emitter END for scoring.';
-      if(t.emission==='ok')finishAutoMatch(t);
+      var verified=!!verifiedHit;
+      if(verified){
+        t._autoHit=hit;
+        t.observed=hit.observed;
+        t.notes='SquachWatch matched '+hit.mac+' as '+hit.observed+
+          ' in a new exact-MAC LOG entry (possibly gone after TX). '+
+          'Awaiting successful emitter END for scoring.';
+        if(t.emission==='ok')finishAutoMatch(t);
+      }else{
+        // This MAC was classified by the receiver, but without a baseline
+        // it might predate RUN. Show ACTUAL without manufacturing a TP.
+        t._autoCandidate=hit;
+        t.observed=hit.observed;
+        t.window=''; // no verified pre-RUN listening baseline
+        t.notes='UNVERIFIED SquachWatch LOG: exact MAC '+hit.mac+
+          ' classified '+hit.observed+', RSSI '+hit.rssi+
+          ' dBm, state '+hit.state+'; '+(usableBaseline?
+            'entry already existed in the baseline without proof of a new hit. ':
+            'pre-test LOG baseline unavailable. ')+
+          'Receiver classification observed, but this run is NOT scored.';
+      }
       matchedLog(new Date(hit.finishedAt).toLocaleTimeString()+
-        '  '+t.id+'  '+hit.observed+'  MAC '+hit.mac+
-        '  '+hit.rssi+' dBm  '+(t.emission==='ok'?
-          core.status(t,catalog)+' ('+(core.pendingReason(t,catalog)||'scored')+')':
-          'WAIT END'));
+        '  '+t.id+'  ACTUAL '+hit.observed+'  MAC '+hit.mac+
+        '  '+hit.rssi+' dBm  '+(verified?
+          (t.emission==='ok'?core.status(t,catalog):'WAIT END'):
+          'UNVERIFIED — NOT SCORED'));
       change=true;
-      break; // one receiver sighting belongs to one active test
+      break; // one exact-MAC receiver sighting belongs to one active test
     }
     if(change){
       redrawTrials();selectTrial();
-      notice('SquachWatch automatically logged a fresh exact-MAC detection. '+
-        'Only confirmed emitter END can complete the score.',false);
+      notice('SquachWatch LOG classification populated ACTUAL. '+
+        'Only a verified baseline plus emitter END allows accuracy scoring.',false);
+    }else if(trials.length){
+      // Distinguish a parser/polling issue from SquachWatch correctly
+      // identifying some OTHER device in the same category. Never turn
+      // category-only correlation into an automatic benchmark result.
+      var current=trials[trials.length-1];
+      if(current._epoch===epoch && current._receiverSession===d.session &&
+         current._mac && !current._autoHit && !current._autoCandidate &&
+         snapshot.requestedAt>=current._startedAt &&
+         (!current._endedAt||snapshot.requestedAt<=current._endedAt+5000)){
+        var expected=(catalog[current.id]||{}).expected;
+        var other=(snapshot.rows||[]).filter(function(r){
+          return expected && expected!=='NONE' && r.type===expected &&
+            r.mac!==current._mac && r.state!=='KEPT';
+        });
+        if(other.length){
+          autoStatus('SquachWatch LOG has '+expected+' detections, but none '+
+            'matched this test MAC '+current._mac+'. ACTUAL stays blank '+
+            'until an attributable receiver entry is received. '+
+            'Review LOG MACs and SquachEmit TRUTH.');
+        }else{
+          autoStatus('SquachWatch LOG received ('+snapshot.rows.length+
+            ' rows); waiting for test MAC '+current._mac+
+            '. ACTUAL is not inferred from a category counter or screen alert.');
+        }
+      }
     }
   }
   function onWatchLine(line) {
@@ -297,6 +370,26 @@
     d.preRun=null;
     autoStatus('Receiver LOG polling stopped. Reconnect SquachWatch to resume automatic matching.');
   }
+  function sendReceiver(command){
+    // A single write queue is shared by 1.5s LOG polling and desktop controls.
+    // This prevents a user control command from colliding with a pending LOG write.
+    var d=devices.receiver,port=d.port;
+    var task=receiverWrites.then(async function(){
+      if(!port||d.port!==port||!port.writable)return false;
+      var writer=null;
+      try{
+        writer=port.writable.getWriter();
+        await writer.write(new TextEncoder().encode(command+'\n'));
+        if(command!=='LOG')append('receiver','> '+command+'\n');
+        return true;
+      }catch(e){
+        autoStatus('SquachWatch command failed: '+e.message);
+        return false;
+      }finally{if(writer)try{writer.releaseLock();}catch(_){}}
+    });
+    receiverWrites=task.then(function(){},function(){});
+    return task;
+  }
   async function requestWatchSnapshot() {
     var d=devices.receiver;
     if(!d.port||!d.port.writable)return null;
@@ -314,9 +407,7 @@
       }
     },3800);
     try{
-      var writer=d.port.writable.getWriter();
-      try{await writer.write(new TextEncoder().encode('LOG\n'));}
-      finally{writer.releaseLock();}
+      if(!(await sendReceiver('LOG')))throw new Error('USB LOG write did not complete');
     }catch(e){
       if(d.pending===pending){
         d.pending=null;d.parser.cancel();clearTimeout(pending.timeout);
@@ -331,9 +422,9 @@
     stopWatchPolling();
     // Explicitly connected port is the only trigger. No radio commands here.
     autoStatus('Connected. Requesting the initial SquachWatch LOG baseline…');
-    void requestWatchSnapshot();
+    if(!receiverMirror)void requestWatchSnapshot();
     d.pollTimer=setInterval(function(){
-      if(d.port && !d.pending)void requestWatchSnapshot();
+      if(d.port && !d.pending && !receiverMirror)void requestWatchSnapshot();
     },1500);
   }
 
@@ -359,11 +450,12 @@
     }
     if(batch.index>=batch.queue.length){
       endBatch('Automation complete: '+batch.completed+' cases; '+
-        batch.failures+' transmitter failures. Review receiver evidence and export CSV.',false);
+        batch.failures+' transmitter failures; '+batch.unverified+
+        ' unverified recoveries. Review receiver evidence and export CSV.',false);
       return;
     }
     var c=batch.queue[batch.index];
-    batch.current={id:c.id,seq:null,begun:false,finished:false};
+    batch.current={id:c.id,seq:null,begun:false,finished:false,noBaseline:false};
     ui.caseSelect.value=c.id;ui.duration.value=String(batch.duration);
     chooseCase();
     batch.message='CASE '+(batch.index+1)+' / '+batch.queue.length+
@@ -371,6 +463,35 @@
       '\nSquachWatch expected: '+c.expected+'\nPreparing receiver baseline…';
     updateBatchUi();
     void run(true);
+  }
+  function advanceBatch(reason,failed,requestStop){
+    if(!batch.active||!batch.current)return;
+    runToken++; // cancel stale asynchronous preflight before any next case
+    var last=batch.current;
+    if(last.finished)return;
+    last.finished=true;
+    if(batch.endTimer!==null){clearTimeout(batch.endTimer);batch.endTimer=null;}
+    if(failed)batch.failures++;
+    if(last.noBaseline||failed)batch.unverified++;
+    batch.completed++;batch.index++;batch.current=null;
+    // Missing BEGIN/END is not evidence that RF was never on. Request an
+    // explicit STOP and allow a longer cool-off before moving on.
+    if(requestStop && devices.emitter.port)void sendEmitter('STOP');
+    transmitting=false;cancelRunAck();devices.receiver.preRun=null;
+    batch.message='CASE '+batch.completed+' / '+batch.queue.length+
+      '\n'+core.signalName(catalog[last.id])+'\n'+last.id+
+      '\n'+reason+'; continuing after safe cooldown. No receiver result inferred.';
+    updateButtons();
+    batch.timer=setTimeout(function(){
+      batch.timer=null;
+      if(!batch.active)return;
+      if(!devices.emitter.port||!devices.receiver.port){
+        endBatch('Automation stopped: a USB device disconnected.',false);return;
+      }
+      // A stale in-flight preflight is invalidated before starting next.
+      runToken++;startingRun=false;awaitingBegin=false;transmitting=false;
+      startBatchStep();
+    },Math.max(batch.gap,requestStop?8:3)*1000);
   }
   function onBatchTruth(event){
     if(!batch.active||!batch.current||event.id!==batch.current.id)return;
@@ -384,32 +505,16 @@
       if(batch.endTimer!==null)clearTimeout(batch.endTimer);
       batch.endTimer=setTimeout(function(){
         if(batch.active&&batch.current===current&&!current.finished)
-          endBatch('Automation stopped: no TRUTH END/ERROR for '+current.id+'.',true);
+          advanceBatch('No transmitter TRUTH END (timed out)',true,true);
       },(batch.duration+20)*1000);
       updateBatchUi();return;
     }
     if(event.event!=='END'&&event.event!=='ERROR')return;
     if(current.finished||(current.begun&&current.seq!==event.seq)||
        (!current.begun&&event.event!=='ERROR'))return;
-    current.finished=true;
-    if(batch.endTimer!==null){clearTimeout(batch.endTimer);batch.endTimer=null;}
-    var success=event.event==='END'&&event.status==='ok';
-    if(!success)batch.failures++;
-    batch.completed++;batch.index++;batch.current=null;
-    batch.message='CASE '+batch.completed+' / '+batch.queue.length+
-      '\n'+core.signalName(catalog[event.id])+'\n'+event.id+
-      '\nTransmitter: '+(success?'END ok':'FAILED: '+event.status)+
-      '. Off-air cooldown '+batch.gap+' seconds.'+
-      '\nNo receiver detection is inferred from silence.';
-    updateBatchUi();
-    batch.timer=setTimeout(function(){
-      batch.timer=null;
-      if(batch.active){
-        if(startingRun||awaitingBegin||transmitting)
-          endBatch('Automation stopped: transmitter still active.',true);
-        else startBatchStep();
-      }
-    },batch.gap*1000);
+    advanceBatch(event.event==='END'&&event.status==='ok'?
+      'Transmitter END ok':'Transmitter '+event.event+' '+(event.status||'unknown'),
+      !(event.event==='END'&&event.status==='ok'),false);
   }
   function startBatch(){
     if(batch.active||startingRun||awaitingBegin||transmitting||
@@ -430,13 +535,15 @@
     if(!window.confirm('Run '+queue.length+' signals sequentially while attended?'+
       ' STOP cancels the remaining tests. Export the CSV to save results.'))return;
     clearBatchTimers();
-    batch.queue=queue;batch.index=0;batch.completed=0;batch.failures=0;
+    batch.queue=queue;batch.index=0;batch.completed=0;batch.failures=0;batch.unverified=0;
     batch.duration=duration;batch.gap=gap;batch.active=true;batch.current=null;
     startBatchStep();
   }
   function recordEmitter(line){
     var event=core.parseTruth(line);
     if(!event || !catalog[event.id])return;
+    desktopEvent('truth',{event:event.event,id:event.id,expected:event.expected,
+      name:core.signalName(catalog[event.id]),status:event.status,seq:event.seq});
     if(event.event==='BEGIN'){
       if(trials.some(function(t){return t.seq===event.seq&&t.id===event.id&&
         t._epoch===epoch;}))return;
@@ -474,8 +581,15 @@
       var found=false;
       for(var i=trials.length-1;i>=0;i--){
         if(trials[i]._epoch!==epoch)continue;
+        var provisionalNotes=trials[i]._autoCandidate?trials[i].notes:null;
         if(core.applyEnd(trials[i],event)){
           found=true;
+          if(provisionalNotes){
+            // A transmitter END is not proof that the receiver baseline
+            // existed. Preserve the source and uncertainty in exported CSV.
+            trials[i].notes=provisionalNotes+
+              ' Emitter '+event.event+' '+(event.status||'unspecified')+'.';
+          }
           trials[i]._endedAt=Date.now();
           if(trials[i].emission==='failed')trials[i].window='incomplete';
           else if(finishAutoMatch(trials[i])){
@@ -503,6 +617,13 @@
         selectedTrial=trials.length-1;
       }
       redrawTrials();selectTrial();
+      if(event.event==='END'&&event.status==='ok'&&
+         devices.receiver.port&&!receiverMirror){
+        // Explicit post-transmit snapshot: an RF hit may only reach the
+        // receiver LOG near the end of an 8-second test. A row marked
+        // "gone" is still useful evidence when it appeared after baseline.
+        void requestWatchSnapshot();
+      }
       notice('Emitter '+event.event+' ('+(event.status||'unspecified')+
         '). '+(trials[selectedTrial]&&trials[selectedTrial]._autoHit ?
         'SquachWatch exact-MAC detection also recorded.' :
@@ -517,6 +638,10 @@
     var lines=d.buffer.split(/\r?\n/);
     d.buffer=lines.pop();
     lines.forEach(function(line){
+      if(desktopMode&&line.startsWith('MIRROR ')){
+        desktopEvent('mirror',{role:role,line:line});
+        return;
+      }
       append(role,line+'\n');
       if(role==='emitter')recordEmitter(line.trim());
       else onWatchLine(line.trim());
@@ -561,7 +686,7 @@
     var port=null;
     try{
       port=await navigator.serial.requestPort();
-      var baud=role==='emitter'?115200:Number(ui.receiverBaud.value);
+      var baud=role==='emitter'?devices.emitter.baud:Number(ui.receiverBaud.value);
       if(!Number.isSafeInteger(baud)||baud<300||baud>4000000)
         throw new Error('Unsupported baud rate.');
       await port.open({baudRate:baud});
@@ -584,6 +709,7 @@
     var d=devices[role],p=d.port;
     if(!p)return;
     d.port=null;
+    if(role==='receiver')receiverMirror=false;
     if(batch.active)endBatch('Automation stopped: '+role+' disconnected.',role==='receiver');
     if(role==='receiver')stopWatchPolling();
     if(role==='emitter'){
@@ -650,9 +776,14 @@
           }finally{if(timer)clearTimeout(timer);}
         }
         if(token!==runToken || !devices.emitter.port)return;
+        // An intermittent LOG timeout cannot halt a 172-signal suite.
+        // The individual case remains UNTESTED unless independent receiver
+        // evidence is subsequently captured with a complete baseline.
         if(fromBatch&&!baseline){
-          endBatch('Automation stopped: no complete SquachWatch LOG baseline for '+c.id+'.',false);
-          return;
+          if(batch.current)batch.current.noBaseline=true;
+          batch.message='Receiver LOG temporarily unavailable for '+c.id+
+            '. Sending test, but automatic scoring is disabled for this case.';
+          updateBatchUi();
         }
         // Explicit null means auto-matching is disabled for this run. Never
         // prevent a valid user-requested RUN just because receiver LOG is late.
@@ -671,7 +802,7 @@
       if(!sent){
         awaitingBegin=false;receiver.preRun=null;
         runProgress('RUN write failed. Check the emitter connection.');
-        if(fromBatch)endBatch('Automation stopped: RUN write failed for '+c.id+'.',true);
+        if(fromBatch)advanceBatch('RUN serial write failed',true,true);
         return;
       }
       // TRUTH BEGIN may already arrive while awaiting the serial write.
@@ -683,7 +814,7 @@
           runAwaitTimer=null;
           runProgress('RUN was sent but no TRUTH BEGIN arrived within 7 seconds. '+
             'Check SquachEmit serial log or try again; no transmission was confirmed.');
-          if(fromBatch)endBatch('Automation stopped: no TRUTH BEGIN for '+c.id+' within 7 seconds.',true);
+          if(fromBatch)advanceBatch('No TRUTH BEGIN within seven seconds',true,true);
           updateButtons();
         },7000);
       }
@@ -888,5 +1019,58 @@
     stopWatchPolling();
     Object.keys(devices).forEach(function(role){var r=devices[role].reader;if(r)r.cancel().catch(function(){});});
   });
+
+  if(desktopMode){
+    // Narrow public API for the local Windows control rail. No raw serial port
+    // objects, no automatic transmission and no unrestricted firmware commands.
+    function desktopSend(role,cmd){
+      var value=String(cmd||'').trim().toUpperCase();
+      if(role==='receiver'){
+        if(!/^(LOG|RADIO|RADIO SCAN|MEM|WIFI|BLACKBOX|ROT|SCAN (?:AUTO|ACTIVE|PASSIVE)|CLOCK [01] [0-2] [0-6]|BG (?:[0-9]|1[0-9])|MIRROR (?:ON|OFF|FRAME|TOUCH [0-9]{1,3} [0-9]{1,3} (?:DOWN|MOVE|UP)))$/.test(value))
+          return Promise.resolve(false);
+        if(batch.active&&!/^(?:RADIO|MEM)$/.test(value))return Promise.resolve(false);
+        if(value==='MIRROR ON')receiverMirror=true;
+        if(value==='MIRROR OFF')receiverMirror=false;
+        if(value==='LOG')return requestWatchSnapshot().then(function(r){return !!r;});
+        return sendReceiver(value);
+      }
+      if(role==='emitter'){
+        if(!/^(STATUS|IDENTITY|LIST|HELP|COLORS|STOP|MIRROR (?:ON|OFF|FRAME|BAUD (?:115200|2000000)|TOUCH [0-9]{1,3} [0-9]{1,3} (?:DOWN|MOVE|UP)))$/.test(value))
+          return Promise.resolve(false);
+        if(batch.active&&value!=='STATUS'&&value!=='STOP')return Promise.resolve(false);
+        if(value==='STOP'){ui.stopCase.click();return Promise.resolve(true);}
+        return sendEmitter(value);
+      }
+      return Promise.resolve(false);
+    }
+    window.SQEWorkbenchDesktop=Object.freeze({
+      connect:function(role){return ['receiver','emitter'].includes(role)?connect(role):Promise.resolve();},
+      disconnect:function(role){return ['receiver','emitter'].includes(role)?disconnect(role):Promise.resolve();},
+      send:desktopSend,
+      setEmitterBaud:function(baud){
+        var n=Number(baud);
+        if(devices.emitter.port||opening.emitter||![115200,2000000].includes(n))return false;
+        devices.emitter.baud=n;updateButtons();return true;
+      },
+      runSelected:function(){return run(false);},
+      startBatch:function(){ui.batchStart.click();},
+      stopBatch:function(){ui.batchStop.click();},
+      exportCsv:function(){ui.exportCsv.click();},
+      getState:function(){
+        return {
+          emitterConnected:!!devices.emitter.port,
+          receiverConnected:!!devices.receiver.port,
+          receiverBaud:devices.receiver.baud,
+          emitterBaud:devices.emitter.baud,
+          batchActive:batch.active,transmitting:transmitting,
+          selectedCase:catalog[ui.caseSelect.value] ?
+            core.signalName(catalog[ui.caseSelect.value]):'No signal selected',
+          latestSnapshotRows:devices.receiver.lastSnapshot ?
+            devices.receiver.lastSnapshot.rows.length:null,
+          catalogCount:cases.length
+        };
+      }
+    });
+  }
   redrawTrials();updateButtons();void loadCases();
 })();
