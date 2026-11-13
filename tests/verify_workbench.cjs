@@ -186,9 +186,13 @@ for(const required of [
   'core.matchWatchDetection(','onWatchSnapshot(','startWatchPolling()',
   'core.signalName(','core.batchPlan(','onBatchTruth(','startBatchStep()',
   'endBatch(','batchDuration','batchGap','batchScope',
-  "new TextEncoder().encode('LOG\\n')",'if(t.emission===\'ok\')finishAutoMatch(t)']){
+  "sendReceiver('LOG')",'if(t.emission===\'ok\')finishAutoMatch(t)']){
   assert.ok(app.toLowerCase().includes(required.toLowerCase()),'missing: '+required);
 }
+assert.ok(app.includes('var receiverWrites=Promise.resolve()'),
+  'LOG polling and Windows GUI commands must share one serialized receiver writer');
+assert.ok(app.includes("if(!(await sendReceiver('LOG')))"),
+  'automatic receiver polling must use the queued serial LOG path');
 assert.ok(!app.includes('RUN not sent.'),'receiver LOG timeout must not suppress a user RUN');
 assert.ok(app.includes("if(!baseline){\n          autoStatus("),
   'missing receiver baseline should downgrade automatic scoring, not prevent RUN');
