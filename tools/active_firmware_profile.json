@@ -2,25 +2,26 @@
   "schema": 1,
   "scenario_count": 172,
   "firmware_sources": {
-    "src": "bcd012c4b49f51ddceef3e236215cbbfb1215d65",
-    "include": "04b7a60b54d953639f8d85fe13c3fcbca8636e93",
+    "src": "0aa404384ec602f1db51b0c708815bcddb0beecf",
+    "include": "56dddad06a2caea22b1d2ea7ce74aaa3e39b67b5",
     "lib": "bd0df45f7747bc9971aa4b379a12940dd2d7d98f",
     "SquachEmit.ino": "90b4205813a2f7885bc1e12ce7431eebf7249f45",
     "platformio.ini": "bd67af3ecd6de05f4cef015fe97e17b29ceed574"
   },
   "builds": {
     "cyd32-st7798": {
-      "title": "SquachEmit v1.1.0 CYD 3.2 LAB — 172 Cases · Live LCD Mirror + Remote Touch R4",
+      "title": "SquachEmit v1.1.0 CYD 3.2 LAB — 172 Cases · Mirror Diagnostics + Touch R5",
       "version": "v1.1.0 MAINLINE · 172 cases",
-      "summary": "Unmerged CYD 3.2 ST7798 LAB: 172 synthetic BLE/Wi-Fi cases, device-first menus, stored 3–30-second TX time, actual RGB565 TFT GRAM pixels streamed incrementally over USB at 2 Mbps and mouse-to-native touch events. Full keyframes and sequence-checked changed-row updates avoid freezing touch/radio handling; flat LCD reads fail closed. Real ST7798 readback, UART reconnect, timing and remote gestures require physical validation. Four-part SHA-256 flashing preflight remains mandatory. Not a public release.",
+      "summary": "Unmerged 172-case LAB R5 for CYD 3.2 ST7798. Improves the experimental real-RGB565 LCD mirror: conservative 6 MHz TFT GRAM SPI read clock, captures actual calibration screen before touch calibration, MIRROR DIAG reports hardware readback/baud, and accepts a slow but authentic 115200 fallback when Windows COM reconnect resets 2Mbps UART. Windows Workbench v0.4.1 requires firmware MIRROR READY before requesting frames, reports bad baud or unreadable LCD explicitly, and maps mouse DOWN/MOVE/UP to native touch controls. TFT readback, colors, latency and physical touch are unverified. Stable production v1.1.0 unchanged; SHA-256 segment preflight mandatory.",
       "highlights": [
-        "New LIVE USB LCD mirror: MIRROR ON / MIRROR FRAME [last_seq] / MIRROR DELTA / MIRROR ROW / MIRROR END.",
-        "Bounded two-row serial streaming prevents long screen-capture blocking; changed-row updates reduce bandwidth.",
-        "Actual 320x240 RGB565 TFT pixels only; invalid/missing TFT readback reports an explicit error.",
-        "Mouse/touch coordinates map to the CYD 3.2 native touch hit-testing path, including click, drag and press/release.",
-        "172 synthetic BLE/Wi-Fi device-named cases, unique MACs and negative controls.",
-        "TX TIME editor 3–30 seconds with persistent settings; STOP, SUITE and RF timeout remain.",
-        "Physical screen/readback and touch acceptance pending; verify all four installer flash segments by SHA-256."
+        "R5 LCD diagnostic: MIRROR DIAG returns READY, CAL, physical LCD SIZE, real BAUD, TFT RGB565 sample variation and free heap.",
+        "LCD GRAM read clock reduced from 20MHz to 6MHz to improve reliability on ST7798/ST7789-compatible boards.",
+        "Real LCD capture works even before touchscreen calibration; remote touch still requires calibration.",
+        "Slow authentic RGB565 full-frame capture is available at default 115200 if USB COM reconnect resets UART; allow 20–40s for first frame.",
+        "Windows EXE 0.4.1 requires actual MIRROR READY acknowledgment, and clearly reports unsupported firmware, wrong baud, panel-readback failure.",
+        "Live 2Mbps mode retains nonblocking two-row streaming and exact changed-row deltas and touch release; do not fabricate screenshots.",
+        "172 bounded synthetic BLE/Wi-Fi cases; selected 3–30s duration; unique synthetic identities; verify four firmware segments by SHA-256.",
+        "Real hardware validation of GRAM readback, touchscreen navigation and full-motion latency is still pending."
       ]
     },
     "c5-waveshare-28": {
