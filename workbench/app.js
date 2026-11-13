@@ -551,8 +551,15 @@
       var found=false;
       for(var i=trials.length-1;i>=0;i--){
         if(trials[i]._epoch!==epoch)continue;
+        var provisionalNotes=trials[i]._autoCandidate?trials[i].notes:null;
         if(core.applyEnd(trials[i],event)){
           found=true;
+          if(provisionalNotes){
+            // A transmitter END is not proof that the receiver baseline
+            // existed. Preserve the source and uncertainty in exported CSV.
+            trials[i].notes=provisionalNotes+
+              ' Emitter '+event.event+' '+(event.status||'unspecified')+'.';
+          }
           trials[i]._endedAt=Date.now();
           if(trials[i].emission==='failed')trials[i].window='incomplete';
           else if(finishAutoMatch(trials[i])){
@@ -580,6 +587,13 @@
         selectedTrial=trials.length-1;
       }
       redrawTrials();selectTrial();
+      if(event.event==='END'&&event.status==='ok'&&
+         devices.receiver.port&&!receiverMirror){
+        // Explicit post-transmit snapshot: an RF hit may only reach the
+        // receiver LOG near the end of an 8-second test. A row marked
+        // "gone" is still useful evidence when it appeared after baseline.
+        void requestWatchSnapshot();
+      }
       notice('Emitter '+event.event+' ('+(event.status||'unspecified')+
         '). '+(trials[selectedTrial]&&trials[selectedTrial]._autoHit ?
         'SquachWatch exact-MAC detection also recorded.' :
