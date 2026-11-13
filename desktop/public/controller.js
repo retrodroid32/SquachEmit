@@ -23,7 +23,7 @@
   const terminals={receiver:'',emitter:''};
   const mirrors={};
   for(const role of ['receiver','emitter']){
-    mirrors[role]={active:false,waiting:false,lastFrame:false,failures:0,
+    mirrors[role]={active:false,waiting:false,lastFrame:false,lastFrameSequence:0,failures:0,
       assembler:new codec.MirrorAssembler(),timeout:null,next:null,
       touchDown:false,touchAt:0,touchTimer:null,lastPoint:{x:0,y:0},
       lastMove:0};
@@ -120,20 +120,27 @@
     const s=mirrors[role];
     cancelFrameTimers(role);
     s.active=false;s.waiting=false;s.failures=0;
+    s.lastFrame=false;s.lastFrameSequence=0;
     s.assembler.reset();
+    // Never leave an old image looking like a live physical display.
+    get('dc-canvas-'+role).hidden=true;
+    get('dc-placeholder-'+role).hidden=false;
     if(s.touchTimer!==null)clearInterval(s.touchTimer);
     s.touchTimer=null;s.touchDown=false;
   }
   async function stopMirror(role,send){
-    const was=mirrors[role].active;
+    const s=mirrors[role],was=s.active;
+    const connected=isConnected(role,api.getState());
+    // Deliver an explicit UP before switching off or disconnecting. A lost
+    // pointer capture must not leave the physical device pressed.
+    if(send&&was&&connected&&s.touchDown)
+      await api.send(role,'MIRROR TOUCH '+s.lastPoint.x+' '+s.lastPoint.y+' UP');
     resetRole(role);
-    if(send&&was&&isConnected(role,api.getState())){
+    if(send&&was&&connected){
       const ok=await api.send(role,'MIRROR OFF');
-      mirrorNote(role,ok?'USB mirror stopped; last real frame retained.':
-        'USB mirror stop was not acknowledged by the local command path.');
-    }else{
-      mirrorNote(role,'USB mirror stopped; last real frame retained.');
-    }
+      mirrorNote(role,ok?'USB mirror stopped. LCD view disconnected.':
+        'USB mirror stop was not acknowledged; view is disconnected.');
+    }else mirrorNote(role,'USB mirror offline. Connect to show real LCD pixels.');
   }
   function drawRealFrame(role,frame){
     const canvas=get('dc-canvas-'+role);
@@ -144,16 +151,23 @@
     canvas.hidden=false;
     get('dc-placeholder-'+role).hidden=true;
     mirrors[role].lastFrame=true;
+    mirrors[role].lastFrameSequence=frame.sequence;
     const panel=get('dc-display-'+role);
     panel.style.aspectRatio=frame.width+' / '+frame.height;
-    mirrorNote(role,'REAL LCD · '+frame.width+'×'+frame.height+' · '+frame.format+
-      ' · frame '+frame.sequence+' · '+new Date().toLocaleTimeString());
+    mirrorNote(role,'LIVE PHYSICAL LCD · '+frame.width+'×'+frame.height+
+      ' · '+frame.format+(frame.delta?' · '+frame.changedRows+' changed rows':' · full frame')+
+      ' · #'+frame.sequence+' · '+new Date().toLocaleTimeString());
   }
   async function requestMirrorFrame(role){
     const s=mirrors[role],state=api.getState();
     if(!s.active||s.waiting||!isConnected(role,state)||state.batchActive)return;
     s.waiting=true;
-    const ok=await api.send(role,'MIRROR FRAME');
+    // Firmware sends a full keyframe unless it recognizes the last complete
+    // screen the PC actually accepted. A dropped frame can never corrupt
+    // a later delta. SquachWatch's existing firmware retains FRAME syntax.
+    const request=(role==='emitter'&&s.lastFrameSequence)?
+      'MIRROR FRAME '+s.lastFrameSequence:'MIRROR FRAME';
+    const ok=await api.send(role,request);
     if(!ok){
       s.waiting=false;
       info(role,'Cannot request USB frame. Verify connection and LAB firmware.');
@@ -169,8 +183,8 @@
         void stopMirror(role,true);
         return;
       }
-      mirrorNote(role,'No LCD push captured; retrying a requested frame ('+
-        s.failures+'/3). The receiver only streams real physical redraws.');
+      mirrorNote(role,'No complete LCD pixels; retrying frame ('+
+        s.failures+'/3). Check device mirror firmware and TFT readback.');
       s.next=setTimeout(()=>void requestMirrorFrame(role),700);
     },role==='emitter'?16000:12000);
   }
@@ -207,13 +221,13 @@
       cancelFrameTimers(role);s.waiting=false;s.failures++;
       info(role,result.message);
       if(s.active&&s.failures>=3){void stopMirror(role,true);return;}
-      if(s.active)s.next=setTimeout(()=>void requestMirrorFrame(role),900);
+      if(s.active)s.next=setTimeout(()=>void requestMirrorFrame(role),450);
       return;
     }
     if(!s.active)return; // Never display unsolicited screen bytes.
     if(result.kind==='begin'){
-      mirrorNote(role,'Receiving real '+result.width+'×'+result.height+
-        ' '+result.format+' LCD frame…');
+      mirrorNote(role,'Receiving '+(result.delta?'changed rows from':'full')+
+        ' physical LCD '+result.width+'×'+result.height+' '+result.format+'…');
       return;
     }
     if(result.kind==='row'){
@@ -225,7 +239,9 @@
     if(result.kind==='frame'){
       cancelFrameTimers(role);s.waiting=false;s.failures=0;
       drawRealFrame(role,result.frame);
-      s.next=setTimeout(()=>void requestMirrorFrame(role),800);
+      // Continuous polling with device-side backpressure: changed-row
+      // frames are much cheaper than full RGB565 screenshots.
+      s.next=setTimeout(()=>void requestMirrorFrame(role),role==='emitter'?65:800);
     }
   }
   function connected(role,state){
@@ -234,7 +250,7 @@
     el.classList.toggle('online',yes);
     if(!yes&&mirrors[role].active){
       resetRole(role);
-      mirrorNote(role,'USB disconnected; last real frame retained.');
+      mirrorNote(role,'USB disconnected — no live LCD image.');
     }
     if(role==='emitter'&&document.activeElement!==get('dc-baud-select'))
       get('dc-baud-select').value=String(state.emitterBaud);
@@ -400,7 +416,13 @@
     if(action==='mirror-off'){await stopMirror(role,true);return;}
     if(action==='connect'){
       info(role,'Choose the '+names[role]+' Windows COM port…');
-      await api.connect(role);refreshState();return;
+      await api.connect(role);refreshState();
+      const state=api.getState();
+      // A USB-selected receiver can show real pixels immediately; the CYD32
+      // emitter can do so only after the operator's explicit 2 Mbps handoff.
+      if(isConnected(role,state)&&(role==='receiver'||state.emitterBaud===2000000))
+        await startMirror(role);
+      return;
     }
     if(action==='disconnect'){
       await stopMirror(role,true);await api.disconnect(role);
@@ -463,7 +485,8 @@
   window.addEventListener('sqe:state',refreshState);
   window.addEventListener('beforeunload',()=>{
     for(const role of ['receiver','emitter']){
-      if(mirrors[role].touchDown)releaseTouch(role,mirrors[role].lastPoint,0);
+      if(mirrors[role].touchDown&&isConnected(role,api.getState()))
+        sendTouch(role,mirrors[role].lastPoint,'UP');
       resetRole(role);
       stopCamera(role);
     }
