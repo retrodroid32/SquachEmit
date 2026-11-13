@@ -264,10 +264,58 @@
       return data;
     });
   }
+
+  // Friendly labels describe the synthetic fixture, not proof of actual hardware.
+  // Technical case IDs and expected receiver classifications never change.
+  function signalName(c) {
+    if(!c||!c.id)return 'Unknown signal';
+    var id=trim(c.id), desc=trim(c.description);
+    if(id.startsWith('BLE-HACKER-')) {
+      if(id==='BLE-HACKER-NAME')return 'Flipper Zero — advertised BLE name';
+      if(id==='BLE-HACKER-MFG')return 'Flipper Zero — manufacturer ID';
+      var uuid={'BLE-HACKER-UUID':'3081','BLE-HACKER-3082':'3082','BLE-HACKER-3083':'3083'}[id];
+      return 'Flipper Zero — service UUID'+(uuid?' 0x'+uuid:'');
+    }
+    if(id.startsWith('WIFI-HACKER-PAGER'))return 'Wi-Fi Pineapple Pager — management SSID';
+    if(id==='WIFI-HACKER-PINE')return 'Wi-Fi Pineapple — management SSID';
+    if(id==='WIFI-HACKER-PWN')return 'ESP Deauther — management SSID';
+    if(id.startsWith('OUI-'))return desc.split('|')[0].trim()+' — synthetic Wi-Fi OUI beacon (no Remote ID)';
+    if(id.includes('NEG-')||c.expected==='NONE')return 'Negative control — '+desc;
+    if(id.startsWith('RID-')) {
+      var model=desc.split('|')[0].trim();
+      if(/^RID-(?:WIFI-)?DJI-/.test(id))return model+' — synthetic '+(id.startsWith('RID-WIFI-')?'Wi-Fi':'BLE')+' Remote ID';
+      if(/^RID-(?:AUTEL|PARROT)-/.test(id))return model.replace(/^LAB /,'')+' — synthetic BLE Remote ID';
+      return desc+' — synthetic Remote ID';
+    }
+    if(id==='BLE-AIRTAG')return 'Apple AirTag — Find My test advertisement';
+    if(id==='BLE-DRONE')return 'OpenDroneID — BLE Remote ID';
+    if(id==='BLE-META-UUID')return 'Ray-Ban Meta — service UUID';
+    if(id==='BLE-META-MFG')return 'Meta — manufacturer ID';
+    if(id==='BLE-META-TECH')return 'Meta Platforms Technologies — manufacturer ID';
+    if(id==='BLE-META-LUXOTTICA')return 'Luxottica / Ray-Ban — manufacturer ID';
+    if(id==='BLE-META-SNAP')return 'Snap Spectacles — manufacturer ID';
+    if(id.startsWith('BLE-SAMSUNG'))return 'Samsung SmartTag — BLE service UUID';
+    if(id.startsWith('BLE-TILE'))return 'Tile tracker — BLE service UUID';
+    if(id.startsWith('BLE-IBEACON'))return 'Apple iBeacon — manufacturer payload';
+    if(id.startsWith('BLE-RAVEN'))return 'Raven — '+desc;
+    if(id.startsWith('BLE-FLOCK'))return 'Flock Safety — '+desc;
+    if(id.startsWith('WIFI-FLOCK'))return 'Flock Safety — '+desc;
+    if(id.startsWith('BLE-AXON')||id.startsWith('WIFI-AXON'))return 'Axon body camera — '+desc;
+    if(id.startsWith('BLE-SKIM')||id==='BLE-SKIMMER')return 'Bluetooth serial-module fixture — '+desc;
+    if(id==='BLE-GOOGLE')return 'Generic Eddystone — negative Google tracker control';
+    return desc || id;
+  }
+  function batchPlan(all,scope) {
+    if(!['all','BLE','WIFI'].includes(scope))throw Error('Invalid batch scope');
+    return (all||[]).filter(function(c){return scope==='all'||c.carrier===scope;})
+      .slice().sort(function(a,b){
+        return signalName(a).localeCompare(signalName(b))||a.id.localeCompare(b.id);
+      });
+  }
   return {CSV_HEADER:CSV_HEADER,LABELS:LABELS,parseTruth:parseTruth,
     normalizeMac:normalizeMac,parseWatchLogCount:parseWatchLogCount,
     parseWatchLogRow:parseWatchLogRow,newWatchLogParser:newWatchLogParser,
-    matchWatchDetection:matchWatchDetection,
+    matchWatchDetection:matchWatchDetection,signalName:signalName,batchPlan:batchPlan,
     status:status,pendingReason:pendingReason,score:score,makeTrial:makeTrial,applyEnd:applyEnd,
     exportCsv:exportCsv,parseCsv:parseCsv};
 });
