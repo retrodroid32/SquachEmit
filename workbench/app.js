@@ -34,7 +34,8 @@
   var awaitingBegin=false;
   var transmitting=false;
   var batch={active:false,queue:[],index:0,completed:0,current:null,
-    duration:8,gap:5,timer:null,endTimer:null,failures:0,message:'Ready to start'};
+    duration:8,gap:5,timer:null,endTimer:null,failures:0,unverified:0,
+    message:'Ready to start'};
   var emitterWrites=Promise.resolve();
   var receiverWrites=Promise.resolve();
   var desktopMode=(new URLSearchParams(window.location.search)).get('desktop')==='1';
@@ -210,7 +211,8 @@
     ui.batchProgress.max=batch.queue.length||cases.length||172;
     ui.batchProgress.value=batch.completed;
     text('batchCount',batch.completed+' / '+(batch.queue.length||cases.length||172)+
-      ' completed · '+batch.failures+' transmitter failures'+
+      ' completed · '+batch.failures+' transmitter failures · '+
+      batch.unverified+' unverified recoveries'+
       (batch.active?' · RUNNING':''));
     text('batchCurrent',batch.message);
   }
@@ -392,7 +394,8 @@
     }
     if(batch.index>=batch.queue.length){
       endBatch('Automation complete: '+batch.completed+' cases; '+
-        batch.failures+' transmitter failures. Review receiver evidence and export CSV.',false);
+        batch.failures+' transmitter failures; '+batch.unverified+
+        ' unverified recoveries. Review receiver evidence and export CSV.',false);
       return;
     }
     var c=batch.queue[batch.index];
@@ -404,6 +407,34 @@
       '\nSquachWatch expected: '+c.expected+'\nPreparing receiver baseline…';
     updateBatchUi();
     void run(true);
+  }
+  function advanceBatch(reason,failed,requestStop){
+    if(!batch.active||!batch.current)return;
+    var last=batch.current;
+    if(last.finished)return;
+    last.finished=true;
+    if(batch.endTimer!==null){clearTimeout(batch.endTimer);batch.endTimer=null;}
+    if(failed)batch.failures++;
+    if(reason==='no receiver baseline'||failed)batch.unverified++;
+    batch.completed++;batch.index++;batch.current=null;
+    // Missing BEGIN/END is not evidence that RF was never on. Request an
+    // explicit STOP and allow a longer cool-off before moving on.
+    if(requestStop && devices.emitter.port)void sendEmitter('STOP');
+    transmitting=false;cancelRunAck();devices.receiver.preRun=null;
+    batch.message='CASE '+batch.completed+' / '+batch.queue.length+
+      '\n'+core.signalName(catalog[last.id])+'\n'+last.id+
+      '\n'+reason+'; continuing after safe cooldown. No receiver result inferred.';
+    updateButtons();
+    batch.timer=setTimeout(function(){
+      batch.timer=null;
+      if(!batch.active)return;
+      if(!devices.emitter.port||!devices.receiver.port){
+        endBatch('Automation stopped: a USB device disconnected.',false);return;
+      }
+      // A stale in-flight preflight is invalidated before starting next.
+      runToken++;startingRun=false;awaitingBegin=false;transmitting=false;
+      startBatchStep();
+    },Math.max(batch.gap,requestStop?8:3)*1000);
   }
   function onBatchTruth(event){
     if(!batch.active||!batch.current||event.id!==batch.current.id)return;
@@ -417,32 +448,16 @@
       if(batch.endTimer!==null)clearTimeout(batch.endTimer);
       batch.endTimer=setTimeout(function(){
         if(batch.active&&batch.current===current&&!current.finished)
-          endBatch('Automation stopped: no TRUTH END/ERROR for '+current.id+'.',true);
+          advanceBatch('No transmitter TRUTH END (timed out)',true,true);
       },(batch.duration+20)*1000);
       updateBatchUi();return;
     }
     if(event.event!=='END'&&event.event!=='ERROR')return;
     if(current.finished||(current.begun&&current.seq!==event.seq)||
        (!current.begun&&event.event!=='ERROR'))return;
-    current.finished=true;
-    if(batch.endTimer!==null){clearTimeout(batch.endTimer);batch.endTimer=null;}
-    var success=event.event==='END'&&event.status==='ok';
-    if(!success)batch.failures++;
-    batch.completed++;batch.index++;batch.current=null;
-    batch.message='CASE '+batch.completed+' / '+batch.queue.length+
-      '\n'+core.signalName(catalog[event.id])+'\n'+event.id+
-      '\nTransmitter: '+(success?'END ok':'FAILED: '+event.status)+
-      '. Off-air cooldown '+batch.gap+' seconds.'+
-      '\nNo receiver detection is inferred from silence.';
-    updateBatchUi();
-    batch.timer=setTimeout(function(){
-      batch.timer=null;
-      if(batch.active){
-        if(startingRun||awaitingBegin||transmitting)
-          endBatch('Automation stopped: transmitter still active.',true);
-        else startBatchStep();
-      }
-    },batch.gap*1000);
+    advanceBatch(event.event==='END'&&event.status==='ok'?
+      'Transmitter END ok':'Transmitter '+event.event+' '+(event.status||'unknown'),
+      !(event.event==='END'&&event.status==='ok'),false);
   }
   function startBatch(){
     if(batch.active||startingRun||awaitingBegin||transmitting||
@@ -463,7 +478,7 @@
     if(!window.confirm('Run '+queue.length+' signals sequentially while attended?'+
       ' STOP cancels the remaining tests. Export the CSV to save results.'))return;
     clearBatchTimers();
-    batch.queue=queue;batch.index=0;batch.completed=0;batch.failures=0;
+    batch.queue=queue;batch.index=0;batch.completed=0;batch.failures=0;batch.unverified=0;
     batch.duration=duration;batch.gap=gap;batch.active=true;batch.current=null;
     startBatchStep();
   }
@@ -685,9 +700,14 @@
           }finally{if(timer)clearTimeout(timer);}
         }
         if(token!==runToken || !devices.emitter.port)return;
+        // An intermittent LOG timeout cannot halt a 172-signal suite.
+        // The individual case remains UNTESTED unless independent receiver
+        // evidence is subsequently captured with a complete baseline.
         if(fromBatch&&!baseline){
-          endBatch('Automation stopped: no complete SquachWatch LOG baseline for '+c.id+'.',false);
-          return;
+          batch.unverified++;
+          batch.message='Receiver LOG temporarily unavailable for '+c.id+
+            '. Sending test, but automatic scoring is disabled for this case.';
+          updateBatchUi();
         }
         // Explicit null means auto-matching is disabled for this run. Never
         // prevent a valid user-requested RUN just because receiver LOG is late.
@@ -706,7 +726,7 @@
       if(!sent){
         awaitingBegin=false;receiver.preRun=null;
         runProgress('RUN write failed. Check the emitter connection.');
-        if(fromBatch)endBatch('Automation stopped: RUN write failed for '+c.id+'.',true);
+        if(fromBatch)advanceBatch('RUN serial write failed',true,true);
         return;
       }
       // TRUTH BEGIN may already arrive while awaiting the serial write.
@@ -718,7 +738,7 @@
           runAwaitTimer=null;
           runProgress('RUN was sent but no TRUTH BEGIN arrived within 7 seconds. '+
             'Check SquachEmit serial log or try again; no transmission was confirmed.');
-          if(fromBatch)endBatch('Automation stopped: no TRUTH BEGIN for '+c.id+' within 7 seconds.',true);
+          if(fromBatch)advanceBatch('No TRUTH BEGIN within seven seconds',true,true);
           updateButtons();
         },7000);
       }
