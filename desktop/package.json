@@ -1,8 +1,8 @@
 {
   "name": "squachemit-workbench-desktop",
-  "version": "0.4.1",
+  "version": "0.4.2",
   "private": true,
-  "description": "SquachEmit Windows Workbench 172-case real LCD remote touch, firmware handshake and TFT diagnostic R5",
+  "description": "SquachEmit 172-case Windows Workbench R6: exact LCD frames, native touch, and nonblocking RF tests with receiver LOG auto-pause",
   "main": "main.cjs",
   "license": "GPL-3.0-only",
   "scripts": {

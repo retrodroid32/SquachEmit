@@ -75,6 +75,21 @@ test('USB LCD frames use real decoded pixels and pointer touchscreen input',()=>
   assert.doesNotMatch(ui,/dc-screenmetric/);
   assert.doesNotMatch(wb,/getUserMedia\(\{audio:true/);
 });
+test('real SquachWatch mirror never prevents user-triggered SquachEmit transmission',()=>{
+  const wb=read('workbench/app.js'),ui=read('desktop/public/controller.js');
+  assert.match(wb,/async function pauseReceiverMirrorForDetection\(/);
+  assert.match(wb,/const off=await sendReceiver\('MIRROR OFF'\)/);
+  assert.match(wb,/receiverMirror=false;\s*if\(devices\.receiver\.port\)startWatchPolling\(\)/);
+  assert.match(wb,/var receiverLogsReady=await pauseReceiverMirrorForDetection\(\)/);
+  assert.match(wb,/async function startBatch\(\)/);
+  assert.match(wb,/snapshot=await Promise\.race\(/);
+  assert.match(wb,/desktopEvent\('mirror-paused'/);
+  assert.doesNotMatch(wb,/Stop SquachWatch LCD mirror first to restore/);
+  assert.match(ui,/sqe:mirror-paused/);
+  assert.match(ui,/role==='receiver'&&state\.testActive/);
+  assert.match(ui,/role==='emitter'\?65:800/);
+});
+
 test('Windows Actions validates contracts and publishes review EXEs, not releases',()=>{
   const workflow=read('.github/workflows/windows-desktop-workbench.yml');
   assert.match(workflow,/windows-latest/);
