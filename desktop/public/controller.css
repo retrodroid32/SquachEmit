@@ -16,7 +16,7 @@ main.desktop-workbench{max-width:1920px;display:grid;grid-template-columns:minma
 .dc-state.online{color:#8ee8b0;border-color:#418164}
 .dc-display{background:#020608;border:9px solid #172f40;box-shadow:0 0 0 1px #405668,0 8px 20px #030713 inset;border-radius:14px;aspect-ratio:320 / 240;overflow:hidden;position:relative;display:flex;align-items:center;justify-content:center;min-height:165px}
 .dc-lcd{width:100%;height:100%;display:flex;align-items:center;justify-content:center;background:#000}
-.dc-display canvas{display:block;width:100%;height:auto;max-width:100%;max-height:100%;object-fit:contain;image-rendering:pixelated;touch-action:none;cursor:crosshair;background:#000}
+.dc-display canvas{display:block;width:100%;height:100%;object-fit:fill;image-rendering:pixelated;touch-action:none;cursor:crosshair;background:#000}
 .dc-display canvas[hidden],.dc-placeholder[hidden],.dc-lcd[hidden],.dc-display video[hidden]{display:none!important}
 .dc-display canvas:focus-visible{outline:3px solid #65edda;outline-offset:-3px}
 .dc-placeholder{display:flex;flex-direction:column;justify-content:center;align-items:center;text-align:center;gap:7px;width:100%;height:100%;padding:17px;color:#bed2df;font:700 12px ui-monospace,Consolas,monospace}
