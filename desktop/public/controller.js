@@ -163,7 +163,8 @@
   }
   async function requestMirrorFrame(role){
     const s=mirrors[role],state=api.getState();
-    if(!s.active||!s.ready||s.waiting||!isConnected(role,state)||state.batchActive)return;
+    if(!s.active||!s.ready||s.waiting||!isConnected(role,state)||
+       (role==='receiver'&&state.testActive))return;
     s.waiting=true;
     // Firmware sends a full keyframe unless it recognizes the last complete
     // screen the PC actually accepted. A dropped frame can never corrupt
@@ -193,8 +194,9 @@
   }
   async function startMirror(role){
     const state=api.getState();
-    if(state.batchActive){
-      info(role,'Stop automated testing first. LCD streaming shares the USB serial channel.');
+    if(role==='receiver'&&state.testActive){
+      info(role,'SquachWatch LCD mirroring pauses during detection tests so '+
+        'its USB connection can deliver exact-MAC LOG results. Re-enable afterward.');
       return;
     }
     if(!isConnected(role,state)){
@@ -293,8 +295,12 @@
     rail.querySelectorAll('[data-action="run"],[data-action="scan-auto"],'+
       '[data-action="scan-active"],[data-action="scan-passive"],'+
       '[data-action="rotate"],[data-action="clock"],'+
-      '[data-action="mirror-on"],[data-action="mirror-frame"],'+
       '[data-action="switch-baud"]').forEach(b=>{b.disabled=disabled;});
+    // Only the SquachWatch receiver USB must switch to LOG during tests.
+    // SquachEmit has its own port and can keep streaming actual LCD pixels.
+    rail.querySelectorAll('[data-action="mirror-on"],[data-action="mirror-frame"]').forEach(b=>{
+      b.disabled=b.dataset.role==='receiver'&&!!state.testActive;
+    });
   }
   function appendLine(role,line){
     terminals[role]=(terminals[role]+String(line)).slice(-1800);
@@ -521,6 +527,17 @@
   get('dc-export').addEventListener('click',()=>api.exportCsv());
   window.addEventListener('sqe:serial',e=>appendLine(e.detail.role,e.detail.line));
   window.addEventListener('sqe:mirror',e=>onMirror(e.detail));
+  window.addEventListener('sqe:mirror-paused',e=>{
+    const detail=e.detail||{};
+    if(detail.role!=='receiver')return;
+    // The detection runner owns the serial MIRROR OFF. Hide authentic pixels
+    // immediately and cancel outstanding frame timers; don't send it twice.
+    resetRole('receiver');
+    mirrorNote('receiver',detail.reason||
+      'Receiver LCD paused to collect exact-MAC LOG evidence. Restore after testing.');
+    info('receiver','Receiver mirroring paused automatically. '+ 
+      'The SquachEmit LCD stays live and RF transmission can proceed.');
+  });
   window.addEventListener('sqe:snapshot',e=>snapshot(e.detail));
   window.addEventListener('sqe:truth',e=>truth(e.detail));
   window.addEventListener('sqe:state',refreshState);
