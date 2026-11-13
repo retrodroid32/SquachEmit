@@ -21,7 +21,10 @@ BOARDS = {
     's3-devkit': {'chip': 'ESP32-S3', 'label': 'ESP32-S3 DevKitC-1'},
     'cyd32-st7798': {'chip': 'ESP32', 'label': 'CYD 3.2 ST7798 ESP32-2432S032R'},
 }
-ALLOWED_BRANCH = re.compile(r'^(main|lab/[A-Za-z0-9._/-]{1,110})$')
+# Exactly one approved Workbench feature revision is permitted as LAB.
+PINNED_LAB_BRANCH = 'feature/windows-desktop-control-center-20261112'
+PINNED_LAB_SHA = '0b7a2edcd8f7de6fc45ad320a7c0b9f6fa2e8974'
+ALLOWED_BRANCH = re.compile(r'^(main|lab/[A-Za-z0-9._/-]{1,110}|feature/windows-desktop-control-center-20261112)$')
 SHA = re.compile(r'^[a-f0-9]{40}$')
 
 NOTES_PATH = Path(__file__).resolve().with_name('firmware_build_notes.json')
@@ -137,6 +140,8 @@ def load_source(src: dict, output: Path, notes: dict | None = None) -> dict:
     sha = src['sha'].lower()
     if not SHA.fullmatch(sha) or not ALLOWED_BRANCH.fullmatch(src['branch']):
         raise ValueError(f'invalid trusted source ref: {src}')
+    if src['branch'] == PINNED_LAB_BRANCH and sha != PINNED_LAB_SHA:
+        raise ValueError('Workbench LAB artifact SHA not explicitly approved')
     channel = src.get('channel')
     if channel not in ('lab', 'stable'):
         raise ValueError('unsupported firmware channel')
@@ -192,6 +197,10 @@ def load_source(src: dict, output: Path, notes: dict | None = None) -> dict:
                    if src.get('source_profile') is not None
                    else describe_build(sha, src['branch'], board,
                                        notes if notes is not None else load_build_notes()))
+    if channel == 'lab' and src['branch'] == PINNED_LAB_BRANCH:
+        if src.get('source_profile') is None:
+            raise ValueError('pinned LAB artifact requires an exact source profile')
+        description['version_label'] = f'LAB 172-R4 · {sha[:8]}'
     manifest={
         'name': description['title'],
         'version': description['version_label'],

@@ -61,6 +61,43 @@ class InstallerManifestTests(unittest.TestCase):
                 self.assertEqual(build["bytes"],build["segments"][3]["bytes"])
                 self.assertEqual(build["application"],build["segments"][3]["path"])
 
+
+    def test_pinned_workbench_lab_all_three_boards_only_at_approved_sha(self):
+        profile={
+            'schema':1, 'scenario_count':172,
+            'source_commit_sha':builder.PINNED_LAB_SHA,
+            'builds':{
+                board:{
+                    'title':f'SquachEmit {board} 172-case LAB',
+                    'version':'v1.1.0 MAINLINE · 172 cases',
+                    'summary':'Experimental LAB firmware; physical verification pending.',
+                    'highlights':['172 cases; physical verification pending.']
+                } for board in builder.BOARDS
+            }
+        }
+        for board in builder.BOARDS:
+            with self.subTest(board=board),tempfile.TemporaryDirectory() as tmp:
+                root=Path(tmp)
+                src=self.make_artifact(root,board)
+                src['branch']=builder.PINNED_LAB_BRANCH
+                src['sha']=builder.PINNED_LAB_SHA
+                src['source_profile']=profile
+                build=builder.load_source(src,root/'site')
+                self.assertEqual(build['channel'],'lab')
+                self.assertEqual(build['sha'],builder.PINNED_LAB_SHA)
+                self.assertEqual(build['version_label'],'LAB 172-R4 · 0b7a2edc')
+                self.assertTrue(build['notes_verified_for_sha'])
+                src['sha']='a'*40
+                with self.assertRaisesRegex(ValueError,'not explicitly approved'):
+                    builder.load_source(src,root/'rejected')
+
+    def test_sha_pin_is_in_pages_publisher(self):
+        workflow=(ROOT/'.github/workflows/publish-installer.yml').read_text()
+        self.assertIn(builder.PINNED_LAB_SHA,workflow)
+        self.assertIn(builder.PINNED_LAB_BRANCH,workflow)
+        self.assertIn('pinned_workbench_lab',workflow)
+        self.assertIn("'s3-devkit','squachemit-esp32s3-firmware-unverified','lab'",workflow)
+
     def test_c5_merge_mismatch_is_rejected(self):
         with tempfile.TemporaryDirectory() as tmp:
             root=Path(tmp)
