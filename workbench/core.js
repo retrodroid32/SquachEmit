@@ -268,42 +268,93 @@
   // Friendly labels describe the synthetic fixture, not proof of actual hardware.
   // Technical case IDs and expected receiver classifications never change.
   function signalName(c) {
-    if(!c||!c.id)return 'Unknown signal';
-    var id=trim(c.id), desc=trim(c.description);
-    if(id.startsWith('BLE-HACKER-')) {
-      if(id==='BLE-HACKER-NAME')return 'Flipper Zero — advertised BLE name';
-      if(id==='BLE-HACKER-MFG')return 'Flipper Zero — manufacturer ID';
-      var uuid={'BLE-HACKER-UUID':'3081','BLE-HACKER-3082':'3082','BLE-HACKER-3083':'3083'}[id];
-      return 'Flipper Zero — service UUID'+(uuid?' 0x'+uuid:'');
+    if(!c||!c.id)throw Error('Case has no signal ID');
+    var id=trim(c.id), desc=trim(c.description), expected=trim(c.expected);
+    var device='',method='';
+    // Explicit names for ALL fixture families, including negative controls.
+    // These are recognizable test labels, never identity/authenticity claims.
+    if(id.startsWith('OUI-')) {
+      device=desc.split('|')[0].trim();
+      method='synthetic manufacturer Wi-Fi MAC beacon; NO Remote ID';
+    } else if(id.startsWith('RID-')) {
+      if(id.startsWith('RID-NEG-')) {
+        device='OpenDroneID';method=desc+' (negative control)';
+      } else if(/^RID-(?:WIFI-)?DJI-/.test(id)) {
+        device=desc.split('|')[0].trim();
+        method='synthetic '+(id.startsWith('RID-WIFI-')?'Wi-Fi':'BLE')+' Remote ID';
+      } else if(/^RID-(?:AUTEL|PARROT)-/.test(id)) {
+        device=desc.split('|')[0].trim().replace(/^LAB /,'');
+        method='synthetic BLE Remote ID';
+      } else {
+        device=id.startsWith('RID-WIFI-PARROT')?'Parrot ANAFI / OpenDroneID':'OpenDroneID';
+        method=desc+' (synthetic '+(c.carrier==='WIFI'?'Wi-Fi':'BLE')+')';
+      }
+    } else if(id.startsWith('BLE-HACKER-')) {
+      device='Flipper Zero';
+      method=id==='BLE-HACKER-NAME'?'advertised BLE name':
+        id==='BLE-HACKER-MFG'?'manufacturer ID':
+        'service UUID 0x'+(id==='BLE-HACKER-UUID'?'3081':
+          id.slice('BLE-HACKER-'.length));
+    } else if(id.startsWith('WIFI-HACKER-')) {
+      device=id.startsWith('WIFI-HACKER-PAGER')?'Wi-Fi Pineapple Pager':
+        id==='WIFI-HACKER-PINE'?'Wi-Fi Pineapple':'ESP Deauther';
+      method=desc;
+    } else if(id.startsWith('BLE-FLOCK-')) {
+      device='Flock Safety';method=desc;
+    } else if(id.startsWith('WIFI-FLOCK')) {
+      device='Flock Safety';method=desc;
+    } else if(id.startsWith('BLE-META-')) {
+      device=id==='BLE-META-LUXOTTICA'?'Luxottica / Ray-Ban':
+        id==='BLE-META-SNAP'?'Snap Spectacles':
+        id==='BLE-META-UUID'?'Ray-Ban Meta':'Meta';
+      method=desc;
+    } else if(id.startsWith('BLE-RAVEN')) {
+      device='Raven';method=desc;
+    } else if(id.startsWith('BLE-AIRTAG')) {
+      device='Apple AirTag';method='synthetic Find My manufacturer payload';
+    } else if(id.startsWith('BLE-SAMSUNG')) {
+      device='Samsung SmartTag';method=desc;
+    } else if(id.startsWith('BLE-TILE')) {
+      device='Tile tracker';method=desc;
+    } else if(id.startsWith('BLE-GOOGLE')) {
+      device='Google Find My tracker';method='generic Eddystone UUID (negative control; NOT a tracker)';
+    } else if(id.startsWith('BLE-IBEACON')) {
+      device='Apple iBeacon';method=desc;
+    } else if(id.startsWith('BLE-DRONE')) {
+      device='OpenDroneID';method='synthetic BLE Remote ID';
+    } else if(id.startsWith('BLE-AXON')||id.startsWith('WIFI-AXON')) {
+      device='Axon body camera';method=desc;
+    } else if(id.startsWith('BLE-SKIM')||id==='BLE-SKIMMER') {
+      device=(c.text||id==='BLE-SKIMMER'&&'HC-05')||'Bluetooth serial module';
+      method='generic Bluetooth module; not proof of card skimmer — '+desc;
+    } else if(id.startsWith('BLE-NEG-')) {
+      var negName={
+        'BLE-NEG-APPLE':'Apple Find My / iBeacon',
+        'BLE-NEG-UUID':'Unknown BLE device',
+        'BLE-NEG-NAME':'Ordinary BLE device',
+        'BLE-NEG-IBEACON-SHORT':'Apple iBeacon',
+        'BLE-NEG-DRONE-UUID':'OpenDroneID',
+        'BLE-NEG-META-ADJ':'Meta',
+        'BLE-NEG-SNAP-ADJ':'Snap Spectacles',
+        'BLE-NEG-PENGUIN-9':'Flock Penguin',
+        'BLE-NEG-BARE9':'Flock Safety',
+        'BLE-NEG-RAVEN-3600':'Raven',
+        'BLE-NEG-FLIP-MFG':'Flipper Zero',
+        'BLE-NEG-JDY16-EXTRA':'JDY-16 Bluetooth module'
+      };
+      device=negName[id]||'Generic BLE device';
+      method=desc+' (negative control)';
+    } else if(id.startsWith('WIFI-NEG')) {
+      device=id.includes('PAGER')?'Wi-Fi Pineapple Pager':
+        id.includes('FLOCK')?'Flock Safety':
+        id.includes('AXON')?'Axon body camera':'Ordinary Wi-Fi access point';
+      method=desc+' (negative control)';
+    } else {
+      // Fail closed rather than silently displaying an anonymous case
+      // when the firmware catalog grows beyond the reviewed 172 names.
+      throw Error('No device name mapped for signal '+id);
     }
-    if(id.startsWith('WIFI-HACKER-PAGER'))return 'Wi-Fi Pineapple Pager — management SSID';
-    if(id==='WIFI-HACKER-PINE')return 'Wi-Fi Pineapple — management SSID';
-    if(id==='WIFI-HACKER-PWN')return 'ESP Deauther — management SSID';
-    if(id.startsWith('OUI-'))return desc.split('|')[0].trim()+' — synthetic Wi-Fi OUI beacon (no Remote ID)';
-    if(id.includes('NEG-')||c.expected==='NONE')return 'Negative control — '+desc;
-    if(id.startsWith('RID-')) {
-      var model=desc.split('|')[0].trim();
-      if(/^RID-(?:WIFI-)?DJI-/.test(id))return model+' — synthetic '+(id.startsWith('RID-WIFI-')?'Wi-Fi':'BLE')+' Remote ID';
-      if(/^RID-(?:AUTEL|PARROT)-/.test(id))return model.replace(/^LAB /,'')+' — synthetic BLE Remote ID';
-      return desc+' — synthetic Remote ID';
-    }
-    if(id==='BLE-AIRTAG')return 'Apple AirTag — Find My test advertisement';
-    if(id==='BLE-DRONE')return 'OpenDroneID — BLE Remote ID';
-    if(id==='BLE-META-UUID')return 'Ray-Ban Meta — service UUID';
-    if(id==='BLE-META-MFG')return 'Meta — manufacturer ID';
-    if(id==='BLE-META-TECH')return 'Meta Platforms Technologies — manufacturer ID';
-    if(id==='BLE-META-LUXOTTICA')return 'Luxottica / Ray-Ban — manufacturer ID';
-    if(id==='BLE-META-SNAP')return 'Snap Spectacles — manufacturer ID';
-    if(id.startsWith('BLE-SAMSUNG'))return 'Samsung SmartTag — BLE service UUID';
-    if(id.startsWith('BLE-TILE'))return 'Tile tracker — BLE service UUID';
-    if(id.startsWith('BLE-IBEACON'))return 'Apple iBeacon — manufacturer payload';
-    if(id.startsWith('BLE-RAVEN'))return 'Raven — '+desc;
-    if(id.startsWith('BLE-FLOCK'))return 'Flock Safety — '+desc;
-    if(id.startsWith('WIFI-FLOCK'))return 'Flock Safety — '+desc;
-    if(id.startsWith('BLE-AXON')||id.startsWith('WIFI-AXON'))return 'Axon body camera — '+desc;
-    if(id.startsWith('BLE-SKIM')||id==='BLE-SKIMMER')return 'Bluetooth serial-module fixture — '+desc;
-    if(id==='BLE-GOOGLE')return 'Generic Eddystone — negative Google tracker control';
-    return desc || id;
+    return device+' — '+method;
   }
   function batchPlan(all,scope) {
     if(!['all','BLE','WIFI'].includes(scope))throw Error('Invalid batch scope');
