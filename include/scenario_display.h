@@ -6,6 +6,7 @@
 // Human-facing synthetic fixture/device name. Stable case IDs remain unchanged
 // for serial RUN, TRUTH, regression fixtures and CSV.
 // Never interpret a descriptive name as proof of actual hardware identity.
+// OUI-only fixtures: NO REMOTE ID is transmitted by those vendor beacons.
 inline bool sqeStarts(const char* s,const char* prefix){
   return s && prefix && std::strncmp(s,prefix,std::strlen(prefix))==0;
 }
@@ -71,6 +72,8 @@ inline void scenarioDeviceName(const Scenario& s,char* out,size_t cap){
     name="Apple iBeacon";
   }else if(std::strcmp(id,"BLE-NEG-APPLE")==0){
     name="Apple Find My control";
+  }else if(std::strcmp(id,"BLE-NEG-DRONE-UUID")==0){
+    name="OpenDroneID control";
   }else if(sqeStarts(id,"BLE-AXON")||sqeStarts(id,"WIFI-AXON")||
            sqeStarts(id,"WIFI-NEG-AXON")){
     name="Axon Body Camera";
