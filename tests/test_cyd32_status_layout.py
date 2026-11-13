@@ -68,7 +68,7 @@ int main(){
                             str(source),str(ROOT/"src/cyd32_ui.cpp"),
                             str(ROOT/"src/cyd32_squachy_port.cpp"),
                             str(ROOT/"src/scenarios.cpp"),"-o",str(exe)],
-                            check=True,capture_output=True,text=True)
+                            check=True,text=True)
             subprocess.run([str(exe)],check=True,capture_output=True,text=True)
 
     def test_old_overlapping_baseline_is_gone(self):
