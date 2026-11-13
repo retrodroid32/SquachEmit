@@ -336,6 +336,104 @@
       if(d.port && !d.pending)void requestWatchSnapshot();
     },1500);
   }
+
+  // All RF actions remain locally user initiated and are strictly serial.
+  function clearBatchTimers(){
+    if(batch.timer!==null){clearTimeout(batch.timer);batch.timer=null;}
+    if(batch.endTimer!==null){clearTimeout(batch.endTimer);batch.endTimer=null;}
+  }
+  function endBatch(message,sendStop){
+    if(!batch.active)return;
+    clearBatchTimers();
+    batch.active=false;batch.current=null;batch.message=message;
+    runToken++;devices.receiver.preRun=null;
+    cancelRunAck();transmitting=false;
+    updateButtons();
+    if(sendStop&&devices.emitter.port)void sendEmitter('STOP');
+    runProgress(message);
+  }
+  function startBatchStep(){
+    if(!batch.active)return;
+    if(!devices.emitter.port||!devices.receiver.port){
+      endBatch('Automation stopped: device disconnected.',true);return;
+    }
+    if(batch.index>=batch.queue.length){
+      endBatch('Automation complete: '+batch.completed+' cases; '+
+        batch.failures+' transmitter failures. Review receiver evidence and export CSV.',false);
+      return;
+    }
+    var c=batch.queue[batch.index];
+    batch.current={id:c.id,seq:null,begun:false,finished:false};
+    ui.caseSelect.value=c.id;ui.duration.value=String(batch.duration);
+    chooseCase();
+    batch.message='CASE '+(batch.index+1)+' / '+batch.queue.length+
+      '\n'+core.signalName(c)+'\n'+c.id+
+      '\nSquachWatch expected: '+c.expected+'\nPreparing receiver baseline…';
+    updateBatchUi();
+    void run(true);
+  }
+  function onBatchTruth(event){
+    if(!batch.active||!batch.current||event.id!==batch.current.id)return;
+    var current=batch.current;
+    if(event.event==='BEGIN'){
+      if(current.begun)return;
+      current.begun=true;current.seq=event.seq;
+      batch.message='CASE '+(batch.index+1)+' / '+batch.queue.length+
+        '\n'+core.signalName(catalog[event.id])+'\n'+event.id+
+        '\nTRUTH BEGIN confirmed. Waiting for TRUTH END.';
+      if(batch.endTimer!==null)clearTimeout(batch.endTimer);
+      batch.endTimer=setTimeout(function(){
+        if(batch.active&&batch.current===current&&!current.finished)
+          endBatch('Automation stopped: no TRUTH END/ERROR for '+current.id+'.',true);
+      },(batch.duration+20)*1000);
+      updateBatchUi();return;
+    }
+    if(event.event!=='END'&&event.event!=='ERROR')return;
+    if(current.finished||(current.begun&&current.seq!==event.seq)||
+       (!current.begun&&event.event!=='ERROR'))return;
+    current.finished=true;
+    if(batch.endTimer!==null){clearTimeout(batch.endTimer);batch.endTimer=null;}
+    var success=event.event==='END'&&event.status==='ok';
+    if(!success)batch.failures++;
+    batch.completed++;batch.index++;batch.current=null;
+    batch.message='CASE '+batch.completed+' / '+batch.queue.length+
+      '\n'+core.signalName(catalog[event.id])+'\n'+event.id+
+      '\nTransmitter: '+(success?'END ok':'FAILED: '+event.status)+
+      '. Off-air cooldown '+batch.gap+' seconds.'+
+      '\nNo receiver detection is inferred from silence.';
+    updateBatchUi();
+    batch.timer=setTimeout(function(){
+      batch.timer=null;
+      if(batch.active){
+        if(startingRun||awaitingBegin||transmitting)
+          endBatch('Automation stopped: transmitter still active.',true);
+        else startBatchStep();
+      }
+    },batch.gap*1000);
+  }
+  function startBatch(){
+    if(batch.active||startingRun||awaitingBegin||transmitting||
+       !devices.emitter.port||!devices.receiver.port||!ui.authorization.checked)return;
+    var duration=Number(ui.batchDuration.value),gap=Number(ui.batchGap.value);
+    if(!Number.isInteger(duration)||duration<3||duration>30||
+       !Number.isInteger(gap)||gap<3||gap>30)return;
+    var queue=core.batchPlan(cases,ui.batchScope.value);
+    if(!queue.length)return;
+    if(!devices.receiver.lastSnapshot||
+       Date.now()-devices.receiver.lastSnapshot.finishedAt>5000){
+      batch.message='Receiver LOG not ready: click Poll LOG now and wait for a complete snapshot.';
+      updateBatchUi();return;
+    }
+    if(queue.some(function(c){return c.id.startsWith('OUI-');}) &&
+       !window.confirm('This queue contains synthetic manufacturer Wi-Fi MAC/OUI tests.'+
+         ' These are NOT genuine drones or Remote ID. Confirm controlled, authorized RF testing?'))return;
+    if(!window.confirm('Run '+queue.length+' signals sequentially while attended?'+
+      ' STOP cancels the remaining tests. Export the CSV to save results.'))return;
+    clearBatchTimers();
+    batch.queue=queue;batch.index=0;batch.completed=0;batch.failures=0;
+    batch.duration=duration;batch.gap=gap;batch.active=true;batch.current=null;
+    startBatchStep();
+  }
   function recordEmitter(line){
     var event=core.parseTruth(line);
     if(!event || !catalog[event.id])return;
@@ -410,6 +508,7 @@
         'SquachWatch exact-MAC detection also recorded.' :
         'Waiting for independent SquachWatch LOG detection; no automatic NONE.'),false);
     }
+    onBatchTruth(event);
   }
   function consume(role,chunk){
     var d=devices[role];
