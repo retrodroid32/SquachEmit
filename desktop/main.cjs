@@ -43,7 +43,8 @@ function resolveResource(urlPath,roots){
   if(/^\/workbench\/(?:app|core)\.js$/.test(name) ||
      name==='/workbench/style.css')
     return {file:path.join(roots.workbench,path.basename(name))};
-  if(name==='/desktop/controller.js' || name==='/desktop/controller.css')
+  if(name==='/desktop/controller.js' || name==='/desktop/controller.css' ||
+      name==='/desktop/mirror.js')
     return {file:path.join(roots.panel,path.basename(name))};
   return null;
 }
@@ -63,7 +64,8 @@ function serve(req,res,roots){
           'href="https://retrodroid32.github.io/SquachEmit/" target="_blank" rel="noopener noreferrer"')
         .replace('</head>',
           '  <link rel="stylesheet" href="/desktop/controller.css">\n'+
-          '  <script src="/desktop/controller.js" defer></script>\n</head>');
+          '  <script src="/desktop/mirror.js" defer></script>\n'+
+           '  <script src="/desktop/controller.js" defer></script>\n</head>');
       body=Buffer.from(html,'utf8');
     }
     const type=contentTypes[path.extname(resource.file)]||'application/octet-stream';
