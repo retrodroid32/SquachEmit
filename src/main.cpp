@@ -468,6 +468,10 @@ static void help() {
   Serial.println("BLE5 extended/coded PHY and Wi-Fi NAN: OFFLINE FIXTURES ONLY.");
   Serial.println("Single 2.4GHz radio: BLE and Wi-Fi scenarios are exclusive.");
 #if defined(SQE_CYD32)
+  Serial.println("MIRROR ON/OFF, MIRROR BAUD 2000000, MIRROR FRAME, MIRROR TOUCH x y DOWN|MOVE|UP");
+  Serial.println("MIRROR reads actual LCD GRAM; physical ST7798 readback needs validation.");
+#endif
+#if defined(SQE_CYD32)
   Serial.println("Tap TX TIME on the home screen to set 3..30s for RUN and SUITE.");
   Serial.println("CALTOUCH             reset touchscreen fit, then tap to calibrate");
   Serial.println("COLORS               show idle-only RED/GREEN/BLUE/WHITE/BLACK test");
@@ -475,9 +479,52 @@ static void help() {
 #endif
 }
 
+static bool g_mirrorOn=false;
+static unsigned long g_serialBaud=115200;
 static void command(String cmd) {
   cmd.trim();
   if (!cmd.length()) return;
+  if (cmd.startsWith("MIRROR ") || cmd.startsWith("mirror ")) {
+#if defined(SQE_CYD32)
+    cmd.toUpperCase();
+    if(cmd=="MIRROR BAUD 2000000" || cmd=="MIRROR BAUD 115200"){
+      // Explicit handoff: desktop operator reconnects the SAME COM port at
+      // the new rate. Startup and reboot return to 115200.
+      const unsigned long requested=cmd.endsWith("2000000")?2000000UL:115200UL;
+      Serial.printf("MIRROR SWITCH %lu\n",requested);
+      Serial.flush();delay(80);
+      Serial.updateBaudRate(requested);
+      g_serialBaud=requested;
+      Serial.printf("MIRROR BAUD %lu\n",requested);
+      return;
+    }
+    if(cmd=="MIRROR ON"){
+      g_mirrorOn=true;
+      Serial.println("MIRROR READY RGB565 320x240 TOUCH");
+      return;
+    }
+    if(cmd=="MIRROR OFF"){
+      g_mirrorOn=false;
+      Serial.println("MIRROR OFF OK");
+      return;
+    }
+    if(!g_mirrorOn){Serial.println("MIRROR ERROR DISABLED");return;}
+    if(cmd=="MIRROR FRAME"){
+      if(g_serialBaud!=2000000UL){Serial.println("MIRROR ERROR NEED_2M_BAUD");return;}
+      cyd32UiMirrorFrame();return;
+    }
+    unsigned x=0,y=0;
+    char phase[8]={0};
+    if(sscanf(cmd.c_str(),"MIRROR TOUCH %u %u %7s",&x,&y,phase)==3 &&
+       x<=319 && y<=319 && cyd32UiRemoteTouch((uint16_t)x,(uint16_t)y,phase)){
+      Serial.println("MIRROR TOUCH OK");return;
+    }
+    Serial.println("MIRROR ERROR UNSUPPORTED_TOUCH");
+#else
+    Serial.println("MIRROR ERROR UNSUPPORTED_BOARD");
+#endif
+    return;
+  }
   if (cmd.equalsIgnoreCase("HELP") || cmd == "?") { help(); return; }
   if (cmd.equalsIgnoreCase("LIST")) { listCases(); return; }
   if (cmd.equalsIgnoreCase("STOP")) { cancelAll(); return; }
