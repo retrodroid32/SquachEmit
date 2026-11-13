@@ -143,9 +143,11 @@
         '\nEmitter sequence: '+(t.seq==null?'Imported':t.seq)+
         '\nEmitter result: '+(t.emission||'pending')+
         '\nReceiver: '+(t._autoHit ? 'AUTO MATCH '+t._autoHit.observed+
-            ' at '+t._autoHit.mac+' (fresh LOG row)' :
-            t._baseline ? 'Watching for new MAC match in LOG' :
-            'No pre-test LOG baseline; manual review required')+
+            ' at '+t._autoHit.mac+' (new exact-MAC LOG entry)' :
+            t._autoCandidate ? 'ACTUAL '+t._autoCandidate.observed+
+              ' at '+t._autoCandidate.mac+' (missing baseline; NOT SCORED)' :
+            t._baseline ? 'Watching for new exact-MAC LOG entry' :
+            'No baseline; exact-MAC sightings will be marked unverified')+
         '\nNo automatic NONE is inferred from absent entries.');
       ui.emissionStatus.value=t.emission==='ok'||t.emission==='failed'?t.emission:'';
       // Live serial attempts can only be successful after an actual
@@ -242,7 +244,7 @@
     ui.autoDetectionFeed.scrollTop=ui.autoDetectionFeed.scrollHeight;
   }
   function finishAutoMatch(t) {
-    if(!t._autoHit || t._manual || t.emission!=='ok')return false;
+    if(!t._autoHit || t._autoCandidate || t._manual || t.emission!=='ok')return false;
     t.observed=t._autoHit.observed;
     t.window='complete'; // one independently observed hit is enough for a positive
     t.latency_ms=''; // the two device clocks are NOT synchronized
@@ -269,32 +271,55 @@
     for(var i=trials.length-1;i>=0;i--){
       var t=trials[i];
       if(t._epoch!==epoch || t._receiverSession!==d.session ||
-         !t._baseline || !t._mac || t._autoHit || t._manual ||
+         !t._mac || t._autoHit || t._autoCandidate || t._manual ||
          t.emission==='failed')continue;
       if(t._endedAt && snapshot.requestedAt>t._endedAt+5000)continue;
-      var hit=core.matchWatchDetection(t,t._baseline,snapshot);
+      // A fresh pre-RUN baseline is mandatory for accuracy scoring, but
+      // ACTUAL may show an unverified exact-MAC receiver observation when
+      // the pre-test LOG baseline was temporarily unavailable.
+      var usableBaseline=t._baseline &&
+        t._baseline.finishedAt<=t._startedAt &&
+        t._startedAt-t._baseline.finishedAt<=5000;
+      var hit=usableBaseline?
+        core.matchWatchDetection(t,t._baseline,snapshot):
+        core.findUnverifiedWatchObservation(t,snapshot);
       if(!hit)continue;
       if(hit.ambiguous){
-        autoStatus('AMBIGUOUS: '+hit.mac+' appeared under multiple classifications; inspect LOG manually.');
+        autoStatus('AMBIGUOUS: '+hit.mac+
+          ' appeared under multiple receiver classifications; inspect LOG manually.');
         continue;
       }
-      t._autoHit=hit;
-      t.observed=hit.observed;
-      t.notes='SquachWatch matched '+hit.mac+' as '+hit.observed+
-        ' in a fresh LOG snapshot. Awaiting emitter END for scoring.';
-      if(t.emission==='ok')finishAutoMatch(t);
+      var verified=!!usableBaseline;
+      if(verified){
+        t._autoHit=hit;
+        t.observed=hit.observed;
+        t.notes='SquachWatch matched '+hit.mac+' as '+hit.observed+
+          ' in a new exact-MAC LOG entry (possibly gone after TX). '+
+          'Awaiting successful emitter END for scoring.';
+        if(t.emission==='ok')finishAutoMatch(t);
+      }else{
+        // This MAC was classified by the receiver, but without a baseline
+        // it might predate RUN. Show ACTUAL without manufacturing a TP.
+        t._autoCandidate=hit;
+        t.observed=hit.observed;
+        t.window=''; // no verified pre-RUN listening baseline
+        t.notes='UNVERIFIED SquachWatch LOG: exact MAC '+hit.mac+
+          ' classified '+hit.observed+', RSSI '+hit.rssi+
+          ' dBm, state '+hit.state+'; pre-test LOG baseline unavailable. '+
+          'The entry could predate RUN; accuracy NOT scored.';
+      }
       matchedLog(new Date(hit.finishedAt).toLocaleTimeString()+
-        '  '+t.id+'  '+hit.observed+'  MAC '+hit.mac+
-        '  '+hit.rssi+' dBm  '+(t.emission==='ok'?
-          core.status(t,catalog)+' ('+(core.pendingReason(t,catalog)||'scored')+')':
-          'WAIT END'));
+        '  '+t.id+'  ACTUAL '+hit.observed+'  MAC '+hit.mac+
+        '  '+hit.rssi+' dBm  '+(verified?
+          (t.emission==='ok'?core.status(t,catalog):'WAIT END'):
+          'UNVERIFIED — NOT SCORED'));
       change=true;
-      break; // one receiver sighting belongs to one active test
+      break; // one exact-MAC receiver sighting belongs to one active test
     }
     if(change){
       redrawTrials();selectTrial();
-      notice('SquachWatch automatically logged a fresh exact-MAC detection. '+
-        'Only confirmed emitter END can complete the score.',false);
+      notice('SquachWatch LOG classification populated ACTUAL. '+
+        'Only a verified baseline plus emitter END allows accuracy scoring.',false);
     }
   }
   function onWatchLine(line) {
