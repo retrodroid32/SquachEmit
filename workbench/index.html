@@ -46,11 +46,27 @@
         <div class="sectionhead"><span class="num">02</span><div><h2 id="emittertitle">Transmitter</h2><p>SquachEmit · Web Serial · 115,200 baud</p></div></div>
         <div class="connection"><span id="emitState" class="state">DISCONNECTED</span><div class="buttons"><button id="emitConnect" class="outlined">Connect</button><button id="emitDisconnect" disabled>Disconnect</button></div></div>
         <div class="formrow"><label for="caseSelect">Test scenario</label><select id="caseSelect"><option value="">Loading the 172-case catalog…</option></select></div>
-        <div id="caseDetails" class="casebox">Choose a case to inspect its expected classification.</div>
+        <div id="caseDetails" class="casebox">Choose a case to inspect the emulated device, signal method and expected receiver classification.</div>
         <div class="formrow"><label for="duration">Transmit duration</label><div class="inline"><input id="duration" type="number" min="3" max="30" step="1" value="12"><span>seconds (3–30)</span></div></div>
         <label class="check"><input id="authorization" type="checkbox"> This is an authorized, controlled RF test. I understand vendor-OUI and model labels are synthetic and may be spoofed.</label>
         <div class="buttons wide"><button id="runCase" class="primary" disabled>Run selected case</button><button id="stopCase" class="danger" disabled>■ STOP</button></div>
         <p class="footnote" id="runFeedback" role="status">One click sends RUN after a short receiver-baseline check; a receiver timeout cannot silently cancel transmission.</p>
+        <section class="batch-panel" aria-labelledby="batchTitle">
+          <div class="mini">AUTOMATED TEST SEQUENCE</div>
+          <h3 id="batchTitle">Run every selected signal</h3>
+          <p class="footnote">One explicit start, then sequential RUN commands from the real 172-case catalog. The next test only starts after the previous transmitter's TRUTH END or ERROR. No transmission starts on page load.</p>
+          <div class="batch-settings">
+            <label for="batchScope">Test set<select id="batchScope"><option value="all">All 172 cases (BLE + Wi-Fi, including OUI-only tests)</option><option value="BLE">BLE signals only</option><option value="WIFI">Wi-Fi signals only</option></select></label>
+            <label for="batchDuration">Each signal (seconds)<input id="batchDuration" type="number" min="3" max="30" step="1" value="8"></label>
+            <label for="batchGap">Off-air cooldown (seconds)<input id="batchGap" type="number" min="3" max="30" step="1" value="5"></label>
+          </div>
+          <div class="buttons wide"><button id="batchStart" class="primary" type="button" disabled>Start automated tests</button><button id="batchStop" class="danger" type="button" disabled>■ Stop automation</button></div>
+          <progress id="batchProgress" max="172" value="0"></progress>
+          <p id="batchCount" class="batch-meta" role="status">0 / 172 completed</p>
+          <div id="batchCurrent" class="casebox">Ready to run. Connect both devices and check authorized testing first.</div>
+          <p class="footnote">Keep the browser awake, both USB connections open, and RF testing attended. A missing TRUTH END or disconnected receiver stops the sequence for review. No receiver detection is ever invented from silence. Export your CSV before closing.</p>
+        </section>
+
         <label class="loglabel" for="emitLog">Transmitter serial log</label>
         <pre id="emitLog" class="terminal" aria-label="SquachEmit serial log">Connect to observe TRUTH BEGIN / END. Sending a RUN command does not imply successful emission.</pre>
       </section>
@@ -86,7 +102,7 @@
       <div class="resultshead"><div><div class="mini">05 / RECORDS</div><h2>Trial ledger</h2><p>Unverified trials never inflate performance metrics.</p></div>
         <div class="buttons"><button id="importCsv" class="outlined">Import trial CSV</button><input type="file" id="csvFile" accept=".csv,text/csv" hidden><button id="exportCsv" class="primary">Export CSV</button><button id="clearTrials" class="danger">Clear session</button></div>
       </div>
-      <div class="tablewrap"><table><thead><tr><th>CASE ID</th><th>EXPECTED</th><th>ACTUAL</th><th>TRANSMITTER</th><th>WINDOW</th><th>RESULT</th><th>LATENCY</th></tr></thead><tbody id="trialRows"><tr><td colspan="7" class="empty">No trials yet. Connect an emitter or import a trial CSV.</td></tr></tbody></table></div>
+      <div class="tablewrap"><table><thead><tr><th>EMULATED DEVICE / SIGNAL ID</th><th>EXPECTED</th><th>ACTUAL</th><th>TRANSMITTER</th><th>WINDOW</th><th>RESULT</th><th>LATENCY</th></tr></thead><tbody id="trialRows"><tr><td colspan="7" class="empty">No trials yet. Connect an emitter or import a trial CSV.</td></tr></tbody></table></div>
       <p class="footnote">The ledger distinguishes <strong>receiver detected</strong> from <strong>evidence eligible for scoring</strong>. If ACTUAL and EXPECTED match but RESULT is UNTESTED, look at the reason under the result—usually a missing firmware SHA. Automatic positives use the actual SquachWatch LOG table (type + exact MAC) and only score after a successful emitter END and a fresh pre-test baseline. Missing results, stale devices and ambiguous multiple types remain untested until reviewed. CSV columns match <code>tools/score_trials.py</code>: run ID, receiver, both SHAs, case, emission, listening window, observation, latency, notes. WRONG counts as both a false alarm and a missed target when calculating precision/recall. All data remains local to this page.</p>
     </section>
     <footer><span>SquachEmit Detection Workbench / Preview</span><span>No automatic transmit · No fabricated receiver hits · No cloud upload</span></footer>
