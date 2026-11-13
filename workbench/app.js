@@ -38,6 +38,7 @@
     message:'Ready to start'};
   var emitterWrites=Promise.resolve();
   var receiverWrites=Promise.resolve();
+  var receiverMirror=false;
   var desktopMode=(new URLSearchParams(window.location.search)).get('desktop')==='1';
   function desktopEvent(type,detail){
     if(desktopMode)window.dispatchEvent(new CustomEvent('sqe:'+type,{detail:detail}));
@@ -164,7 +165,7 @@
   function updateButtons(){
     var connected=!!devices.emitter.port && !opening.emitter;
     var eBusy=opening.emitter;
-    ui.emitState.textContent=connected?'CONNECTED · 115,200':eBusy?'CONNECTING':'DISCONNECTED';
+    ui.emitState.textContent=connected?'CONNECTED · '+devices.emitter.baud.toLocaleString('en-US'):eBusy?'CONNECTING':'DISCONNECTED';
     ui.emitState.classList.toggle('connected',connected);
     ui.emitConnect.disabled=connected||eBusy;
     ui.emitDisconnect.disabled=!connected||eBusy;
@@ -366,9 +367,9 @@
     stopWatchPolling();
     // Explicitly connected port is the only trigger. No radio commands here.
     autoStatus('Connected. Requesting the initial SquachWatch LOG baseline…');
-    void requestWatchSnapshot();
+    if(!receiverMirror)void requestWatchSnapshot();
     d.pollTimer=setInterval(function(){
-      if(d.port && !d.pending)void requestWatchSnapshot();
+      if(d.port && !d.pending && !receiverMirror)void requestWatchSnapshot();
     },1500);
   }
 
@@ -399,7 +400,7 @@
       return;
     }
     var c=batch.queue[batch.index];
-    batch.current={id:c.id,seq:null,begun:false,finished:false};
+    batch.current={id:c.id,seq:null,begun:false,finished:false,noBaseline:false};
     ui.caseSelect.value=c.id;ui.duration.value=String(batch.duration);
     chooseCase();
     batch.message='CASE '+(batch.index+1)+' / '+batch.queue.length+
@@ -410,12 +411,13 @@
   }
   function advanceBatch(reason,failed,requestStop){
     if(!batch.active||!batch.current)return;
+    runToken++; // cancel stale asynchronous preflight before any next case
     var last=batch.current;
     if(last.finished)return;
     last.finished=true;
     if(batch.endTimer!==null){clearTimeout(batch.endTimer);batch.endTimer=null;}
     if(failed)batch.failures++;
-    if(reason==='no receiver baseline'||failed)batch.unverified++;
+    if(last.noBaseline||failed)batch.unverified++;
     batch.completed++;batch.index++;batch.current=null;
     // Missing BEGIN/END is not evidence that RF was never on. Request an
     // explicit STOP and allow a longer cool-off before moving on.
@@ -567,6 +569,10 @@
     var lines=d.buffer.split(/\r?\n/);
     d.buffer=lines.pop();
     lines.forEach(function(line){
+      if(desktopMode&&line.startsWith('MIRROR ')){
+        desktopEvent('mirror',{role:role,line:line});
+        return;
+      }
       append(role,line+'\n');
       if(role==='emitter')recordEmitter(line.trim());
       else onWatchLine(line.trim());
@@ -611,7 +617,7 @@
     var port=null;
     try{
       port=await navigator.serial.requestPort();
-      var baud=role==='emitter'?115200:Number(ui.receiverBaud.value);
+      var baud=role==='emitter'?devices.emitter.baud:Number(ui.receiverBaud.value);
       if(!Number.isSafeInteger(baud)||baud<300||baud>4000000)
         throw new Error('Unsupported baud rate.');
       await port.open({baudRate:baud});
@@ -634,6 +640,7 @@
     var d=devices[role],p=d.port;
     if(!p)return;
     d.port=null;
+    if(role==='receiver')receiverMirror=false;
     if(batch.active)endBatch('Automation stopped: '+role+' disconnected.',role==='receiver');
     if(role==='receiver')stopWatchPolling();
     if(role==='emitter'){
@@ -704,7 +711,7 @@
         // The individual case remains UNTESTED unless independent receiver
         // evidence is subsequently captured with a complete baseline.
         if(fromBatch&&!baseline){
-          batch.unverified++;
+          if(batch.current)batch.current.noBaseline=true;
           batch.message='Receiver LOG temporarily unavailable for '+c.id+
             '. Sending test, but automatic scoring is disabled for this case.';
           updateBatchUi();
@@ -950,14 +957,16 @@
     function desktopSend(role,cmd){
       var value=String(cmd||'').trim().toUpperCase();
       if(role==='receiver'){
-        if(!/^(LOG|RADIO|RADIO SCAN|MEM|WIFI|BLACKBOX|ROT|SCAN (?:AUTO|ACTIVE|PASSIVE)|CLOCK [01] [0-2] [0-6]|BG (?:[0-9]|1[0-9]))$/.test(value))
+        if(!/^(LOG|RADIO|RADIO SCAN|MEM|WIFI|BLACKBOX|ROT|SCAN (?:AUTO|ACTIVE|PASSIVE)|CLOCK [01] [0-2] [0-6]|BG (?:[0-9]|1[0-9])|MIRROR (?:ON|OFF|FRAME|TOUCH [0-9]{1,3} [0-9]{1,3} (?:DOWN|MOVE|UP)))$/.test(value))
           return Promise.resolve(false);
         if(batch.active&&!/^(?:RADIO|MEM)$/.test(value))return Promise.resolve(false);
+        if(value==='MIRROR ON')receiverMirror=true;
+        if(value==='MIRROR OFF')receiverMirror=false;
         if(value==='LOG')return requestWatchSnapshot().then(function(r){return !!r;});
         return sendReceiver(value);
       }
       if(role==='emitter'){
-        if(!/^(STATUS|IDENTITY|LIST|HELP|COLORS|STOP)$/.test(value))
+        if(!/^(STATUS|IDENTITY|LIST|HELP|COLORS|STOP|MIRROR (?:ON|OFF|FRAME|BAUD (?:115200|2000000)|TOUCH [0-9]{1,3} [0-9]{1,3} (?:DOWN|MOVE|UP)))$/.test(value))
           return Promise.resolve(false);
         if(batch.active&&value!=='STATUS'&&value!=='STOP')return Promise.resolve(false);
         if(value==='STOP'){ui.stopCase.click();return Promise.resolve(true);}
@@ -969,6 +978,11 @@
       connect:function(role){return ['receiver','emitter'].includes(role)?connect(role):Promise.resolve();},
       disconnect:function(role){return ['receiver','emitter'].includes(role)?disconnect(role):Promise.resolve();},
       send:desktopSend,
+      setEmitterBaud:function(baud){
+        var n=Number(baud);
+        if(devices.emitter.port||opening.emitter||![115200,2000000].includes(n))return false;
+        devices.emitter.baud=n;updateButtons();return true;
+      },
       runSelected:function(){return run(false);},
       startBatch:function(){ui.batchStart.click();},
       stopBatch:function(){ui.batchStop.click();},
@@ -978,6 +992,7 @@
           emitterConnected:!!devices.emitter.port,
           receiverConnected:!!devices.receiver.port,
           receiverBaud:devices.receiver.baud,
+          emitterBaud:devices.emitter.baud,
           batchActive:batch.active,transmitting:transmitting,
           selectedCase:catalog[ui.caseSelect.value] ?
             core.signalName(catalog[ui.caseSelect.value]):'No signal selected',
