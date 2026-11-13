@@ -52,7 +52,7 @@ int main() {
                 "-I", str(ROOT / "include"),
                 str(src), str(ROOT / "src/scenarios.cpp"), "-o", str(out)
             ], check=True, capture_output=True, text=True)
-            subprocess.run([str(out)], check=True, capture_output=True, text=True)
+            subprocess.run([str(out)], check=True, text=True)
 
     def test_native_screen_name_is_primary(self):
         cyd = (ROOT / "src/cyd32_ui.cpp").read_text()
