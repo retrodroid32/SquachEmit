@@ -119,6 +119,21 @@ assert.equal(after.requestedAt,950);
 assert.equal(after.finishedAt,985);
 assert.equal(after.rows.length,2);
 assert.equal(snapParser.waiting(),false);
+// Periodic firmware diagnostics can interleave LOG table rows while
+// another task sends data over the same USB serial port. They must not
+// destroy a legitimate receiver snapshot or ACTUAL stays blank.
+const interleaved=core.newWatchLogParser();
+assert.equal(interleaved.start(1200),true);
+assert.equal(interleaved.read('[log] 2 rows, newest first',1202),null);
+assert.equal(interleaved.read('row,type,mac,rssi,hits,state,when',1203),null);
+assert.equal(interleaved.read('[gps] bytes=1200 UBX=17 SAT=4 fix=1',1204),null);
+assert.equal(interleaved.read('0,DRONE,04:a8:5a:12:34:56,-55,1,here,+1:09',1205),null);
+assert.equal(interleaved.read('[queue] ble q 0 hi 2 drop 0',1206),null);
+const interleavedResult=interleaved.read('1,FLOCK,02:11:22:33:44:55,-81,2,gone,+1:08',1207);
+assert.equal(interleavedResult.rows.length,2);
+assert.equal(interleavedResult.rows[1].state,'gone');
+assert.equal(interleaved.waiting(),false);
+
 assert.equal(snapParser.start(1050),true);
 snapParser.read('[log] 0 rows, newest first',1055);
 const zero=snapParser.read('row,type,mac,rssi,hits,state,when',1060);
