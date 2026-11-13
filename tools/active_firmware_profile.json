@@ -10,8 +10,8 @@
   },
   "builds": {
     "cyd32-st7798": {
-      "title": "SquachEmit CYD 3.2 LAB — 172 Cases · Device Names · USB LCD Mirror / Remote Touch",
-      "version": "v1.1.0 MAINLINE · 172 cases · USB MIRROR LAB (unmerged)",
+      "title": "SquachEmit v1.1.0 CYD 3.2 LAB — 172 Cases · Device Names · USB LCD Mirror / Remote Touch",
+      "version": "v1.1.0 MAINLINE · 172 cases",
       "summary": "Unmerged CYD 3.2 ST7798 LAB firmware: 172 time-limited synthetic BLE/Wi-Fi signal scenarios, device-first native names, 3–30-second TX-time editor, and experimental USB LCD RGB565 readback plus remote touch controls. LCD GRAM readback on the physical ST7798 and 2,000,000 baud handoff still require on-device verification. Four-part SHA-256 flashing preflight remains mandatory; this is NOT a public released firmware build.",
       "highlights": [
         "LAB USB screen protocol: MIRROR BAUD 2000000 / MIRROR ON / MIRROR FRAME / MIRROR TOUCH x y DOWN|MOVE|UP; physical LCD and touch unverified.",
@@ -20,13 +20,12 @@
         "TX TIME [SET] with +/- 1 second, RESET 12 and DONE; persists after reboot.",
         "Routine touches and duration changes avoid unnecessary full-screen redraws.",
         "STOP, SUITE and transmit auto-timeout remain.",
-        "Installer verifies bootloader, partition table, OTA selector and application.",
-        "Manufacturer-only prefixes do not authenticate a real drone."
+        "Installer verifies bootloader, partition table, OTA selector and application."
       ]
     },
     "c5-waveshare-28": {
-      "title": "SquachEmit Waveshare C5 LAB — 172 Synthetic Signals · Named Scenarios",
-      "version": "v1.1.0 MAINLINE · 172 cases · USB MIRROR LAB (unmerged)",
+      "title": "SquachEmit v1.1.0 Waveshare C5 LAB — 172 Synthetic Signals · Named Scenarios",
+      "version": "v1.1.0 MAINLINE · 172 cases",
       "summary": "Unmerged Waveshare ESP32-C5 2.8-inch LAB build with 172 time-limited synthetic BLE/Wi-Fi cases and descriptive device-first signal names. USB LCD mirroring is NOT implemented for this board; the experimental MIRROR command returns unsupported on non-CYD builds. Four-part SHA-256 flashing preflight remains required; physical C5 verification is pending.",
       "highlights": [
         "USB mirror work is CYD 3.2 specific; C5 physical screen mirroring is not yet supported.",
@@ -39,8 +38,8 @@
       ]
     },
     "s3-devkit": {
-      "title": "SquachEmit ESP32-S3 LAB — 172-Case Serial Detection Matrix",
-      "version": "v1.1.0 MAINLINE · 172 cases · USB MIRROR LAB (unmerged)",
+      "title": "SquachEmit v1.1.0 ESP32-S3 LAB — 172-Case Serial Detection Matrix",
+      "version": "v1.1.0 MAINLINE · 172 cases",
       "summary": "Unmerged ESP32-S3 LAB firmware with 172 synthetic BLE/Wi-Fi scenarios, bounded serial RUN/STOP/SUITE commands and tracked on-air identities. This S3 devkit build does not expose CYD LCD framebuffer or touch control; MIRROR is unsupported. Four-part SHA-256 verified flashing preflight remains required; physical S3 verification is pending.",
       "highlights": [
         "No screen mirroring on ESP32-S3 DevKit without a display: unsupported MIRROR command.",
