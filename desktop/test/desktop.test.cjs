@@ -78,7 +78,7 @@ test('Software-rendered emitter UI and optional receiver LCD mode use native tou
   assert.match(wb,/desktopEvent\('native-ui'/);
   assert.doesNotMatch(wb,/MIRROR BAUD 2000000/);
   assert.match(ui,/NO LIVE LCD FRAME/);
-  assert.match(ui,/not a recreated UI/);
+  assert.match(ui,/Locally drawn SquachEmit UI/);
   assert.doesNotMatch(ui,/LIVE SERIAL TELEMETRY/);
   assert.doesNotMatch(ui,/dc-screenmetric/);
   assert.doesNotMatch(wb,/getUserMedia\(\{audio:true/);
