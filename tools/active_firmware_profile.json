@@ -12,7 +12,7 @@
     "cyd32-st7798": {
       "title": "SquachEmit v1.1.0 CYD 3.2 LAB — 172 Cases · PC Native UI R7",
       "version": "v1.1.0 MAINLINE · 172 cases",
-      "summary": "LAB R7 for CYD 3.2: no TFT GRAM reads, RGB565 screenshots, frame streaming or 2Mbps UART handoff. Firmware sends bounded UI STATE records at 115200 describing menu, category, selected case, duration, transmitter, countdown and animation. Windows Workbench v0.5.0 draws the 320×240 interface and Squachy locally and sends UI TOUCH to native firmware hit-testing. All 172 timed RF cases and exact-MAC LOG scoring remain. Visual pixel parity and physical touch still require hardware tests. Production v1.1.0 unchanged.",
+      "summary": "LAB R7 for CYD 3.2: no TFT GRAM reads, RGB565 screenshots, frame streaming or 2Mbps UART handoff. Firmware sends bounded UI STATE records at 115200 describing menu, category, selected case, duration, transmitter, countdown and animation. Windows Workbench v0.5.0 draws the 320×240 interface and Squachy locally and sends UI TOUCH to native firmware hit-testing. All 172 timed RF cases and exact-MAC LOG scoring remain. Visual pixel parity and physical touch still require hardware tests. SHA-256 flash verification required. Production v1.1.0 unchanged.",
       "highlights": [
         "No LCD capture or framebuffer reads; desktop renders SquachEmit UI entirely from device state.",
         "UI ON/OFF/GET and UI READY/STATE over 115200 UART; menu, selection, TX time, countdown and physical touch synchronized.",
