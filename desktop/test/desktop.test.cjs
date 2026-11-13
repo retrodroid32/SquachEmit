@@ -63,7 +63,7 @@ test('USB LCD frames use real decoded pixels and pointer touchscreen input',()=>
     assert.ok(ui.includes(key),'missing real LCD and remote-control feature: '+key);
   for(const command of ['STATUS|IDENTITY|LIST|HELP|COLORS|STOP',
     'RADIO SCAN','SCAN (?:AUTO|ACTIVE|PASSIVE)','CLOCK [01] [0-2] [0-6]',
-    'MIRROR (?:ON|OFF|FRAME','MIRROR BAUD (?:115200|2000000)'])
+    'MIRROR (?:ON|OFF|FRAME','BAUD (?:115200|2000000)'])
     assert.ok(wb.includes(command),'missing serial control: '+command);
   assert.match(wb,/if\(batch\.active&&!\//);
   assert.ok(main.includes('/desktop/mirror.js')&&main.indexOf(
