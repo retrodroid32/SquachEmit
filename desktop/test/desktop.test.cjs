@@ -8,7 +8,7 @@ const root=path.resolve(__dirname,'../..');
 const read=rel=>fs.readFileSync(path.join(root,rel),'utf8');
 
 test('all desktop JS is syntactically valid',()=>{
-  for(const file of ['desktop/main.cjs','desktop/public/controller.js',
+  for(const file of ['desktop/main.cjs','desktop/public/controller.js','desktop/public/mirror.js',
     'workbench/app.js','workbench/core.js']){
     assert.doesNotThrow(()=>new vm.Script(read(file),{filename:file}),file);
   }
@@ -32,7 +32,7 @@ test('desktop is local only with restricted renderer and USB chooser',()=>{
     "'Content-Security-Policy'","'X-Content-Type-Options'",
     "event.preventDefault()","dialog.showMessageBox",
     "file:path.join(roots.workbench,'index.html')",
-    "'/desktop/controller.js'","'webSecurity'"]){
+    "'/desktop/controller.js'","'/desktop/mirror.js'","'webSecurity'"]){
     if(required==="'webSecurity'")assert.match(s,/webSecurity:true/);
     else assert.ok(s.includes(required),'missing desktop contract: '+required);
   }
@@ -50,19 +50,29 @@ test('all 172 device-first names are compatible with the existing Workbench',()=
   assert.match(core.signalName(all.find(x=>x.id==='BLE-HACKER-NAME')),/^Flipper Zero/);
   assert.match(core.signalName(all.find(x=>x.id==='BLE-HACKER-UUID')),/^Flipper Zero/);
 });
-test('native screens and remote command scope are accurately documented',()=>{
+test('USB LCD frames use real decoded pixels and pointer touchscreen input',()=>{
   const ui=read('desktop/public/controller.js');
   const wb=read('workbench/app.js');
-  for(const key of ['getUserMedia','enumerateDevices','videoinput',
-    'stopCamera','deviceId:{exact:id}','LIVE SERIAL TELEMETRY',
-    'not a screenshot','SQEWorkbenchDesktop','sqe:serial','sqe:snapshot','sqe:truth'])
-    assert.ok(ui.includes(key),'missing right-side visualization: '+key);
+  const main=read('desktop/main.cjs');
+  for(const key of ['SQEMirrorCodec','sqe:mirror','dc-canvas-','ImageData(',
+    'putImageData(','MIRROR ON','MIRROR FRAME','MIRROR OFF','MIRROR TOUCH ',
+    "'DOWN'","'MOVE'","'UP'",'pointerdown','pointermove','pointerup',
+    'touchPoint(','startMirror(','stopMirror(','requestMirrorFrame(',
+    'getUserMedia','enumerateDevices','videoinput','stopCamera',
+    'deviceId:{exact:id}','sqe:serial','sqe:snapshot','sqe:truth'])
+    assert.ok(ui.includes(key),'missing real LCD and remote-control feature: '+key);
   for(const command of ['STATUS|IDENTITY|LIST|HELP|COLORS|STOP',
-    'RADIO SCAN','SCAN (?:AUTO|ACTIVE|PASSIVE)','CLOCK [01] [0-2] [0-6]']){
+    'RADIO SCAN','SCAN (?:AUTO|ACTIVE|PASSIVE)','CLOCK [01] [0-2] [0-6]',
+    'MIRROR (?:ON|OFF|FRAME','MIRROR BAUD (?:115200|2000000)'])
     assert.ok(wb.includes(command),'missing serial control: '+command);
-  }
   assert.match(wb,/if\(batch\.active&&!\//);
-  assert.match(ui,/No synthetic display is presented|not a screenshot/i);
+  assert.ok(main.includes('/desktop/mirror.js')&&main.indexOf(
+    '<script src="/desktop/mirror.js"')<main.indexOf(
+    '<script src="/desktop/controller.js"'));
+  assert.match(ui,/NO LIVE LCD FRAME/);
+  assert.match(ui,/not a recreated UI/);
+  assert.doesNotMatch(ui,/LIVE SERIAL TELEMETRY/);
+  assert.doesNotMatch(ui,/dc-screenmetric/);
   assert.doesNotMatch(wb,/getUserMedia\(\{audio:true/);
 });
 test('Windows Actions validates contracts and publishes review EXEs, not releases',()=>{
