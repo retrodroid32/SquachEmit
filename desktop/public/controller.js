@@ -24,7 +24,7 @@
   const mirrors={};
   for(const role of ['receiver','emitter']){
     mirrors[role]={active:false,waiting:false,lastFrame:false,lastFrameSequence:0,failures:0,
-      assembler:new codec.MirrorAssembler(),timeout:null,next:null,
+      assembler:new codec.MirrorAssembler(),timeout:null,next:null,handshake:null,ready:false,
       touchDown:false,touchAt:0,touchTimer:null,pendingUp:null,lastPoint:{x:0,y:0},
       lastMove:0};
   }
@@ -62,6 +62,7 @@
       '<button type="button" data-role="'+role+'" data-action="mirror-on">Mirror live</button>'+
       '<button type="button" data-role="'+role+'" data-action="mirror-frame">Get frame</button>'+
       '<button type="button" data-role="'+role+'" data-action="mirror-off">Stop</button></div>'+
+      (emitter?'<button type="button" data-role="emitter" data-action="mirror-diag">Diagnose physical LCD and USB baud</button>':'')+
       '<div class="dc-displaymode">Actual decoded USB LCD pixels, not a recreated UI. '+
       'Click, hold or drag on the displayed screen to use the device touchscreen. '+
       'The receiver requires SquachWatch LAB PR #225; both firmware mirrors require physical verification.</div>'+
@@ -114,12 +115,13 @@
     const s=mirrors[role];
     if(s.timeout!==null)clearTimeout(s.timeout);
     if(s.next!==null)clearTimeout(s.next);
-    s.timeout=null;s.next=null;
+    if(s.handshake!==null)clearTimeout(s.handshake);
+    s.timeout=null;s.next=null;s.handshake=null;
   }
   function resetRole(role){
     const s=mirrors[role];
     cancelFrameTimers(role);
-    s.active=false;s.waiting=false;s.failures=0;
+    s.active=false;s.waiting=false;s.ready=false;s.failures=0;
     s.lastFrame=false;s.lastFrameSequence=0;
     s.assembler.reset();
     // Never leave an old image looking like a live physical display.
@@ -161,7 +163,8 @@
   }
   async function requestMirrorFrame(role){
     const s=mirrors[role],state=api.getState();
-    if(!s.active||s.waiting||!isConnected(role,state)||state.batchActive)return;
+    if(!s.active||!s.ready||s.waiting||!isConnected(role,state)||
+       (role==='receiver'&&state.testActive))return;
     s.waiting=true;
     // Firmware sends a full keyframe unless it recognizes the last complete
     // screen the PC actually accepted. A dropped frame can never corrupt
@@ -187,40 +190,69 @@
       mirrorNote(role,'No complete LCD pixels; retrying frame ('+
         s.failures+'/3). Check device mirror firmware and TFT readback.');
       s.next=setTimeout(()=>void requestMirrorFrame(role),700);
-    },role==='emitter'?16000:12000);
+    },role==='emitter'?(state.emitterBaud===115200?45000:16000):12000);
   }
   async function startMirror(role){
     const state=api.getState();
-    if(state.batchActive){
-      info(role,'Stop automated testing first. LCD streaming shares the USB serial channel.');
+    if(role==='receiver'&&state.testActive){
+      info(role,'SquachWatch LCD mirroring pauses during detection tests so '+
+        'its USB connection can deliver exact-MAC LOG results. Re-enable afterward.');
       return;
     }
     if(!isConnected(role,state)){
       info(role,'Connect the '+names[role]+' USB device before mirroring.');return;
     }
-    if(role==='emitter'&&state.emitterBaud!==2000000){
-      info(role,'SquachEmit CYD32 mirror requires 2 Mbps. Use the UART switch '+
-        'and reconnect sequence shown below.');return;
+    if(role==='emitter'&&![115200,2000000].includes(state.emitterBaud)){
+      info(role,'Unsupported SquachEmit serial baud for LCD capture.');return;
     }
+    if(role==='emitter'&&state.emitterBaud===115200)
+      info(role,'Starting RGB565 mirror at safe 115200 baud. First complete LCD'+
+        ' frame can take 20–40 seconds; 2 Mbps is recommended for live motion.');
     const s=mirrors[role];
     resetRole(role);
     s.active=true;
     info(role,'Enabling opt-in USB mirroring…');
     const ok=await api.send(role,'MIRROR ON');
     if(!ok){resetRole(role);info(role,'MIRROR ON command rejected or unavailable.');return;}
-    mirrorNote(role,'Waiting for authentic '+names[role]+' LCD pixels…');
-    await requestMirrorFrame(role);
+    mirrorNote(role,'Waiting for MIRROR READY from '+names[role]+' firmware…');
+    // A successful USB write is NOT an acknowledgment from the actual device.
+    // Wrong baud, firmware without MIRROR support and MCU reset all fail here.
+    s.handshake=setTimeout(()=>{
+      s.handshake=null;
+      if(!s.active||s.ready)return;
+      resetRole(role);
+      const message=role==='emitter'?
+        'No MIRROR READY. Device may have reset to 115200 after reconnect, '+
+        'or firmware lacks MIRROR support. Reconnect at 115200 and click Diagnose.':
+        'No MIRROR READY. Check the SquachWatch companion mirror firmware and PIN.';
+      mirrorNote(role,message);info(role,message);
+    },5000);
   }
   function onMirror({role,line}){
     if(!mirrors[role])return;
     const s=mirrors[role],result=s.assembler.feed(line);
     if(result.kind==='info'){
-      if(/MIRROR READY/.test(result.message))mirrorNote(role,'Mirror enabled; requesting LCD draw…');
+      if(/^MIRROR DIAG/.test(result.message)){
+        mirrorNote(role,result.message);
+        info(role,result.message);
+      }else if(/^MIRROR READY\b/.test(result.message)&&s.active&&!s.ready){
+        s.ready=true;
+        if(s.handshake!==null){clearTimeout(s.handshake);s.handshake=null;}
+        mirrorNote(role,'Firmware acknowledged. Capturing authentic LCD pixels…');
+        void requestMirrorFrame(role);
+      }
       return;
     }
     if(result.kind==='error'){
       cancelFrameTimers(role);s.waiting=false;s.failures++;
       info(role,result.message);
+      if(/LCD_READ_UNAVAILABLE|LCD_NOT_READY|BAD_DISPLAY_SIZE/.test(result.message)){
+        void stopMirror(role,true).then(()=>{
+          mirrorNote(role,result.message+' — check 6MHz TFT readback and MIRROR DIAG');
+          info(role,result.message);
+        });
+        return;
+      }
       if(s.active&&s.failures>=3){void stopMirror(role,true);return;}
       if(s.active)s.next=setTimeout(()=>void requestMirrorFrame(role),450);
       return;
@@ -263,8 +295,12 @@
     rail.querySelectorAll('[data-action="run"],[data-action="scan-auto"],'+
       '[data-action="scan-active"],[data-action="scan-passive"],'+
       '[data-action="rotate"],[data-action="clock"],'+
-      '[data-action="mirror-on"],[data-action="mirror-frame"],'+
       '[data-action="switch-baud"]').forEach(b=>{b.disabled=disabled;});
+    // Only the SquachWatch receiver USB must switch to LOG during tests.
+    // SquachEmit has its own port and can keep streaming actual LCD pixels.
+    rail.querySelectorAll('[data-action="mirror-on"],[data-action="mirror-frame"]').forEach(b=>{
+      b.disabled=b.dataset.role==='receiver'&&!!state.testActive;
+    });
   }
   function appendLine(role,line){
     terminals[role]=(terminals[role]+String(line)).slice(-1800);
@@ -407,6 +443,11 @@
     if(action==='start-camera'){await startCamera(role);return;}
     if(action==='stop-camera'){stopCamera(role);return;}
     if(action==='mirror-on'){await startMirror(role);return;}
+    if(role==='emitter'&&action==='mirror-diag'){
+      const ok=await api.send(role,'MIRROR DIAG');
+      if(!ok)info(role,'Cannot send MIRROR DIAG; check USB connection.');
+      return;
+    }
     if(action==='mirror-frame'){
       if(!mirrors[role].active)await startMirror(role);
       else{
@@ -486,6 +527,17 @@
   get('dc-export').addEventListener('click',()=>api.exportCsv());
   window.addEventListener('sqe:serial',e=>appendLine(e.detail.role,e.detail.line));
   window.addEventListener('sqe:mirror',e=>onMirror(e.detail));
+  window.addEventListener('sqe:mirror-paused',e=>{
+    const detail=e.detail||{};
+    if(detail.role!=='receiver')return;
+    // The detection runner owns the serial MIRROR OFF. Hide authentic pixels
+    // immediately and cancel outstanding frame timers; don't send it twice.
+    resetRole('receiver');
+    mirrorNote('receiver',detail.reason||
+      'Receiver LCD paused to collect exact-MAC LOG evidence. Restore after testing.');
+    info('receiver','Receiver mirroring paused automatically. '+ 
+      'The SquachEmit LCD stays live and RF transmission can proceed.');
+  });
   window.addEventListener('sqe:snapshot',e=>snapshot(e.detail));
   window.addEventListener('sqe:truth',e=>truth(e.detail));
   window.addEventListener('sqe:state',refreshState);

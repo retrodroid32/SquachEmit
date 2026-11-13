@@ -75,8 +75,12 @@ test('Windows rail renders authentic USB frame and translates canvas pointer to 
   click('mirror-on','receiver');
   await drain();
   assert.ok(commands.some(([r,c])=>r==='receiver'&&c==='MIRROR ON'));
-  assert.ok(commands.some(([r,c])=>r==='receiver'&&c==='MIRROR FRAME'));
   const receive=line=>windowEvents.get('sqe:mirror')({detail:{role:'receiver',line}});
+  assert.equal(commands.some(([r,c])=>r==='receiver'&&c==='MIRROR FRAME'),false,
+    'frame must wait for a real MIRROR READY acknowledgment');
+  receive('MIRROR READY RGB332 320x240');
+  await drain();
+  assert.ok(commands.some(([r,c])=>r==='receiver'&&c==='MIRROR FRAME'));
   receive('MIRROR BEGIN 9 2 1 RGB332');
   receive('MIRROR ROW 9 0 '+Buffer.from([0xe0,0x03]).toString('base64'));
   receive('MIRROR END 9');
@@ -104,12 +108,29 @@ test('Windows rail renders authentic USB frame and translates canvas pointer to 
   assert.ok(commands.some(([r,c])=>r==='receiver'&&c==='MIRROR OFF'));
   assert.equal(canvas.hidden,true,'stopped mirror cannot present stale pixels as live');
 
+  // The workbench automatically stops the receiver mirror during a signal
+  // test. The UI must hide the old pixels without issuing a duplicate OFF.
+  click('mirror-on','receiver');
+  await drain();
+  receive('MIRROR READY RGB332 320x240');
+  await drain();
+  const oldOff=commands.filter(([r,c])=>r==='receiver'&&c==='MIRROR OFF').length;
+  windowEvents.get('sqe:mirror-paused')({detail:{role:'receiver',
+    reason:'Paused for exact-MAC LOG capture'}});
+  assert.equal(canvas.hidden,true,'receiver auto-pause hides stale LCD frame');
+  assert.equal(elements.get('dc-placeholder-receiver').hidden,false);
+  assert.match(elements.get('dc-frame-receiver').textContent,/exact-MAC LOG/);
+  assert.equal(commands.filter(([r,c])=>r==='receiver'&&c==='MIRROR OFF').length,oldOff,
+    'detection runner, not UI, owns the already-sent MIRROR OFF');
+
   // Independent CYD3.2 panel: a real RGB565 frame followed by a differential
   // transfer must reproduce the exact full image without any synthetic redraw.
   click('mirror-on','emitter');
   await drain();
-  assert.ok(commands.some(([r,c])=>r==='emitter'&&c==='MIRROR FRAME'));
   const rx=line=>windowEvents.get('sqe:mirror')({detail:{role:'emitter',line}});
+  rx('MIRROR READY RGB565 320x240 TOUCH DELTA');
+  await drain();
+  assert.ok(commands.some(([r,c])=>r==='emitter'&&c==='MIRROR FRAME'));
   rx('MIRROR BEGIN 20 2 2 RGB565');
   rx('MIRROR ROW 20 0 '+Buffer.from([0x00,0xf8,0xe0,0x07]).toString('base64'));
   rx('MIRROR ROW 20 1 '+Buffer.from([0x1f,0x00,0xff,0xff]).toString('base64'));

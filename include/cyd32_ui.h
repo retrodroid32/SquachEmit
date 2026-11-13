@@ -28,5 +28,6 @@ void cyd32UiSetRadioStarting(const char* scenarioId);
 void cyd32UiMirrorFrame(uint32_t acceptedSequence=0);
 void cyd32UiMirrorPump();
 void cyd32UiMirrorStop();
+void cyd32UiMirrorDiag(unsigned long baud);
 // Inject mouse/pen state into the exact native touchscreen hit-testing path.
 bool cyd32UiRemoteTouch(uint16_t x,uint16_t y,const char* phase);
