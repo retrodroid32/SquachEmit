@@ -105,7 +105,8 @@ assert.equal(row.type,'DRONE');
 assert.equal(row.mac,'04:A8:5A:12:34:56');
 assert.equal(row.rssi,-53);
 assert.equal(core.parseWatchLogRow('0,DRONE,not-a-mac,-53,1,here,+1:04'),null);
-assert.equal(core.parseWatchLogRow('0,UNKNOWN,04:a8:5a:12:34:56,-53,1,here,+1:04'),null);
+assert.equal(core.parseWatchLogRow('0,UNKNOWN,04:a8:5a:12:34:56,-53,1,here,+1:04').type,'UNKNOWN',
+  'an UNKNOWN receiver row must not invalidate an otherwise valid LOG snapshot');
 assert.equal(core.parseWatchLogRow('0,EVIL TWIN,04:a8:5a:12:34:56,-53,1,here,+1:04').type,'EVILTWIN');
 const snapParser=core.newWatchLogParser();
 assert.equal(snapParser.start(950),true);
@@ -134,6 +135,28 @@ assert.equal(core.matchWatchDetection(matchingTrial,baseline,
 assert.equal(core.matchWatchDetection(matchingTrial,baseline,
   {...positive,rows:[{...row,state:'KEPT'}]}),null,
   'restored flash record must not count');
+assert.equal(core.matchWatchDetection(matchingTrial,baseline,
+  {...positive,rows:[{...row,state:'gone'}]}).observed,'DRONE',
+  'a new exact-MAC detection must be reported even after the signal stopped');
+assert.equal(core.matchWatchDetection(matchingTrial,baseline,
+  {...positive,rows:[{...row,type:'UNKNOWN'}]}),null,
+  'UNKNOWN receiver classification is not a positive detection');
+assert.equal(core.matchWatchDetection(matchingTrial,null,positive),null,
+  'missing baseline cannot count toward accuracy');
+const provisional=core.findUnverifiedWatchObservation(matchingTrial,positive);
+assert.equal(provisional.observed,'DRONE');
+assert.equal(provisional.verified,false);
+assert.equal(core.status({...trial,observed:provisional.observed,window:''},catalog),
+  'UNTESTED','ACTUAL may be populated without inventing a verified listening window');
+assert.equal(core.findUnverifiedWatchObservation(matchingTrial,{
+  ...positive,rows:[{...row,mac:'04:A8:5A:AA:BB:CC'}]}),null,
+  'classification alone cannot populate ACTUAL when the MAC does not match');
+assert.equal(core.findUnverifiedWatchObservation(matchingTrial,{
+  ...positive,requestedAt:1099}),null,
+  'a pre-RUN receiver snapshot is not evidence of this transmission');
+assert.equal(core.findUnverifiedWatchObservation(matchingTrial,{
+  ...positive,rows:[{...row,state:'gone'}]}).observed,'DRONE',
+  'post-run exact-MAC gone rows can be shown as unverified receiver evidence');
 assert.equal(core.matchWatchDetection(matchingTrial,
   {...baseline,rows:[row]},positive),null,
   'preexisting unchanged MAC must not count');
@@ -183,7 +206,8 @@ for(const required of [
   'Promise.race([','receiver.preRun={id:c.id,snapshot:baseline',
   'RUN was sent but no TRUTH BEGIN arrived',
   'Duplicate (run_id, receiver, case)','requestWatchSnapshot()',
-  'core.matchWatchDetection(','onWatchSnapshot(','startWatchPolling()',
+  'core.matchWatchDetection(','core.findUnverifiedWatchObservation(',
+  'onWatchSnapshot(','startWatchPolling()',
   'core.signalName(','core.batchPlan(','onBatchTruth(','startBatchStep()',
   'endBatch(','batchDuration','batchGap','batchScope',
   "sendReceiver('LOG')",'if(t.emission===\'ok\')finishAutoMatch(t)']){
@@ -214,4 +238,4 @@ assert.match(src,/publish_workbench/);
 assert.match(src,/cases\.json/);
 const workflow=fs.readFileSync('.github/workflows/ci.yml','utf8');
 assert.match(workflow,/node tests\/verify_workbench\.cjs/);
-console.log('PASS workbench: strict TRUTH, manual receiver scoring, CSV, UI and publication guards');
+console.log('PASS workbench: TRUTH, exact-MAC ACTUAL (live/gone), unverified baseline safety, CSV, UI and publication guards');
