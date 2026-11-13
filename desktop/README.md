@@ -1,4 +1,4 @@
-# SquachEmit Detection Workbench — Windows Desktop LAB
+# SquachEmit Detection Workbench — Windows Desktop LAB R4
 
 A standalone Windows x64 Electron GUI for 172 synthetic transmitter tests and exact-MAC receiver validation. The main workspace tracks ACTUAL classifications, baseline evidence, emitter TRUTH records, firmware SHAs, unverified results, batch progress, and CSV export. The right-hand desk has two **real LCD pixel canvases**, one per USB device, with pointer-to-touch support.
 
@@ -12,17 +12,19 @@ A standalone Windows x64 Electron GUI for 172 synthetic transmitter tests and ex
 4. The ACTUAL column reflects independently obtained SquachWatch LOG rows for the precise transmitter MAC, including newly seen rows later marked gone. Entries already present before RUN or observed without a valid baseline appear as UNTESTED, not automatically scored.
 5. Export the CSV before closing. An emitter TRUTH BEGIN/END never constitutes receiver proof; missing LOG rows are not automatically reported as NONE.
 
-## Actual USB LCD screens and remote touchscreen
+## Live USB LCD screens and physical touchscreen control (LAB R4)
 
-The screen panels no longer show simulated telemetry as if it were a framebuffer. The desktop explicitly sends MIRROR ON and MIRROR FRAME and decodes entire RGB332 or RGB565 serial frames (MIRROR BEGIN/ROW/END). A canvas displays only complete real pixel data with row/sequence validation. The app requests one frame at a time, using backpressure. Mouse/touch coordinates are mapped into native LCD pixels via MIRROR TOUCH x y DOWN/MOVE/UP. PIN lock checks remain in firmware.
+**The Windows panels show only real hardware pixel data.** The CYD3.2 emitter firmware reads its physical ST7798 TFT GRAM via `lcd.readRect`, sends a complete RGB565 keyframe, and then sends only the changed rows of later images. The EXE reconstructs the screen from real pixels, verifies each sequence and base frame, and automatically requests a complete keyframe after any lost frame. No HTML dashboard, simulated pixels, or inferred statuses are displayed as LCD screenshots.
 
-**SquachWatch:** requires unmerged SquachWatch-CYD PR #225 in the **separate SquachWatch session**. Its RGB332 TFT-sprite capture runs on actual physical redraws. No physical pixel fidelity or remote-touch behavior has yet been certified on 2.8-inch and 3.2-inch CYDs. Low-memory direct-LCD fallback and incomplete banded pushes cannot supply a valid screen image.
+**Live behavior:** SquachEmit capture sends a maximum of two LCD rows per firmware loop iteration, rather than blocking the radio and touch processing with a single giant frame. The Windows EXE starts mirroring automatically when the correctly connected device supports it, polls for changed-row deltas, and scales the real pixel dimensions into the right-side LCD card. Mouse/touch DOWN, MOVE and UP events are mapped to display pixels and sent into the native physical UI hit-testing path, including clicks, press-and-hold and dragging. Stop/disconnect hides old screenshots; the desktop attempts to release any outstanding remote touch first.
 
-**SquachEmit:** the experimental CYD 3.2 ST7798 LAB firmware streams RGB565 TFT GRAM readback. For 2,000,000-baud capture: connect the CYD 3.2 emitter first at 115,200, click **Switch device UART to 2 Mbps**, disconnect the serial COM port without power-cycling, set **2,000,000** in Emitter baud and **Use for next connect**, reconnect and select **Mirror live**. A reboot normally resets the UART to 115,200. Some USB serial adapters reset the MCU on reconnect; this and ST7798 GRAM-read support are hardware gates, not guaranteed working features. S3 DevKit and Waveshare C5 do not yet expose mirrored LCDs.
+**SquachEmit CYD 3.2:** connect at 115,200 baud, click **Switch device UART to 2 Mbps**, disconnect without power cycling, select **2,000,000** and **Use for next connect**, reconnect the same USB COM port. If the board resets when the port is reopened, the UART resets to 115,200: reconnect at 115,200 and repeat. The current hardware readback is still experimental: if the first 16 LCD rows do not show expected color variation, firmware reports `MIRROR ERROR LCD_READ_UNAVAILABLE` instead of displaying invented pixels. This means **real ST7798 read capability and exact visual color matching remain physical-device acceptance gates**, regardless of successful CI.
 
-**No misleading fallback:** if firmware has no mirror support, frames are corrupted, no LCD push occurs, or the serial baud is wrong, the canvas remains empty (or retains the last valid real frame) with an explicit status. No dummy replica is drawn.
+**SquachWatch:** the other LCD panel requires compatible, unmerged SquachWatch PR #225 from the **separate SquachWatch project**. The desktop accepts that firmware's real RGB332 keyframes with correct portrait/landscape dimensions and remote pointer messages. No SquachWatch firmware is edited or merged in this SquachEmit work. SquachWatch PIN restrictions remain firmware-enforced. Its RGB332 transfer may approximate 24-bit screen colors due to the firmware's 8-bit color depth, so exact color fidelity on SquachWatch is not yet established.
 
-**Concurrency:** SquachWatch LOG polling is suspended while its LCD mirror is active and resumes after MIRROR OFF. Stop mirroring and obtain a fresh receiver baseline before starting an accuracy benchmark. LOG and large LCD frames deliberately do not overlap on that serial link. Optional Windows USB cameras can show physical screens, but camera footage is not remote touch control and is not uploaded.
+**Other boards:** WaveShare ESP32-C5 and ESP32-S3 do not implement this LCD mirror. No fake fallback is drawn. Optional physical USB cameras can show video of the board, but they do not provide remote touchscreen input.
+
+**Detection test concurrency:** the receiver's LOG poller is suspended while its LCD mirror is active. Disable mirroring and acquire a fresh receiver baseline before running verified detection scoring; one shared USB serial connection cannot simultaneously transfer large screenshots and unattended test evidence.
 
 ## Controls and security
 

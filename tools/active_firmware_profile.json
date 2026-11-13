@@ -2,25 +2,25 @@
   "schema": 1,
   "scenario_count": 172,
   "firmware_sources": {
-    "src": "291089bae16b2eac1a2d9f5039e18fac06a4dd93",
-    "include": "b1fda0352a3f4c8da37ebd4b8b851adfadcd2768",
+    "src": "bcd012c4b49f51ddceef3e236215cbbfb1215d65",
+    "include": "04b7a60b54d953639f8d85fe13c3fcbca8636e93",
     "lib": "bd0df45f7747bc9971aa4b379a12940dd2d7d98f",
     "SquachEmit.ino": "90b4205813a2f7885bc1e12ce7431eebf7249f45",
     "platformio.ini": "bd67af3ecd6de05f4cef015fe97e17b29ceed574"
   },
   "builds": {
     "cyd32-st7798": {
-      "title": "SquachEmit v1.1.0 CYD 3.2 LAB — 172 Cases · Device Names · USB LCD Mirror / Remote Touch",
+      "title": "SquachEmit v1.1.0 CYD 3.2 LAB — 172 Cases · Live LCD Mirror + Remote Touch R4",
       "version": "v1.1.0 MAINLINE · 172 cases",
-      "summary": "Unmerged CYD 3.2 ST7798 LAB firmware: 172 time-limited synthetic BLE/Wi-Fi signal scenarios, device-first native names, 3–30-second TX-time editor, and experimental USB LCD RGB565 readback plus remote touch controls. LCD GRAM readback on the physical ST7798 and 2,000,000 baud handoff still require on-device verification. Four-part SHA-256 flashing preflight remains mandatory; this is NOT a public released firmware build.",
+      "summary": "Unmerged CYD 3.2 ST7798 LAB: 172 synthetic BLE/Wi-Fi cases, device-first menus, stored 3–30-second TX time, actual RGB565 TFT GRAM pixels streamed incrementally over USB at 2 Mbps and mouse-to-native touch events. Full keyframes and sequence-checked changed-row updates avoid freezing touch/radio handling; flat LCD reads fail closed. Real ST7798 readback, UART reconnect, timing and remote gestures require physical validation. Four-part SHA-256 flashing preflight remains mandatory. Not a public release.",
       "highlights": [
-        "LAB USB screen protocol: MIRROR BAUD 2000000 / MIRROR ON / MIRROR FRAME / MIRROR TOUCH x y DOWN|MOVE|UP; physical LCD and touch unverified.",
-        "Device-first labels on all 172 transmitter signals, including Flipper Zero UUID/name, negative controls and manufacturer OUI cases; stable technical IDs preserved.",
-        "172 bounded synthetic BLE/Wi-Fi scenarios; per-case locally administered MAC IDs.",
-        "TX TIME [SET] with +/- 1 second, RESET 12 and DONE; persists after reboot.",
-        "Routine touches and duration changes avoid unnecessary full-screen redraws.",
-        "STOP, SUITE and transmit auto-timeout remain.",
-        "Installer verifies bootloader, partition table, OTA selector and application."
+        "New LIVE USB LCD mirror: MIRROR ON / MIRROR FRAME [last_seq] / MIRROR DELTA / MIRROR ROW / MIRROR END.",
+        "Bounded two-row serial streaming prevents long screen-capture blocking; changed-row updates reduce bandwidth.",
+        "Actual 320x240 RGB565 TFT pixels only; invalid/missing TFT readback reports an explicit error.",
+        "Mouse/touch coordinates map to the CYD 3.2 native touch hit-testing path, including click, drag and press/release.",
+        "172 synthetic BLE/Wi-Fi device-named cases, unique MACs and negative controls.",
+        "TX TIME editor 3–30 seconds with persistent settings; STOP, SUITE and RF timeout remain.",
+        "Physical screen/readback and touch acceptance pending; verify all four installer flash segments by SHA-256."
       ]
     },
     "c5-waveshare-28": {

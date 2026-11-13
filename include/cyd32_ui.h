@@ -23,6 +23,10 @@ void cyd32UiSetRadioStarting(const char* scenarioId);
 
  // Opt-in USB display readback of the physical LCD, not a synthetic UI drawing.
  // Serial speed MUST be switched to 2,000,000 baud first.
-void cyd32UiMirrorFrame();
+// Queue a real framebuffer keyframe or delta referencing the last complete frame.
+// The transfer is pumped in small chunks so RF and touch remain responsive.
+void cyd32UiMirrorFrame(uint32_t acceptedSequence=0);
+void cyd32UiMirrorPump();
+void cyd32UiMirrorStop();
 // Inject mouse/pen state into the exact native touchscreen hit-testing path.
 bool cyd32UiRemoteTouch(uint16_t x,uint16_t y,const char* phase);

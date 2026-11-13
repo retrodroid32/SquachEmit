@@ -468,8 +468,8 @@ static void help() {
   Serial.println("BLE5 extended/coded PHY and Wi-Fi NAN: OFFLINE FIXTURES ONLY.");
   Serial.println("Single 2.4GHz radio: BLE and Wi-Fi scenarios are exclusive.");
 #if defined(SQE_CYD32)
-  Serial.println("MIRROR ON/OFF, MIRROR BAUD 2000000, MIRROR FRAME, MIRROR TOUCH x y DOWN|MOVE|UP");
-  Serial.println("MIRROR reads actual LCD GRAM; physical ST7798 readback needs validation.");
+  Serial.println("MIRROR ON/OFF, MIRROR BAUD 2000000, MIRROR FRAME [last_seq], MIRROR TOUCH x y DOWN|MOVE|UP");
+  Serial.println("MIRROR is real nonblocking LCD GRAM capture; deltas use the accepted USB sequence.");
 #endif
 #if defined(SQE_CYD32)
   Serial.println("Tap TX TIME on the home screen to set 3..30s for RUN and SUITE.");
@@ -499,19 +499,30 @@ static void command(String cmd) {
       return;
     }
     if(cmd=="MIRROR ON"){
+      cyd32UiMirrorStop();
       g_mirrorOn=true;
-      Serial.println("MIRROR READY RGB565 320x240 TOUCH");
+      Serial.println("MIRROR READY RGB565 320x240 TOUCH DELTA");
       return;
     }
     if(cmd=="MIRROR OFF"){
       g_mirrorOn=false;
+      cyd32UiMirrorStop();
       Serial.println("MIRROR OFF OK");
       return;
     }
     if(!g_mirrorOn){Serial.println("MIRROR ERROR DISABLED");return;}
-    if(cmd=="MIRROR FRAME"){
+    if(cmd=="MIRROR FRAME" || cmd.startsWith("MIRROR FRAME ")){
       if(g_serialBaud!=2000000UL){Serial.println("MIRROR ERROR NEED_2M_BAUD");return;}
-      cyd32UiMirrorFrame();return;
+      uint32_t received=0;
+      if(cmd!="MIRROR FRAME"){
+        unsigned long seq=0;
+        char bad=0;
+        if(sscanf(cmd.c_str(),"MIRROR FRAME %lu %c",&seq,&bad)!=1){
+          Serial.println("MIRROR ERROR BAD_SEQUENCE");return;
+        }
+        received=(uint32_t)seq;
+      }
+      cyd32UiMirrorFrame(received);return;
     }
     unsigned x=0,y=0;
     char phase[8]={0};
@@ -683,6 +694,10 @@ void loop() {
       break;
     default: break;
   }
+#endif
+  // A bounded chunk each pass leaves Serial commands, RF and touch responsive.
+#if defined(SQE_CYD32)
+  if(g_mirrorOn)cyd32UiMirrorPump();
 #endif
 #endif
   delay(5);

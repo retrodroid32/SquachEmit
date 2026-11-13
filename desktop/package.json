@@ -1,8 +1,8 @@
 {
   "name": "squachemit-workbench-desktop",
-  "version": "0.3.0",
+  "version": "0.4.0",
   "private": true,
-  "description": "SquachEmit Windows 172-case Detection Workbench with real dual USB LCD mirroring, pointer touch and validated receiver ACTUAL evidence",
+  "description": "SquachEmit 172-case Windows Workbench with continuous real LCD RGB565 delta mirroring, native remote touch and independent SquachWatch USB screen",
   "main": "main.cjs",
   "license": "GPL-3.0-only",
   "scripts": {
