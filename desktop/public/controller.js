@@ -25,7 +25,7 @@
   for(const role of ['receiver','emitter']){
     mirrors[role]={active:false,waiting:false,lastFrame:false,lastFrameSequence:0,failures:0,
       assembler:new codec.MirrorAssembler(),timeout:null,next:null,
-      touchDown:false,touchAt:0,touchTimer:null,lastPoint:{x:0,y:0},
+      touchDown:false,touchAt:0,touchTimer:null,pendingUp:null,lastPoint:{x:0,y:0},
       lastMove:0};
   }
   const get=id=>document.getElementById(id);
@@ -126,14 +126,15 @@
     get('dc-canvas-'+role).hidden=true;
     get('dc-placeholder-'+role).hidden=false;
     if(s.touchTimer!==null)clearInterval(s.touchTimer);
-    s.touchTimer=null;s.touchDown=false;
+    if(s.pendingUp!==null)clearTimeout(s.pendingUp);
+    s.touchTimer=null;s.pendingUp=null;s.touchDown=false;
   }
   async function stopMirror(role,send){
     const s=mirrors[role],was=s.active;
     const connected=isConnected(role,api.getState());
     // Deliver an explicit UP before switching off or disconnecting. A lost
     // pointer capture must not leave the physical device pressed.
-    if(send&&was&&connected&&s.touchDown)
+    if(send&&was&&connected&&(s.touchDown||s.pendingUp!==null))
       await api.send(role,'MIRROR TOUCH '+s.lastPoint.x+' '+s.lastPoint.y+' UP');
     resetRole(role);
     if(send&&was&&connected){
@@ -359,7 +360,8 @@
     s.touchTimer=null;
     const finish=()=>sendTouch(role,point||s.lastPoint,'UP');
     const remain=Math.max(0,minimumHold-(Date.now()-s.touchAt));
-    if(remain)setTimeout(finish,remain);else finish();
+    if(remain)s.pendingUp=setTimeout(()=>{s.pendingUp=null;finish();},remain);
+    else finish();
   }
   for(const role of ['receiver','emitter']){
     const canvas=get('dc-canvas-'+role),s=mirrors[role];
@@ -369,6 +371,10 @@
       if(!p)return;
       event.preventDefault();
       if(s.touchDown)releaseTouch(role,p,0);
+      if(s.pendingUp!==null){
+        clearTimeout(s.pendingUp);s.pendingUp=null;
+        sendTouch(role,s.lastPoint,'UP');
+      }
       s.touchDown=true;s.touchAt=Date.now();s.lastPoint=p;s.lastMove=Date.now();
       try{canvas.setPointerCapture(event.pointerId);}catch(_){}
       sendTouch(role,p,'DOWN');
