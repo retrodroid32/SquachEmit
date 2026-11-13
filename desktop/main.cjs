@@ -59,6 +59,8 @@ function serve(req,res,roots){
     if(err){res.writeHead(404);res.end('Not found');return;}
     if(resource.html){
       const html=body.toString('utf8')
+        .replace(/href="\.\.\/"/g,
+          'href="https://retrodroid32.github.io/SquachEmit/" target="_blank" rel="noopener noreferrer"')
         .replace('</head>',
           '  <link rel="stylesheet" href="/desktop/controller.css">\n'+
           '  <script src="/desktop/controller.js" defer></script>\n</head>');
@@ -138,7 +140,8 @@ async function createWindow(){
   });
   enablePermissions(windowRef);
   windowRef.webContents.setWindowOpenHandler(({url})=>{
-    if(/^https:\/\/github\.com\/retrodroid32\//.test(url))
+    if(/^https:\/\/github\.com\/retrodroid32\//.test(url)||
+       /^https:\/\/retrodroid32\.github\.io\/SquachEmit\//.test(url))
       void shell.openExternal(url);
     return {action:'deny'};
   });
