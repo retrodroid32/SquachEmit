@@ -20,3 +20,9 @@ void cyd32UiSetRadioError(const char* stage);
 
 // Acknowledge a Wi-Fi RUN touch before the radio driver blocks.
 void cyd32UiSetRadioStarting(const char* scenarioId);
+
+ // Opt-in USB display readback of the physical LCD, not a synthetic UI drawing.
+ // Serial speed MUST be switched to 2,000,000 baud first.
+void cyd32UiMirrorFrame();
+// Inject mouse/pen state into the exact native touchscreen hit-testing path.
+bool cyd32UiRemoteTouch(uint16_t x,uint16_t y,const char* phase);
