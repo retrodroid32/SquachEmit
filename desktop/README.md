@@ -6,7 +6,7 @@ A standalone Windows x64 Electron GUI for 172 synthetic transmitter tests and ex
 
 ## Install and run
 
-1. Download the SquachEmit-Windows-Desktop-Review-x64 artifact from the successful Windows Desktop Workbench GitHub Actions run. Extract the unsigned Setup EXE or portable EXE.
+1. Download the SquachEmit-Workbench-USB-Mirror-172Case-Windows-x64-LAB artifact from the successful Windows Desktop Workbench GitHub Actions run. Extract the unsigned Setup EXE or portable EXE.
 2. Connect SquachEmit at 115,200 baud; SquachWatch on another COM port typically uses 2,000,000 baud. Assign each correct Windows COM port using the Connect USB buttons.
 3. Enter both real flashed firmware SHAs, choose a device-named case, explicitly authorize RF testing, then Run selected case or Start automated tests.
 4. The ACTUAL column reflects independently obtained SquachWatch LOG rows for the precise transmitter MAC, including newly seen rows later marked gone. Entries already present before RUN or observed without a valid baseline appear as UNTESTED, not automatically scored.
