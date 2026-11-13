@@ -81,7 +81,7 @@ int main(){
                             str(source),str(ROOT/"src/cyd32_ui.cpp"),
                             str(ROOT/"src/cyd32_squachy_port.cpp"),
                             str(ROOT/"src/scenarios.cpp"),"-o",str(binary)],
-                           check=True,capture_output=True,text=True)
+                           check=True,text=True)
             subprocess.run([str(binary)],check=True,capture_output=True,text=True)
     def test_selected_duration_used_by_run_and_suite(self):
         source=(ROOT/"src/main.cpp").read_text()
