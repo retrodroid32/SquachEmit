@@ -36,6 +36,11 @@
   var batch={active:false,queue:[],index:0,completed:0,current:null,
     duration:8,gap:5,timer:null,endTimer:null,failures:0,message:'Ready to start'};
   var emitterWrites=Promise.resolve();
+  var receiverWrites=Promise.resolve();
+  var desktopMode=(new URLSearchParams(window.location.search)).get('desktop')==='1';
+  function desktopEvent(type,detail){
+    if(desktopMode)window.dispatchEvent(new CustomEvent('sqe:'+type,{detail:detail}));
+  }
   function runProgress(message){text('runFeedback',message);}
   function cancelRunAck(){
     if(runAwaitTimer!==null){clearTimeout(runAwaitTimer);runAwaitTimer=null;}
@@ -52,6 +57,7 @@
     d.log=(d.log+line).slice(-60000);
     el.textContent=d.log;
     el.scrollTop=el.scrollHeight;
+    desktopEvent('serial',{role:role,line:line});
   }
   function option(value,label){var o=document.createElement('option');o.value=value;o.textContent=label;return o;}
   function formatPct(x){return x===null?'—':(x*100).toFixed(1)+'%';}
@@ -182,6 +188,12 @@
     ui.saveObservation.disabled=!(selectedTrial>=0 && trials[selectedTrial]);
     ui.clearTrials.disabled=batch.active;
     ui.importCsv.disabled=batch.active;
+    desktopEvent('state',{
+      emitterConnected:connected,
+      receiverConnected:receiver,
+      receiverBaud:devices.receiver.baud,batchActive:batch.active,
+      transmitting:transmitting
+    });
   }
   function updateBatchUi(){
     var ready=!!devices.emitter.port&&!!devices.receiver.port&&
@@ -240,6 +252,9 @@
   function onWatchSnapshot(snapshot) {
     var d=devices.receiver;
     d.lastSnapshot=snapshot;
+    desktopEvent('snapshot',{rows:snapshot.rows.slice(0,20).map(function(r){
+      return {type:r.type,mac:r.mac,rssi:r.rssi,hits:r.hits,state:r.state};
+    }),rowCount:snapshot.rows.length,when:snapshot.finishedAt});
     autoStatus('AUTO LOG ACTIVE · '+snapshot.rows.length+' receiver rows · latest snapshot '+
       new Date(snapshot.finishedAt).toLocaleTimeString()+' · polling every 1.5 s');
     if(d.pending){
@@ -297,6 +312,26 @@
     d.preRun=null;
     autoStatus('Receiver LOG polling stopped. Reconnect SquachWatch to resume automatic matching.');
   }
+  function sendReceiver(command){
+    // A single write queue is shared by 1.5s LOG polling and desktop controls.
+    // This prevents a user control command from colliding with a pending LOG write.
+    var d=devices.receiver,port=d.port;
+    var task=receiverWrites.then(async function(){
+      if(!port||d.port!==port||!port.writable)return false;
+      var writer=null;
+      try{
+        writer=port.writable.getWriter();
+        await writer.write(new TextEncoder().encode(command+'\n'));
+        if(command!=='LOG')append('receiver','> '+command+'\n');
+        return true;
+      }catch(e){
+        autoStatus('SquachWatch command failed: '+e.message);
+        return false;
+      }finally{if(writer)try{writer.releaseLock();}catch(_){}}
+    });
+    receiverWrites=task.then(function(){},function(){});
+    return task;
+  }
   async function requestWatchSnapshot() {
     var d=devices.receiver;
     if(!d.port||!d.port.writable)return null;
@@ -314,9 +349,7 @@
       }
     },3800);
     try{
-      var writer=d.port.writable.getWriter();
-      try{await writer.write(new TextEncoder().encode('LOG\n'));}
-      finally{writer.releaseLock();}
+      if(!(await sendReceiver('LOG')))throw new Error('USB LOG write did not complete');
     }catch(e){
       if(d.pending===pending){
         d.pending=null;d.parser.cancel();clearTimeout(pending.timeout);
@@ -437,6 +470,8 @@
   function recordEmitter(line){
     var event=core.parseTruth(line);
     if(!event || !catalog[event.id])return;
+    desktopEvent('truth',{event:event.event,id:event.id,expected:event.expected,
+      name:core.signalName(catalog[event.id]),status:event.status,seq:event.seq});
     if(event.event==='BEGIN'){
       if(trials.some(function(t){return t.seq===event.seq&&t.id===event.id&&
         t._epoch===epoch;}))return;
@@ -888,5 +923,50 @@
     stopWatchPolling();
     Object.keys(devices).forEach(function(role){var r=devices[role].reader;if(r)r.cancel().catch(function(){});});
   });
+
+  if(desktopMode){
+    // Narrow public API for the local Windows control rail. No raw serial port
+    // objects, no automatic transmission and no unrestricted firmware commands.
+    function desktopSend(role,cmd){
+      var value=String(cmd||'').trim().toUpperCase();
+      if(role==='receiver'){
+        if(!/^(LOG|RADIO|RADIO SCAN|MEM|WIFI|BLACKBOX|ROT|SCAN (?:AUTO|ACTIVE|PASSIVE)|CLOCK [01] [0-2] [0-6]|BG (?:[0-9]|1[0-9]))$/.test(value))
+          return Promise.resolve(false);
+        if(batch.active&&!/^(?:RADIO|MEM)$/.test(value))return Promise.resolve(false);
+        if(value==='LOG')return requestWatchSnapshot().then(function(r){return !!r;});
+        return sendReceiver(value);
+      }
+      if(role==='emitter'){
+        if(!/^(STATUS|IDENTITY|LIST|HELP|COLORS|STOP)$/.test(value))
+          return Promise.resolve(false);
+        if(batch.active&&value!=='STATUS'&&value!=='STOP')return Promise.resolve(false);
+        if(value==='STOP'){ui.stopCase.click();return Promise.resolve(true);}
+        return sendEmitter(value);
+      }
+      return Promise.resolve(false);
+    }
+    window.SQEWorkbenchDesktop=Object.freeze({
+      connect:function(role){return ['receiver','emitter'].includes(role)?connect(role):Promise.resolve();},
+      disconnect:function(role){return ['receiver','emitter'].includes(role)?disconnect(role):Promise.resolve();},
+      send:desktopSend,
+      runSelected:function(){return run(false);},
+      startBatch:function(){ui.batchStart.click();},
+      stopBatch:function(){ui.batchStop.click();},
+      exportCsv:function(){ui.exportCsv.click();},
+      getState:function(){
+        return {
+          emitterConnected:!!devices.emitter.port,
+          receiverConnected:!!devices.receiver.port,
+          receiverBaud:devices.receiver.baud,
+          batchActive:batch.active,transmitting:transmitting,
+          selectedCase:catalog[ui.caseSelect.value] ?
+            core.signalName(catalog[ui.caseSelect.value]):'No signal selected',
+          latestSnapshotRows:devices.receiver.lastSnapshot ?
+            devices.receiver.lastSnapshot.rows.length:null,
+          catalogCount:cases.length
+        };
+      }
+    });
+  }
   redrawTrials();updateButtons();void loadCases();
 })();
