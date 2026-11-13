@@ -544,6 +544,7 @@
     }catch(e){append(role,'\n[serial read stopped: '+e.message+']\n');}
     finally{
       if(d.port===port){
+        if(batch.active)endBatch('Automation stopped: '+role+' serial read closed.',role==='receiver');
         if(role==='receiver')stopWatchPolling();
         d.port=null;
         try{await port.close();}catch(_){}
@@ -583,6 +584,7 @@
     var d=devices[role],p=d.port;
     if(!p)return;
     d.port=null;
+    if(batch.active)endBatch('Automation stopped: '+role+' disconnected.',role==='receiver');
     if(role==='receiver')stopWatchPolling();
     if(role==='emitter'){
       runToken++;devices.receiver.preRun=null;
@@ -596,19 +598,28 @@
     d.reader=null;d.reading=null;
     append(role,'\n[disconnected]\n');updateButtons();
   }
-  async function sendEmitter(command){
+  function sendEmitter(command){
+    // Serialize STOP behind a pending RUN to avoid colliding writable locks.
     var port=devices.emitter.port;
-    if(!port||!port.writable){notice('Connect SquachEmit before sending a command.',true);return false;}
-    var writer=null;
-    try{
-      writer=port.writable.getWriter();
-      await writer.write(new TextEncoder().encode(command+'\n'));
-      append('emitter','> '+command+'\n');
-      return true;
-    }catch(e){notice('Serial write failed: '+e.message,true);return false;}
-    finally{if(writer)try{writer.releaseLock();}catch(_){}}
+    var pending=emitterWrites.then(async function(){
+      if(!port||devices.emitter.port!==port||!port.writable){
+        notice('Emitter disconnected; command not sent.',true);return false;
+      }
+      var writer=null;
+      try{
+        writer=port.writable.getWriter();
+        await writer.write(new TextEncoder().encode(command+'\n'));
+        append('emitter','> '+command+'\n');
+        return true;
+      }catch(e){notice('Serial write failed: '+e.message,true);return false;}
+      finally{if(writer)try{writer.releaseLock();}catch(_){}}
+    });
+    emitterWrites=pending.then(function(){},function(){});
+    return pending;
   }
-  async function run(){
+  async function run(fromBatch){
+    if(batch.active&&!fromBatch)return;
+    if(fromBatch&&(!batch.active||!batch.current||batch.current.id!==ui.caseSelect.value))return;
     var c=catalog[ui.caseSelect.value],duration=Number(ui.duration.value);
     if(startingRun||awaitingBegin||transmitting||!c||!ui.authorization.checked||
        !Number.isInteger(duration)||duration<3||duration>30||!devices.emitter.port)return;
@@ -633,12 +644,16 @@
             baseline=await Promise.race([
               requestWatchSnapshot(),
               new Promise(function(resolve){
-                timer=setTimeout(function(){resolve(null);},1200);
+                timer=setTimeout(function(){resolve(null);},fromBatch?4200:1200);
               })
             ]);
           }finally{if(timer)clearTimeout(timer);}
         }
         if(token!==runToken || !devices.emitter.port)return;
+        if(fromBatch&&!baseline){
+          endBatch('Automation stopped: no complete SquachWatch LOG baseline for '+c.id+'.',false);
+          return;
+        }
         // Explicit null means auto-matching is disabled for this run. Never
         // prevent a valid user-requested RUN just because receiver LOG is late.
         receiver.preRun={id:c.id,snapshot:baseline,expiresAt:Date.now()+5000};
@@ -656,6 +671,7 @@
       if(!sent){
         awaitingBegin=false;receiver.preRun=null;
         runProgress('RUN write failed. Check the emitter connection.');
+        if(fromBatch)endBatch('Automation stopped: RUN write failed for '+c.id+'.',true);
         return;
       }
       // TRUTH BEGIN may already arrive while awaiting the serial write.
@@ -667,6 +683,7 @@
           runAwaitTimer=null;
           runProgress('RUN was sent but no TRUTH BEGIN arrived within 7 seconds. '+
             'Check SquachEmit serial log or try again; no transmission was confirmed.');
+          if(fromBatch)endBatch('Automation stopped: no TRUTH BEGIN for '+c.id+' within 7 seconds.',true);
           updateButtons();
         },7000);
       }
@@ -799,8 +816,17 @@
   ui.recvConnect.addEventListener('click',function(){void connect('receiver');});
   ui.emitDisconnect.addEventListener('click',function(){void disconnect('emitter');});
   ui.recvDisconnect.addEventListener('click',function(){void disconnect('receiver');});
-  ui.runCase.addEventListener('click',function(){void run();});
+  ui.runCase.addEventListener('click',function(){void run(false);});
+  ui.batchStart.addEventListener('click',startBatch);
+  ui.batchStop.addEventListener('click',function(){
+    endBatch('Automation stopped by operator after '+batch.completed+' completed cases.',true);
+  });
+  ['batchScope','batchDuration','batchGap'].forEach(function(id){
+    ui[id].addEventListener('change',updateBatchUi);
+    ui[id].addEventListener('input',updateBatchUi);
+  });
   ui.stopCase.addEventListener('click',function(){
+    if(batch.active){endBatch('Automation stopped by operator. No additional signals will run.',true);return;}
     runToken++;devices.receiver.preRun=null;
     cancelRunAck();transmitting=false;
     runProgress('STOP requested. Waiting for emitter to stop.');
@@ -852,12 +878,13 @@
     }catch(e){notice('CSV import failed: '+e.message,true);}
   });
   ui.clearTrials.addEventListener('click',function(){
-    if(!trials.length)return;
+    if(!trials.length||batch.active)return;
     if(!window.confirm('Permanently clear all '+trials.length+' local trials? Export CSV first.'))return;
     trials=[];selectedTrial=-1;redrawTrials();selectTrial();
     notice('Local trial ledger cleared.',false);
   });
   window.addEventListener('beforeunload',function(){
+    if(batch.active)endBatch('Automation stopped: browser is unloading.',true);
     stopWatchPolling();
     Object.keys(devices).forEach(function(role){var r=devices[role].reader;if(r)r.cancel().catch(function(){});});
   });
