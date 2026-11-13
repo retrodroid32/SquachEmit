@@ -1,6 +1,7 @@
 #if defined(SQE_WAVESHARE_C5)
 #include "c5_ui.h"
 #include "scenarios.h"
+#include "scenario_display.h"
 #include <Arduino.h>
 #include <esp_heap_caps.h>
 #include <string.h>
@@ -103,6 +104,13 @@ void button(int x,int y,int w,int h,const char* s,uint16_t color){
   fill(x,y,w,h,color);rect(x,y,w,h,WHITE);
   text(x+(w-(int)strlen(s)*6)/2,y+(h-7)/2,s,WHITE);
 }
+void deviceCaption(const Scenario& s,char* out,size_t cap){
+  scenarioDeviceName(s,out,cap);
+  // This board's lightweight 5x7 font contains uppercase glyphs only.
+  for(size_t i=0;out[i];++i)
+    if(out[i]>='a'&&out[i]<='z')out[i]=(char)(out[i]-'a'+'A');
+  if(cap>37 && std::strlen(out)>36)out[36]='\0'; // 6px/character, 216px row
+}
 void render(const char* active,uint32_t remaining,bool suite){
   fill(0,0,W,H,BG);
   fill(0,0,W,35,SELECT);
@@ -110,7 +118,10 @@ void render(const char* active,uint32_t remaining,bool suite){
   text(9,27,"C5 2.8 / RF LAB",WHITE);
   text(7,43,active?"ON AIR":suite?"SUITE":"READY - NO RF",active?RED:GREEN);
   if(active){
-    text(7,58,active,WHITE);
+    const Scenario* running=findScenario(active);
+    char runningName[48]={0};
+    if(running)deviceCaption(*running,runningName,sizeof(runningName));
+    text(7,58,running?runningName:active,WHITE);
     char timer[24];
     snprintf(timer,sizeof(timer),"%lu SEC LEFT",(unsigned long)((remaining+999)/1000));
     text(7,70,timer,DIM);
@@ -121,8 +132,12 @@ void render(const char* active,uint32_t remaining,bool suite){
     int y=FIRST+(int)i*ROW;
     fill(5,y,230,28,index==selected?SELECT:PANEL);
     rect(5,y,230,28,index==selected?CYAN:DIM);
-    text(11,y+5,kScenarios[index].id,WHITE);
-    text(11,y+17,kScenarios[index].expected,index==selected?CYAN:DIM);
+    char name[48]={0};
+    deviceCaption(kScenarios[index],name,sizeof(name));
+    text(11,y+5,name,WHITE);
+    char id[37]={0};
+    std::snprintf(id,sizeof(id),"%s",kScenarios[index].id);
+    text(11,y+17,id,index==selected?CYAN:DIM);
   }
   char pg[24];
   snprintf(pg,sizeof(pg),"%u / %u",(unsigned)(page+1),
