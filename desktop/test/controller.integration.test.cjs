@@ -102,4 +102,43 @@ test('Windows rail renders authentic USB frame and translates canvas pointer to 
   click('mirror-off','receiver');
   await drain();
   assert.ok(commands.some(([r,c])=>r==='receiver'&&c==='MIRROR OFF'));
+  assert.equal(canvas.hidden,true,'stopped mirror cannot present stale pixels as live');
+
+  // Independent CYD3.2 panel: a real RGB565 frame followed by a differential
+  // transfer must reproduce the exact full image without any synthetic redraw.
+  click('mirror-on','emitter');
+  await drain();
+  assert.ok(commands.some(([r,c])=>r==='emitter'&&c==='MIRROR FRAME'));
+  const rx=line=>windowEvents.get('sqe:mirror')({detail:{role:'emitter',line}});
+  rx('MIRROR BEGIN 20 2 2 RGB565');
+  rx('MIRROR ROW 20 0 '+Buffer.from([0x00,0xf8,0xe0,0x07]).toString('base64'));
+  rx('MIRROR ROW 20 1 '+Buffer.from([0x1f,0x00,0xff,0xff]).toString('base64'));
+  rx('MIRROR END 20');
+  const ec=elements.get('dc-canvas-emitter');
+  assert.equal(ec.hidden,false);
+  assert.deepEqual(Array.from(ec.lastImage.pixels),[
+    255,0,0,255,0,255,0,255,0,0,255,255,255,255,255,255
+  ]);
+  // Trigger the next short poll, verifying it names the host's accepted seq.
+  for(const [id,timer] of Array.from(timers)){
+    if(timer.ms===65){timers.delete(id);timer.fn();}
+  }
+  await drain();
+  assert.ok(commands.some(([r,c])=>r==='emitter'&&c==='MIRROR FRAME 20'));
+  rx('MIRROR DELTA 21 20 2 2 RGB565');
+  rx('MIRROR ROW 21 1 '+Buffer.from([0x00,0x00,0x1f,0x00]).toString('base64'));
+  rx('MIRROR END 21');
+  assert.deepEqual(Array.from(ec.lastImage.pixels),[
+    255,0,0,255,0,255,0,255,0,0,0,0,255,0,0,255,255
+  ]);
+  // Holding a button must be released before the serial MIRROR OFF.
+  ec.listeners.pointerdown({pointerId:7,clientX:0,clientY:0,preventDefault(){}});
+  await drain();
+  click('mirror-off','emitter');
+  await drain();
+  const down=commands.findIndex(([r,c])=>r==='emitter'&&c==='MIRROR TOUCH 0 0 DOWN');
+  const up=commands.findIndex(([r,c])=>r==='emitter'&&c==='MIRROR TOUCH 0 0 UP');
+  const off=commands.findIndex(([r,c])=>r==='emitter'&&c==='MIRROR OFF');
+  assert.ok(down>=0&&up>down&&off>up,'stop must release physical touch first');
+  assert.equal(ec.hidden,true);
 });
