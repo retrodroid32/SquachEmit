@@ -38,6 +38,16 @@ public:
  }
  int width() const{return w;}
  int height() const{return h;}
+ // Return the actual drawn RGB565 raster to mirror regression tests.
+ void readRect(int x,int y,int ww,int hh,uint16_t* out) const{
+  if(!out||ww<0||hh<0)return;
+  for(int yy=0;yy<hh;yy++)
+   for(int xx=0;xx<ww;xx++){
+    const int sx=x+xx,sy=y+yy;
+    out[size_t(yy)*ww+xx]=(sx>=0&&sy>=0&&sx<w&&sy<h)?
+      pixel[size_t(sy)*w+sx]:0;
+   }
+ }
  void drawPixel(int x,int y,uint16_t c){
   if(x>=0&&x<w&&y>=0&&y<h)pixel[size_t(y)*w+x]=c;
  }
