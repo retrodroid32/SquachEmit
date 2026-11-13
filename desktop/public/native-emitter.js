@@ -60,7 +60,8 @@
     const all=Array.isArray(cases)?cases:[];
     const byId=new Map(all.map(c=>[c.id,c])),groups=CATEGORIES.map(()=>[]);
     for(const item of all)groups[categoryFor(item)].push(item);
-    for(const group of groups)group.sort((a,b)=>a.id.localeCompare(b.id,'en'));
+    // C++ native deviceCategoryCaseAtRank uses strcmp (ASCII byte order).
+    for(const group of groups)group.sort((a,b)=>a.id<b.id?-1:a.id>b.id?1:0);
     return {byId,groups,count:all.length};
   }
   function P(ctx){
