@@ -236,7 +236,8 @@
       resetRole(role);
       mirrorNote(role,'USB disconnected; last real frame retained.');
     }
-    if(role==='emitter')get('dc-baud-select').value=String(state.emitterBaud);
+    if(role==='emitter'&&document.activeElement!==get('dc-baud-select'))
+      get('dc-baud-select').value=String(state.emitterBaud);
   }
   function refreshState(){
     const state=api.getState();
@@ -387,8 +388,11 @@
     if(action==='mirror-frame'){
       if(!mirrors[role].active)await startMirror(role);
       else{
-        const s=mirrors[role];cancelFrameTimers(role);
-        if(s.waiting){info(role,'Current LCD frame is still being transmitted.');return;}
+        const s=mirrors[role];
+        if(s.waiting){
+          info(role,'Current LCD frame is still being transmitted.');return;
+        }
+        cancelFrameTimers(role);
         await requestMirrorFrame(role);
       }
       return;
