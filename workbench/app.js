@@ -693,7 +693,13 @@
       append(role,'[serial line too long; discarded incomplete row]\n');
     }
     lines.forEach(function(line){
+      if(desktopMode&&role==='emitter'&&line.startsWith('UI ')){
+        // Tiny canonical view-model records; PC does all drawing locally.
+        desktopEvent('native-ui',{role:role,line:line});
+        return;
+      }
       if(desktopMode&&line.startsWith('MIRROR ')){
+        // SquachWatch receiver still uses its legacy framebuffer mode.
         desktopEvent('mirror',{role:role,line:line});
         return;
       }
@@ -941,6 +947,7 @@
       });
       cases=data;
       cases.sort(function(a,b){return a.id.localeCompare(b.id);});
+      desktopEvent('catalog',{cases:cases});
       ui.caseSelect.replaceChildren(option('','Choose a test case…'));
       cases.forEach(function(c){
         ui.caseSelect.appendChild(option(c.id,core.signalName(c)+'  ['+c.id+']'));
@@ -1120,12 +1127,12 @@
         return sendReceiver(value);
       }
       if(role==='emitter'){
-        if(!/^(STATUS|IDENTITY|LIST|HELP|COLORS|STOP|MIRROR (?:ON|OFF|DIAG|FRAME(?: [0-9]{1,10})?|BAUD (?:115200|2000000)|TOUCH [0-9]{1,3} [0-9]{1,3} (?:DOWN|MOVE|UP)))$/.test(value))
+        if(!/^(STATUS|IDENTITY|LIST|HELP|COLORS|STOP|UI (?:ON|OFF|GET|TOUCH [0-9]{1,3} [0-9]{1,3} (?:DOWN|MOVE|UP)))$/.test(value))
           return Promise.resolve(false);
         // Screen pixels may still stream from the independent emitter USB.
         // Touch commands are blocked during unattended batches.
         if(batch.active&&value!=='STATUS'&&value!=='STOP'&&
-           !/^MIRROR (?:ON|OFF|FRAME(?: [0-9]{1,10})?)$/.test(value))
+           !/^UI (?:ON|OFF|GET)$/.test(value))
           return Promise.resolve(false);
         if(value==='STOP'){ui.stopCase.click();return Promise.resolve(true);}
         return sendEmitter(value);
