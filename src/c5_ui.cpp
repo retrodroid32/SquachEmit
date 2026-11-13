@@ -136,7 +136,8 @@ void render(const char* active,uint32_t remaining,bool suite){
     deviceCaption(kScenarios[index],name,sizeof(name));
     text(11,y+5,name,WHITE);
     char id[37]={0};
-    std::snprintf(id,sizeof(id),"%s",kScenarios[index].id);
+    std::snprintf(id,sizeof(id),"%s%s",kScenarios[index].id,
+                  sqeStarts(kScenarios[index].id,"OUI-")?" NO RID":"");
     text(11,y+17,id,index==selected?CYAN:DIM);
   }
   char pg[24];
