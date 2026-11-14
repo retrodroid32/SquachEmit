@@ -17,8 +17,10 @@ namespace {
 constexpr int kW=320,kH=240;
 constexpr int kFooterY=214,kFooterH=23;
 constexpr int kMenuTop=43,kMenuStep=39,kCasesTop=51,kCasesStep=36;
-constexpr uint16_t kBg=0x0801,kTaskbar=0x0803,kPurple=0xAC1F;
-constexpr uint16_t kCyan=0x07FF,kPink=0xF96F,kVaporPink=0xFB99;
+constexpr uint16_t kBg=0x0801,kTaskbar=0x0803;
+uint16_t kPurple=0xAC1F;
+uint16_t kCyan=0x07FF,kPink=0xF96F;
+constexpr uint16_t kVaporPink=0xFB99;
 constexpr uint16_t kVaporPurple=0xBB5F,kYellow=0xFFD2,kGreen=0x07E0;
 constexpr uint16_t kWhite=0xFFFF,kMuted=0x7393,kInk=0x1801;
 constexpr uint16_t kFurDark=0x38C0,kFurMain=0x5941,kFurLight=0x9326;
@@ -43,7 +45,8 @@ uint8_t historyHead=0,historyCount=0;
 uint32_t lastListsAt=0;
 bool playlistRunning=false,playlistPaused=false;
 unsigned playlistIndex=0,playlistTotal=0;
-uint8_t brightnessLevel=2,animationLevel=1,screenTimeout=0;
+uint8_t brightnessLevel=2,animationLevel=1,screenTimeout=0,themeLevel=0,fontMode=1;
+bool settingsMore=false;
 bool pcControl=false,screenDimmed=false;
 unsigned resetReasonCode=0;
 uint32_t lastTouchActivity=0,lastDeviceAt=0;
@@ -101,6 +104,15 @@ void titleBar(){
   label(123,3,"SQUACHEMIT",kWhite);
   if(pcControl)label(281,3,"PC",kGreen);
 }
+void applyTheme(){
+  static const uint16_t palette[][3]={
+    {0xAC1F,0x07FF,0xF96F}, // original vapor purple/cyan/pink
+    {0x04D3,0x07FF,0x05F3}, // ocean teal/blue
+    {0xB300,0xFE00,0xF920}  // sunset amber/orange
+  };
+  const uint8_t n=themeLevel<3?themeLevel:0;
+  kPurple=palette[n][0];kCyan=palette[n][1];kPink=palette[n][2];
+}
 void applyBrightness(){
   const uint8_t levels[]={64,150,255};
   ledcWrite(6,screenDimmed?32:levels[brightnessLevel]);
@@ -110,6 +122,8 @@ void persistUiSettings(){
     prefs.putUChar("bright",brightnessLevel);
     prefs.putUChar("anim",animationLevel);
     prefs.putUChar("timeout",screenTimeout);
+    prefs.putUChar("theme",themeLevel);
+    prefs.putUChar("font",fontMode);
     prefs.end();
   }else Serial.println("WARN,SETTINGS_SAVE_UNAVAILABLE");
 }
@@ -462,7 +476,17 @@ void evidenceScreen(){
 }
 void settingsScreen(){
   lcd.fillScreen(kBg);titleBar();
-  label(10,24,"HANDHELD SETTINGS",kVaporPink,2);
+  label(10,24,settingsMore?"SETTINGS / DISPLAY":"HANDHELD SETTINGS",kVaporPink,2);
+  if(settingsMore){
+    char line[64];
+    const char* theme[]={"VAPOR","OCEAN","SUNSET"};
+    snprintf(line,sizeof(line),"THEME: %s",theme[themeLevel]);
+    menuRow(46,line,"TAP TO CYCLE COLORS");
+    menuRow(85,fontMode?"TEXT SIZE: STANDARD":"TEXT SIZE: COMPACT","TAP TO CHANGE LIST TYPE");
+    menuRow(124,"SYNTHETIC IDENTITY","SEE LAST ACTUALLY TRANSMITTED MAC");
+    menuRow(163,"RECOVERY / RESET INFO","SHOW RESET CODE - NO ERASE");
+    footer("BACK","< PREV","HELP");return;
+  }
   char line[50];
   const char* br[]={"DIM","NORMAL","BRIGHT"};
   snprintf(line,sizeof(line),"BACKLIGHT: %s",br[brightnessLevel]);
@@ -475,7 +499,7 @@ void settingsScreen(){
   menuRow(124,line,"WAKE TOUCH NEVER STARTS A TEST");
   snprintf(line,sizeof(line),"PANEL INVERT: %s",panelInverted?"ON":"OFF");
   menuRow(163,line,"BOARD-SPECIFIC DISPLAY POLARITY");
-  footer("BACK","IDENTITY","HELP");
+  footer("BACK","MORE >","HELP");
 }
 void identityScreen(){
   lcd.fillScreen(kBg);titleBar();
@@ -543,7 +567,7 @@ void menuRow(int y,const char* title,const char* sub,bool chosen){
   // no rounded glossy cards and no crowded filter pills.
   lcd.fillRect(4,y+1,kW-10,34,chosen?0x2825:kBg);
   lcd.drawRect(4,y+1,kW-10,34,chosen?kPink:kPurple);
-  fit(15,y+4,title,280,chosen?kWhite:kCyan,2);
+  fit(15,y+4,title,280,chosen?kWhite:kCyan,fontMode?2:1);
   if(sub)fit(15,y+23,sub,282,kMuted,1);
 }
 
@@ -831,13 +855,20 @@ Cyd32UiAction touchEvidence(int x,int y){
 }
 Cyd32UiAction touchSettings(int x,int y){
   if(y>=kFooterY){
-    if(x<108)screen=Screen::Diagnostics;
-    else if(x<213)screen=Screen::Identity;
-    else screen=Screen::Help;
+    if(x<108){screen=Screen::Diagnostics;settingsMore=false;}
+    else if(x<213){settingsMore=!settingsMore;}
+    else {screen=Screen::Help;settingsMore=false;}
     redraw=true;return Cyd32UiAction::None;
   }
   if(y>=46&&y<201){
     const int row=(y-46)/39;
+    if(settingsMore){
+      if(row==0){themeLevel=(themeLevel+1)%3;applyTheme();persistUiSettings();}
+      else if(row==1){fontMode=(fontMode+1)%2;persistUiSettings();}
+      else if(row==2)screen=Screen::Identity;
+      else if(row==3)screen=Screen::Recovery;
+      redraw=true;return Cyd32UiAction::None;
+    }
     if(row==0){brightnessLevel=(brightnessLevel+1)%3;applyBrightness();persistUiSettings();}
     else if(row==1){animationLevel=(animationLevel+1)%3;persistUiSettings();}
     else if(row==2){screenTimeout=(screenTimeout+1)%3;persistUiSettings();}
@@ -963,12 +994,17 @@ void cyd32UiBegin(){
     brightnessLevel=prefs.getUChar("bright",2);
     animationLevel=prefs.getUChar("anim",1);
     screenTimeout=prefs.getUChar("timeout",0);
+    themeLevel=prefs.getUChar("theme",0);
+    fontMode=prefs.getUChar("font",1);
     prefs.end();
   }
   if(durationSeconds<3 || durationSeconds>30)durationSeconds=12;
   if(brightnessLevel>2)brightnessLevel=2;
   if(animationLevel>2)animationLevel=1;
   if(screenTimeout>2)screenTimeout=0;
+  if(themeLevel>2)themeLevel=0;
+  if(fontMode>1)fontMode=1;
+  applyTheme();
   if(prefs.begin("sqemitfav",true)){
     if(prefs.getBytesLength("fav")==sizeof(favBits))prefs.getBytes("fav",favBits,sizeof(favBits));
     prefs.end();
@@ -1189,9 +1225,10 @@ void cyd32UiStreamState(const char* activeId,uint32_t remainingMs,
   if((screen==Screen::Settings||screen==Screen::Help||screen==Screen::Recovery)&&
      (force||now-lastDeviceAt>=1000u)){
     lastDeviceAt=now;
-    Serial.printf("UI DEVICE 1 %u %u %u %u %u %u %u\n",
+    Serial.printf("UI DEVICE 1 %u %u %u %u %u %u %u %u %u %u\n",
       brightnessLevel,animationLevel,screenTimeout,panelInverted?1u:0u,
-      pcControl?1u:0u,resetReasonCode,(unsigned)helpPage);
+      pcControl?1u:0u,resetReasonCode,(unsigned)helpPage,
+      (unsigned)themeLevel,(unsigned)fontMode,settingsMore?1u:0u);
   }
   if(screen==Screen::Identity&&(force||now-lastDeviceAt>=1000u)){
     lastDeviceAt=now;

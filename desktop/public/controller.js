@@ -572,12 +572,14 @@
         local.model.filter=local.filterPending;local.filterPending=null;renderEmitter();
       }return;
     }
-    const device=/^UI DEVICE 1 ([0-2]) ([0-2]) ([0-2]) ([01]) ([01]) (\d{1,3}) ([0-2])$/.exec(line);
+    const device=/^UI DEVICE 1 ([0-2]) ([0-2]) ([0-2]) ([01]) ([01]) (\d{1,3}) ([0-2]) ([0-2]) ([01]) ([01])$/.exec(line);
     if(device){
       if(local.model&&s.active&&s.ready){
         local.model.device={brightness:Number(device[1]),animation:Number(device[2]),
           timeout:Number(device[3]),inverted:device[4]==='1',pc:device[5]==='1',
-          reset:Number(device[6])};local.model.helpPage=Number(device[7]);renderEmitter();
+          reset:Number(device[6]),theme:Number(device[8]),font:Number(device[9]),
+          settingsMore:device[10]==='1'};
+        local.model.helpPage=Number(device[7]);renderEmitter();
       }return;
     }
     const identity=/^UI IDENTITY 1 ([A-Z0-9_-]{2,100}|NONE) ((?:[A-Fa-f0-9]{2}:){5}[A-Fa-f0-9]{2}|UNKNOWN)$/.exec(line);

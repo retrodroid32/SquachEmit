@@ -285,6 +285,9 @@
     const p=P(ctx),catalog=lib||prepare([]);
     if(ctx.canvas){ctx.canvas.width=W;ctx.canvas.height=H;}
     ctx.imageSmoothingEnabled=false;
+    const theme=state.device?.theme??0;
+    const palette=[[0xAC1F,0x07FF,0xF96F],[0x04D3,0x07FF,0x05F3],[0xB300,0xFE00,0xF920]][theme]||[0xAC1F,0x07FF,0xF96F];
+    [C.purple,C.cyan,C.pink]=palette;
     p.fill(0,0,W,H,C.bg);
     const screen=state.calibrated?state.screen:'CALIBRATION';
     if(screen==='CALIBRATION'){
@@ -456,13 +459,22 @@
     }
     if(screen==='SETTINGS'){
       const br=['DIM','NORMAL','BRIGHT'],an=['SLOW','NORMAL','FAST'],tm=['OFF','30 SECONDS','60 SECONDS'];
-      const d=state.device||{brightness:2,animation:1,timeout:0,inverted:false};
+      const d=state.device||{brightness:2,animation:1,timeout:0,inverted:false,theme:0,font:1,settingsMore:false};
+      if(d.settingsMore){
+        const themes=['VAPOR','OCEAN','SUNSET'];
+        p.text(10,24,'SETTINGS / DISPLAY',C.vaporPink,2);
+        menuRow(p,46,'THEME: '+themes[d.theme],'TAP TO CYCLE COLORS');
+        menuRow(p,85,d.font?'TEXT SIZE: STANDARD':'TEXT SIZE: COMPACT','TAP TO CHANGE LIST TYPE');
+        menuRow(p,124,'SYNTHETIC IDENTITY','SEE LAST ACTUALLY TRANSMITTED MAC');
+        menuRow(p,163,'RECOVERY / RESET INFO','SHOW RESET CODE - NO ERASE');
+        footer(p,'BACK','< PREV','HELP');return true;
+      }
       p.text(10,24,'HANDHELD SETTINGS',C.vaporPink,2);
       menuRow(p,46,'BACKLIGHT: '+br[d.brightness],'TAP TO CYCLE BRIGHTNESS');
       menuRow(p,85,'ANIMATION: '+an[d.animation],'TAP TO CYCLE FRAME RATE');
       menuRow(p,124,'IDLE DIM: '+tm[d.timeout],'WAKE TOUCH NEVER STARTS A TEST');
       menuRow(p,163,'PANEL INVERT: '+(d.inverted?'ON':'OFF'),'BOARD-SPECIFIC DISPLAY POLARITY');
-      footer(p,'BACK','IDENTITY','HELP');return true;
+      footer(p,'BACK','MORE >','HELP');return true;
     }
     if(screen==='IDENTITY'){
       const chosen=catalog.byId.get(state.selected),id=state.identity;
