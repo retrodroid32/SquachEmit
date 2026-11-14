@@ -10,17 +10,17 @@
   },
   "builds": {
     "cyd32-st7798": {
-      "title": "SquachEmit v1.1.0 CYD 3.2 LAB — 172 Cases · PC Native UI R7",
+      "title": "SquachEmit v1.1.0 CYD 3.2 — R7.3 Native UI LAB (172 Cases)",
       "version": "v1.1.0 MAINLINE · 172 cases",
-      "summary": "LAB R7 for CYD 3.2: no TFT GRAM reads, RGB565 screenshots, frame streaming or 2Mbps UART handoff. Firmware sends bounded UI STATE records at 115200 describing menu, category, selected case, duration, transmitter, countdown and animation. Windows Workbench R7 development build draws the 320×240 interface and Squachy locally and sends UI TOUCH to native firmware hit-testing. All 172 timed RF cases and exact-MAC LOG scoring remain. Visual pixel parity and physical touch still require hardware tests. SHA-256 flash verification required. Production v1.1.0 unchanged.",
+      "summary": "R7.3-compatible SquachEmit CYD 3.2 ST7798 experimental device firmware: 172 synthetic test cases, UI ON/OFF/GET, UI READY/STATE and remote UI TOUCH at 115200 baud for the Windows Workbench native display. Matches R7.3 Windows EXE; older public firmware lacks UI support. SHA-256 verified flash segments. Hardware validation pending; not a production release.",
       "highlights": [
-        "No LCD capture or framebuffer reads; desktop renders SquachEmit UI entirely from device state.",
-        "UI ON/OFF/GET and UI READY/STATE over 115200 UART; menu, selection, TX time, countdown and physical touch synchronized.",
-        "PC Canvas2D draws firmware synthwave scene, menu controls, procedural Squachy and all 10 device categories.",
-        "Mouse click/drag/hold sends UI TOUCH to native firmware hit testing, just like resistive panel input.",
-        "Lost serial/UI state hides the desktop view rather than displaying stale or invented live content.",
-        "Workbench R7 auto-pauses SquachWatch receiver LCD mirror to restore exact-MAC LOG for RF tests.",
-        "172 synthetic BLE/Wi-Fi cases, SHA-256 flashing layout; exact visuals and remote touch pending hardware verification."
+        "CYD 3.2 device firmware for the R7.3 Windows EXE native UI display; NOT a Windows-only update.",
+        "Supports UI ON, UI OFF, UI GET, UI TOUCH and UI READY/STATE at 115200 baud.",
+        "Compatible with PC Canvas2D screen rendering, synchronized menus, case selection and active transmission countdown.",
+        "No LCD pixel readback or screenshot streaming is required for SquachEmit native live view.",
+        "Keep real USB transmitter connected to Windows Workbench R7.3 to use Start live view.",
+        "172 synthetic BLE/Wi-Fi cases, bounded transmissions and STOP; physical device must be verified.",
+        "This LAB firmware is device-specific; do not flash it onto a SquachWatch receiver."
       ]
     },
     "c5-waveshare-28": {
