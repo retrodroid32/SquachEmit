@@ -547,6 +547,15 @@
       return;
     }
     if(/^UI ERROR/.test(line)){info('emitter',line);return;}
+    const playlist=/^UI PLAYLIST 1 ([01]) ([01]) (\d{1,3}) (\d{1,3})$/.exec(line);
+    if(playlist){
+      if(local.model&&s.active&&s.ready){
+        local.model.playlistRunning=playlist[1]==='1';
+        local.model.playlistPaused=playlist[2]==='1';
+        local.model.playlistIndex=Number(playlist[3]);
+        local.model.playlistTotal=Number(playlist[4]);renderEmitter();
+      }return;
+    }
     const favorite=/^UI FAVORITE 1 ([A-Z0-9_-]{2,100}|NONE) ([01])$/.exec(line);
     if(favorite){
       if(local.model&&s.active&&s.ready){
@@ -588,6 +597,12 @@
       if(local.model.history)state.history=local.model.history;
       if(local.model.favoriteCount!==undefined)state.favoriteCount=local.model.favoriteCount;
       if(local.model.selected===state.selected&&local.model.favorite!==undefined)state.favorite=local.model.favorite;
+      if(local.model.playlistRunning!==undefined){
+        state.playlistRunning=local.model.playlistRunning;
+        state.playlistPaused=local.model.playlistPaused;
+        state.playlistIndex=local.model.playlistIndex;
+        state.playlistTotal=local.model.playlistTotal;
+      }
     }
     local.model=state;local.receivedAt=Date.now();
     mirrorNote('emitter','PC-DRAWN UI · '+state.screen+' · '+state.selected+

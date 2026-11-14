@@ -311,12 +311,15 @@
       p.ring(9,22,302,40,3,C.purple);
       const error=state.error!=='NONE',starting=state.starting!=='NONE';
       const phrase=error?'WIFI START FAILED':starting?'STARTING WIFI TRANSMISSION':
-        active?'RF LAB TRANSMITTING':state.suite?'TEST SUITE RUNNING':'READY TO TEST. PICK A PROFILE.';
+        active?'RF LAB TRANSMITTING':state.playlistRunning?'FAVORITES PLAYLIST':
+        state.suite?'TEST SUITE RUNNING':'READY TO TEST. PICK A PROFILE.';
       p.text(16,25,phrase,error?C.pink:starting?C.yellow:C.white,2,285);
       p.text(16,47,error?state.error:deviceName(chosen),error?C.yellow:
         starting?C.yellow:active?C.pink:C.cyan,1,288);
       p.fill(0,183,320,29,C.bg);p.fill(6,182,308,1,C.purple);
-      p.text(12,186,active?'ON AIR':starting?'STARTING':state.suite?'SUITE':'LAB READY',
+      p.text(12,186,active?'ON AIR':starting?'STARTING':
+        state.playlistRunning?(state.playlistPaused?'PAUSED':'PLAYLIST'):
+        state.suite?'SUITE':'LAB READY',
         active?C.pink:starting?C.yellow:C.green);
       p.outline(93,183,137,15,C.purple);
       p.text(99,186,'TX TIME',C.cyan);p.text(150,186,state.duration+'s [SET]',C.yellow);
@@ -326,7 +329,8 @@
       p.fill(6,198,308,1,C.purple);p.text(12,201,'PROFILE',C.vaporPink);
       p.text(66,200,deviceName(catalog.byId.get(state.selected)),C.white,1,164);
       p.text(245,201,'DETAILS >',C.cyan);
-      footer(p,'TESTS',active?'STOP':'RUN','SUITE');
+      footer(p,'TESTS',(active||state.suite||state.playlistRunning)?'STOP':'RUN',
+        state.playlistRunning?(state.playlistPaused?'RESUME':'PAUSE'):'SUITE');
       return true;
     }
     title(p);
@@ -384,6 +388,7 @@
     }
     if(screen==='FAVORITES'){
       p.text(10,25,'FAVORITE TEST PROFILES',C.vaporPink,2);
+      if(state.favoriteCount)p.text(244,25,'RUN LIST>',C.cyan);
       const list=state.favorites||[];
       for(let row=0;row<4;row++){
         const id=list[row],c=id&&catalog.byId.get(id);
@@ -408,7 +413,8 @@
       button(p,12,85,83,54,'- 1 SEC');button(p,225,85,83,54,'+ 1 SEC');
       p.fill(96,82,128,65,C.bg);p.text(145,95,state.duration,C.white,2);
       p.text(139,126,'SECONDS',C.muted);
-      p.text(21,164,'AUTO STOP / 3 TO 30 SECONDS',C.green);
+      button(p,12,155,92,29,'3 SEC');button(p,114,155,92,29,'10 SEC');
+      button(p,216,155,92,29,'30 SEC');
       p.text(26,191,'SAVED FOR THE NEXT TEST',C.muted);
       footer(p,'BACK','RESET 12','DONE');
       return true;

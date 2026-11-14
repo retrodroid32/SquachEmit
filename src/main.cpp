@@ -41,6 +41,11 @@ static uint32_t g_lastRotation = 0;
 static uint8_t g_remotePart = 0;
 static uint32_t g_caseNumber = 0;
 static bool g_suite = false;
+#if defined(SQE_CYD32)
+static bool g_playlist=false,g_playlistPaused=false,g_playlistPauseRequested=false;
+static size_t g_playlistNext=0;
+static uint32_t g_playlistAt=0;
+#endif
 static size_t g_suiteNext = 0;
 static uint32_t g_suiteAt = 0;
 static String g_line;
@@ -368,6 +373,9 @@ static void finish(const char* status = "ok") {
 
 static void cancelAll() {
   g_suite = false;
+#if defined(SQE_CYD32)
+  g_playlist=false;g_playlistPaused=false;g_playlistPauseRequested=false;
+#endif
   finish("stopped");
   Serial.println("STATE,IDLE");
 }
@@ -587,6 +595,9 @@ static void command(String cmd) {
       duration = (uint32_t)sec * 1000UL;
     }
     g_suite = false;
+#if defined(SQE_CYD32)
+    g_playlist=false;g_playlistPaused=false;g_playlistPauseRequested=false;
+#endif
     startScenario(s, duration);
     return;
   }
@@ -633,6 +644,9 @@ void loop() {
   if (g_active && now - g_started >= g_duration) {
     finish();
     g_suiteAt = millis() + kSuiteGapMs;
+#if defined(SQE_CYD32)
+    g_playlistAt = millis() + 3000UL;
+#endif
   }
   if (g_suite && !g_active && (int32_t)(millis() - g_suiteAt) >= 0) {
     if (g_suiteNext >= kScenarioCount) {
@@ -643,13 +657,33 @@ void loop() {
       Serial.println("STATE,SUITE_ABORTED");
     }
   }
+#if defined(SQE_CYD32)
+  if(g_playlist && !g_active){
+    if(g_playlistPauseRequested){
+      g_playlistPaused=true;g_playlistPauseRequested=false;
+      Serial.println("STATE,PLAYLIST_PAUSED");
+    }
+    if(!g_playlistPaused&&(int32_t)(millis()-g_playlistAt)>=0){
+      const Scenario* next=cyd32UiFavoriteAt(g_playlistNext);
+      if(!next){g_playlist=false;Serial.println("STATE,PLAYLIST_DONE");}
+      else{
+        ++g_playlistNext;
+        if(!startScenario(next,selectedDurationMs())){
+          g_playlist=false;Serial.println("STATE,PLAYLIST_ABORTED");
+        }
+      }
+    }
+  }
+#endif
 #if defined(SQE_WAVESHARE_C5) || defined(SQE_CYD32)
   const uint32_t current = millis();
   const uint32_t remaining = (g_active && g_duration > current-g_started)
     ? g_duration-(current-g_started) : 0;
 #if defined(SQE_CYD32)
+  cyd32UiSetPlaylistState(g_playlist,g_playlistPaused,(unsigned)g_playlistNext,
+                         (unsigned)cyd32UiFavoriteCount());
   const Cyd32UiAction action = cyd32UiTick(
-      g_active ? g_active->id : nullptr, remaining, g_suite);
+      g_active ? g_active->id : nullptr, remaining, g_suite||g_playlist);
   switch(action) {
     case Cyd32UiAction::Run: {
       const Scenario* chosen = cyd32UiSelection();
@@ -657,7 +691,7 @@ void loop() {
         const bool ouiCase=isOuiOnly(chosen);
         Serial.printf("UI,RUN_TAP,%s,%s\n",chosen->id,
               ouiCase?"WIFI_OUI":chosen->kind==Kind::WifiRemoteId?"WIFI_RID":"OTHER");
-        g_suite=false;
+        g_suite=false;g_playlist=false;g_playlistPaused=false;g_playlistPauseRequested=false;
         if(chosen->kind==Kind::WifiRemoteId || ouiCase) {
           cyd32UiSetRadioStarting(chosen->id);
           // Render the accepted touch before the potentially blocking Wi-Fi
@@ -673,6 +707,26 @@ void loop() {
       break;
     }
     case Cyd32UiAction::Stop: cancelAll(); break;
+    case Cyd32UiAction::PlaylistStart:
+      cancelAll();
+      if(cyd32UiFavoriteCount()){
+        g_playlist=true;g_playlistNext=0;g_playlistAt=millis()+200;
+        Serial.println("STATE,PLAYLIST_START");
+      }
+      break;
+    case Cyd32UiAction::PlaylistPause:
+      if(g_playlist){
+        if(g_active)g_playlistPauseRequested=true;
+        else {g_playlistPaused=true;Serial.println("STATE,PLAYLIST_PAUSED");}
+      }
+      break;
+    case Cyd32UiAction::PlaylistResume:
+      if(g_playlist&&g_playlistPaused){
+        g_playlistPaused=false;g_playlistPauseRequested=false;
+        g_playlistAt=millis()+3000UL;
+        Serial.println("STATE,PLAYLIST_RESUMED");
+      }
+      break;
     case Cyd32UiAction::Suite:
       cancelAll();
       g_suite=true;g_suiteNext=0;g_suiteAt=millis();

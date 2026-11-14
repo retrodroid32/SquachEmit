@@ -2,24 +2,24 @@
   "schema": 1,
   "scenario_count": 172,
   "firmware_sources": {
-    "src": "948f72b06b3ce7aaca51defe013b674615d3a7e9",
-    "include": "e2d2fba8330284a07f875407fb77e8e364d37106",
+    "src": "dd0d411973801615ef83d3b5f419f0d0a8654785",
+    "include": "282dd4f8cd430b9dc6fd2943df8e077d973faa04",
     "lib": "bd0df45f7747bc9971aa4b379a12940dd2d7d98f",
     "SquachEmit.ino": "90b4205813a2f7885bc1e12ce7431eebf7249f45",
     "platformio.ini": "bd67af3ecd6de05f4cef015fe97e17b29ceed574"
   },
   "builds": {
     "cyd32-st7798": {
-      "title": "SquachEmit v1.1.0 CYD 3.2 — R8.2 Favorites + Test History (172 Cases)",
+      "title": "SquachEmit v1.1.0 CYD 3.2 — R8.3 Favorites Playlist + TX Presets (172 Cases)",
       "version": "v1.1.0 MAINLINE · 172 cases",
-      "summary": "R8.2 LAB firmware adds persistent on-device favorites and recent actual transmitter event history to the CYD 3.2 ST7798 UI, with bounded Windows UI FAVS/HISTORY state streams; preserves 172 synthetic cases, existing diagnostics, and SHA-256 flash validation. Test history is transmitter evidence only, not verified receiver detection. Hardware validation pending.",
+      "summary": "R8.3 LAB CYD32 ST7798 adds an attended standalone Favorites Playlist runner with operator PAUSE/RESUME/STOP, bounded 3-second cooldown, on-device saved favorite selection, 3/10/30-second duration presets, and UI PLAYLIST state for Windows parity. Retains 172 synthetic BLE/Wi-Fi test cases, SHA-256 validated flash parts and existing diagnostics. Hardware validation pending; production unchanged.",
       "highlights": [
-        "Favorites saved separately in NVS with explicit operator toggle and safe browse; no automatic RF transmission.",
-        "Recent eight transmitter results with case ID, actual end status and uptime, not fabricated receiver detections.",
-        "Windows native R8 renderer receives bounded Favorites and History records and mirrors physical navigation.",
-        "Existing case Details and Diagnostics screens retained, with touch and 172-case suite.",
-        "No firmware auto-run on boot; STOP remains physically accessible on home screen.",
-        "Hardware-specific CYD3.2 LAB firmware, SHA-256 flasher, unverified on board."
+        "Favorites list can start a bounded standalone on-device test playlist, without a Windows computer.",
+        "Physical STOP cancels active playlist immediately; PAUSE holds at the next safe off-air boundary.",
+        "Explicit operator RESUME enforces 3-second off-air cooldown before another test case.",
+        "Duration page adds 3/10/30-second presets while retaining 3–30 second manual adjustment.",
+        "Windows R8.3 native view reflects playlist and duration controls via actual device state.",
+        "No unattended test on boot; 172 synthetic cases, board-specific LAB and SHA-256 flashing."
       ]
     },
     "c5-waveshare-28": {

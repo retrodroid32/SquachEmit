@@ -1,7 +1,7 @@
 #pragma once
 #include <stdint.h>
 struct Scenario;
-enum class Cyd32UiAction : uint8_t { None, Run, Stop, Suite };
+enum class Cyd32UiAction : uint8_t { None, Run, Stop, Suite, PlaylistStart, PlaylistPause, PlaylistResume };
 // TFT_eSPI + on-board XPT2046, separate NVS touch calibration namespace.
 // Does not access SquachWatch's own settings, except flashing a shared PCB
 // will replace whichever application was installed.
@@ -27,3 +27,8 @@ void cyd32UiStreamState(const char* activeId,uint32_t remainingMs,
 // Inject mouse/pen state into the exact native touchscreen hit-testing path.
 bool cyd32UiRemoteTouch(uint16_t x,uint16_t y,const char* phase);
 void cyd32UiRecordResult(const char* id,const char* status,uint32_t atMs);
+
+// Attended favorites playlist: manual start, bounded cooldown, physical STOP.
+size_t cyd32UiFavoriteCount();
+const Scenario* cyd32UiFavoriteAt(size_t rank);
+void cyd32UiSetPlaylistState(bool running,bool paused,unsigned index,unsigned total);

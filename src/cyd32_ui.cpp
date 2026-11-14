@@ -41,6 +41,8 @@ struct HistoryEntry { char id[56]; char status[20]; uint32_t uptime; };
 HistoryEntry history[8]{};
 uint8_t historyHead=0,historyCount=0;
 uint32_t lastListsAt=0;
+bool playlistRunning=false,playlistPaused=false;
+unsigned playlistIndex=0,playlistTotal=0;
 uint8_t durationSeconds=12; // 3..30s, saved independently of touch calibration
 bool remoteDown=false;
 uint16_t remoteX=0,remoteY=0;
@@ -258,7 +260,8 @@ void speechBubble(const char* active,bool suite){
   const bool starting=!(active&&*active) && !failed && radioStartingProfile[0];
   const char* phrase=failed?"WIFI START FAILED":
       starting?"STARTING WIFI TRANSMISSION":
-      (active&&*active)?"RF LAB TRANSMITTING":suite?"TEST SUITE RUNNING":
+      (active&&*active)?"RF LAB TRANSMITTING":playlistRunning?"FAVORITES PLAYLIST":
+      suite?"TEST SUITE RUNNING":
       "READY TO TEST. PICK A PROFILE.";
   fit(16,25,phrase,285,failed?kPink:(starting?kYellow:kWhite),2);
   char friendly[58]={0};
@@ -274,7 +277,8 @@ void statusStrip(const char* active,bool suite){
   lcd.fillRect(0,183,320,29,kBg);
   lcd.drawFastHLine(6,182,308,kPurple);
   const bool starting=!(active&&*active) && radioStartingProfile[0];
-  label(12,186,active&&*active?"ON AIR":starting?"STARTING":suite?"SUITE":"LAB READY",
+  label(12,186,active&&*active?"ON AIR":starting?"STARTING":
+        playlistRunning?(playlistPaused?"PAUSED":"PLAYLIST"):suite?"SUITE":"LAB READY",
         active&&*active?kPink:(starting?kYellow:kGreen));
   // Time control is an explicit tap target; it does not overlap the countdown.
   lcd.drawRect(93,183,137,15,kPurple);
@@ -310,7 +314,9 @@ void durationScreen(){
   button(12,85,83,54,"- 1 SEC");
   button(225,85,83,54,"+ 1 SEC");
   durationValue();
-  label(21,164,"AUTO STOP  /  3 TO 30 SECONDS",kGreen);
+  button(12,155,92,29,"3 SEC");
+  button(114,155,92,29,"10 SEC");
+  button(216,155,92,29,"30 SEC");
   label(26,191,"SAVED FOR THE NEXT TEST",kMuted);
   footer("BACK","RESET 12","DONE");
 }
@@ -335,7 +341,8 @@ void homeScreen(const char* active,uint32_t remaining,bool suite){
   // Status is in the bottom strip: no huge headline over the mascot.
   statusStrip(active,suite);
   if(emitting)countdownOnly((remaining+999)/1000);
-  footer("TESTS",emitting?"STOP":"RUN","SUITE");
+  footer("TESTS",(emitting||playlistRunning||suite)?"STOP":"RUN",
+         playlistRunning?(playlistPaused?"RESUME":"PAUSE"):"SUITE");
 }
 
 
@@ -429,6 +436,7 @@ void toggleFavorite(){
 void favoritesScreen(){
   lcd.fillScreen(kBg);titleBar();
   label(10,25,"FAVORITE TEST PROFILES",kVaporPink,2);
+  if(favoriteCount())label(244,25,"RUN LIST>",kCyan);
   const size_t count=favoriteCount();
   for(size_t row=0;row<4;++row){
     const Scenario* c=favoriteAt(favoritesPage*4+row);
@@ -543,8 +551,8 @@ void startCal(){
 Cyd32UiAction touchHome(int x,int y,bool active,bool suite){
   if(y>=kFooterY){
     if(x<108){screen=Screen::Categories;redraw=true;return Cyd32UiAction::None;}
-    if(x<213)return active?Cyd32UiAction::Stop:Cyd32UiAction::Run;
-    return Cyd32UiAction::Suite;
+    if(x<213)return (active||suite||playlistRunning)?Cyd32UiAction::Stop:Cyd32UiAction::Run;
+    return playlistRunning?(playlistPaused?Cyd32UiAction::PlaylistResume:Cyd32UiAction::PlaylistPause):Cyd32UiAction::Suite;
   }
   if(!active && !suite && x>=230 && y>=199 && y<214){
     screen=Screen::Details;redraw=true;return Cyd32UiAction::None;
@@ -607,6 +615,11 @@ Cyd32UiAction touchDuration(int x,int y){
     if(x>=12 && x<95 && durationSeconds>3)setDuration(durationSeconds-1);
     if(x>=225 && x<308 && durationSeconds<30)setDuration(durationSeconds+1);
   }
+  if(y>=155&&y<184){
+    if(x>=12&&x<104)setDuration(3);
+    else if(x>=114&&x<206)setDuration(10);
+    else if(x>=216&&x<308)setDuration(30);
+  }
   return Cyd32UiAction::None;
 }
 Cyd32UiAction touchDetails(int x,int y,bool active){
@@ -630,6 +643,9 @@ Cyd32UiAction touchDiagnostics(int x,int y){
   return Cyd32UiAction::None;
 }
 Cyd32UiAction touchFavorites(int x,int y){
+  if(x>=220&&y>=15&&y<44&&favoriteCount()){
+    screen=Screen::Home;redraw=true;return Cyd32UiAction::PlaylistStart;
+  }
   if(y>=kFooterY){
     if(x<108){screen=Screen::Details;redraw=true;}
     else if(x<213){if(favoritesPage>0){--favoritesPage;redraw=true;}}
@@ -851,6 +867,10 @@ void cyd32UiStreamState(const char* activeId,uint32_t remainingMs,
     radioStartingProfile[0]?radioStartingProfile:"NONE",
     radioStartError[0]?radioStartError:"NONE",
     (unsigned long)petMs,(unsigned long)now);
+  if((force||now-lastListsAt>=1000u)&&playlistRunning){
+    Serial.printf("UI PLAYLIST 1 %u %u %u %u\n",
+      playlistRunning?1u:0u,playlistPaused?1u:0u,playlistIndex,playlistTotal);
+  }
   if(screen==Screen::Details&&(force||now-lastListsAt>=1000u)){
     lastListsAt=now;
     const bool fav=chosen&&((favBits[selected/8]>>(selected%8))&1u);
@@ -883,6 +903,14 @@ void cyd32UiStreamState(const char* activeId,uint32_t remainingMs,
         (unsigned)Serial.availableForWrite(),(unsigned long)(now/1000UL),
         previousActive[0]?1u:0u);
     }
+  }
+}
+size_t cyd32UiFavoriteCount(){return favoriteCount();}
+const Scenario* cyd32UiFavoriteAt(size_t rank){return favoriteAt(rank);}
+void cyd32UiSetPlaylistState(bool running,bool paused,unsigned index,unsigned total){
+  if(playlistRunning!=running||playlistPaused!=paused||playlistIndex!=index||playlistTotal!=total){
+    playlistRunning=running;playlistPaused=paused;playlistIndex=index;playlistTotal=total;
+    if(screen==Screen::Home)redraw=true;
   }
 }
 void cyd32UiRecordResult(const char* id,const char* status,uint32_t atMs){
