@@ -2,32 +2,33 @@
   "schema": 1,
   "scenario_count": 172,
   "firmware_sources": {
-    "src": "711005232399ff711c56727cd75edeb340048f23",
-    "include": "08cc4509ef16c3f47ec2224b236b1fd755ca0c26",
+    "src": "ed59fa0e51d12c3a3e1e6dfd7adb0256f00d70a3",
+    "include": "49ba54c0f7631cfe208d6ab98bc318c4524cfcd2",
     "lib": "bd0df45f7747bc9971aa4b379a12940dd2d7d98f",
     "SquachEmit.ino": "90b4205813a2f7885bc1e12ce7431eebf7249f45",
     "platformio.ini": "bd67af3ecd6de05f4cef015fe97e17b29ceed574"
   },
   "builds": {
     "cyd32-st7798": {
-      "title": "SquachEmit v1.1.0 CYD 3.2 — 172 Synthetic Signals + Device-First Names",
+      "title": "SquachEmit v1.1.0 CYD 3.2 LAB — 172 Cases · PC Native UI R7",
       "version": "v1.1.0 MAINLINE · 172 cases",
-      "summary": "LAB candidate based on v1.1.0 firmware for CYD 3.2 ST7798: 172 synthetic BLE/Wi-Fi test cases including 27 UAS vendor-prefix beacons, saved 3–30-second TX-time editor, reduced touchscreen flashing, and animated Squachy. Browser installer verifies all four flash segments by SHA-256. Actual CYD hardware was flashed during development; no device certification. Draft PR #36 displays recognizable per-scenario device names in the native test library, active signal and selected status. Original RUN IDs, payloads and receiver categories stay unchanged.",
+      "summary": "LAB R7 for CYD 3.2: no TFT GRAM reads, RGB565 screenshots, frame streaming or 2Mbps UART handoff. Firmware sends bounded UI STATE records at 115200 describing menu, category, selected case, duration, transmitter, countdown and animation. Windows Workbench R7 development build draws the 320×240 interface and Squachy locally and sends UI TOUCH to native firmware hit-testing. All 172 timed RF cases and exact-MAC LOG scoring remain. Visual pixel parity and physical touch still require hardware tests. SHA-256 flash verification required. Production v1.1.0 unchanged.",
       "highlights": [
-        "Device-first labels on all 172 transmitter signals, including Flipper Zero UUID/name, negative controls and manufacturer OUI cases; stable technical IDs preserved.",
-        "172 bounded synthetic BLE/Wi-Fi scenarios; per-case locally administered MAC IDs.",
-        "TX TIME [SET] with +/- 1 second, RESET 12 and DONE; persists after reboot.",
-        "Routine touches and duration changes avoid unnecessary full-screen redraws.",
-        "STOP, SUITE and transmit auto-timeout remain.",
-        "Installer verifies bootloader, partition table, OTA selector and application.",
-        "Manufacturer-only prefixes do not authenticate a real drone."
+        "No LCD capture or framebuffer reads; desktop renders SquachEmit UI entirely from device state.",
+        "UI ON/OFF/GET and UI READY/STATE over 115200 UART; menu, selection, TX time, countdown and physical touch synchronized.",
+        "PC Canvas2D draws firmware synthwave scene, menu controls, procedural Squachy and all 10 device categories.",
+        "Mouse click/drag/hold sends UI TOUCH to native firmware hit testing, just like resistive panel input.",
+        "Lost serial/UI state hides the desktop view rather than displaying stale or invented live content.",
+        "Workbench R7 auto-pauses SquachWatch receiver LCD mirror to restore exact-MAC LOG for RF tests.",
+        "172 synthetic BLE/Wi-Fi cases, SHA-256 flashing layout; exact visuals and remote touch pending hardware verification."
       ]
     },
     "c5-waveshare-28": {
-      "title": "SquachEmit v1.1.0 Waveshare C5 — 172 Signals + Device-First Names",
+      "title": "SquachEmit v1.1.0 Waveshare C5 LAB — 172 Synthetic Signals · Named Scenarios",
       "version": "v1.1.0 MAINLINE · 172 cases",
-      "summary": "LAB candidate based on v1.1.0 firmware for the exact Waveshare ESP32-C5 2.8-inch touchscreen board: 172 synthetic BLE/Wi-Fi test cases including UAV vendor-prefix beacons, controlled RF tests, and SHA-256 verified browser flashing. CYD 3.2-only TX TIME screen is not a C5 feature. Build passes CI; physical C5 hardware verification is still required. Draft PR #36 adds uppercase recognizable device-first names in the native C5 test list and active signal while retaining exact technical IDs.",
+      "summary": "Unmerged Waveshare ESP32-C5 2.8-inch LAB build with 172 time-limited synthetic BLE/Wi-Fi cases and descriptive device-first signal names. USB LCD mirroring is NOT implemented for this board; the experimental MIRROR command returns unsupported on non-CYD builds. Four-part SHA-256 flashing preflight remains required; physical C5 verification is pending.",
       "highlights": [
+        "USB mirror work is CYD 3.2 specific; C5 physical screen mirroring is not yet supported.",
         "Native list names all 172 synthetic signals by device; case IDs remain below each label.",
         "172 shared detection cases and negative controls.",
         "27 UAV vendor Wi-Fi test beacons; no genuine drone RF claim.",
@@ -37,10 +38,11 @@
       ]
     },
     "s3-devkit": {
-      "title": "SquachEmit v1.1.0 ESP32-S3 — 172-Case Serial Test Suite",
+      "title": "SquachEmit v1.1.0 ESP32-S3 LAB — 172-Case Serial Detection Matrix",
       "version": "v1.1.0 MAINLINE · 172 cases",
-      "summary": "LAB candidate based on v1.1.0 firmware for ESP32-S3 DevKitC-1 with 172 synthetic BLE/Wi-Fi detection test cases, on-demand serial RUN/STOP/SUITE control, UAV vendor-prefix test scenarios, and SHA-256 verified browser flashing. No CYD touchscreen is included. Build passes CI; physical S3 hardware verification is still required.",
+      "summary": "Unmerged ESP32-S3 LAB firmware with 172 synthetic BLE/Wi-Fi scenarios, bounded serial RUN/STOP/SUITE commands and tracked on-air identities. This S3 devkit build does not expose CYD LCD framebuffer or touch control; MIRROR is unsupported. Four-part SHA-256 verified flashing preflight remains required; physical S3 verification is pending.",
       "highlights": [
+        "No screen mirroring on ESP32-S3 DevKit without a display: unsupported MIRROR command.",
         "172 shared synthetic scenarios and negative controls.",
         "USB serial RUN, STOP and SUITE for bounded transmitter tests.",
         "Vendor OUI-only beacons are not authentic aircraft broadcasts.",

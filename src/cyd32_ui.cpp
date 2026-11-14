@@ -36,6 +36,9 @@ Screen screen=Screen::Home;
 DeviceCategory category=DeviceCategory::Axon;
 size_t selected=0,page=0,categoryPage=0;
 uint8_t durationSeconds=12; // 3..30s, saved independently of touch calibration
+bool remoteDown=false;
+uint16_t remoteX=0,remoteY=0;
+uint32_t remoteAt=0,mirrorSequence=0;
 bool ready=false,calibrated=false,redraw=true,wasPressed=false,previousSuite=false;
 bool panelInverted=false;
 uint32_t lastPoll=0,lastPress=0,lastCount=UINT32_MAX,colorBarsUntil=0;
@@ -632,7 +635,11 @@ Cyd32UiAction cyd32UiTick(const char* active,uint32_t remaining,bool suite){
     return Cyd32UiAction::None;
   }
   uint16_t x=0,y=0;
-  const bool pressed=lcd.getTouch(&x,&y,450);
+  bool pressed=lcd.getTouch(&x,&y,450);
+  if(remoteDown){
+    if(now-remoteAt>4000u)remoteDown=false;
+    else {x=remoteX;y=remoteY;pressed=true;}
+  }
   Cyd32UiAction action=Cyd32UiAction::None;
   if(pressed&&!wasPressed&&now-lastPress>=240&&x<kW&&y<kH){
     if(screen==Screen::Home)action=touchHome(x,y,active&&*active,suite);
@@ -645,5 +652,42 @@ Cyd32UiAction cyd32UiTick(const char* active,uint32_t remaining,bool suite){
   }
   wasPressed=pressed;
   return action;
+}
+
+// Small view-model protocol; the Windows app draws its own canvas from
+// the same logical navigation state as the physical TFT UI. This function
+// NEVER reads pixels, invokes readRect, or transmits a screenshot.
+void cyd32UiStreamState(const char* activeId,uint32_t remainingMs,
+                        bool suiteRunning,bool force){
+  if(!ready)return;
+  static uint32_t sentAt=0;
+  const uint32_t now=millis();
+  if(!force&&now-sentAt<180u)return;
+  sentAt=now;
+  const char* screenName=
+      !calibrated?"CALIBRATION":
+      colorBarsUntil?"COLORS":
+      screen==Screen::Categories?"CATEGORIES":
+      screen==Screen::Library?"LIBRARY":
+      screen==Screen::Duration?"DURATION":"HOME";
+  const Scenario* chosen=selected<kScenarioCount?&kScenarios[selected]:nullptr;
+  const uint32_t petMs=(int32_t)(petUntil-now)>0?petUntil-now:0;
+  Serial.printf("UI STATE 1 %s %u %u %u %s %u %s %lu %u %u %s %s %lu %lu\n",
+    screenName,(unsigned)static_cast<uint8_t>(category),
+    (unsigned)page,(unsigned)categoryPage,
+    chosen?chosen->id:"NONE",(unsigned)durationSeconds,
+    activeId&&*activeId?activeId:"IDLE",
+    (unsigned long)remainingMs,suiteRunning?1u:0u,calibrated?1u:0u,
+    radioStartingProfile[0]?radioStartingProfile:"NONE",
+    radioStartError[0]?radioStartError:"NONE",
+    (unsigned long)petMs,(unsigned long)now);
+}
+bool cyd32UiRemoteTouch(uint16_t x,uint16_t y,const char* phase){
+  if(!ready||!calibrated||!phase)return false;
+  if(strcmp(phase,"UP")==0){remoteDown=false;return true;}
+  if(x>=lcd.width()||y>=lcd.height())return false;
+  if(strcmp(phase,"DOWN")!=0&&strcmp(phase,"MOVE")!=0)return false;
+  remoteX=x;remoteY=y;remoteAt=millis();remoteDown=true;
+  return true;
 }
 #endif

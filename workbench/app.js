@@ -39,6 +39,7 @@
   var emitterWrites=Promise.resolve();
   var receiverWrites=Promise.resolve();
   var receiverMirror=false;
+  var preparingBatch=false;
   var desktopMode=(new URLSearchParams(window.location.search)).get('desktop')==='1';
   function desktopEvent(type,detail){
     if(desktopMode)window.dispatchEvent(new CustomEvent('sqe:'+type,{detail:detail}));
@@ -196,6 +197,7 @@
       emitterConnected:connected,
       receiverConnected:receiver,
       receiverBaud:devices.receiver.baud,batchActive:batch.active,
+      testActive:batch.active||preparingBatch||startingRun||awaitingBegin||transmitting,
       transmitting:transmitting
     });
   }
@@ -206,7 +208,7 @@
     var duration=Number(ui.batchDuration.value),gap=Number(ui.batchGap.value);
     var valid=Number.isInteger(duration)&&duration>=3&&duration<=30&&
       Number.isInteger(gap)&&gap>=3&&gap<=30;
-    ui.batchStart.disabled=batch.active||!ready||!valid;
+    ui.batchStart.disabled=batch.active||preparingBatch||!ready||!valid;
     ui.batchStop.disabled=!batch.active;
     ['batchScope','batchDuration','batchGap','caseSelect','duration'].forEach(function(id){
       ui[id].disabled=batch.active;
@@ -428,6 +430,27 @@
     },1500);
   }
 
+  // SquachWatch LCD and structured detection LOG share one receiver USB pipe.
+  // When a user starts RF testing, switch to genuine LOG automatically.
+  // SquachEmit's independent USB LCD remains untouched.
+  async function pauseReceiverMirrorForDetection(){
+    if(!receiverMirror)return true;
+    desktopEvent('mirror-paused',{role:'receiver',
+      reason:'SquachWatch LCD paused automatically for LOG detection. '+
+        'The SquachEmit LCD can stay live; restore receiver mirroring after testing.'});
+    autoStatus('Pausing SquachWatch LCD to restore exact-MAC LOG evidence...');
+    const off=await sendReceiver('MIRROR OFF');
+    if(!off){
+      autoStatus('Receiver mirror-off command failed: RUN still allowed, but '+
+        'automatic detection scoring requires a verified LOG baseline.');
+      return false;
+    }
+    receiverMirror=false;
+    if(devices.receiver.port)startWatchPolling();
+    autoStatus('SquachWatch LCD paused; receiver LOG collection restored.');
+    return true;
+  }
+
   // All RF actions remain locally user initiated and are strictly serial.
   function clearBatchTimers(){
     if(batch.timer!==null){clearTimeout(batch.timer);batch.timer=null;}
@@ -516,33 +539,53 @@
       'Transmitter END ok':'Transmitter '+event.event+' '+(event.status||'unknown'),
       !(event.event==='END'&&event.status==='ok'),false);
   }
-  function startBatch(){
-    if(receiverMirror){
-      batch.message='Stop SquachWatch LCD mirroring before starting the automated '+
-        'detection suite; LOG snapshots and LCD frames share the USB serial channel.';
-      updateBatchUi();return;
-    }
-    if(batch.active||startingRun||awaitingBegin||transmitting||
+  async function startBatch(){
+    if(preparingBatch||batch.active||startingRun||awaitingBegin||transmitting||
        !devices.emitter.port||!devices.receiver.port||!ui.authorization.checked)return;
-    var duration=Number(ui.batchDuration.value),gap=Number(ui.batchGap.value);
+    const duration=Number(ui.batchDuration.value),gap=Number(ui.batchGap.value);
     if(!Number.isInteger(duration)||duration<3||duration>30||
        !Number.isInteger(gap)||gap<3||gap>30)return;
-    var queue=core.batchPlan(cases,ui.batchScope.value);
+    const queue=core.batchPlan(cases,ui.batchScope.value);
     if(!queue.length)return;
-    if(!devices.receiver.lastSnapshot||
-       Date.now()-devices.receiver.lastSnapshot.finishedAt>5000){
-      batch.message='Receiver LOG not ready: click Poll LOG now and wait for a complete snapshot.';
-      updateBatchUi();return;
-    }
-    if(queue.some(function(c){return c.id.startsWith('OUI-');}) &&
-       !window.confirm('This queue contains synthetic manufacturer Wi-Fi MAC/OUI tests.'+
-         ' These are NOT genuine drones or Remote ID. Confirm controlled, authorized RF testing?'))return;
-    if(!window.confirm('Run '+queue.length+' signals sequentially while attended?'+
-      ' STOP cancels the remaining tests. Export the CSV to save results.'))return;
-    clearBatchTimers();
-    batch.queue=queue;batch.index=0;batch.completed=0;batch.failures=0;batch.unverified=0;
-    batch.duration=duration;batch.gap=gap;batch.active=true;batch.current=null;
-    startBatchStep();
+    preparingBatch=true;
+    const token=runToken;
+    updateBatchUi();
+    try{
+      if(!await pauseReceiverMirrorForDetection()){
+        batch.message='Receiver mirror OFF could not be sent. Full automated '+
+          'accuracy testing requires actual receiver LOG evidence. '+
+          'Single-case RUN remains available.';
+        return;
+      }
+      if(token!==runToken||!devices.emitter.port||!devices.receiver.port)return;
+      let snapshot=devices.receiver.lastSnapshot;
+      if(!snapshot||Date.now()-snapshot.finishedAt>5000){
+        batch.message='Requesting a fresh receiver LOG baseline after mirror pause...';
+        updateBatchUi();
+        let timer=null;
+        try{
+          snapshot=await Promise.race([
+            requestWatchSnapshot(),
+            new Promise(function(resolve){timer=setTimeout(function(){resolve(null);},4200);})
+          ]);
+        }finally{if(timer!==null)clearTimeout(timer);}
+        if(!snapshot){
+          batch.message='SquachWatch LOG unavailable after automatic mirror pause. '+
+            'Check receiver USB, or run a single signal without verified scoring.';
+          return;
+        }
+      }
+      if(token!==runToken||!devices.emitter.port||!devices.receiver.port)return;
+      if(queue.some(function(c){return c.id.startsWith('OUI-');}) &&
+         !window.confirm('This queue contains synthetic manufacturer Wi-Fi MAC/OUI tests.'+
+           ' These are NOT genuine drones or Remote ID. Confirm controlled, authorized RF testing?'))return;
+      if(!window.confirm('Run '+queue.length+' signals sequentially while attended?'+
+        ' STOP cancels the remaining tests. Export the CSV to save results.'))return;
+      clearBatchTimers();
+      batch.queue=queue;batch.index=0;batch.completed=0;batch.failures=0;batch.unverified=0;
+      batch.duration=duration;batch.gap=gap;batch.active=true;batch.current=null;
+      startBatchStep();
+    }finally{preparingBatch=false;updateBatchUi();}
   }
   function recordEmitter(line){
     var event=core.parseTruth(line);
@@ -650,7 +693,13 @@
       append(role,'[serial line too long; discarded incomplete row]\n');
     }
     lines.forEach(function(line){
+      if(desktopMode&&role==='emitter'&&line.startsWith('UI ')){
+        // Tiny canonical view-model records; PC does all drawing locally.
+        desktopEvent('native-ui',{role:role,line:line});
+        return;
+      }
       if(desktopMode&&line.startsWith('MIRROR ')){
+        // SquachWatch receiver still uses its legacy framebuffer mode.
         desktopEvent('mirror',{role:role,line:line});
         return;
       }
@@ -756,11 +805,6 @@
     return pending;
   }
   async function run(fromBatch){
-    if(receiverMirror){
-      runProgress('Stop SquachWatch LCD mirror first to restore exact-MAC LOG '+
-        'correlation; a screenshot is not detection evidence.');
-      return;
-    }
     if(batch.active&&!fromBatch)return;
     if(fromBatch&&(!batch.active||!batch.current||batch.current.id!==ui.caseSelect.value))return;
     var c=catalog[ui.caseSelect.value],duration=Number(ui.duration.value);
@@ -772,7 +816,9 @@
     runProgress('Preparing to transmit '+c.id+'…');
     try{
       var receiver=devices.receiver,baseline=null;
-      if(receiver.port){
+      var receiverLogsReady=await pauseReceiverMirrorForDetection();
+      if(token!==runToken||!devices.emitter.port)return;
+      if(receiver.port&&receiverLogsReady){
         var now=Date.now();
         // Reuse a complete fresh receiver poll if available; waiting for a
         // second LOG response was causing unnecessary delay and missed runs.
@@ -809,7 +855,12 @@
           autoStatus('Receiver LOG baseline unavailable: RUN will be sent, but '+
             'its detection cannot be auto-scored without a fresh baseline.');
         }
-      }else receiver.preRun=null;
+      }else{
+        receiver.preRun=null;
+        if(receiver.port&&!receiverLogsReady)
+          autoStatus('RUN permitted without verified LOG: receiver classification '+
+            'remains UNTESTED without independent detection evidence.');
+      }
       if(token!==runToken || !devices.emitter.port)return;
       runProgress('Sending RUN '+c.id+' '+duration+' to SquachEmit…');
       // Only TRUTH BEGIN establishes actual emitter acceptance, not a click.
@@ -896,6 +947,7 @@
       });
       cases=data;
       cases.sort(function(a,b){return a.id.localeCompare(b.id);});
+      desktopEvent('catalog',{cases:cases});
       ui.caseSelect.replaceChildren(option('','Choose a test case…'));
       cases.forEach(function(c){
         ui.caseSelect.appendChild(option(c.id,core.signalName(c)+'  ['+c.id+']'));
@@ -965,7 +1017,7 @@
   ui.emitDisconnect.addEventListener('click',function(){void disconnect('emitter');});
   ui.recvDisconnect.addEventListener('click',function(){void disconnect('receiver');});
   ui.runCase.addEventListener('click',function(){void run(false);});
-  ui.batchStart.addEventListener('click',startBatch);
+  ui.batchStart.addEventListener('click',function(){void startBatch();});
   ui.batchStop.addEventListener('click',function(){
     endBatch('Automation stopped by operator after '+batch.completed+' completed cases.',true);
   });
@@ -1045,7 +1097,10 @@
       if(role==='receiver'){
         if(!/^(LOG|RADIO|RADIO SCAN|MEM|WIFI|BLACKBOX|ROT|SCAN (?:AUTO|ACTIVE|PASSIVE)|CLOCK [01] [0-2] [0-6]|BG (?:[0-9]|1[0-9])|MIRROR (?:ON|OFF|FRAME|TOUCH [0-9]{1,3} [0-9]{1,3} (?:DOWN|MOVE|UP)))$/.test(value))
           return Promise.resolve(false);
-        if(batch.active&&!/^(?:RADIO|MEM)$/.test(value))return Promise.resolve(false);
+        if((batch.active||preparingBatch||startingRun||awaitingBegin||transmitting)&&
+           /^MIRROR (?:ON|FRAME|TOUCH)/.test(value))return Promise.resolve(false);
+        if(batch.active&&!/^(?:RADIO|MEM|MIRROR OFF)$/.test(value))
+          return Promise.resolve(false);
         if(value==='MIRROR ON'){
           if(receiverMirror)return Promise.resolve(true);
           receiverMirror=true;
@@ -1072,9 +1127,13 @@
         return sendReceiver(value);
       }
       if(role==='emitter'){
-        if(!/^(STATUS|IDENTITY|LIST|HELP|COLORS|STOP|MIRROR (?:ON|OFF|FRAME|BAUD (?:115200|2000000)|TOUCH [0-9]{1,3} [0-9]{1,3} (?:DOWN|MOVE|UP)))$/.test(value))
+        if(!/^(STATUS|IDENTITY|LIST|HELP|COLORS|STOP|UI (?:ON|OFF|GET|TOUCH [0-9]{1,3} [0-9]{1,3} (?:DOWN|MOVE|UP)))$/.test(value))
           return Promise.resolve(false);
-        if(batch.active&&value!=='STATUS'&&value!=='STOP')return Promise.resolve(false);
+        // Screen pixels may still stream from the independent emitter USB.
+        // Touch commands are blocked during unattended batches.
+        if(batch.active&&value!=='STATUS'&&value!=='STOP'&&
+           !/^UI (?:ON|OFF|GET)$/.test(value))
+          return Promise.resolve(false);
         if(value==='STOP'){ui.stopCase.click();return Promise.resolve(true);}
         return sendEmitter(value);
       }
@@ -1099,7 +1158,9 @@
           receiverConnected:!!devices.receiver.port,
           receiverBaud:devices.receiver.baud,
           emitterBaud:devices.emitter.baud,
-          batchActive:batch.active,transmitting:transmitting,
+          batchActive:batch.active,
+          testActive:batch.active||preparingBatch||startingRun||awaitingBegin||transmitting,
+          transmitting:transmitting,
           selectedCase:catalog[ui.caseSelect.value] ?
             core.signalName(catalog[ui.caseSelect.value]):'No signal selected',
           latestSnapshotRows:devices.receiver.lastSnapshot ?

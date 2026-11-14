@@ -471,6 +471,10 @@ static void help() {
   Serial.println("BLE5 extended/coded PHY and Wi-Fi NAN: OFFLINE FIXTURES ONLY.");
   Serial.println("Single 2.4GHz radio: BLE and Wi-Fi scenarios are exclusive.");
 #if defined(SQE_CYD32)
+  Serial.println("UI ON/OFF/GET, UI TOUCH x y DOWN|MOVE|UP — local software-rendered desktop UI");
+  Serial.println("UI STATE transmits only navigation and test state; no LCD pixel readback.");
+#endif
+#if defined(SQE_CYD32)
   Serial.println("Tap TX TIME on the home screen to set 3..30s for RUN and SUITE.");
   Serial.println("CALTOUCH             reset touchscreen fit, then tap to calibrate");
   Serial.println("COLORS               show idle-only RED/GREEN/BLUE/WHITE/BLACK test");
@@ -478,9 +482,50 @@ static void help() {
 #endif
 }
 
+// UI state is opt-in and is not coupled to receiver LOG evidence, RF test
+// dispatch, baud switching or any physical TFT readback.
+static bool g_uiStreamOn=false;
+static bool g_uiStatePending=false;
 static void command(String cmd) {
   cmd.trim();
   if (!cmd.length()) return;
+  if (cmd.startsWith("UI ") || cmd.startsWith("ui ")) {
+#if defined(SQE_CYD32)
+    cmd.toUpperCase();
+    if(cmd=="UI ON"){
+      g_uiStreamOn=true;g_uiStatePending=true;
+      Serial.println("UI READY 1 320 240 MODEL");
+      return;
+    }
+    if(cmd=="UI OFF"){
+      g_uiStreamOn=false;g_uiStatePending=false;
+      cyd32UiRemoteTouch(0,0,"UP");
+      Serial.println("UI OFF OK");
+      return;
+    }
+    if(cmd=="UI GET"){
+      g_uiStatePending=true;return;
+    }
+    unsigned x=0,y=0;char phase[8]={0};char garbage=0;
+    if(sscanf(cmd.c_str(),"UI TOUCH %u %u %7s %c",&x,&y,phase,&garbage)==3
+       && x<320 && y<240
+       && cyd32UiRemoteTouch((uint16_t)x,(uint16_t)y,phase)){
+      g_uiStatePending=true;
+      Serial.println("UI TOUCH OK");
+      return;
+    }
+    Serial.println("UI ERROR UNSUPPORTED_COMMAND");
+#else
+    Serial.println("UI ERROR UNSUPPORTED_BOARD");
+#endif
+    return;
+  }
+  // Old pixel-capture commands intentionally do nothing in R7. No
+  // accidental GRAM readback or 2Mbps handoff is possible from desktop.
+  if(cmd.startsWith("MIRROR ")||cmd.startsWith("mirror ")){
+    Serial.println("MIRROR ERROR REMOVED_USE_UI_STATE");
+    return;
+  }
   if (cmd.equalsIgnoreCase("HELP") || cmd == "?") { help(); return; }
   if (cmd.equalsIgnoreCase("LIST")) { listCases(); return; }
   if (cmd.equalsIgnoreCase("STOP")) { cancelAll(); return; }
@@ -638,6 +683,14 @@ void loop() {
       Serial.println("STATE,SUITE_START");
       break;
     default: break;
+  }
+#endif
+  // The CYD remains authoritative for navigation, selection and RF.
+  // Only tiny UI records are sent; no LCD readback or huge pixel streams.
+#if defined(SQE_CYD32)
+  if(g_uiStreamOn||g_uiStatePending){
+    cyd32UiStreamState(g_active?g_active->id:nullptr,remaining,g_suite,g_uiStatePending);
+    g_uiStatePending=false;
   }
 #endif
 #endif

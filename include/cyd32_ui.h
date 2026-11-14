@@ -20,3 +20,9 @@ void cyd32UiSetRadioError(const char* stage);
 
 // Acknowledge a Wi-Fi RUN touch before the radio driver blocks.
 void cyd32UiSetRadioStarting(const char* scenarioId);
+
+// Stream the device's canonical UI *state*, never a TFT/GRAM screenshot.
+void cyd32UiStreamState(const char* activeId,uint32_t remainingMs,
+                        bool suiteRunning,bool force=false);
+// Inject mouse/pen state into the exact native touchscreen hit-testing path.
+bool cyd32UiRemoteTouch(uint16_t x,uint16_t y,const char* phase);
