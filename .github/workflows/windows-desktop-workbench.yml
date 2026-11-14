@@ -5,6 +5,7 @@ on:
     branches:
       - feature/windows-desktop-control-center-20261112
       - feature/windows-squachwatch-ui-compat-lab-20261114
+      - fix/windows-live-view-compat-and-controls-20261114
     paths:
       - 'desktop/**'
       - 'workbench/**'
@@ -49,7 +50,7 @@ jobs:
       - name: Upload Windows EXE files for hardware review
         uses: actions/upload-artifact@v4
         with:
-          name: SquachEmit-Workbench-R7_2-SquachWatch-UICompat-CameraFree-Windows-x64-LAB
+          name: SquachEmit-Workbench-R7_3-LiveView-FirmwareCompatibility-Fix-Windows-x64-LAB
           path: desktop/dist/*.exe
           retention-days: 14
           if-no-files-found: error
