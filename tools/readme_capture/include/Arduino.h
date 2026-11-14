@@ -12,6 +12,7 @@ constexpr int TFT_BL=27;
 struct SerialMock {
   void println(const char* s){ fprintf(stderr,"%s\n",s); }
   void println(){ fputc('\n',stderr); }
+  size_t availableForWrite() const { return 256; }
   size_t write(const uint8_t* bytes,size_t n){
     // Native mock has no USB transport; exercise call sites without
     // emitting hundreds of kB of framebuffer rows to test logs.
@@ -21,3 +22,8 @@ struct SerialMock {
   template<typename... Ts> void printf(const char* fmt, Ts... a){ fprintf(stderr,fmt,a...); }
 };
 inline SerialMock Serial;
+struct EspMock {
+  unsigned getFreeHeap() const { return 120000; }
+  unsigned getMaxAllocHeap() const { return 90000; }
+};
+inline EspMock ESP;
