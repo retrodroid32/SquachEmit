@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - feature/windows-desktop-control-center-20261112
+      - feature/windows-squachwatch-ui-compat-lab-20261114
     paths:
       - 'desktop/**'
       - 'workbench/**'
@@ -12,6 +13,7 @@ on:
   pull_request:
     branches:
       - feature/detection-workbench-v1-20261111
+      - feature/windows-desktop-control-center-20261112
     paths:
       - 'desktop/**'
       - 'workbench/**'
@@ -47,7 +49,7 @@ jobs:
       - name: Upload Windows EXE files for hardware review
         uses: actions/upload-artifact@v4
         with:
-          name: SquachEmit-Workbench-R7_1-CameraFree-NativeUI-172Case-Windows-x64-LAB
+          name: SquachEmit-Workbench-R7_2-SquachWatch-UICompat-CameraFree-Windows-x64-LAB
           path: desktop/dist/*.exe
           retention-days: 14
           if-no-files-found: error
