@@ -752,7 +752,7 @@ Cyd32UiAction cyd32UiTick(const char* active,uint32_t remaining,bool suite){
   const char* name=active?active:"";
   // A serial-initiated RUN or SUITE must not leave a hidden STOP button
   // behind the duration editor.
-  if(((active&&*active)||suite)&&screen==Screen::Duration){
+  if(((active&&*active)||suite)&&screen!=Screen::Home){
     screen=Screen::Home;
     redraw=true;
   }
