@@ -231,7 +231,7 @@ def publish_workbench(output: Path) -> None:
     source = root / 'workbench'
     out = output / 'workbench'
     out.mkdir(parents=True, exist_ok=True)
-    for name in ('index.html', 'style.css', 'core.js', 'app.js'):
+    for name in ('index.html', 'style.css', 'core.js', 'runner-v2.js', 'app.js'):
         path = source / name
         if not path.is_file() or path.stat().st_size < 100:
             raise ValueError(f'missing workbench asset: {path}')
