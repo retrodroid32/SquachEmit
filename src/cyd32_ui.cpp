@@ -410,6 +410,7 @@ void diagnosticsScreen(){
 }
 
 
+void menuRow(int y,const char* title,const char* sub,bool chosen=false);
 void settingsScreen(){
   lcd.fillScreen(kBg);titleBar();
   label(10,24,"HANDHELD SETTINGS",kVaporPink,2);
@@ -488,7 +489,7 @@ void firstSelected(){
   size_t raw=0;
   if(atRank(page*kPageRows,&raw))selected=raw;
 }
-void menuRow(int y,const char* title,const char* sub,bool chosen=false){
+void menuRow(int y,const char* title,const char* sub,bool chosen){
   // Native SquachWatch settings row: squared panel, thin purple outline,
   // no rounded glossy cards and no crowded filter pills.
   lcd.fillRect(4,y+1,kW-10,34,chosen?0x2825:kBg);
@@ -1058,9 +1059,9 @@ void cyd32UiStreamState(const char* activeId,uint32_t remainingMs,
   if((screen==Screen::Settings||screen==Screen::Help||screen==Screen::Recovery)&&
      (force||now-lastDeviceAt>=1000u)){
     lastDeviceAt=now;
-    Serial.printf("UI DEVICE 1 %u %u %u %u %u %u\n",
+    Serial.printf("UI DEVICE 1 %u %u %u %u %u %u %u\n",
       brightnessLevel,animationLevel,screenTimeout,panelInverted?1u:0u,
-      pcControl?1u:0u,resetReasonCode);
+      pcControl?1u:0u,resetReasonCode,(unsigned)helpPage);
   }
   if(screen==Screen::Identity&&(force||now-lastDeviceAt>=1000u)){
     lastDeviceAt=now;
