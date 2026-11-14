@@ -49,3 +49,6 @@ main.desktop-workbench{max-width:1920px;display:grid;grid-template-columns:minma
 .dc-footnote b{color:#ffca92}
 @media(max-width:1400px){main.desktop-workbench{grid-template-columns:minmax(0,1fr)}#desktopControlRail{position:static;max-height:none;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}#desktopControlRail>.dc-railhead,#desktopControlRail>.dc-footnote{grid-column:1 / -1}.dc-card{margin-bottom:0}}
 @media(max-width:800px){#desktopControlRail{display:block}.dc-card{margin-bottom:14px}main.desktop-workbench{padding:12px}}
+
+/* The native SquachEmit view follows the physical CYD portrait viewport. */
+.dc-display.dc-portrait{aspect-ratio:240 / 320}

@@ -530,6 +530,8 @@
     if(!ctx)return;
     const now=local.model.uptime+(Date.now()-local.receivedAt);
     if(!native.render(ctx,local.model,local.catalog,now))return;
+    const display=canvas.closest('.dc-display');
+    if(display)display.classList.toggle('dc-portrait',local.model.screen==='PORTRAIT');
     canvas.hidden=false;
     get('dc-placeholder-emitter').hidden=true;
     s.lastFrame=true;
