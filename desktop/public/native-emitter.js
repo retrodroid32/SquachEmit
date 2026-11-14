@@ -28,7 +28,7 @@
     const a=String(line||'').trim().split(/ +/);
     if(a.length!==17||a[0]!=='UI'||a[1]!=='STATE'||a[2]!=='1')
       return null;
-    const screens=['HOME','CATEGORIES','LIBRARY','DURATION','CALIBRATION','COLORS'];
+    const screens=['HOME','CATEGORIES','LIBRARY','DURATION','DETAILS','DIAGNOSTICS','CALIBRATION','COLORS'];
     if(!screens.includes(a[3]))return null;
     const num=(i,max)=>/^\d+$/.test(a[i])&&Number.isSafeInteger(Number(a[i]))
       &&Number(a[i])<=max?Number(a[i]):null;
@@ -325,6 +325,7 @@
         catalog.count+' CASES',active?C.pink:C.vaporPink);
       p.fill(6,198,308,1,C.purple);p.text(12,201,'PROFILE',C.vaporPink);
       p.text(66,200,deviceName(catalog.byId.get(state.selected)),C.white,1,164);
+      p.text(245,201,'DETAILS >',C.cyan);
       footer(p,'TESTS',active?'STOP':'RUN','SUITE');
       return true;
     }
@@ -355,6 +356,30 @@
       if(state.active!=='IDLE')p.text(233,198,'ON AIR',C.pink);
       footer(p,'BACK','< PREV',state.active!=='IDLE'?'STOP':'NEXT >');
       return true;
+    }
+    if(screen==='DETAILS'){
+      const c=catalog.byId.get(state.selected);
+      p.text(14,25,'SELECTED TEST PROFILE',C.vaporPink,2);
+      p.text(14,60,deviceName(c),C.white,2,292);
+      p.text(14,96,c?c.id:'NONE',C.cyan);
+      p.text(14,121,c?c.expected:'NONE',C.green);
+      const wifi=c&&/^(WIFI|RID-|OUI-)/.test(c.id);
+      p.text(14,146,'RADIO: '+(wifi?'WIFI':'BLE')+'   CHANNEL: '+(wifi?Number(c.code||1):0),C.muted);
+      p.text(14,174,'DURATION: '+state.duration+'s   SYNTHETIC TEST',C.yellow);
+      p.text(14,196,'Identity emitted on RUN via serial',C.muted);
+      footer(p,'BACK','HEALTH','RUN');return true;
+    }
+    if(screen==='DIAGNOSTICS'){
+      p.text(14,25,'DEVICE DIAGNOSTICS',C.vaporPink,2);
+      if(state.health){const h=state.health;
+        p.text(14,67,'FREE HEAP: '+h.heap+' B',C.cyan,2);
+        p.text(14,93,'LARGEST: '+h.largest+' B',C.white);
+        p.text(14,116,'UPTIME: '+h.uptime+' s',C.white);
+        p.text(14,139,'SERIAL TX SPACE: '+h.serialFree+' B',C.white);
+        p.text(14,162,h.tx?'RADIO: ON AIR':'RADIO: OFF / IDLE',h.tx?C.pink:C.green);
+      }else p.text(14,67,'Waiting for device UI HEALTH...',C.yellow);
+      p.text(14,184,state.error==='NONE'?'NO START ERROR':state.error,C.yellow);
+      footer(p,'BACK','REFRESH','DETAILS');return true;
     }
     if(screen==='DURATION'){
       p.text(20,27,'TRANSMIT TIME',C.vaporPink,2);

@@ -466,6 +466,7 @@ static void help() {
   Serial.println("SUITE                 run each case with 2.4s off-air gaps");
   Serial.println("STOP                  stop current case/suite immediately");
   Serial.println("STATUS                show current case and time remaining");
+  Serial.println("HEALTH                show real heap, largest allocation, uptime, radio and serial status");
   Serial.println("IDENTITY              current synthetic case MAC");
   Serial.println("Remote ID profiles are synthetic; no genuine vendor serials or flight links.");
   Serial.println("BLE5 extended/coded PHY and Wi-Fi NAN: OFFLINE FIXTURES ONLY.");
@@ -525,6 +526,12 @@ static void command(String cmd) {
   if(cmd.startsWith("MIRROR ")||cmd.startsWith("mirror ")){
     Serial.println("MIRROR ERROR REMOVED_USE_UI_STATE");
     return;
+  }
+  if (cmd.equalsIgnoreCase("HEALTH")) {
+    Serial.printf("HEALTH,heap=%lu,largest=%lu,uptime=%lu,tx=%u,serial_free=%u\\n",
+      (unsigned long)ESP.getFreeHeap(),(unsigned long)ESP.getMaxAllocHeap(),
+      (unsigned long)(millis()/1000UL),g_active?1u:0u,
+      (unsigned)Serial.availableForWrite());return;
   }
   if (cmd.equalsIgnoreCase("HELP") || cmd == "?") { help(); return; }
   if (cmd.equalsIgnoreCase("LIST")) { listCases(); return; }

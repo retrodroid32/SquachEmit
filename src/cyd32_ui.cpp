@@ -24,7 +24,7 @@ constexpr uint16_t kWhite=0xFFFF,kMuted=0x7393,kInk=0x1801;
 constexpr uint16_t kFurDark=0x38C0,kFurMain=0x5941,kFurLight=0x9326;
 constexpr uint16_t kSkin=0xF60F,kSkinDark=0xCB88;
 
-enum class Screen : uint8_t { Home, Categories, Library, Duration };
+enum class Screen : uint8_t { Home, Categories, Library, Duration, Details, Diagnostics };
 constexpr size_t kPageRows=4;
 
 TFT_eSPI lcd;
@@ -41,7 +41,7 @@ uint16_t remoteX=0,remoteY=0;
 uint32_t remoteAt=0,mirrorSequence=0;
 bool ready=false,calibrated=false,redraw=true,wasPressed=false,previousSuite=false;
 bool panelInverted=false;
-uint32_t lastPoll=0,lastPress=0,lastCount=UINT32_MAX,colorBarsUntil=0;
+uint32_t lastPoll=0,lastPress=0,lastCount=UINT32_MAX,colorBarsUntil=0,lastDiagAt=0;
 uint8_t talkIndex=0;
 char previousActive[56]={0};
 char radioStartError[28]={0}; // visible radio-start failure stage
@@ -283,6 +283,7 @@ void statusStrip(const char* active,bool suite){
   char friendly[58]={0};
   if(chosen)scenarioDeviceName(*chosen,friendly,sizeof(friendly));
   fit(66,200,chosen?friendly:"NONE",164,kWhite,1);
+  label(245,201,"DETAILS >",kCyan);
 }
 
 void durationValue(){
@@ -329,6 +330,48 @@ void homeScreen(const char* active,uint32_t remaining,bool suite){
   statusStrip(active,suite);
   if(emitting)countdownOnly((remaining+999)/1000);
   footer("TESTS",emitting?"STOP":"RUN","SUITE");
+}
+
+
+void detailScreen(){
+  lcd.fillScreen(kBg);titleBar();
+  label(14,25,"SELECTED TEST PROFILE",kVaporPink,2);
+  const Scenario* c=selected<kScenarioCount?&kScenarios[selected]:nullptr;
+  char friendly[58]={0};
+  if(c)scenarioDeviceName(*c,friendly,sizeof(friendly));
+  fit(14,60,c?friendly:"NO PROFILE",292,kWhite,2);
+  fit(14,96,c?c->id:"NONE",292,kCyan);
+  fit(14,121,c?c->expected:"NONE",292,kGreen);
+  const bool wifi=c&&(c->kind==Kind::WifiAp||c->kind==Kind::WifiRemoteId);
+  char detail[64];
+  snprintf(detail,sizeof(detail),"RADIO: %s   CHANNEL: %u",wifi?"WIFI":"BLE",
+           wifi?(unsigned)(c->code?c->code:1u):0u);
+  label(14,146,detail,kMuted);
+  snprintf(detail,sizeof(detail),"DURATION: %us   SYNTHETIC TEST",(unsigned)durationSeconds);
+  label(14,174,detail,kYellow);
+  label(14,196,"Identity emitted on RUN via serial",kMuted);
+  footer("BACK","HEALTH","RUN");
+}
+void diagValues(){
+  lcd.fillRect(8,61,304,144,kBg);
+  char value[72];
+  snprintf(value,sizeof(value),"FREE HEAP: %lu B",(unsigned long)ESP.getFreeHeap());
+  label(14,67,value,kCyan,2);
+  snprintf(value,sizeof(value),"LARGEST: %lu B",(unsigned long)ESP.getMaxAllocHeap());
+  label(14,93,value,kWhite);
+  snprintf(value,sizeof(value),"UPTIME: %lu s",(unsigned long)(millis()/1000UL));
+  label(14,116,value,kWhite);
+  snprintf(value,sizeof(value),"SERIAL TX SPACE: %u B",(unsigned)Serial.availableForWrite());
+  label(14,139,value,kWhite);
+  label(14,162,previousActive[0]?"RADIO: ON AIR":"RADIO: OFF / IDLE",
+        previousActive[0]?kPink:kGreen);
+  fit(14,184,radioStartError[0]?radioStartError:"NO START ERROR",286,kYellow);
+}
+void diagnosticsScreen(){
+  lcd.fillScreen(kBg);titleBar();
+  label(14,25,"DEVICE DIAGNOSTICS",kVaporPink,2);
+  diagValues();lastDiagAt=millis();
+  footer("BACK","REFRESH","DETAILS");
 }
 
 size_t totalMatches(){
@@ -440,6 +483,9 @@ Cyd32UiAction touchHome(int x,int y,bool active,bool suite){
     if(x<213)return active?Cyd32UiAction::Stop:Cyd32UiAction::Run;
     return Cyd32UiAction::Suite;
   }
+  if(!active && !suite && x>=230 && y>=199 && y<214){
+    screen=Screen::Details;redraw=true;return Cyd32UiAction::None;
+  }
   if(!active && !suite && x>=93 && x<230 && y>=183 && y<199){
     screen=Screen::Duration;
     redraw=true;
@@ -498,6 +544,20 @@ Cyd32UiAction touchDuration(int x,int y){
     if(x>=12 && x<95 && durationSeconds>3)setDuration(durationSeconds-1);
     if(x>=225 && x<308 && durationSeconds<30)setDuration(durationSeconds+1);
   }
+  return Cyd32UiAction::None;
+}
+Cyd32UiAction touchDetails(int x,int y,bool active){
+  if(y<kFooterY)return Cyd32UiAction::None;
+  if(x<108){screen=Screen::Home;redraw=true;return Cyd32UiAction::None;}
+  if(x<213){screen=Screen::Diagnostics;redraw=true;return Cyd32UiAction::None;}
+  if(!active){screen=Screen::Home;redraw=true;return Cyd32UiAction::Run;}
+  return Cyd32UiAction::None;
+}
+Cyd32UiAction touchDiagnostics(int x,int y){
+  if(y<kFooterY)return Cyd32UiAction::None;
+  if(x<108){screen=Screen::Details;redraw=true;}
+  else if(x<213){diagValues();lastDiagAt=millis();}
+  else {screen=Screen::Details;redraw=true;}
   return Cyd32UiAction::None;
 }
 void rgbBars(){
@@ -611,6 +671,8 @@ Cyd32UiAction cyd32UiTick(const char* active,uint32_t remaining,bool suite){
     else if(screen==Screen::Home)homeScreen(active,remaining,suite);
     else if(screen==Screen::Categories)categoriesScreen();
     else if(screen==Screen::Duration)durationScreen();
+    else if(screen==Screen::Details)detailScreen();
+    else if(screen==Screen::Diagnostics)diagnosticsScreen();
     else libraryScreen(active,suite);
     lastCount=(active&&*active)?((remaining+999)/1000):UINT32_MAX;
     redraw=false;
@@ -618,6 +680,7 @@ Cyd32UiAction cyd32UiTick(const char* active,uint32_t remaining,bool suite){
     const uint32_t count=(remaining+999)/1000;
     if(count!=lastCount){countdownOnly(count);lastCount=count;}
   }
+  if(calibrated&&screen==Screen::Diagnostics&&now-lastDiagAt>=1000u){diagValues();lastDiagAt=now;}
   if(calibrated&&screen==Screen::Home&&squachSpriteReady&&
      now-lastSquachFrame>=120u && colorBarsUntil==0)
     drawSquachyFrame(active&&*active,suite,now);
@@ -645,6 +708,8 @@ Cyd32UiAction cyd32UiTick(const char* active,uint32_t remaining,bool suite){
     if(screen==Screen::Home)action=touchHome(x,y,active&&*active,suite);
     else if(screen==Screen::Categories)action=touchCategories(x,y);
     else if(screen==Screen::Duration)action=touchDuration(x,y);
+    else if(screen==Screen::Details)action=touchDetails(x,y,active&&*active);
+    else if(screen==Screen::Diagnostics)action=touchDiagnostics(x,y);
     else action=touchLibrary(x,y,active&&*active);
     lastPress=now;
     // Only navigation/state changes request a full repaint. Every other
@@ -669,7 +734,9 @@ void cyd32UiStreamState(const char* activeId,uint32_t remainingMs,
       colorBarsUntil?"COLORS":
       screen==Screen::Categories?"CATEGORIES":
       screen==Screen::Library?"LIBRARY":
-      screen==Screen::Duration?"DURATION":"HOME";
+      screen==Screen::Duration?"DURATION":
+      screen==Screen::Details?"DETAILS":
+      screen==Screen::Diagnostics?"DIAGNOSTICS":"HOME";
   const Scenario* chosen=selected<kScenarioCount?&kScenarios[selected]:nullptr;
   const uint32_t petMs=(int32_t)(petUntil-now)>0?petUntil-now:0;
   Serial.printf("UI STATE 1 %s %u %u %u %s %u %s %lu %u %u %s %s %lu %lu\n",
@@ -681,6 +748,16 @@ void cyd32UiStreamState(const char* activeId,uint32_t remainingMs,
     radioStartingProfile[0]?radioStartingProfile:"NONE",
     radioStartError[0]?radioStartError:"NONE",
     (unsigned long)petMs,(unsigned long)now);
+  if(screen==Screen::Diagnostics){
+    static uint32_t lastHealth=0;
+    if(force||now-lastHealth>=1000u){
+      lastHealth=now;
+      Serial.printf("UI HEALTH 1 %lu %lu %u %lu %u\\n",
+        (unsigned long)ESP.getFreeHeap(),(unsigned long)ESP.getMaxAllocHeap(),
+        (unsigned)Serial.availableForWrite(),(unsigned long)(now/1000UL),
+        previousActive[0]?1u:0u);
+    }
+  }
 }
 bool cyd32UiRemoteTouch(uint16_t x,uint16_t y,const char* phase){
   if(!ready||!calibrated||!phase)return false;
