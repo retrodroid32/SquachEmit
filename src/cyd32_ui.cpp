@@ -35,7 +35,8 @@ Preferences prefs;
 Screen screen=Screen::Home;
 DeviceCategory category=DeviceCategory::Axon;
 size_t selected=0,page=0,categoryPage=0,favoritesPage=0,historyPage=0;
-uint8_t favBits[(kScenarioCount+7)/8]={0};
+// Fixed 256-slot bitmap: kScenarioCount is externally linked (not constexpr).
+uint8_t favBits[32]={0};
 struct HistoryEntry { char id[56]; char status[20]; uint32_t uptime; };
 HistoryEntry history[8]{};
 uint8_t historyHead=0,historyCount=0;
