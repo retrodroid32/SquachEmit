@@ -49,20 +49,21 @@ class DjiOuiRegistryTests(unittest.TestCase):
             self.assertEqual(frame[16:19], mac3) # BSSID read by native checker
             self.assertEqual(len(frame), 45)
 
-    def test_emitted_identities_remain_locally_administered(self):
+    def test_dji_on_air_prefixes_are_explicit_synthetic_wifi_tests(self):
         identity = (ROOT / "include/identity.h").read_text()
+        main = (ROOT / "src/main.cpp").read_text()
         self.assertIn("? 0xC2 : 0x02", identity)
-        self.assertIn("Stable, locally administered lab identities", identity)
-        # Mainline now has ten on-air *test labels* named OUI-DJI-*, but
-        # their transmitted MACs are still locally administered. Registered
-        # OUIs occur only in these offline receiver-decoder frame vectors.
+        self.assertIn("SquachDjiOuiLab::apply(s->id,out)", main)
+        self.assertIn("SquachUavVendorLab::apply(s->id,out)", main)
+        self.assertIn("TEST,OUI_ONLY", main)
         onair = json.loads((ROOT / "tests/cases.json").read_text())
         dji_cases = [s for s in onair if s["id"].startswith("OUI-DJI-")]
         self.assertEqual(len(dji_cases), 10)
         self.assertEqual({s["id"] for s in dji_cases},
                          {"OUI-DJI-" + p.replace(":", "") for p in EXPECTED})
         self.assertTrue(all(s["kind"] == "WifiAp" and
-                            s["text"].startswith("SQE-LAB-DJI-") for s in dji_cases))
+                            s["text"].startswith("SQE-LAB-DJI-") and
+                            "NO RID" in s["description"] for s in dji_cases))
 
 if __name__ == "__main__":
     unittest.main()
