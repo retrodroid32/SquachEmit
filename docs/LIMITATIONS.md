@@ -1,8 +1,9 @@
 # On-air vs offline and hardware boundaries
 
-**On-air verified** means a human actually tested an ESP32-S3 and checked what
-a SquachWatch receiver reported. As of v0.1.0 there are **no on-air verified
-cases**; the repository contains firmware source, not claimed hardware data.
+**On-air verified** requires a real transmitter, a separately observed
+SquachWatch receiver result and both firmware SHAs. CYD 3.2 flashing and UI
+tests during v1.1.0 development do not by themselves validate all 172 RF
+cases. C5 and S3 have successful CI builds, not complete physical validation.
 
 - **BLE legacy:** Advertised UUIDs, company identifiers, name profiles,
   synthetic iBeacon/Find My and 31-byte Remote ID are programmed using
@@ -15,9 +16,15 @@ cases**; the repository contains firmware source, not claimed hardware data.
 - **Wi-Fi SSID:** A single genuine, password-protected SoftAP tests prefixes,
   not camera hardware or OUI matching. One S3 cannot emit arbitrarily many
   independent concurrently active SSIDs/BSSIDs as a normal SoftAP.
-- **Wi-Fi OUIs:** High-confidence Flock/ALPR/camera/Ring/drone vendor MAC
-  classification is tested only by *offline* synthetic frames in this phase.
-  These fixtures cannot validate physical RF capture/dwell/RSSI accuracy.
+- **Wi-Fi OUIs:** Public v1.1.0 deliberately includes 37 bounded OUI-only
+  ordinary SoftAP beacon cases: 10 registered DJI /24 prefixes and 27 UAS
+  supplier allocations spanning /24, /28 and /36. Only those explicit cases
+  override the default locally administered *temporary on-air* AP identity
+  with a registered prefix and synthetic suffix. Many other vendor families
+  (Flock, ALPR, cameras, Ring) have offline receiver fixtures only.
+  Registered prefixes are spoofable clues, not genuine vendor hardware,
+  aircraft, flight or trusted RID. Offline frames cannot measure actual
+  RF capture/dwell/RSSI.
 - **Wi-Fi attack indicators:** `DEAUTH` is a rate detector; one offline frame
   should not classify as a burst. `EVILTWIN` needs two BSSIDs/security states.
   No deauth floods or arbitrary 802.11 management-frame RF injection is

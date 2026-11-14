@@ -135,7 +135,7 @@ For meaningful results, use a separate SquachWatch receiver (CYD 2.8 or 3.2), te
 
 ## What's covered offline, not transmitted
 
-The fixture library also tests receiver behavior for vendor OUIs (cameras, ALPR, Ring, drone manufacturers), Flock wildcard-probe corroboration, evil-twin frame relationships, Pwnagotchi identifiers, Wi-Fi Remote ID NAN, and deauthentication thresholds. Those are **offline test vectors**, **not** emitted spoofed manufacturer identities or attack traffic.
+The fixture library also tests receiver behavior for vendor OUIs (cameras, ALPR, Ring, drone manufacturers), Flock wildcard-probe corroboration, evil-twin frame relationships, Pwnagotchi identifiers, Wi-Fi Remote ID NAN, and deauthentication thresholds. Those are **offline test vectors**, not emitted attack traffic. **Exception:** 37 named OUI-only UAS Wi-Fi cases also transmit ordinary SoftAP beacons with registered manufacturer prefixes and synthetic suffixes. A spoofable vendor prefix is not proof of aircraft identity.
 
 SquachEmit does **not** broadcast deauth floods, jam networks, collect credentials, or reproduce private drone flight links. Use it only in environments and with radio equipment you control or are authorized to test, following applicable RF rules.
 
