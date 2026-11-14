@@ -693,6 +693,11 @@
       append(role,'[serial line too long; discarded incomplete row]\n');
     }
     lines.forEach(function(line){
+      if(desktopMode&&role==='receiver'&&line.startsWith('UI ')){
+        // PR #233 receiver state telemetry is separate from LOG evidence.
+        desktopEvent('receiver-ui',{role:role,line:line});
+        return;
+      }
       if(desktopMode&&role==='emitter'&&line.startsWith('UI ')){
         // Tiny canonical view-model records; PC does all drawing locally.
         desktopEvent('native-ui',{role:role,line:line});
@@ -1095,11 +1100,11 @@
     function desktopSend(role,cmd){
       var value=String(cmd||'').trim().toUpperCase();
       if(role==='receiver'){
-        if(!/^(LOG|RADIO|RADIO SCAN|MEM|WIFI|BLACKBOX|ROT|SCAN (?:AUTO|ACTIVE|PASSIVE)|CLOCK [01] [0-2] [0-6]|BG (?:[0-9]|1[0-9])|MIRROR (?:ON|OFF|FRAME|TOUCH [0-9]{1,3} [0-9]{1,3} (?:DOWN|MOVE|UP)))$/.test(value))
+        if(!/^(LOG|RADIO|RADIO SCAN|MEM|WIFI|BLACKBOX|ROT|SCAN (?:AUTO|ACTIVE|PASSIVE)|CLOCK [01] [0-2] [0-6]|BG (?:[0-9]|1[0-9])|MIRROR (?:ON|OFF|FRAME|TOUCH [0-9]{1,3} [0-9]{1,3} (?:DOWN|MOVE|UP))|UI (?:ON|OFF|GET|TOUCH [0-9]{1,3} [0-9]{1,3} (?:DOWN|MOVE|UP)))$/.test(value))
           return Promise.resolve(false);
         if((batch.active||preparingBatch||startingRun||awaitingBegin||transmitting)&&
-           /^MIRROR (?:ON|FRAME|TOUCH)/.test(value))return Promise.resolve(false);
-        if(batch.active&&!/^(?:RADIO|MEM|MIRROR OFF)$/.test(value))
+           /^(?:MIRROR (?:ON|FRAME|TOUCH)|UI (?:ON|GET|TOUCH))/.test(value))return Promise.resolve(false);
+        if(batch.active&&!/^(?:RADIO|MEM|MIRROR OFF|UI OFF)$/.test(value))
           return Promise.resolve(false);
         if(value==='MIRROR ON'){
           if(receiverMirror)return Promise.resolve(true);
