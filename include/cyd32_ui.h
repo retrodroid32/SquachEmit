@@ -1,5 +1,6 @@
 #pragma once
 #include <stdint.h>
+#include <stddef.h>
 struct Scenario;
 enum class Cyd32UiAction : uint8_t { None, Run, Stop, Suite, PlaylistStart, PlaylistPause, PlaylistResume };
 // TFT_eSPI + on-board XPT2046, separate NVS touch calibration namespace.
