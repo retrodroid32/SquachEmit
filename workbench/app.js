@@ -6,7 +6,8 @@
 (function () {
   'use strict';
   var core=window.SQEWorkbenchCore;
-  if(!core) throw new Error('Workbench core.js missing');
+  var runner=window.SQETestSuiteV2;
+  if(!core||!runner) throw new Error('Workbench core or runner-v2.js missing');
   function byId(id){var el=document.getElementById(id);if(!el)throw new Error('Missing '+id);return el;}
   var ids=['securityNotice','scoredCount','pendingCount','recall','precision','latency',
     'runId','receiverBoard','receiverSha','emitterSha','applyShas','shaNotice',
@@ -17,7 +18,7 @@
     'trialSelect','trialDetails','emissionStatus','listenWindow',
     'observed','latencyMs','evidenceNotes','saveObservation','observationNotice',
     'trialRows','importCsv','csvFile','exportCsv','clearTrials',
-    'batchScope','batchDuration','batchGap','batchStart','batchStop',
+    'batchScope','batchDuration','batchGap','batchStart','batchPause','batchRestore','batchStop',
     'batchProgress','batchCount','batchCurrent'];
   var ui={};
   ids.forEach(function(id){ui[id]=byId(id);});
@@ -35,6 +36,7 @@
   var transmitting=false;
   var batch={active:false,queue:[],index:0,completed:0,current:null,
     duration:8,gap:5,timer:null,endTimer:null,failures:0,unverified:0,
+    paused:false,pauseRequested:false,
     message:'Ready to start'};
   var emitterWrites=Promise.resolve();
   var receiverWrites=Promise.resolve();
@@ -210,6 +212,9 @@
       Number.isInteger(gap)&&gap>=3&&gap<=30;
     ui.batchStart.disabled=batch.active||preparingBatch||!ready||!valid;
     ui.batchStop.disabled=!batch.active;
+    ui.batchPause.disabled=!batch.active;
+    ui.batchPause.textContent=batch.paused?'Resume automation':batch.pauseRequested?'Pause requested…':'Pause after current case';
+    ui.batchRestore.disabled=batch.active||preparingBatch||!ready||!readBatchCheckpoint();
     ['batchScope','batchDuration','batchGap','caseSelect','duration'].forEach(function(id){
       ui[id].disabled=batch.active;
     });
@@ -218,7 +223,7 @@
     text('batchCount',batch.completed+' / '+(batch.queue.length||cases.length||172)+
       ' completed · '+batch.failures+' transmitter failures · '+
       batch.unverified+' unverified recoveries'+
-      (batch.active?' · RUNNING':''));
+      (batch.active?(batch.paused?' · PAUSED':batch.pauseRequested?' · PAUSING':' · RUNNING'):''));
     text('batchCurrent',batch.message);
   }
   function uniqueRunId(){
@@ -451,6 +456,10 @@
     return true;
   }
 
+  function readBatchCheckpoint(){try{return runner.read(localStorage,cases.map(c=>c.id));}catch(_){return null;}}
+  // Safe queue-only checkpoint; never stores radio consent or receiver observations.
+  function saveBatchCheckpoint(){if(!batch.queue.length||batch.index>=batch.queue.length)return;
+    try{runner.save(localStorage,batch);}catch(_){batch.message+='\nCheckpoint storage unavailable.';}}
   // All RF actions remain locally user initiated and are strictly serial.
   function clearBatchTimers(){
     if(batch.timer!==null){clearTimeout(batch.timer);batch.timer=null;}
@@ -459,7 +468,10 @@
   function endBatch(message,sendStop){
     if(!batch.active)return;
     clearBatchTimers();
-    batch.active=false;batch.current=null;batch.message=message;
+    if(batch.index>=batch.queue.length)runner.clear(localStorage);
+    else saveBatchCheckpoint();
+    batch.active=false;batch.paused=false;batch.pauseRequested=false;
+    batch.current=null;batch.message=message;
     runToken++;devices.receiver.preRun=null;
     cancelRunAck();transmitting=false;
     updateButtons();
@@ -467,7 +479,7 @@
     runProgress(message);
   }
   function startBatchStep(){
-    if(!batch.active)return;
+    if(!batch.active||batch.paused||batch.pauseRequested)return;
     if(!devices.emitter.port||!devices.receiver.port){
       endBatch('Automation stopped: device disconnected.',true);return;
     }
@@ -479,6 +491,7 @@
     }
     var c=batch.queue[batch.index];
     batch.current={id:c.id,seq:null,begun:false,finished:false,noBaseline:false};
+    saveBatchCheckpoint();
     ui.caseSelect.value=c.id;ui.duration.value=String(batch.duration);
     chooseCase();
     batch.message='CASE '+(batch.index+1)+' / '+batch.queue.length+
@@ -497,6 +510,7 @@
     if(failed)batch.failures++;
     if(last.noBaseline||failed)batch.unverified++;
     batch.completed++;batch.index++;batch.current=null;
+    saveBatchCheckpoint();
     // Missing BEGIN/END is not evidence that RF was never on. Request an
     // explicit STOP and allow a longer cool-off before moving on.
     if(requestStop && devices.emitter.port)void sendEmitter('STOP');
@@ -505,6 +519,11 @@
       '\n'+core.signalName(catalog[last.id])+'\n'+last.id+
       '\n'+reason+'; continuing after safe cooldown. No receiver result inferred.';
     updateButtons();
+    if(batch.pauseRequested){
+      batch.paused=true;batch.pauseRequested=false;
+      batch.message+='\\nPaused safely between cases. Resume requires a click.';
+      updateBatchUi();return;
+    }
     batch.timer=setTimeout(function(){
       batch.timer=null;
       if(!batch.active)return;
@@ -584,6 +603,7 @@
       clearBatchTimers();
       batch.queue=queue;batch.index=0;batch.completed=0;batch.failures=0;batch.unverified=0;
       batch.duration=duration;batch.gap=gap;batch.active=true;batch.current=null;
+      batch.paused=false;batch.pauseRequested=false;saveBatchCheckpoint();
       startBatchStep();
     }finally{preparingBatch=false;updateBatchUi();}
   }
@@ -1023,6 +1043,28 @@
   ui.recvDisconnect.addEventListener('click',function(){void disconnect('receiver');});
   ui.runCase.addEventListener('click',function(){void run(false);});
   ui.batchStart.addEventListener('click',function(){void startBatch();});
+  ui.batchPause.addEventListener('click',function(){
+    if(!batch.active)return;
+    if(batch.paused){
+      if(!devices.emitter.port||!devices.receiver.port)return;
+      batch.paused=false;batch.pauseRequested=false;
+      batch.message='Resuming after cooldown';
+      batch.timer=setTimeout(function(){batch.timer=null;startBatchStep();},Math.max(3,batch.gap)*1000);
+    }else if(batch.current){batch.pauseRequested=true;batch.message+='\nWill pause after current case.';}
+    else{clearBatchTimers();batch.paused=true;batch.pauseRequested=false;batch.message+='\nPaused between cases.';}
+    saveBatchCheckpoint();updateBatchUi();
+  });
+  ui.batchRestore.addEventListener('click',function(){
+    if(batch.active||preparingBatch||startingRun||awaitingBegin||transmitting||
+       !devices.emitter.port||!devices.receiver.port||!ui.authorization.checked)return;
+    const cp=readBatchCheckpoint();if(!cp)return;
+    if(!window.confirm('Resume '+(cp.ids.length-cp.index)+' cases? Previous receiver observations are not restored. Confirm authorized attended testing.'))return;
+    batch.queue=cp.ids.map(id=>catalog[id]);batch.index=cp.index;batch.completed=cp.completed;
+    batch.duration=cp.duration;batch.gap=cp.gap;batch.failures=cp.failures;batch.unverified=cp.unverified;
+    batch.active=true;batch.paused=false;batch.pauseRequested=false;batch.current=null;
+    batch.message='Manual checkpoint resume; new receiver baseline required';
+    saveBatchCheckpoint();startBatchStep();
+  });
   ui.batchStop.addEventListener('click',function(){
     endBatch('Automation stopped by operator after '+batch.completed+' completed cases.',true);
   });

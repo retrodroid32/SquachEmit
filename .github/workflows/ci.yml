@@ -19,6 +19,8 @@ jobs:
       - run: node --check web-installer/app.js
       - run: node tests/verify_installer_browser.cjs
       - run: node --check workbench/core.js
+      - run: node --check workbench/runner-v2.js
+      - run: node --test tests/runner_v2.test.cjs
       - run: node --check workbench/app.js
       - run: node tests/verify_workbench.cjs
       - run: g++ -std=c++11 -Wall -Wextra -Werror tests/test_identity.cpp -o /tmp/sqe_identity && /tmp/sqe_identity
