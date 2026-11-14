@@ -51,7 +51,8 @@ class Cyd32UiGuards(unittest.TestCase):
         for s in ("void render(", "static void wedge(", "const int tuft[4][6]",
                   "slot=now/2600u", "squachSprite"):
             self.assertIn(s,p if s!="squachSprite" else self.s)
-        self.assertIn("lastSquachFrame>=120u",self.s)
+        self.assertIn("now-lastSquachFrame>=animDelay",self.s)
+        self.assertIn("animationLevel==0?200u:animationLevel==1?120u:80u",self.s)
         self.assertNotIn("label(hx,148,heading",self.s)
 if __name__=="__main__":
     unittest.main()
