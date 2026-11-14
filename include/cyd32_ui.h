@@ -26,3 +26,4 @@ void cyd32UiStreamState(const char* activeId,uint32_t remainingMs,
                         bool suiteRunning,bool force=false);
 // Inject mouse/pen state into the exact native touchscreen hit-testing path.
 bool cyd32UiRemoteTouch(uint16_t x,uint16_t y,const char* phase);
+void cyd32UiRecordResult(const char* id,const char* status,uint32_t atMs);

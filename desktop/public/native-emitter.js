@@ -28,7 +28,7 @@
     const a=String(line||'').trim().split(/ +/);
     if(a.length!==17||a[0]!=='UI'||a[1]!=='STATE'||a[2]!=='1')
       return null;
-    const screens=['HOME','CATEGORIES','LIBRARY','DURATION','DETAILS','DIAGNOSTICS','CALIBRATION','COLORS'];
+    const screens=['HOME','CATEGORIES','LIBRARY','DURATION','DETAILS','DIAGNOSTICS','FAVORITES','HISTORY','CALIBRATION','COLORS'];
     if(!screens.includes(a[3]))return null;
     const num=(i,max)=>/^\d+$/.test(a[i])&&Number.isSafeInteger(Number(a[i]))
       &&Number(a[i])<=max?Number(a[i]):null;
@@ -366,7 +366,8 @@
       const wifi=c&&/^(WIFI|RID-|OUI-)/.test(c.id);
       p.text(14,146,'RADIO: '+(wifi?'WIFI':'BLE')+'   CHANNEL: '+(wifi?Number(c.code||1):0),C.muted);
       p.text(14,174,'DURATION: '+state.duration+'s   SYNTHETIC TEST',C.yellow);
-      p.text(14,196,'Identity emitted on RUN via serial',C.muted);
+      p.text(14,196,state.favorite?'FAVORITE: YES [TAP TO REMOVE]':'FAVORITE: NO [TAP TO ADD]',C.muted);
+      p.text(246,22,'FAVS >',C.cyan);p.text(246,44,'HIST >',C.cyan);
       footer(p,'BACK','HEALTH','RUN');return true;
     }
     if(screen==='DIAGNOSTICS'){
@@ -380,6 +381,26 @@
       }else p.text(14,67,'Waiting for device UI HEALTH...',C.yellow);
       p.text(14,184,state.error==='NONE'?'NO START ERROR':state.error,C.yellow);
       footer(p,'BACK','REFRESH','DETAILS');return true;
+    }
+    if(screen==='FAVORITES'){
+      p.text(10,25,'FAVORITE TEST PROFILES',C.vaporPink,2);
+      const list=state.favorites||[];
+      for(let row=0;row<4;row++){
+        const id=list[row],c=id&&catalog.byId.get(id);
+        menuRow(p,45+row*37,c?deviceName(c):'',c?c.id:'');
+      }
+      p.text(12,196,(state.favoriteCount||0)+' SAVED PROFILES',C.muted);
+      footer(p,'BACK','< PREV','NEXT >');return true;
+    }
+    if(screen==='HISTORY'){
+      p.text(10,25,'RECENT TRANSMISSIONS',C.vaporPink,2);
+      const list=state.history||[];
+      for(let row=0;row<4;row++){
+        const h=list[row];
+        menuRow(p,45+row*37,h?h.id:'',h?h.status+'  |  UPTIME '+h.uptime+'s':'');
+      }
+      p.text(12,196,'TX RESULTS ONLY - NOT RX DETECTIONS',C.muted);
+      footer(p,'BACK','< PREV','NEXT >');return true;
     }
     if(screen==='DURATION'){
       p.text(20,27,'TRANSMIT TIME',C.vaporPink,2);

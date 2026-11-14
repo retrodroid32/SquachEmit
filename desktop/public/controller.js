@@ -547,6 +547,24 @@
       return;
     }
     if(/^UI ERROR/.test(line)){info('emitter',line);return;}
+    if(/^UI (?:FAVS|HISTORY) (?:BEGIN|ROW|END)/.test(line)){
+      if(!s.active||!s.ready||!local.model)return;
+      const type=line.startsWith('UI FAVS ')?'favorites':'history';
+      const begin=/^UI (?:FAVS|HISTORY) BEGIN (\\d{1,3}) (\\d{1,3})$/.exec(line);
+      const row=type==='favorites'?/^UI FAVS ROW ([0-3]) ([A-Z0-9_-]{2,100})$/.exec(line):
+        /^UI HISTORY ROW ([0-3]) ([A-Z0-9_-]{2,100}) ([a-z_]{1,20}) (\\d{1,10})$/.exec(line);
+      if(begin){local.pendingList={type,count:Number(begin[1]),page:Number(begin[2]),rows:[]};return;}
+      if(row&&local.pendingList?.type===type){
+        local.pendingList.rows[Number(row[1])]=type==='favorites'?row[2]:
+          {id:row[2],status:row[3],uptime:Number(row[4])};return;
+      }
+      if(line==='UI '+(type==='favorites'?'FAVS':'HISTORY')+' END'&&local.pendingList?.type===type){
+        local.model[type]=local.pendingList.rows;
+        if(type==='favorites')local.model.favoriteCount=local.pendingList.count;
+        local.pendingList=null;renderEmitter();
+      }
+      return;
+    }
     const health=/^UI HEALTH 1 (\d{1,10}) (\d{1,10}) (\d{1,6}) (\d{1,10}) ([01])$/.exec(line);
     if(health){
       if(!s.active||!s.ready||!local.model)return;
@@ -556,7 +574,12 @@
     }
     const state=native.parse(line);
     if(!state||!s.active||!s.ready)return;
-    if(local.model&&local.model.health)state.health=local.model.health;
+    if(local.model){
+      if(local.model.health)state.health=local.model.health;
+      if(local.model.favorites)state.favorites=local.model.favorites;
+      if(local.model.history)state.history=local.model.history;
+      if(local.model.favoriteCount!==undefined)state.favoriteCount=local.model.favoriteCount;
+    }
     local.model=state;local.receivedAt=Date.now();
     mirrorNote('emitter','PC-DRAWN UI · '+state.screen+' · '+state.selected+
       ' · '+state.duration+'s · device '+state.uptime+'ms');

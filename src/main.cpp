@@ -49,6 +49,10 @@ static uint32_t g_radioIdentity = 0;
 
 static void truth(const char* event, const Scenario* s, const char* status = "ok") {
   // Existing keys remain stable for the serial truth consumer. 0 = BLE.
+#if defined(SQE_CYD32)
+  if(s && (!strcmp(event,"END")||!strcmp(event,"ERROR")))
+    cyd32UiRecordResult(s->id,status,millis());
+#endif
   const bool wifi = s && (s->kind == Kind::WifiAp || s->kind == Kind::WifiRemoteId);
   const unsigned channel = wifi ? (s->code ? (unsigned)s->code : 1u) : 0u;
   Serial.printf("TRUTH,{\"event\":\"%s\",\"seq\":%lu,\"ms\":%lu,\"id\":\"%s\",\"expected\":\"%s\",\"status\":\"%s\",\"carrier\":\"%s\",\"channel\":%u,\"mac\":\"%s\"}\n",

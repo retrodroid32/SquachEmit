@@ -2,24 +2,24 @@
   "schema": 1,
   "scenario_count": 172,
   "firmware_sources": {
-    "src": "abdea78fbfd4fee836e7ca68dd3ad6cf0b5b6ffd",
-    "include": "49ba54c0f7631cfe208d6ab98bc318c4524cfcd2",
+    "src": "76117c5f196a85d5ac5420f4d76aad776f1b180d",
+    "include": "e2d2fba8330284a07f875407fb77e8e364d37106",
     "lib": "bd0df45f7747bc9971aa4b379a12940dd2d7d98f",
     "SquachEmit.ino": "90b4205813a2f7885bc1e12ce7431eebf7249f45",
     "platformio.ini": "bd67af3ecd6de05f4cef015fe97e17b29ceed574"
   },
   "builds": {
     "cyd32-st7798": {
-      "title": "SquachEmit v1.1.0 CYD 3.2 — R8.1 Handheld Diagnostics + Details (172 Cases)",
+      "title": "SquachEmit v1.1.0 CYD 3.2 — R8.2 Favorites + Test History (172 Cases)",
       "version": "v1.1.0 MAINLINE · 172 cases",
-      "summary": "SquachEmit R8.1 LAB handheld update for CYD 3.2 ST7798 with live diagnostics, real heap and serial capacity, selected scenario radio/channel/expected classification, and 172 synthetic time-limited cases. Adds UI HEALTH for Windows native-view parity plus HEALTH serial command. SHA-256 validated firmware parts; physical validation outstanding; public v1.1.0 unchanged.",
+      "summary": "R8.2 LAB firmware adds persistent on-device favorites and recent actual transmitter event history to the CYD 3.2 ST7798 UI, with bounded Windows UI FAVS/HISTORY state streams; preserves 172 synthetic cases, existing diagnostics, and SHA-256 flash validation. Test history is transmitter evidence only, not verified receiver detection. Hardware validation pending.",
       "highlights": [
-        "CYD 3.2 native touchscreen has new Details and Diagnostics pages while retaining RUN, STOP, SUITE and existing calibration.",
-        "Real free heap, largest allocation, uptime, serial TX capacity and active-radio state; no fabricated RF power readings.",
-        "Selected case includes device name, scenario ID, BLE/Wi-Fi type, channel, expected classification and duration.",
-        "Serial HEALTH command and bounded UI HEALTH telemetry make the new screens viewable in compatible Windows Workbench.",
-        "Retains 172 synthetic bounded RF scenarios, identity rules, physical touchscreen and no RF transmission on boot.",
-        "Four flash segments checked by SHA-256; hardware validation pending; no production release."
+        "Favorites saved separately in NVS with explicit operator toggle and safe browse; no automatic RF transmission.",
+        "Recent eight transmitter results with case ID, actual end status and uptime, not fabricated receiver detections.",
+        "Windows native R8 renderer receives bounded Favorites and History records and mirrors physical navigation.",
+        "Existing case Details and Diagnostics screens retained, with touch and 172-case suite.",
+        "No firmware auto-run on boot; STOP remains physically accessible on home screen.",
+        "Hardware-specific CYD3.2 LAB firmware, SHA-256 flasher, unverified on board."
       ]
     },
     "c5-waveshare-28": {

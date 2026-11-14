@@ -24,7 +24,7 @@ constexpr uint16_t kWhite=0xFFFF,kMuted=0x7393,kInk=0x1801;
 constexpr uint16_t kFurDark=0x38C0,kFurMain=0x5941,kFurLight=0x9326;
 constexpr uint16_t kSkin=0xF60F,kSkinDark=0xCB88;
 
-enum class Screen : uint8_t { Home, Categories, Library, Duration, Details, Diagnostics };
+enum class Screen : uint8_t { Home, Categories, Library, Duration, Details, Diagnostics, Favorites, History };
 constexpr size_t kPageRows=4;
 
 TFT_eSPI lcd;
@@ -34,7 +34,12 @@ uint32_t lastSquachFrame=0, petUntil=0;
 Preferences prefs;
 Screen screen=Screen::Home;
 DeviceCategory category=DeviceCategory::Axon;
-size_t selected=0,page=0,categoryPage=0;
+size_t selected=0,page=0,categoryPage=0,favoritesPage=0,historyPage=0;
+uint8_t favBits[(kScenarioCount+7)/8]={0};
+struct HistoryEntry { char id[56]; char status[20]; uint32_t uptime; };
+HistoryEntry history[8]{};
+uint8_t historyHead=0,historyCount=0;
+uint32_t lastListsAt=0;
 uint8_t durationSeconds=12; // 3..30s, saved independently of touch calibration
 bool remoteDown=false;
 uint16_t remoteX=0,remoteY=0;
@@ -349,7 +354,10 @@ void detailScreen(){
   label(14,146,detail,kMuted);
   snprintf(detail,sizeof(detail),"DURATION: %us   SYNTHETIC TEST",(unsigned)durationSeconds);
   label(14,174,detail,kYellow);
-  label(14,196,"Identity emitted on RUN via serial",kMuted);
+  const bool fav=c&&((favBits[selected/8]>>(selected%8))&1u);
+  label(14,196,fav?"FAVORITE: YES [TAP TO REMOVE]":"FAVORITE: NO [TAP TO ADD]",kMuted);
+  label(246,22,"FAVS >",kCyan);
+  label(246,44,"HIST >",kCyan);
   footer("BACK","HEALTH","RUN");
 }
 void diagValues(){
@@ -395,6 +403,60 @@ void menuRow(int y,const char* title,const char* sub,bool chosen=false){
   fit(15,y+4,title,280,chosen?kWhite:kCyan,2);
   if(sub)fit(15,y+23,sub,282,kMuted,1);
 }
+
+size_t favoriteCount(){
+  size_t count=0;
+  for(size_t i=0;i<kScenarioCount;++i)if(favBits[i/8]&(1u<<(i%8)))++count;
+  return count;
+}
+const Scenario* favoriteAt(size_t rank,size_t* raw=nullptr){
+  for(size_t i=0;i<kScenarioCount;++i)if(favBits[i/8]&(1u<<(i%8))){
+    if(rank--==0){if(raw)*raw=i;return &kScenarios[i];}
+  }
+  return nullptr;
+}
+void toggleFavorite(){
+  if(selected>=kScenarioCount)return;
+  favBits[selected/8]^=(uint8_t)(1u<<(selected%8));
+  if(prefs.begin("sqemitfav",false)){
+    if(prefs.putBytes("fav",favBits,sizeof(favBits))!=sizeof(favBits))
+      Serial.println("WARN,FAVORITES_SAVE_FAILED");
+    prefs.end();
+  }else Serial.println("WARN,FAVORITES_NVS_UNAVAILABLE");
+  redraw=true;
+}
+void favoritesScreen(){
+  lcd.fillScreen(kBg);titleBar();
+  label(10,25,"FAVORITE TEST PROFILES",kVaporPink,2);
+  const size_t count=favoriteCount();
+  for(size_t row=0;row<4;++row){
+    const Scenario* c=favoriteAt(favoritesPage*4+row);
+    char name[58]={0};
+    if(c)scenarioDeviceName(*c,name,sizeof(name));
+    menuRow(45+(int)row*37,c?name:"",c?c->id:"");
+  }
+  char info[40];snprintf(info,sizeof(info),"%u SAVED PROFILES",(unsigned)count);
+  label(12,196,info,kMuted);
+  footer("BACK","< PREV","NEXT >");
+}
+const HistoryEntry* historyAt(size_t rank){
+  if(rank>=historyCount)return nullptr;
+  return &history[(historyHead+8-1-(uint8_t)rank)%8];
+}
+void historyScreen(){
+  lcd.fillScreen(kBg);titleBar();
+  label(10,25,"RECENT TRANSMISSIONS",kVaporPink,2);
+  for(size_t row=0;row<4;++row){
+    const HistoryEntry* h=historyAt(historyPage*4+row);
+    char sub[72]={0};
+    if(h)snprintf(sub,sizeof(sub),"%s  |  UPTIME %lus",
+                  h->status,(unsigned long)h->uptime);
+    menuRow(45+(int)row*37,h?h->id:"",h?sub:"");
+  }
+  label(12,196,"TX RESULTS ONLY - NOT RX DETECTIONS",kMuted);
+  footer("BACK","< PREV","NEXT >");
+}
+
 void categoriesScreen(){
   lcd.fillScreen(kBg);
   titleBar();
@@ -547,6 +609,12 @@ Cyd32UiAction touchDuration(int x,int y){
   return Cyd32UiAction::None;
 }
 Cyd32UiAction touchDetails(int x,int y,bool active){
+  if(!active&&x>=230&&y>=20&&y<62){
+    if(y<41){favoritesPage=0;screen=Screen::Favorites;}
+    else {historyPage=0;screen=Screen::History;}
+    redraw=true;return Cyd32UiAction::None;
+  }
+  if(!active&&y>=188&&y<211){toggleFavorite();return Cyd32UiAction::None;}
   if(y<kFooterY)return Cyd32UiAction::None;
   if(x<108){screen=Screen::Home;redraw=true;return Cyd32UiAction::None;}
   if(x<213){screen=Screen::Diagnostics;redraw=true;return Cyd32UiAction::None;}
@@ -558,6 +626,29 @@ Cyd32UiAction touchDiagnostics(int x,int y){
   if(x<108){screen=Screen::Details;redraw=true;}
   else if(x<213){diagValues();lastDiagAt=millis();}
   else {screen=Screen::Details;redraw=true;}
+  return Cyd32UiAction::None;
+}
+Cyd32UiAction touchFavorites(int x,int y){
+  if(y>=kFooterY){
+    if(x<108){screen=Screen::Details;redraw=true;}
+    else if(x<213){if(favoritesPage>0){--favoritesPage;redraw=true;}}
+    else if((favoritesPage+1)*4<favoriteCount()){++favoritesPage;redraw=true;}
+    return Cyd32UiAction::None;
+  }
+  if(y>=45&&y<45+4*37){
+    size_t raw=0;
+    if(favoriteAt(favoritesPage*4+(size_t)((y-45)/37),&raw)){
+      selected=raw;screen=Screen::Home;redraw=true;
+    }
+  }
+  return Cyd32UiAction::None;
+}
+Cyd32UiAction touchHistory(int x,int y){
+  if(y>=kFooterY){
+    if(x<108){screen=Screen::Details;redraw=true;}
+    else if(x<213){if(historyPage>0){--historyPage;redraw=true;}}
+    else if((historyPage+1)*4<historyCount){++historyPage;redraw=true;}
+  }
   return Cyd32UiAction::None;
 }
 void rgbBars(){
@@ -603,6 +694,10 @@ void cyd32UiBegin(){
     prefs.end();
   }
   if(durationSeconds<3 || durationSeconds>30)durationSeconds=12;
+  if(prefs.begin("sqemitfav",true)){
+    if(prefs.getBytesLength("fav")==sizeof(favBits))prefs.getBytes("fav",favBits,sizeof(favBits));
+    prefs.end();
+  }
   lcd.invertDisplay(panelInverted);
   lcd.fillScreen(kBg);
   squachSprite.setColorDepth(16);
@@ -673,6 +768,8 @@ Cyd32UiAction cyd32UiTick(const char* active,uint32_t remaining,bool suite){
     else if(screen==Screen::Duration)durationScreen();
     else if(screen==Screen::Details)detailScreen();
     else if(screen==Screen::Diagnostics)diagnosticsScreen();
+    else if(screen==Screen::Favorites)favoritesScreen();
+    else if(screen==Screen::History)historyScreen();
     else libraryScreen(active,suite);
     lastCount=(active&&*active)?((remaining+999)/1000):UINT32_MAX;
     redraw=false;
@@ -710,6 +807,8 @@ Cyd32UiAction cyd32UiTick(const char* active,uint32_t remaining,bool suite){
     else if(screen==Screen::Duration)action=touchDuration(x,y);
     else if(screen==Screen::Details)action=touchDetails(x,y,active&&*active);
     else if(screen==Screen::Diagnostics)action=touchDiagnostics(x,y);
+    else if(screen==Screen::Favorites)action=touchFavorites(x,y);
+    else if(screen==Screen::History)action=touchHistory(x,y);
     else action=touchLibrary(x,y,active&&*active);
     lastPress=now;
     // Only navigation/state changes request a full repaint. Every other
@@ -736,18 +835,39 @@ void cyd32UiStreamState(const char* activeId,uint32_t remainingMs,
       screen==Screen::Library?"LIBRARY":
       screen==Screen::Duration?"DURATION":
       screen==Screen::Details?"DETAILS":
-      screen==Screen::Diagnostics?"DIAGNOSTICS":"HOME";
+      screen==Screen::Diagnostics?"DIAGNOSTICS":
+      screen==Screen::Favorites?"FAVORITES":
+      screen==Screen::History?"HISTORY":"HOME";
   const Scenario* chosen=selected<kScenarioCount?&kScenarios[selected]:nullptr;
   const uint32_t petMs=(int32_t)(petUntil-now)>0?petUntil-now:0;
   Serial.printf("UI STATE 1 %s %u %u %u %s %u %s %lu %u %u %s %s %lu %lu\n",
     screenName,(unsigned)static_cast<uint8_t>(category),
-    (unsigned)page,(unsigned)categoryPage,
+    (unsigned)(screen==Screen::Favorites?favoritesPage:screen==Screen::History?historyPage:page),
+    (unsigned)categoryPage,
     chosen?chosen->id:"NONE",(unsigned)durationSeconds,
     activeId&&*activeId?activeId:"IDLE",
     (unsigned long)remainingMs,suiteRunning?1u:0u,calibrated?1u:0u,
     radioStartingProfile[0]?radioStartingProfile:"NONE",
     radioStartError[0]?radioStartError:"NONE",
     (unsigned long)petMs,(unsigned long)now);
+  if(screen==Screen::Favorites&& (force||now-lastListsAt>=1000u)){
+    lastListsAt=now;
+    Serial.printf("UI FAVS BEGIN %u %u\n",(unsigned)favoriteCount(),(unsigned)favoritesPage);
+    for(size_t i=0;i<4;++i){
+      const Scenario* c=favoriteAt(favoritesPage*4+i);
+      if(c)Serial.printf("UI FAVS ROW %u %s\n",(unsigned)i,c->id);
+    }
+    Serial.println("UI FAVS END");
+  }
+  if(screen==Screen::History&&(force||now-lastListsAt>=1000u)){
+    lastListsAt=now;
+    Serial.printf("UI HISTORY BEGIN %u %u\n",(unsigned)historyCount,(unsigned)historyPage);
+    for(size_t i=0;i<4;++i){
+      const HistoryEntry* h=historyAt(historyPage*4+i);
+      if(h)Serial.printf("UI HISTORY ROW %u %s %s %lu\n",(unsigned)i,h->id,h->status,(unsigned long)h->uptime);
+    }
+    Serial.println("UI HISTORY END");
+  }
   if(screen==Screen::Diagnostics){
     static uint32_t lastHealth=0;
     if(force||now-lastHealth>=1000u){
@@ -758,6 +878,16 @@ void cyd32UiStreamState(const char* activeId,uint32_t remainingMs,
         previousActive[0]?1u:0u);
     }
   }
+}
+void cyd32UiRecordResult(const char* id,const char* status,uint32_t atMs){
+  if(!id||!*id||!status)return;
+  HistoryEntry& h=history[historyHead];
+  snprintf(h.id,sizeof(h.id),"%s",id);
+  snprintf(h.status,sizeof(h.status),"%s",status);
+  h.uptime=atMs/1000UL;
+  historyHead=(uint8_t)((historyHead+1)%8);
+  if(historyCount<8)++historyCount;
+  if(screen==Screen::History)redraw=true;
 }
 bool cyd32UiRemoteTouch(uint16_t x,uint16_t y,const char* phase){
   if(!ready||!calibrated||!phase)return false;
