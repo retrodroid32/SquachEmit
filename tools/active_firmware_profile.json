@@ -10,9 +10,9 @@
   },
   "builds": {
     "cyd32-st7798": {
-      "title": "SquachEmit CYD 3.2 — R7.3 Native UI Mirror LAB Firmware",
-      "version": "R7.3 LAB · 172 cases",
-      "summary": "R7.3-compatible SquachEmit CYD 3.2 ST7798 experimental device firmware: UI ON/OFF/GET, UI READY/STATE and remote UI TOUCH at 115200 baud for the Windows Workbench native display. This is the device firmware that pairs with the R7.3 Windows EXE, not the older public v1.1.0 firmware. 172 synthetic bounded test cases. Hardware verification pending; no production release.",
+      "title": "SquachEmit v1.1.0 CYD 3.2 — R7.3 Native UI LAB (172 Cases)",
+      "version": "v1.1.0 MAINLINE · 172 cases",
+      "summary": "R7.3-compatible SquachEmit CYD 3.2 ST7798 experimental device firmware: 172 synthetic test cases, UI ON/OFF/GET, UI READY/STATE and remote UI TOUCH at 115200 baud for the Windows Workbench native display. Matches R7.3 Windows EXE; older public firmware lacks UI support. SHA-256 verified flash segments. Hardware validation pending; not a production release.",
       "highlights": [
         "CYD 3.2 device firmware for the R7.3 Windows EXE native UI display; NOT a Windows-only update.",
         "Supports UI ON, UI OFF, UI GET, UI TOUCH and UI READY/STATE at 115200 baud.",
