@@ -26,7 +26,7 @@ constexpr uint16_t kWhite=0xFFFF,kMuted=0x7393,kInk=0x1801;
 constexpr uint16_t kFurDark=0x38C0,kFurMain=0x5941,kFurLight=0x9326;
 constexpr uint16_t kSkin=0xF60F,kSkinDark=0xCB88;
 
-enum class Screen : uint8_t { Home, Categories, Library, Duration, Details, Diagnostics, Favorites, History, Settings, Help, Identity, Recovery, Activity, Evidence, QuickFilter };
+enum class Screen : uint8_t { Home, Categories, Library, Duration, Details, Diagnostics, Favorites, History, Settings, Help, Identity, Recovery, Activity, Evidence, QuickFilter, Portrait };
 constexpr size_t kPageRows=4;
 
 TFT_eSPI lcd;
@@ -66,6 +66,7 @@ uint32_t remoteAt=0,mirrorSequence=0;
 bool ready=false,calibrated=false,redraw=true,wasPressed=false,previousSuite=false;
 bool panelInverted=false;
 uint32_t lastPoll=0,lastPress=0,lastCount=UINT32_MAX,colorBarsUntil=0,lastDiagAt=0;
+uint32_t portraitLastCount=UINT32_MAX;
 uint8_t talkIndex=0;
 char previousActive[56]={0};
 char radioStartError[28]={0}; // visible radio-start failure stage
@@ -474,6 +475,47 @@ void evidenceScreen(){
   label(12,193,"No direct RF measurement on board",kMuted);
   footer("BACK","DETAILS","HOME");
 }
+
+void portraitCounter(const char* active,uint32_t remaining,bool suite){
+  const bool on=active&&*active;
+  lcd.fillRect(12,178,216,56,kBg);
+  lcd.drawRect(12,178,216,56,kPurple);
+  label(24,184,on?"RADIO ON AIR":suite?"SUITE RUNNING":"READY - NO RF",on?kPink:kGreen,2);
+  char counter[38];
+  snprintf(counter,sizeof(counter),on?"%lus LEFT":"TX TIME %us",
+           (unsigned long)(on?(remaining+999)/1000:durationSeconds));
+  label(26,210,counter,kYellow,2);
+}
+void portraitScreen(const char* active,uint32_t remaining,bool suite){
+  lcd.fillScreen(kBg);
+  lcd.drawRect(0,0,240,320,kPurple);
+  label(56,12,"SQUACHEMIT",kWhite,2);
+  label(40,45,"PORTRAIT LAB MODE",kVaporPink);
+  label(14,78,"SELECTED TEST",kCyan);
+  const Scenario* caseToShow=(active&&*active)?findScenario(active):
+    selected<kScenarioCount?&kScenarios[selected]:nullptr;
+  char labelText[58]={0};
+  if(caseToShow)scenarioDeviceName(*caseToShow,labelText,sizeof(labelText));
+  fit(14,103,caseToShow?labelText:"NONE",210,kWhite,2);
+  fit(14,131,caseToShow?caseToShow->id:"NONE",211,kMuted);
+  portraitCounter(active,remaining,suite);
+  label(14,248,"ROTATE BACK FOR FULL LIBRARY",kMuted);
+  button(8,278,72,34,"BACK");
+  button(84,278,72,34,(active&&*active)||suite||playlistRunning?"STOP":"RUN");
+  button(160,278,72,34,playlistRunning?(playlistPaused?"RESUME":"PAUSE"):"SUITE");
+}
+Cyd32UiAction touchPortrait(int x,int y,bool active,bool suite){
+  if(y<278)return Cyd32UiAction::None;
+  if(x<80){
+    lcd.setRotation(1);screen=Screen::Home;redraw=true;
+    return Cyd32UiAction::None;
+  }
+  if(x<160)
+    return (active||suite||playlistRunning)?Cyd32UiAction::Stop:Cyd32UiAction::Run;
+  return playlistRunning?(playlistPaused?Cyd32UiAction::PlaylistResume:
+         Cyd32UiAction::PlaylistPause):Cyd32UiAction::Suite;
+}
+
 void settingsScreen(){
   lcd.fillScreen(kBg);titleBar();
   label(10,24,settingsMore?"SETTINGS / DISPLAY":"HANDHELD SETTINGS",kVaporPink,2);
@@ -484,7 +526,7 @@ void settingsScreen(){
     menuRow(46,line,"TAP TO CYCLE COLORS");
     menuRow(85,fontMode?"TEXT SIZE: STANDARD":"TEXT SIZE: COMPACT","TAP TO CHANGE LIST TYPE");
     menuRow(124,"SYNTHETIC IDENTITY","SEE LAST ACTUALLY TRANSMITTED MAC");
-    menuRow(163,"RECOVERY / RESET INFO","SHOW RESET CODE - NO ERASE");
+    menuRow(163,"PORTRAIT MODE / LAB","EXPERIMENTAL - RETURN TO LANDSCAPE");
     footer("BACK","< PREV","HELP");return;
   }
   char line[50];
@@ -866,7 +908,7 @@ Cyd32UiAction touchSettings(int x,int y){
       if(row==0){themeLevel=(themeLevel+1)%3;applyTheme();persistUiSettings();}
       else if(row==1){fontMode=(fontMode+1)%2;persistUiSettings();}
       else if(row==2)screen=Screen::Identity;
-      else if(row==3)screen=Screen::Recovery;
+      else if(row==3){lcd.setRotation(0);screen=Screen::Portrait;portraitLastCount=UINT32_MAX;}
       redraw=true;return Cyd32UiAction::None;
     }
     if(row==0){brightnessLevel=(brightnessLevel+1)%3;applyBrightness();persistUiSettings();}
@@ -1065,7 +1107,7 @@ Cyd32UiAction cyd32UiTick(const char* active,uint32_t remaining,bool suite){
   const char* name=active?active:"";
   // A serial-initiated RUN or SUITE must not leave a hidden STOP button
   // behind the duration editor.
-  if(((active&&*active)||suite)&&screen!=Screen::Home){
+  if(((active&&*active)||suite)&&screen!=Screen::Home&&screen!=Screen::Portrait){
     screen=Screen::Home;
     redraw=true;
   }
@@ -1091,14 +1133,20 @@ Cyd32UiAction cyd32UiTick(const char* active,uint32_t remaining,bool suite){
     else if(screen==Screen::Activity)activityScreen();
     else if(screen==Screen::Evidence)evidenceScreen();
     else if(screen==Screen::QuickFilter)quickFilterScreen();
+    else if(screen==Screen::Portrait)portraitScreen(active,remaining,suite);
     else libraryScreen(active,suite);
     lastCount=(active&&*active)?((remaining+999)/1000):UINT32_MAX;
+    portraitLastCount=(active&&*active)?((remaining+999)/1000):UINT32_MAX;
     redraw=false;
   }else if(calibrated&&screen==Screen::Home&&active&&*active){
     const uint32_t count=(remaining+999)/1000;
     if(count!=lastCount){countdownOnly(count);lastCount=count;}
   }
   if(calibrated&&screen==Screen::Diagnostics&&now-lastDiagAt>=1000u){diagValues();lastDiagAt=now;}
+  if(calibrated&&screen==Screen::Portrait){
+    const uint32_t count=(active&&*active)?((remaining+999)/1000):UINT32_MAX;
+    if(count!=portraitLastCount){portraitCounter(active,remaining,suite);portraitLastCount=count;}
+  }
   if(screenTimeout&&!pcControl&&!(active&&*active)&&!suite && !screenDimmed &&
       now-lastTouchActivity>=(screenTimeout==1?30000UL:60000UL)){
     screenDimmed=true;applyBrightness();
@@ -1132,7 +1180,8 @@ Cyd32UiAction cyd32UiTick(const char* active,uint32_t remaining,bool suite){
     if(screenDimmed){screenDimmed=false;applyBrightness();wasPressed=true;
       return Cyd32UiAction::None;}
   }
-  if(pressed&&!wasPressed&&now-lastPress>=240&&x<kW&&y<kH){
+  if(pressed&&!wasPressed&&now-lastPress>=240&&
+     x<(screen==Screen::Portrait?240:kW)&&y<(screen==Screen::Portrait?320:kH)){
     if(screen==Screen::Home)action=touchHome(x,y,active&&*active,suite);
     else if(screen==Screen::Categories)action=touchCategories(x,y);
     else if(screen==Screen::Duration)action=touchDuration(x,y);
@@ -1147,6 +1196,7 @@ Cyd32UiAction cyd32UiTick(const char* active,uint32_t remaining,bool suite){
     else if(screen==Screen::Activity)action=touchActivity(x,y);
     else if(screen==Screen::Evidence)action=touchEvidence(x,y);
     else if(screen==Screen::QuickFilter)action=touchQuickFilter(x,y);
+    else if(screen==Screen::Portrait)action=touchPortrait(x,y,active&&*active,suite);
     else action=touchLibrary(x,y,active&&*active);
     lastPress=now;
     // Only navigation/state changes request a full repaint. Every other
@@ -1182,7 +1232,8 @@ void cyd32UiStreamState(const char* activeId,uint32_t remainingMs,
       screen==Screen::Recovery?"RECOVERY":
       screen==Screen::Activity?"ACTIVITY":
       screen==Screen::Evidence?"EVIDENCE":
-      screen==Screen::QuickFilter?"QUICKFILTER":"HOME";
+      screen==Screen::QuickFilter?"QUICKFILTER":
+      screen==Screen::Portrait?"PORTRAIT":"HOME";
   const Scenario* chosen=selected<kScenarioCount?&kScenarios[selected]:nullptr;
   const uint32_t petMs=(int32_t)(petUntil-now)>0?petUntil-now:0;
   Serial.printf("UI STATE 1 %s %u %u %u %s %u %s %lu %u %u %s %s %lu %lu\n",

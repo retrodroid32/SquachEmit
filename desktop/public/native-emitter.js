@@ -28,7 +28,7 @@
     const a=String(line||'').trim().split(/ +/);
     if(a.length!==17||a[0]!=='UI'||a[1]!=='STATE'||a[2]!=='1')
       return null;
-    const screens=['HOME','CATEGORIES','LIBRARY','DURATION','DETAILS','DIAGNOSTICS','FAVORITES','HISTORY','SETTINGS','HELP','IDENTITY','RECOVERY','ACTIVITY','EVIDENCE','QUICKFILTER','CALIBRATION','COLORS'];
+    const screens=['HOME','CATEGORIES','LIBRARY','DURATION','DETAILS','DIAGNOSTICS','FAVORITES','HISTORY','SETTINGS','HELP','IDENTITY','RECOVERY','ACTIVITY','EVIDENCE','QUICKFILTER','PORTRAIT','CALIBRATION','COLORS'];
     if(!screens.includes(a[3]))return null;
     const num=(i,max)=>/^\d+$/.test(a[i])&&Number.isSafeInteger(Number(a[i]))
       &&Number(a[i])<=max?Number(a[i]):null;
@@ -283,13 +283,35 @@
   function render(ctx,state,lib,now){
     if(!ctx||!state)return false;
     const p=P(ctx),catalog=lib||prepare([]);
-    if(ctx.canvas){ctx.canvas.width=W;ctx.canvas.height=H;}
+    if(ctx.canvas){ctx.canvas.width=state.screen==='PORTRAIT'?240:W;
+      ctx.canvas.height=state.screen==='PORTRAIT'?320:H;}
     ctx.imageSmoothingEnabled=false;
     const theme=state.device?.theme??0;
     const palette=[[0xAC1F,0x07FF,0xF96F],[0x04D3,0x07FF,0x05F3],[0xB300,0xFE00,0xF920]][theme]||[0xAC1F,0x07FF,0xF96F];
     [C.purple,C.cyan,C.pink]=palette;
     p.fill(0,0,W,H,C.bg);
     const screen=state.calibrated?state.screen:'CALIBRATION';
+    if(screen==='PORTRAIT'){
+      const active=state.active!=='IDLE'&&state.active!=='NONE';
+      const chosen=catalog.byId.get(active?state.active:state.selected);
+      p.outline(0,0,240,320,C.purple);
+      p.text(56,12,'SQUACHEMIT',C.white,2);
+      p.text(40,45,'PORTRAIT LAB MODE',C.vaporPink);
+      p.text(14,78,'SELECTED TEST',C.cyan);
+      p.text(14,103,deviceName(chosen),C.white,2,210);
+      p.text(14,131,chosen?chosen.id:'NONE',C.muted,1,211);
+      p.fill(12,178,216,56,C.bg);p.outline(12,178,216,56,C.purple);
+      p.text(24,184,active?'RADIO ON AIR':state.suite?'SUITE RUNNING':'READY - NO RF',
+        active?C.pink:C.green,2);
+      p.text(26,210,active?Math.ceil(state.remaining/1000)+'s LEFT':
+        'TX TIME '+state.duration+'s',C.yellow,2);
+      p.text(14,248,'ROTATE BACK FOR FULL LIBRARY',C.muted);
+      button(p,8,278,72,34,'BACK');
+      button(p,84,278,72,34,(active||state.suite||state.playlistRunning)?'STOP':'RUN');
+      button(p,160,278,72,34,state.playlistRunning?
+        (state.playlistPaused?'RESUME':'PAUSE'):'SUITE');
+      return true;
+    }
     if(screen==='CALIBRATION'){
       title(p,state.pcControl);p.text(28,35,'SQUACHEMIT TOUCH SETUP',C.cyan,2);
       menuRow(p,87,'TAP SCREEN TO CALIBRATE','FOLLOW THE 5 CROSSHAIRS');
@@ -466,7 +488,7 @@
         menuRow(p,46,'THEME: '+themes[d.theme],'TAP TO CYCLE COLORS');
         menuRow(p,85,d.font?'TEXT SIZE: STANDARD':'TEXT SIZE: COMPACT','TAP TO CHANGE LIST TYPE');
         menuRow(p,124,'SYNTHETIC IDENTITY','SEE LAST ACTUALLY TRANSMITTED MAC');
-        menuRow(p,163,'RECOVERY / RESET INFO','SHOW RESET CODE - NO ERASE');
+        menuRow(p,163,'PORTRAIT MODE / LAB','EXPERIMENTAL - RETURN TO LANDSCAPE');
         footer(p,'BACK','< PREV','HELP');return true;
       }
       p.text(10,24,'HANDHELD SETTINGS',C.vaporPink,2);

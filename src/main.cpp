@@ -529,7 +529,7 @@ static void command(String cmd) {
     }
     unsigned x=0,y=0;char phase[8]={0};char garbage=0;
     if(sscanf(cmd.c_str(),"UI TOUCH %u %u %7s %c",&x,&y,phase,&garbage)==3
-       && x<320 && y<240
+       && x<480 && y<480
        && cyd32UiRemoteTouch((uint16_t)x,(uint16_t)y,phase)){
       g_uiStatePending=true;
       Serial.println("UI TOUCH OK");
