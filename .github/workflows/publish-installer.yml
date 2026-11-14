@@ -38,6 +38,8 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
+          # A deploy must always originate from approved main, even if
+          # the source firmware was compiled on a feature/LAB branch.
           ref: main
           persist-credentials: false
       - uses: actions/setup-python@v5
@@ -81,15 +83,20 @@ jobs:
               if (run.get('head_repository') or {}).get('full_name')!=repo:
                   continue
               branch=run.get('head_branch') or ''
-              targets = (
-                  [('cyd32-st7798','squachemit-cyd32-st7798-firmware-unverified','stable'),
-                   ('c5-waveshare-28','squachemit-waveshare-c5-28-firmware-unverified','stable'),
-                   ('s3-devkit','squachemit-esp32s3-firmware-unverified','stable')]
-                  if branch=='main' else
-                  [('cyd32-st7798','squachemit-cyd32-st7798-firmware-unverified','lab')]
-                  if branch.startswith('lab/cyd32-') else
-                  [('c5-waveshare-28','squachemit-waveshare-c5-28-firmware-unverified','lab')]
-                  if branch.startswith('lab/') else [])
+              # No individual SHA or branch-name exceptions: only successful
+              # CI runs from this repository and approved branch categories.
+              # Production builds always come from main; dev builds stay LAB.
+              if branch=='main':
+                  channel='stable'
+              elif branch.startswith(('feature/','lab/')):
+                  channel='lab'
+              else:
+                  continue
+              targets = [
+                  ('cyd32-st7798','squachemit-cyd32-st7798-firmware-unverified',channel),
+                  ('c5-waveshare-28','squachemit-waveshare-c5-28-firmware-unverified',channel),
+                  ('s3-devkit','squachemit-esp32s3-firmware-unverified',channel),
+              ]
               if not targets: continue
               sha=run['head_sha']
               for board, artifact, channel in targets:
@@ -114,7 +121,9 @@ jobs:
                       print(f'::warning::Could not download run {run["id"]}: {e}',file=sys.stderr)
                       continue
                   seen.add(key)
-                  profile=mainline_profile(sha) if branch=='main' else None
+                  # Metadata is fetched from the exact artifact commit,
+                  # never borrowed from the current production branch.
+                  profile=mainline_profile(sha)
                   sources.append(dict(board=board,sha=sha,branch=branch,channel=channel,
                                       run_id=run['id'],created_at=run['created_at'],path=str(directory),
                                       source_profile=profile))
