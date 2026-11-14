@@ -2,6 +2,7 @@
 #include "cyd32_ui.h"
 #include "scenarios.h"
 #include "scenario_library.h"
+#include "scenario_display.h"
 #include "cyd32_squachy_port.h"
 #include <Arduino.h>
 #include <TFT_eSPI.h>
@@ -251,9 +252,12 @@ void speechBubble(const char* active,bool suite){
       (active&&*active)?"RF LAB TRANSMITTING":suite?"TEST SUITE RUNNING":
       "READY TO TEST. PICK A PROFILE.";
   fit(16,25,phrase,285,failed?kPink:(starting?kYellow:kWhite),2);
+  char friendly[58]={0};
+  const Scenario* showing=(active&&*active)?findScenario(active):
+    starting?findScenario(radioStartingProfile):chosen;
+  if(showing)scenarioDeviceName(*showing,friendly,sizeof(friendly));
   fit(16,47,failed?radioStartError:
-      starting?radioStartingProfile:
-      (active&&*active)?active:chosen?chosen->id:"NO PROFILE",
+      showing?friendly:"NO PROFILE",
       288,failed?kYellow:(starting?kYellow:(active&&*active?kPink:kCyan)),1);
 }
 
@@ -273,7 +277,9 @@ void statusStrip(const char* active,bool suite){
   lcd.drawFastHLine(6,198,308,kPurple);
   label(12,201,"PROFILE",kVaporPink);
   const Scenario* chosen=selected<kScenarioCount?&kScenarios[selected]:nullptr;
-  fit(66,200,chosen?chosen->id:"NONE",164,kWhite,1);
+  char friendly[58]={0};
+  if(chosen)scenarioDeviceName(*chosen,friendly,sizeof(friendly));
+  fit(66,200,chosen?friendly:"NONE",164,kWhite,1);
 }
 
 void durationValue(){
@@ -371,39 +377,17 @@ void libraryScreen(const char* active,bool suite){
   for(size_t row=0;row<4;++row){
     size_t raw=0;
     const Scenario* s=atRank(page*4+row,&raw);
-    char title[55]={0},hint[45]={0};
+    char title[65]={0},hint[82]={0};
     if(s){
-      const bool djiBle = startsWith(s->id,"RID-DJI-");
-      const bool djiWifi = startsWith(s->id,"RID-WIFI-DJI-");
-      const bool djiOui = startsWith(s->id,"OUI-DJI-");
-      const bool otherOui = startsWith(s->id,"OUI-") && !djiOui;
-      if(djiOui || otherOui) {
-        const char* end=strstr(s->description," | ");
-        if(end) snprintf(title,sizeof(title),"%02u  %.*s",
-                         (unsigned)(page*4+row+1),
-                         (int)(end-s->description),s->description);
-        else snprintf(title,sizeof(title),"%02u  %.42s",
-                      (unsigned)(page*4+row+1),s->id);
-        snprintf(hint,sizeof(hint),"%s", djiOui ?
-                 "DJI VENDOR OUI / NO REMOTE ID" :
-                 "VENDOR PREFIX / NO REMOTE ID");
-      } else if(djiBle || djiWifi) {
-        // Clearly identify the model name and transport. These are lab labels,
-        // not a signature proven to identify an actual DJI aircraft.
-        const char* end = strstr(s->description," | ");
-        if(end) snprintf(title,sizeof(title),"%02u  %.*s",
-                         (unsigned)(page*4+row+1),
-                         (int)(end-s->description),s->description);
-        else snprintf(title,sizeof(title),"%02u  %.42s",
-                      (unsigned)(page*4+row+1),s->id);
-        snprintf(hint,sizeof(hint),"%s",
-                 djiWifi?"SYNTHETIC WIFI BEACON / BASIC ID":
-                          "SYNTHETIC BLE4 / EXPECT DRONE");
-      } else {
-        snprintf(title,sizeof(title),"%02u  %.42s",
-                 (unsigned)(page*4+row+1),s->id);
-        snprintf(hint,sizeof(hint),"EXPECTED: %.24s",s->expected);
-      }
+      char name[55]={0};
+      scenarioDeviceName(*s,name,sizeof(name));
+      // Name first on every row; the original stable case ID remains in
+      // the second line for reproducible Web Serial/CSV test evidence.
+      snprintf(title,sizeof(title),"%02u  %.48s",
+               (unsigned)(page*4+row+1),name);
+      if(sqeStarts(s->id,"OUI-"))
+        snprintf(hint,sizeof(hint),"NO REMOTE ID | %s",s->id);
+      else snprintf(hint,sizeof(hint),"%s  |  %s",s->id,s->expected);
     }
     menuRow(48+(int)row*36,title,hint,s&&raw==selected);
   }

@@ -18,6 +18,9 @@ jobs:
       - run: python -m unittest discover -s tests -v
       - run: node --check web-installer/app.js
       - run: node tests/verify_installer_browser.cjs
+      - run: node --check workbench/core.js
+      - run: node --check workbench/app.js
+      - run: node tests/verify_workbench.cjs
       - run: g++ -std=c++11 -Wall -Wextra -Werror tests/test_identity.cpp -o /tmp/sqe_identity && /tmp/sqe_identity
       - run: python tools/generate_vectors.py && git diff --exit-code tests/offline_vectors.json
       - name: Fetch pinned SquachWatch decoder for native verification
@@ -31,6 +34,20 @@ jobs:
         run: python tools/verify_native.py --dji-oui-only _squachwatch_native
       - run: python tools/generate_drone_vectors.py --output /tmp/sqe-drone-vectors.json
       - run: python tools/score_trials.py tests/trials.csv --output /tmp/sqe-trials.md --json /tmp/sqe-trials.json
+      - name: Package Detection Workbench review preview
+        if: github.event_name == 'pull_request' && startsWith(github.head_ref, 'feature/detection-workbench-')
+        run: |
+          mkdir -p _workbench_review/workbench
+          cp workbench/{index.html,style.css,core.js,app.js} _workbench_review/workbench/
+          cp tests/cases.json _workbench_review/workbench/cases.json
+          printf 'SquachEmit Detection Workbench review preview (NO firmware bundled).\nUnzip the artifact, open a terminal in its root, run: py -m http.server 8000\nThen visit: http://localhost:8000/workbench/ in desktop Chrome/Edge.\nWeb Serial requires localhost or HTTPS. This preview does not deploy to public Pages.\n' > _workbench_review/README.txt
+      - name: Upload Workbench review preview artifact
+        if: github.event_name == 'pull_request' && startsWith(github.head_ref, 'feature/detection-workbench-')
+        uses: actions/upload-artifact@v4
+        with:
+          name: squachemit-detection-workbench-review-preview
+          path: _workbench_review/
+          if-no-files-found: error
   firmware:
     runs-on: ubuntu-latest
     steps:

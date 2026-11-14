@@ -221,6 +221,31 @@ def load_source(src: dict, output: Path, notes: dict | None = None) -> dict:
             'segments':segments, **description}
 
 
+def publish_workbench(output: Path) -> None:
+    """Copy only trusted checked-in workbench files and real catalog.
+
+    No serial data, receiver logs, or user test results are uploaded; the
+    deployed page is completely static and stores data only in the browser.
+    """
+    root = Path(__file__).resolve().parent.parent
+    source = root / 'workbench'
+    out = output / 'workbench'
+    out.mkdir(parents=True, exist_ok=True)
+    for name in ('index.html', 'style.css', 'core.js', 'app.js'):
+        path = source / name
+        if not path.is_file() or path.stat().st_size < 100:
+            raise ValueError(f'missing workbench asset: {path}')
+        shutil.copyfile(path, out / name)
+    cases = root / 'tests' / 'cases.json'
+    content = json.loads(cases.read_text(encoding='utf-8'))
+    if not isinstance(content, list) or len(content) != 172:
+        raise ValueError('Workbench requires the current reviewed 172-case catalog')
+    ids = [case.get('id') for case in content]
+    if len(ids) != len(set(ids)):
+        raise ValueError('Duplicate case IDs in workbench catalog')
+    shutil.copyfile(cases, out / 'cases.json')
+
+
 def build(source_manifest: Path, output: Path) -> dict:
     data=json.loads(source_manifest.read_text(encoding='utf-8'))
     if not isinstance(data.get('sources'),list): raise ValueError('sources must be a list')
@@ -228,6 +253,7 @@ def build(source_manifest: Path, output: Path) -> dict:
     output.mkdir(parents=True)
     for filename in ('index.html','style.css','app.js'):
         shutil.copyfile(SOURCE/filename, output/filename)
+    publish_workbench(output)
     (output/'.nojekyll').write_bytes(b'')
     builds=[]
     notes = load_build_notes()

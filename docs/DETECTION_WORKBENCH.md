@@ -1,0 +1,234 @@
+# SquachEmit Detection Workbench (PR #36)
+
+The [Detection Workbench](https://retrodroid32.github.io/SquachEmit/workbench/)
+is a proposed **static, browser-local** test dashboard for measuring how often
+SquachWatch actually detects SquachEmit test scenarios. The GitHub Pages URL
+will become available **only after this PR is approved and merged**, followed by
+a successful Pages deployment. No server receives logs, MAC addresses,
+device serial numbers, or other captured RF information.
+
+## Testing this draft PR before merge
+
+GitHub CI on PR #36 creates the downloadable artifact
+`squachemit-detection-workbench-review-preview`. Open the PR's successful
+Actions run, download that artifact and extract it to a folder on your PC.
+From **PowerShell**, inside the extracted folder, run:
+
+```powershell
+py -m http.server 8000
+```
+
+Open `http://localhost:8000/workbench/` in desktop Chrome or Edge.
+Localhost is a trustworthy origin for Web Serial. This preview intentionally
+does **not** change or deploy the public firmware installer, and it includes
+**no firmware binaries**. Disconnect any other serial console before
+connecting either board.
+
+## Hardware and browser
+
+- Desktop Chrome or Edge, HTTPS (or localhost), USB data cables.
+- Connect **SquachEmit** over Web Serial at **115,200 baud**.
+- Connect a *separate* **SquachWatch** at **2,000,000 baud** (selectable).
+  Its existing firmware supports the read-only serial **`LOG`** command,
+  returning a structured table of type, MAC, RSSI, hits, state and first-seen
+  time. **No SquachWatch firmware change is required.**
+- Once connected, the Workbench automatically requests a `LOG` snapshot
+  approximately every 1.5 seconds. It displays matched receiver evidence
+  and automatically fills the observed type if a **new** table row has the
+  **exact MAC transmitted by SquachEmit**. The match must follow a complete
+  pre-test baseline; unchanged historical sightings cannot produce a pass.
+- Keep SquachWatch's LOG/UI available for manual review of **preexisting
+  identities, ambiguous matches and cases where nothing was detected**.
+  The workbench never parses unrelated diagnostics as an alert.
+- Close existing serial consoles and Web Installer serial connections before
+  selecting either port; the same OS serial port cannot be opened twice.
+
+## Per-case procedure
+
+1. Enter a run ID, receiving board (CYD 2.8 or 3.2), and the actual **Git
+   commit SHA** of both firmware builds. At least seven hexadecimal characters
+   are required to count a result. Don't substitute a marketing release name.
+2. Connect the receiver **first**. Confirm the status says **AUTO LOG ACTIVE**
+   and displays its latest row count. The serial port cannot be used by a
+   separate terminal at the same time. Then connect the emitter. If the
+   receiver is not connected, you can still record observations manually.
+3. Select a test from the actual **172-case catalog** and 3–30-second transmit
+   duration. Confirm authorized RF testing and click **Run selected case**.
+   Nothing transmits until this explicit button is pressed.
+4. When the receiver is connected and you press RUN, the Workbench requests
+   a **fresh `LOG` baseline before sending any transmitter command**. The
+   actual `TRUTH BEGIN` creates a pending trial with its precise MAC. A
+   later successful receiver `LOG` snapshot with a newly detected or
+   reactivated **same MAC** automatically records the observed detection
+   class, RSSI and receiver-log evidence, while the emitter is still running.
+   A matching `TRUTH END` with `ok` then completes the scored observation.
+   This is automatic receiver evidence, not just a transmitter claim.
+5. If no fresh exact-MAC match appears, the Workbench **does not automatically
+   mark NONE**. It cannot infer uninterrupted receiver listening from a
+   missing `LOG` entry. Check the actual SquachWatch display/LOG, then
+   manually set `NONE` *only* if the entire listening window was complete.
+   A matching device already present in the baseline, a re-used MAC without
+   a new sighting, or multiple different classifications for one MAC
+   requires manual review. Stopped/failed emissions are excluded.
+6. Save the observation and export the CSV frequently. The current preview
+   holds trials **only in the browser session** and never syncs to a server.
+   You can import a previously exported CSV to continue local analysis.
+
+The exporter uses the precise columns accepted by
+`tools/score_trials.py`: `run_id,receiver,receiver_sha,emitter_sha,id,
+emission,window,observed,latency_ms,notes`.
+
+Example after exporting:
+
+```bash
+python tools/score_trials.py my-trials.csv --output accuracy.md --json accuracy.json
+```
+
+## Scoring and evidence
+
+**UNTESTED:** no completed emitter result, missing firmware SHA, missing actual
+receiver classification, or an unconfirmed listening window. A TRUTH BEGIN
+alone always stays untested.
+
+**EXCLUDED:** emitter failure/early STOP or an interrupted/incomplete listening
+window.
+
+**TP / TN / FP / FN / WRONG:** only counted with successful emitter END, a
+complete listening window, an actual automatically correlated SquachWatch
+LOG hit or manually confirmed observation, and both firmware SHAs.
+A fresh exact-MAC hit provides positive evidence even if a full timeout
+window has not elapsed. Absence of any hit is **not** automatically a
+negative. Unexpected classes are **WRONG** and contribute to both a missed
+target and false-positive category in precision/recall.
+
+The dashboard displays recall, precision and median latency only when
+corresponding confirmed data exists; a blank dataset shows dashes rather than
+invented success percentages. Timing is manually entered for true-positive
+observations; the transmitter and receiver have unsynchronized clocks, so
+automatic latency from their USB log timestamps would be misleading.
+
+## Scope and limitations
+
+This workbench does not modify SquachEmit RF firmware, create or trigger
+automatic continuous transmitting, read secrets, upload device logs, or
+authenticate manufacturer/vendor OUIs. The **37 preexisting OUI-only
+scenarios** transmit spoofable registered vendor prefixes by design; use
+those only in a controlled, authorized test environment. The workbench
+records what the human tester verified; it is not an RF power meter,
+certified aviation Remote ID verification device, or an independent
+SquachWatch hardware test result by itself.
+
+## Physical-test feedback: one-click RUN and UNTESTED results
+
+In an earlier hardware test the owner reported that some RUN clicks failed
+to transmit, and that cases with `ACTUAL = EXPECTED`, emitter `ok`, and
+receiver window `complete` still displayed `UNTESTED`.
+
+The first issue was traced to the Workbench **refusing to send RUN at all**
+if its periodic SquachWatch `LOG` query did not complete. The revised
+Workbench uses a recent complete LOG baseline if available, otherwise gives
+a receiver refresh **at most 1.2 seconds** before sending RUN anyway.
+If no fresh baseline can be confirmed, that trial can still transmit but
+**automatic receiver correlation is disabled for it** rather than allowing
+a false positive. The button explicitly progresses through **Preparing
+receiver → RUN sent → TRUTH BEGIN confirmed → TRUTH END**, and it refuses
+duplicate clicks while a command is awaiting confirmation or transmitting.
+It never silently repeats or invents an RF transmission; slow radio starts
+have a seven-second acknowledgement window and the separate STOP button.
+
+The second issue was the intentionally strict **firmware provenance gate**.
+Receiver matches can be real while their statistical result is UNTESTED if
+either `receiver_sha` or `emitter_sha` is missing or invalid. Results
+now show the actual missing requirement below UNTESTED and the summary
+counts auto-observed detections awaiting provenance. Enter **both actual
+Git commit SHAs of the firmware flashed on the devices**, then click
+**Apply verified firmware SHAs to ledger**. Current-device trials update
+without retransmitting, and imported/earlier-connection trials are updated
+only after confirming that *all affected rows* used these exact builds.
+Existing valid SHAs are never overwritten. Missing negative detections
+still require manual receiver-window review.
+
+**Before updating the downloaded PR preview**, export the old session's
+CSV; the browser intentionally does not retain sessions across page reloads.
+In the new preview, import the CSV, enter the real SHAs, and use the Apply
+button. Do not assume the GitHub repository's latest commit is the same
+binary already flashed onto a device.
+
+## Automated all-signal testing and device-first names (draft)
+
+PR #36 now includes an **AUTOMATED TEST SEQUENCE** panel with All (172),
+BLE-only (88) and Wi-Fi-only (84) modes. The operator must connect **both**
+SquachEmit and SquachWatch, check authorized testing and explicitly start
+the sequence in the browser. All-mode includes 37 registered-manufacturer
+Wi-Fi OUI-only laboratory beacon cases and requires a separate confirmation.
+The synthetic beacon IDs are not actual Remote ID or proof of a vendor device.
+
+The runner executes **one selected signal at a time** with a configurable
+3–30-second transmit duration and 3–30-second off-air cooldown. It waits
+for the actual matching emitter `TRUTH BEGIN` followed by `TRUTH END`
+or `TRUTH ERROR`, and it never advances based solely on a button click
+or inferred receiver event. A transmitter-reported ERROR is recorded as a
+failed emission and the sequence moves on after cooldown; a failed serial
+write, missing BEGIN/END, missing completed receiver LOG baseline, or
+disconnect **halts the queue** for operator review. Both STOP controls
+cancel outstanding automation and request an emitter STOP. The firmware's
+own hard 30-second limit remains in effect if the browser is closed.
+
+Every one of the 172 catalog entries has a **device-first descriptive
+display name** in the Workbench dropdown, progress panel, observation
+details and ledger. The native CYD 3.2 and C5 transmitter screens also
+show the device name as the primary label, retaining the case ID on
+the second line. For example, `BLE-HACKER-NAME` displays **Flipper Zero —
+advertised BLE name** in the Workbench and **Flipper Zero** on the device;
+`BLE-HACKER-UUID` displays **Flipper Zero — service UUID 0x3081**.
+Stable IDs, expected classifications, serial commands, CSV columns and
+on-air signal payloads are **unchanged**. Device names describe synthetic
+test fixtures; they do not authenticate an actual product.
+
+Receiver evidence remains independent. Each test starts with a fresh,
+completed SquachWatch LOG baseline; only a later new/reappearing exact-MAC
+sighting can be correlated automatically. Prior detections, missing
+receiver windows and absent negative-control observations are *not*
+automatically marked as passes. With repeated MACs, SquachWatch may
+retain an active log row even when new advertisements arrive; the
+Workbench deliberately does not count stale data. Review and export
+unverified results instead of treating missing LOG evidence as a miss.
+
+**Limitations:** Web Serial is browser-session only; keep both boards
+connected, Chrome/Edge awake, and the test attended. The Workbench does
+not retain or upload trials automatically; export CSV before reload.
+Firmware-specific build CI and native display compilation do not replace
+on-device verification.
+
+## How automatic detection matching works
+
+The Workbench uses an already available SquachWatch serial command
+`LOG` (see SquachWatch-CYD `src/clock.cpp` and
+`src/detection.cpp::logDump()`). A response has this actual structure:
+
+```text
+[log] 1 rows, newest first
+row,type,mac,rssi,hits,state,when
+0,DRONE,04:a8:5a:12:34:56,-53,1,here,+1:04
+```
+
+The browser records a completed `LOG` table before RUN, then accepts only
+a *later, complete* table with an exact-MAC `here` row **not seen in the
+baseline**, or a row whose hit count increases on reacquisition. It also
+requires the matching emitter `TRUTH BEGIN` (containing the precise MAC),
+and normal `TRUTH END` before scoring.
+
+`LOG` is a snapshot of a limited receiver RAM ring, **not an event-stream
+subscription**. A device present before a trial may remain continuously
+active and be impossible to distinguish from the next test using this
+interface. Likewise, a receiver that stops scanning can produce no hits.
+The Workbench rejects stale rows and does not convert silence into
+TP/TN/FN. For conclusive automatic negative results or exact measurement
+timestamps, SquachWatch would need a separately approved, structured
+detection/event streaming interface and its own independent verification.
+
+Automatic positive matching does not synchronize clocks; the Workbench
+doesn't invent millisecond latency from poll timestamps. Both firmware
+SHAs are still required for scored performance metrics. Changes in this
+PR affect **only SquachEmit's browser Workbench**, not SquachWatch or the
+public v1.1.0 firmware.

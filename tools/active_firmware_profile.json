@@ -2,18 +2,19 @@
   "schema": 1,
   "scenario_count": 172,
   "firmware_sources": {
-    "src": "9bc94ab26edfa3e63810894d94f7fc7468fbbb4f",
-    "include": "edf5134b0ce09f43fae0381a67e400b5bde95c65",
+    "src": "711005232399ff711c56727cd75edeb340048f23",
+    "include": "08cc4509ef16c3f47ec2224b236b1fd755ca0c26",
     "lib": "bd0df45f7747bc9971aa4b379a12940dd2d7d98f",
     "SquachEmit.ino": "90b4205813a2f7885bc1e12ce7431eebf7249f45",
     "platformio.ini": "bd67af3ecd6de05f4cef015fe97e17b29ceed574"
   },
   "builds": {
     "cyd32-st7798": {
-      "title": "SquachEmit v1.1.0 CYD 3.2 — 172-Case UAV Suite + Smooth Touch",
+      "title": "SquachEmit v1.1.0 CYD 3.2 — 172 Synthetic Signals + Device-First Names",
       "version": "v1.1.0 MAINLINE · 172 cases",
-      "summary": "Public v1.1.0 firmware for CYD 3.2 ST7798: 172 synthetic BLE/Wi-Fi test cases including 27 UAS vendor-prefix beacons, saved 3–30-second TX-time editor, reduced touchscreen flashing, and animated Squachy. Browser installer verifies all four flash segments by SHA-256. Actual CYD hardware was flashed during development; no device certification.",
+      "summary": "LAB candidate based on v1.1.0 firmware for CYD 3.2 ST7798: 172 synthetic BLE/Wi-Fi test cases including 27 UAS vendor-prefix beacons, saved 3–30-second TX-time editor, reduced touchscreen flashing, and animated Squachy. Browser installer verifies all four flash segments by SHA-256. Actual CYD hardware was flashed during development; no device certification. Draft PR #36 displays recognizable per-scenario device names in the native test library, active signal and selected status. Original RUN IDs, payloads and receiver categories stay unchanged.",
       "highlights": [
+        "Device-first labels on all 172 transmitter signals, including Flipper Zero UUID/name, negative controls and manufacturer OUI cases; stable technical IDs preserved.",
         "172 bounded synthetic BLE/Wi-Fi scenarios; per-case locally administered MAC IDs.",
         "TX TIME [SET] with +/- 1 second, RESET 12 and DONE; persists after reboot.",
         "Routine touches and duration changes avoid unnecessary full-screen redraws.",
@@ -23,10 +24,11 @@
       ]
     },
     "c5-waveshare-28": {
-      "title": "SquachEmit v1.1.0 Waveshare C5 — 172-Case Detection Suite",
+      "title": "SquachEmit v1.1.0 Waveshare C5 — 172 Signals + Device-First Names",
       "version": "v1.1.0 MAINLINE · 172 cases",
-      "summary": "Public v1.1.0 firmware for the exact Waveshare ESP32-C5 2.8-inch touchscreen board: 172 synthetic BLE/Wi-Fi test cases including UAV vendor-prefix beacons, controlled RF tests, and SHA-256 verified browser flashing. CYD 3.2-only TX TIME screen is not a C5 feature. Build passes CI; physical C5 hardware verification is still required.",
+      "summary": "LAB candidate based on v1.1.0 firmware for the exact Waveshare ESP32-C5 2.8-inch touchscreen board: 172 synthetic BLE/Wi-Fi test cases including UAV vendor-prefix beacons, controlled RF tests, and SHA-256 verified browser flashing. CYD 3.2-only TX TIME screen is not a C5 feature. Build passes CI; physical C5 hardware verification is still required. Draft PR #36 adds uppercase recognizable device-first names in the native C5 test list and active signal while retaining exact technical IDs.",
       "highlights": [
+        "Native list names all 172 synthetic signals by device; case IDs remain below each label.",
         "172 shared detection cases and negative controls.",
         "27 UAV vendor Wi-Fi test beacons; no genuine drone RF claim.",
         "Controlled, time-limited tests with serial truth reporting.",
@@ -37,7 +39,7 @@
     "s3-devkit": {
       "title": "SquachEmit v1.1.0 ESP32-S3 — 172-Case Serial Test Suite",
       "version": "v1.1.0 MAINLINE · 172 cases",
-      "summary": "Public v1.1.0 firmware for ESP32-S3 DevKitC-1 with 172 synthetic BLE/Wi-Fi detection test cases, on-demand serial RUN/STOP/SUITE control, UAV vendor-prefix test scenarios, and SHA-256 verified browser flashing. No CYD touchscreen is included. Build passes CI; physical S3 hardware verification is still required.",
+      "summary": "LAB candidate based on v1.1.0 firmware for ESP32-S3 DevKitC-1 with 172 synthetic BLE/Wi-Fi detection test cases, on-demand serial RUN/STOP/SUITE control, UAV vendor-prefix test scenarios, and SHA-256 verified browser flashing. No CYD touchscreen is included. Build passes CI; physical S3 hardware verification is still required.",
       "highlights": [
         "172 shared synthetic scenarios and negative controls.",
         "USB serial RUN, STOP and SUITE for bounded transmitter tests.",
