@@ -850,6 +850,11 @@ void cyd32UiStreamState(const char* activeId,uint32_t remainingMs,
     radioStartingProfile[0]?radioStartingProfile:"NONE",
     radioStartError[0]?radioStartError:"NONE",
     (unsigned long)petMs,(unsigned long)now);
+  if(screen==Screen::Details&&(force||now-lastListsAt>=1000u)){
+    lastListsAt=now;
+    const bool fav=chosen&&((favBits[selected/8]>>(selected%8))&1u);
+    Serial.printf("UI FAVORITE 1 %s %u\n",chosen?chosen->id:"NONE",fav?1u:0u);
+  }
   if(screen==Screen::Favorites&& (force||now-lastListsAt>=1000u)){
     lastListsAt=now;
     Serial.printf("UI FAVS BEGIN %u %u\n",(unsigned)favoriteCount(),(unsigned)favoritesPage);

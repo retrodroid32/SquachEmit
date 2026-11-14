@@ -547,12 +547,20 @@
       return;
     }
     if(/^UI ERROR/.test(line)){info('emitter',line);return;}
+    const favorite=/^UI FAVORITE 1 ([A-Z0-9_-]{2,100}|NONE) ([01])$/.exec(line);
+    if(favorite){
+      if(local.model&&s.active&&s.ready){
+        local.model.favorite=local.model.selected===favorite[1]&&favorite[2]==='1';
+        renderEmitter();
+      }
+      return;
+    }
     if(/^UI (?:FAVS|HISTORY) (?:BEGIN|ROW|END)/.test(line)){
       if(!s.active||!s.ready||!local.model)return;
       const type=line.startsWith('UI FAVS ')?'favorites':'history';
-      const begin=/^UI (?:FAVS|HISTORY) BEGIN (\\d{1,3}) (\\d{1,3})$/.exec(line);
+      const begin=/^UI (?:FAVS|HISTORY) BEGIN (\d{1,3}) (\d{1,3})$/.exec(line);
       const row=type==='favorites'?/^UI FAVS ROW ([0-3]) ([A-Z0-9_-]{2,100})$/.exec(line):
-        /^UI HISTORY ROW ([0-3]) ([A-Z0-9_-]{2,100}) ([a-z_]{1,20}) (\\d{1,10})$/.exec(line);
+        /^UI HISTORY ROW ([0-3]) ([A-Z0-9_-]{2,100}) ([A-Za-z0-9_-]{1,20}) (\d{1,10})$/.exec(line);
       if(begin){local.pendingList={type,count:Number(begin[1]),page:Number(begin[2]),rows:[]};return;}
       if(row&&local.pendingList?.type===type){
         local.pendingList.rows[Number(row[1])]=type==='favorites'?row[2]:
@@ -579,6 +587,7 @@
       if(local.model.favorites)state.favorites=local.model.favorites;
       if(local.model.history)state.history=local.model.history;
       if(local.model.favoriteCount!==undefined)state.favoriteCount=local.model.favoriteCount;
+      if(local.model.selected===state.selected&&local.model.favorite!==undefined)state.favorite=local.model.favorite;
     }
     local.model=state;local.receivedAt=Date.now();
     mirrorNote('emitter','PC-DRAWN UI · '+state.screen+' · '+state.selected+
