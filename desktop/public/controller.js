@@ -543,7 +543,7 @@
     if(/^UI ERROR/.test(line)){
       get('dc-receiver-ui').textContent='SquachWatch native UI: '+line;return;
     }
-    const m=/^UI STATE 1 (\\d{1,3}) (\\d{1,3}) (\\d{1,3}) ([0-3]) (\\d{1,10})$/.exec(line);
+    const m=/^UI STATE 1 (\d{1,3}) (\d{1,3}) (\d{1,3}) ([0-3]) (\d{1,10})$/.exec(line);
     if(!receiverUi.ready||!m)return;
     const id=Number(m[1]),w=Number(m[2]),h=Number(m[3]);
     if(id>=watchScreenNames.length||w<1||w>480||h<1||h>480)return;
