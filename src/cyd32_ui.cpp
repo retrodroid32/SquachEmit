@@ -24,7 +24,7 @@ constexpr uint16_t kWhite=0xFFFF,kMuted=0x7393,kInk=0x1801;
 constexpr uint16_t kFurDark=0x38C0,kFurMain=0x5941,kFurLight=0x9326;
 constexpr uint16_t kSkin=0xF60F,kSkinDark=0xCB88;
 
-enum class Screen : uint8_t { Home, Categories, Library, Duration, Details, Diagnostics, Favorites, History, Settings, Help, Identity, Recovery };
+enum class Screen : uint8_t { Home, Categories, Library, Duration, Details, Diagnostics, Favorites, History, Settings, Help, Identity, Recovery, Activity, Evidence };
 constexpr size_t kPageRows=4;
 
 TFT_eSPI lcd;
@@ -48,6 +48,11 @@ bool pcControl=false,screenDimmed=false;
 unsigned resetReasonCode=0;
 uint32_t lastTouchActivity=0,lastDeviceAt=0;
 char identityCase[56]={0},identityMac[18]={0};
+uint32_t txBegins=0,txEnds=0,txErrors=0,actualTxDuration=0,lastActivityAt=0;
+bool txDriverActive=false;
+char rxId[56]={0},rxLabel[28]={0},rxQuality[16]={0};
+int rxRssi=0;
+uint32_t lastEvidenceAt=0;
 uint8_t helpPage=0;
 uint8_t durationSeconds=12; // 3..30s, saved independently of touch calibration
 bool remoteDown=false;
@@ -297,7 +302,7 @@ void statusStrip(const char* active,bool suite){
   lcd.drawFastHLine(6,182,308,kPurple);
   const bool starting=!(active&&*active) && radioStartingProfile[0];
   label(12,186,active&&*active?"ON AIR":starting?"STARTING":
-        playlistRunning?(playlistPaused?"PAUSED":"PLAYLIST"):suite?"SUITE":"LAB READY",
+        playlistRunning?(playlistPaused?"PAUSED":"PLAYLIST"):suite?"SUITE":"ACTIVITY >",
         active&&*active?kPink:(starting?kYellow:kGreen));
   // Time control is an explicit tap target; it does not overlap the countdown.
   lcd.drawRect(93,183,137,15,kPurple);
@@ -359,7 +364,15 @@ void homeScreen(const char* active,uint32_t remaining,bool suite){
   speechBubble(active,suite);
   // Status is in the bottom strip: no huge headline over the mascot.
   statusStrip(active,suite);
-  if(emitting)countdownOnly((remaining+999)/1000);
+  if(emitting){
+    countdownOnly((remaining+999)/1000);
+    lcd.fillRect(236,163,77,15,kBg);
+    lcd.drawRect(239,167,70,7,kPurple);
+    const uint32_t duration=actualTxDuration?actualTxDuration:remaining;
+    const uint32_t elapsed=duration>remaining?duration-remaining:0;
+    const int w=duration?int((elapsed*68ULL)/duration):0;
+    if(w>0)lcd.fillRect(240,168,w,5,kGreen);
+  }
   footer("TESTS",(emitting||playlistRunning||suite)?"STOP":"RUN",
          playlistRunning?(playlistPaused?"RESUME":"PAUSE"):"SUITE");
 }
@@ -411,6 +424,40 @@ void diagnosticsScreen(){
 
 
 void menuRow(int y,const char* title,const char* sub,bool chosen=false);
+
+void activityScreen(){
+  lcd.fillScreen(kBg);titleBar();
+  label(12,24,"TRANSMITTER ACTIVITY",kVaporPink,2);
+  char line[75];
+  label(12,52,txDriverActive?"RADIO DRIVER: ACTIVE":"RADIO DRIVER: IDLE",txDriverActive?kPink:kGreen);
+  snprintf(line,sizeof(line),"STARTS: %lu  ENDS: %lu",(unsigned long)txBegins,(unsigned long)txEnds);
+  label(12,85,line,kCyan);
+  snprintf(line,sizeof(line),"START/END ERRORS: %lu",(unsigned long)txErrors);
+  label(12,111,line,kYellow);
+  snprintf(line,sizeof(line),"LAST DURATION: %lu MS",(unsigned long)actualTxDuration);
+  label(12,136,line,kWhite);
+  label(12,160,"Driver events, NOT RF power",kMuted);
+  label(12,187,"See PC LOG for RX detection",kMuted);
+  footer("BACK","EVIDENCE","DETAILS");
+}
+void evidenceScreen(){
+  lcd.fillScreen(kBg);titleBar();
+  label(12,24,"RECEIVER EVIDENCE",kVaporPink,2);
+  label(12,55,"PC-REPORTED - NOT SELF-VERIFIED",kYellow);
+  if(!rxId[0]){
+    label(12,100,"NO RECEIVER RESULT RECEIVED",kMuted);
+    label(12,133,"Connect Windows Workbench",kWhite);
+  }else{
+    fit(12,86,rxId,290,kWhite,2);
+    fit(12,111,rxLabel,290,kCyan);
+    char line[60];
+    snprintf(line,sizeof(line),"RSSI: %d  |  %s",rxRssi,rxQuality);
+    label(12,138,line,kGreen);
+    label(12,165,"Source: Windows exact-MAC LOG",kMuted);
+  }
+  label(12,193,"No direct RF measurement on board",kMuted);
+  footer("BACK","DETAILS","HOME");
+}
 void settingsScreen(){
   lcd.fillScreen(kBg);titleBar();
   label(10,24,"HANDHELD SETTINGS",kVaporPink,2);
@@ -640,6 +687,9 @@ Cyd32UiAction touchHome(int x,int y,bool active,bool suite){
     if(x<213)return (active||suite||playlistRunning)?Cyd32UiAction::Stop:Cyd32UiAction::Run;
     return playlistRunning?(playlistPaused?Cyd32UiAction::PlaylistResume:Cyd32UiAction::PlaylistPause):Cyd32UiAction::Suite;
   }
+  if(!active&&!suite&&x<93&&y>=183&&y<199){
+    screen=Screen::Activity;redraw=true;return Cyd32UiAction::None;
+  }
   if(!active && !suite && x>=230 && y>=199 && y<214){
     screen=Screen::Details;redraw=true;return Cyd32UiAction::None;
   }
@@ -726,6 +776,20 @@ Cyd32UiAction touchDiagnostics(int x,int y){
   if(x<108){screen=Screen::Details;redraw=true;}
   else if(x<213){screen=Screen::Settings;redraw=true;}
   else {screen=Screen::Help;redraw=true;}
+  return Cyd32UiAction::None;
+}
+Cyd32UiAction touchActivity(int x,int y){
+  if(y>=kFooterY){
+    screen=x<108?Screen::Home:x<213?Screen::Evidence:Screen::Details;
+    redraw=true;
+  }
+  return Cyd32UiAction::None;
+}
+Cyd32UiAction touchEvidence(int x,int y){
+  if(y>=kFooterY){
+    screen=x<108?Screen::Activity:x<213?Screen::Details:Screen::Home;
+    redraw=true;
+  }
   return Cyd32UiAction::None;
 }
 Cyd32UiAction touchSettings(int x,int y){
@@ -931,6 +995,8 @@ Cyd32UiAction cyd32UiTick(const char* active,uint32_t remaining,bool suite){
     else if(screen==Screen::Help)helpScreen();
     else if(screen==Screen::Identity)identityScreen();
     else if(screen==Screen::Recovery)recoveryScreen();
+    else if(screen==Screen::Activity)activityScreen();
+    else if(screen==Screen::Evidence)evidenceScreen();
     else libraryScreen(active,suite);
     lastCount=(active&&*active)?((remaining+999)/1000):UINT32_MAX;
     redraw=false;
@@ -984,6 +1050,8 @@ Cyd32UiAction cyd32UiTick(const char* active,uint32_t remaining,bool suite){
     else if(screen==Screen::Help)action=touchHelp(x,y);
     else if(screen==Screen::Identity)action=touchIdentity(x,y);
     else if(screen==Screen::Recovery)action=touchRecovery(x,y);
+    else if(screen==Screen::Activity)action=touchActivity(x,y);
+    else if(screen==Screen::Evidence)action=touchEvidence(x,y);
     else action=touchLibrary(x,y,active&&*active);
     lastPress=now;
     // Only navigation/state changes request a full repaint. Every other
@@ -1016,7 +1084,9 @@ void cyd32UiStreamState(const char* activeId,uint32_t remainingMs,
       screen==Screen::Settings?"SETTINGS":
       screen==Screen::Help?"HELP":
       screen==Screen::Identity?"IDENTITY":
-      screen==Screen::Recovery?"RECOVERY":"HOME";
+      screen==Screen::Recovery?"RECOVERY":
+      screen==Screen::Activity?"ACTIVITY":
+      screen==Screen::Evidence?"EVIDENCE":"HOME";
   const Scenario* chosen=selected<kScenarioCount?&kScenarios[selected]:nullptr;
   const uint32_t petMs=(int32_t)(petUntil-now)>0?petUntil-now:0;
   Serial.printf("UI STATE 1 %s %u %u %u %s %u %s %lu %u %u %s %s %lu %lu\n",
@@ -1069,6 +1139,18 @@ void cyd32UiStreamState(const char* activeId,uint32_t remainingMs,
     Serial.printf("UI IDENTITY 1 %s %s\n",chosen?chosen->id:"NONE",
       matches?identityMac:"UNKNOWN");
   }
+  if((screen==Screen::Home||screen==Screen::Activity)&&(force||now-lastActivityAt>=1000u)){
+    lastActivityAt=now;
+    Serial.printf("UI TXACT 1 %lu %lu %lu %u %lu\n",
+      (unsigned long)txBegins,(unsigned long)txEnds,(unsigned long)txErrors,
+      txDriverActive?1u:0u,(unsigned long)actualTxDuration);
+  }
+  if(screen==Screen::Evidence&&(force||now-lastEvidenceAt>=1000u)){
+    lastEvidenceAt=now;
+    Serial.printf("UI RXREPORT 1 %s %s %d %s\n",
+      rxId[0]?rxId:"NONE",rxLabel[0]?rxLabel:"NONE",rxRssi,
+      rxQuality[0]?rxQuality:"UNVERIFIED");
+  }
   if(screen==Screen::Diagnostics){
     static uint32_t lastHealth=0;
     if(force||now-lastHealth>=1000u){
@@ -1087,6 +1169,25 @@ void cyd32UiSetPlaylistState(bool running,bool paused,unsigned index,unsigned to
     playlistRunning=running;playlistPaused=paused;playlistIndex=index;playlistTotal=total;
     if(screen==Screen::Home)redraw=true;
   }
+}
+void cyd32UiRecordTxEvent(const char* event,const char* status,uint32_t duration){
+  if(!event)return;
+  if(strcmp(event,"BEGIN")==0){
+    ++txBegins;txDriverActive=true;actualTxDuration=duration;
+    rxId[0]=rxLabel[0]=rxQuality[0]=0;rxRssi=0;
+  }else if(strcmp(event,"END")==0){
+    ++txEnds;txDriverActive=false;
+    if(status&&strcmp(status,"ok")&&strcmp(status,"stopped"))++txErrors;
+  }else if(strcmp(event,"ERROR")==0){++txErrors;txDriverActive=false;}
+  if(screen==Screen::Activity||screen==Screen::Evidence)redraw=true;
+}
+void cyd32UiRecordReceiverEvidence(const char* id,const char* classification,int rssi,const char* quality){
+  if(!id||!findScenario(id)||!classification||!quality)return;
+  snprintf(rxId,sizeof(rxId),"%s",id);
+  snprintf(rxLabel,sizeof(rxLabel),"%s",classification);
+  snprintf(rxQuality,sizeof(rxQuality),"%s",quality);
+  rxRssi=rssi;
+  if(screen==Screen::Evidence)redraw=true;
 }
 void cyd32UiSetPcControl(bool enabled){if(pcControl!=enabled){pcControl=enabled;redraw=true;lastTouchActivity=millis();}}
 void cyd32UiSetResetReason(unsigned reason){resetReasonCode=reason;}

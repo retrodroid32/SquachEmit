@@ -28,7 +28,7 @@
     const a=String(line||'').trim().split(/ +/);
     if(a.length!==17||a[0]!=='UI'||a[1]!=='STATE'||a[2]!=='1')
       return null;
-    const screens=['HOME','CATEGORIES','LIBRARY','DURATION','DETAILS','DIAGNOSTICS','FAVORITES','HISTORY','SETTINGS','HELP','IDENTITY','RECOVERY','CALIBRATION','COLORS'];
+    const screens=['HOME','CATEGORIES','LIBRARY','DURATION','DETAILS','DIAGNOSTICS','FAVORITES','HISTORY','SETTINGS','HELP','IDENTITY','RECOVERY','ACTIVITY','EVIDENCE','CALIBRATION','COLORS'];
     if(!screens.includes(a[3]))return null;
     const num=(i,max)=>/^\d+$/.test(a[i])&&Number.isSafeInteger(Number(a[i]))
       &&Number(a[i])<=max?Number(a[i]):null;
@@ -320,7 +320,7 @@
       p.fill(0,183,320,29,C.bg);p.fill(6,182,308,1,C.purple);
       p.text(12,186,active?'ON AIR':starting?'STARTING':
         state.playlistRunning?(state.playlistPaused?'PAUSED':'PLAYLIST'):
-        state.suite?'SUITE':'LAB READY',
+        state.suite?'SUITE':'ACTIVITY >',
         active?C.pink:starting?C.yellow:C.green);
       p.outline(93,183,137,15,C.purple);
       p.text(99,186,'TX TIME',C.cyan);p.text(150,186,state.duration+'s [SET]',C.yellow);
@@ -330,6 +330,12 @@
       p.fill(6,198,308,1,C.purple);p.text(12,201,'PROFILE',C.vaporPink);
       p.text(66,200,deviceName(catalog.byId.get(state.selected)),C.white,1,164);
       p.text(245,201,'DETAILS >',C.cyan);
+      if(active){
+        const duration=state.txact?.duration||state.remaining;
+        const elapsed=Math.max(0,duration-state.remaining);
+        p.fill(236,163,77,15,C.bg);p.outline(239,167,70,7,C.purple);
+        if(duration)p.fill(240,168,Math.floor(elapsed*68/duration),5,C.green);
+      }
       footer(p,'TESTS',(active||state.suite||state.playlistRunning)?'STOP':'RUN',
         state.playlistRunning?(state.playlistPaused?'RESUME':'PAUSE'):'SUITE');
       return true;
@@ -407,6 +413,33 @@
       }
       p.text(12,196,'TX RESULTS ONLY - NOT RX DETECTIONS',C.muted);
       footer(p,'BACK','< PREV','NEXT >');return true;
+    }
+    if(screen==='ACTIVITY'){
+      const a=state.txact||{};
+      p.text(12,24,'TRANSMITTER ACTIVITY',C.vaporPink,2);
+      p.text(12,52,a.active?'RADIO DRIVER: ACTIVE':'RADIO DRIVER: IDLE',a.active?C.pink:C.green);
+      p.text(12,85,'STARTS: '+(a.begins||0)+'  ENDS: '+(a.ends||0),C.cyan);
+      p.text(12,111,'START/END ERRORS: '+(a.errors||0),C.yellow);
+      p.text(12,136,'LAST DURATION: '+(a.duration||0)+' MS',C.white);
+      p.text(12,160,'Driver events, NOT RF power',C.muted);
+      p.text(12,187,'See PC LOG for RX detection',C.muted);
+      footer(p,'BACK','EVIDENCE','DETAILS');return true;
+    }
+    if(screen==='EVIDENCE'){
+      const a=state.rxreport;
+      p.text(12,24,'RECEIVER EVIDENCE',C.vaporPink,2);
+      p.text(12,55,'PC-REPORTED - NOT SELF-VERIFIED',C.yellow);
+      if(!a||a.id==='NONE'){
+        p.text(12,100,'NO RECEIVER RESULT RECEIVED',C.muted);
+        p.text(12,133,'Connect Windows Workbench',C.white);
+      }else{
+        p.text(12,86,a.id,C.white,2,294);
+        p.text(12,111,a.classification,C.cyan);
+        p.text(12,138,'RSSI: '+a.rssi+'  |  '+a.quality,C.green);
+        p.text(12,165,'Source: Windows exact-MAC LOG',C.muted);
+      }
+      p.text(12,193,'No direct RF measurement on board',C.muted);
+      footer(p,'BACK','DETAILS','HOME');return true;
     }
     if(screen==='SETTINGS'){
       const br=['DIM','NORMAL','BRIGHT'],an=['SLOW','NORMAL','FAST'],tm=['OFF','30 SECONDS','60 SECONDS'];

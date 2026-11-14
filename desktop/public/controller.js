@@ -547,6 +547,21 @@
       return;
     }
     if(/^UI ERROR/.test(line)){info('emitter',line);return;}
+    const activity=/^UI TXACT 1 (\d{1,10}) (\d{1,10}) (\d{1,10}) ([01]) (\d{1,10})$/.exec(line);
+    if(activity){
+      if(local.model&&s.active&&s.ready){
+        local.model.txact={begins:Number(activity[1]),ends:Number(activity[2]),
+          errors:Number(activity[3]),active:activity[4]==='1',duration:Number(activity[5])};
+        renderEmitter();
+      }return;
+    }
+    const rx=/^UI RXREPORT 1 ([A-Z0-9_-]{2,100}|NONE) ([A-Z0-9_-]{2,100}|NONE) (-?\d{1,3}) (VERIFIED|CANDIDATE|UNVERIFIED)$/.exec(line);
+    if(rx){
+      if(local.model&&s.active&&s.ready){
+        local.model.rxreport={id:rx[1],classification:rx[2],rssi:Number(rx[3]),quality:rx[4]};
+        renderEmitter();
+      }return;
+    }
     const device=/^UI DEVICE 1 ([0-2]) ([0-2]) ([0-2]) ([01]) ([01]) (\d{1,3}) ([0-2])$/.exec(line);
     if(device){
       if(local.model&&s.active&&s.ready){
@@ -611,6 +626,8 @@
       if(local.model.favoriteCount!==undefined)state.favoriteCount=local.model.favoriteCount;
       if(local.model.selected===state.selected&&local.model.favorite!==undefined)state.favorite=local.model.favorite;
       if(local.model.device)state.device=local.model.device;
+      if(local.model.txact)state.txact=local.model.txact;
+      if(local.model.rxreport)state.rxreport=local.model.rxreport;
       if(local.model.helpPage!==undefined)state.helpPage=local.model.helpPage;
       if(local.model.identity)state.identity=local.model.identity;
       state.pcControl=true;

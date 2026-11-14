@@ -59,6 +59,7 @@ static void truth(const char* event, const Scenario* s, const char* status = "ok
   // Existing keys remain stable for the serial truth consumer. 0 = BLE.
 #if defined(SQE_CYD32)
   if(s && !strcmp(event,"BEGIN"))cyd32UiRecordIdentity(s->id,g_address);
+  cyd32UiRecordTxEvent(event,status,g_duration);
   if(s && (!strcmp(event,"END")||!strcmp(event,"ERROR")))
     cyd32UiRecordResult(s->id,status,millis());
 #endif
@@ -483,6 +484,7 @@ static void help() {
   Serial.println("STOP                  stop current case/suite immediately");
   Serial.println("STATUS                show current case and time remaining");
   Serial.println("HEALTH                show real heap, largest allocation, uptime, radio and serial status");
+  Serial.println("RX RESULT <id> <class> <rssi> <status> - PC-reported receiver observation (not RF verified by transmitter)");
   Serial.println("IDENTITY              current synthetic case MAC");
   Serial.println("Remote ID profiles are synthetic; no genuine vendor serials or flight links.");
   Serial.println("BLE5 extended/coded PHY and Wi-Fi NAN: OFFLINE FIXTURES ONLY.");
@@ -543,6 +545,21 @@ static void command(String cmd) {
   // accidental GRAM readback or 2Mbps handoff is possible from desktop.
   if(cmd.startsWith("MIRROR ")||cmd.startsWith("mirror ")){
     Serial.println("MIRROR ERROR REMOVED_USE_UI_STATE");
+    return;
+  }
+  if(cmd.startsWith("RX RESULT ")){
+#if defined(SQE_CYD32)
+    char id[60]={0},cls[28]={0},status[16]={0},extra=0;
+    int rssi=0;
+    if(sscanf(cmd.c_str(),"RX RESULT %59s %27s %d %15s %c",id,cls,&rssi,status,&extra)==4 &&
+       rssi>=-127&&rssi<=20 && findScenario(id) &&
+       (!strcmp(status,"VERIFIED")||!strcmp(status,"CANDIDATE")||!strcmp(status,"UNVERIFIED"))){
+      cyd32UiRecordReceiverEvidence(id,cls,rssi,status);
+      Serial.println("RX REPORT ACCEPTED - PC-REPORTED, NOT INDEPENDENT RF EVIDENCE");
+    }else Serial.println("RX ERROR INVALID_REPORT");
+#else
+    Serial.println("RX ERROR UNSUPPORTED_BOARD");
+#endif
     return;
   }
   if (cmd.equalsIgnoreCase("HEALTH")) {

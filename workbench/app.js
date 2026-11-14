@@ -301,6 +301,14 @@
       }
       var verified=!!verifiedHit;
       if(verified){
+        // Receiver evidence is reported to the *transmitter* handheld only
+        // after exact-MAC fresh-baseline matching; UI labels it PC-reported.
+        const classification=String(hit.observed||'UNKNOWN').toUpperCase()
+          .replace(/[^A-Z0-9_-]/g,'_').slice(0,27);
+        const rssi=Number.isFinite(Number(hit.rssi))?
+          Math.max(-127,Math.min(20,Math.round(Number(hit.rssi)))):0;
+        if(devices.emitter.port && /^[A-Z0-9_-]{2,59}$/.test(t.id))
+          void sendEmitter('RX RESULT '+t.id+' '+classification+' '+rssi+' VERIFIED');
         t._autoHit=hit;
         t.observed=hit.observed;
         t.notes='SquachWatch matched '+hit.mac+' as '+hit.observed+

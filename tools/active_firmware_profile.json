@@ -2,24 +2,24 @@
   "schema": 1,
   "scenario_count": 172,
   "firmware_sources": {
-    "src": "43f36842493243fee990ee22aba91c09b8e44814",
-    "include": "bc9871f8110164ecae0e9b177fcb92e59b840b47",
+    "src": "02b6385b998b4180f027f0cf592d46d22b61fc6a",
+    "include": "1ee6c745013ae2346aca2454f590cdef15b6b752",
     "lib": "bd0df45f7747bc9971aa4b379a12940dd2d7d98f",
     "SquachEmit.ino": "90b4205813a2f7885bc1e12ce7431eebf7249f45",
     "platformio.ini": "bd67af3ecd6de05f4cef015fe97e17b29ceed574"
   },
   "builds": {
     "cyd32-st7798": {
-      "title": "SquachEmit v1.1.0 CYD 3.2 — R8.4 Settings, Identity, Help & Recovery (172 Cases)",
+      "title": "SquachEmit v1.1.0 CYD 3.2 — R8.5 TX Activity + Receiver Evidence (172 Cases)",
       "version": "v1.1.0 MAINLINE · 172 cases",
-      "summary": "R8.4 LAB CYD32 ST7798 adds persistent brightness, animation speed, 30/60-second safe idle dim, panel inversion, selected-case last actual synthetic MAC inspector, boot reset reason/recovery guidance and beginner help. Native Windows mirror receives bounded UI DEVICE/IDENTITY values. 172 timed synthetic BLE/Wi-Fi scenarios and SHA-256 validated flash segments. Hardware validation pending.",
+      "summary": "R8.5 LAB adds actual transmitter-driver event counters, on-screen active-case progress, and an explicitly PC-reported receiver evidence page. Windows Workbench reports only fresh exact-MAC LOG matches and never claims that SquachEmit measures RF power or independently verifies receiver reports. CYD3.2 ST7798, 172 synthetic scenarios, SHA-256 flash parts. Hardware verification pending.",
       "highlights": [
-        "Persistent handheld settings for LED backlight brightness, Squachy animation speed, display inversion and idle dim.",
-        "A wake touch is consumed and never triggers RF RUN; physical STOP remains visible when testing.",
-        "Synthetic identity inspector displays the MAC only if the selected scenario was actually transmitted.",
-        "Help/tutorial and reset-reason recovery information are viewable on the physical touchscreen.",
-        "PC remote-control indicator and new UI DEVICE / IDENTITY metadata allow Windows native view parity.",
-        "172 synthetic cases, LAB-only board firmware, SHA-256 flasher validation, hardware checks pending."
+        "Real firmware BEGIN/END/error counters and active-duration progress displayed on handheld.",
+        "Independent-looking RF power figures are prohibited; radio activity reflects driver state, not measured spectrum.",
+        "Evidence page labels received LOG classifications as PC-reported, never on-device self-verification.",
+        "Windows Workbench sends bounded RX RESULT only for fresh exact-MAC LOG matches.",
+        "Existing Favorites Playlist, settings, identity, diagnostics and remote-control UI retained.",
+        "LAB-only firmware with SHA-256 verified flash segments and physical hardware acceptance pending."
       ]
     },
     "c5-waveshare-28": {

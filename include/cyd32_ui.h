@@ -37,3 +37,6 @@ void cyd32UiSetPlaylistState(bool running,bool paused,unsigned index,unsigned to
 void cyd32UiSetPcControl(bool enabled);
 void cyd32UiSetResetReason(unsigned reason);
 void cyd32UiRecordIdentity(const char* id,const char* mac);
+
+void cyd32UiRecordTxEvent(const char* event,const char* status,uint32_t duration);
+void cyd32UiRecordReceiverEvidence(const char* id,const char* classification,int rssi,const char* quality);
