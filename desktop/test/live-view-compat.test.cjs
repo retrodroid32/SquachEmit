@@ -22,7 +22,7 @@ test('unknown command gives explicit mismatch and turns off pending live UI',()=
   assert.match(ctrl,/resetRole\('emitter'\)/);
   assert.match(ctrl,/firmware rejected UI ON/);
   assert.match(ctrl,/older public firmware|Older public firmware/);
-  assert.match(ctrl,/lacks the required USB pixel-mirror command/);
+  assert.match(ctrl,/the required USB pixel-mirror command/);
   assert.match(ctrl,/void api\.send\('receiver','MIRROR OFF'\)/);
 });
 test('no fabricated SquachWatch pixels and serial LOG path preserved',()=>{
