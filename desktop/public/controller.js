@@ -55,7 +55,7 @@
       'aria-label="USB pixels from physical '+names[role]+' LCD; click or drag to touch" hidden></canvas>'+
       '<div class="dc-placeholder" id="dc-placeholder-'+role+'">'+
       '<div class="dc-placeholder-icon">▣</div>'+
-      '<b>NO LIVE DEVICE VIEW</b><small>Connect USB and choose Start live view. '+
+      '<b>NO LIVE LCD FRAME</b><small>Connect USB and choose Start live view. '+
       'A compatible firmware response is required before showing a screen.</small></div>'+
       '</div></div>'+
       '<div class="dc-frame-meta" id="dc-frame-'+role+'" role="status">'+
