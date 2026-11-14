@@ -2,8 +2,8 @@
   "schema": 1,
   "scenario_count": 172,
   "firmware_sources": {
-    "src": "42f4b94a8becf4fb7d9a3095998fc96dff9464aa",
-    "include": "dae1f8d6f96f04976f0099992c1eac5536b79ba5",
+    "src": "ed59fa0e51d12c3a3e1e6dfd7adb0256f00d70a3",
+    "include": "49ba54c0f7631cfe208d6ab98bc318c4524cfcd2",
     "lib": "bd0df45f7747bc9971aa4b379a12940dd2d7d98f",
     "SquachEmit.ino": "90b4205813a2f7885bc1e12ce7431eebf7249f45",
     "platformio.ini": "bd67af3ecd6de05f4cef015fe97e17b29ceed574"
@@ -12,7 +12,7 @@
     "cyd32-st7798": {
       "title": "SquachEmit v1.1.0 CYD 3.2 LAB — 172 Cases · PC Native UI R7",
       "version": "v1.1.0 MAINLINE · 172 cases",
-      "summary": "LAB R7 for CYD 3.2: no TFT GRAM reads, RGB565 screenshots, frame streaming or 2Mbps UART handoff. Firmware sends bounded UI STATE records at 115200 describing menu, category, selected case, duration, transmitter, countdown and animation. Windows Workbench v0.5.0 draws the 320×240 interface and Squachy locally and sends UI TOUCH to native firmware hit-testing. All 172 timed RF cases and exact-MAC LOG scoring remain. Visual pixel parity and physical touch still require hardware tests. SHA-256 flash verification required. Production v1.1.0 unchanged.",
+      "summary": "LAB R7 for CYD 3.2: no TFT GRAM reads, RGB565 screenshots, frame streaming or 2Mbps UART handoff. Firmware sends bounded UI STATE records at 115200 describing menu, category, selected case, duration, transmitter, countdown and animation. Windows Workbench R7 development build draws the 320×240 interface and Squachy locally and sends UI TOUCH to native firmware hit-testing. All 172 timed RF cases and exact-MAC LOG scoring remain. Visual pixel parity and physical touch still require hardware tests. SHA-256 flash verification required. Production v1.1.0 unchanged.",
       "highlights": [
         "No LCD capture or framebuffer reads; desktop renders SquachEmit UI entirely from device state.",
         "UI ON/OFF/GET and UI READY/STATE over 115200 UART; menu, selection, TX time, countdown and physical touch synchronized.",
