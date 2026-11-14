@@ -61,6 +61,59 @@ class InstallerManifestTests(unittest.TestCase):
                 self.assertEqual(build["bytes"],build["segments"][3]["bytes"])
                 self.assertEqual(build["application"],build["segments"][3]["path"])
 
+
+    def test_all_lab_branches_and_all_boards_without_sha_pins(self):
+        for branch,sha in (('feature/new-device-workbench','b'*40),
+                           ('lab/next-case-suite','c'*40)):
+            profile={
+                'schema':1, 'scenario_count':172,
+                'source_commit_sha':sha,
+                'builds':{
+                    board:{
+                        'title':f'SquachEmit {board} 172-case LAB',
+                        'version':'v1.1.0 MAINLINE · 172 cases',
+                        'summary':'Experimental LAB firmware; physical verification pending.',
+                        'highlights':['172 cases; physical verification pending.']
+                    } for board in builder.BOARDS
+                }
+            }
+            for board in builder.BOARDS:
+                with self.subTest(branch=branch,board=board),tempfile.TemporaryDirectory() as tmp:
+                    root=Path(tmp)
+                    src=self.make_artifact(root,board)
+                    src.update(branch=branch,sha=sha,source_profile=profile)
+                    build=builder.load_source(src,root/'site')
+                    self.assertEqual(build['channel'],'lab')
+                    self.assertEqual(build['sha'],sha)
+                    self.assertEqual(build['version_label'],f'LAB 172 cases · {sha[:8]}')
+                    self.assertTrue(build['notes_verified_for_sha'])
+
+    def test_only_main_can_publish_stable_and_unrelated_branches_rejected(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root=Path(tmp)
+            src=self.make_artifact(root,'cyd32-st7798')
+            src.update(branch='feature/new-suite',channel='stable')
+            with self.assertRaisesRegex(ValueError,'development-branch firmware must publish to LAB'):
+                builder.load_source(src,root/'no_stable')
+            src.update(branch='maintenance/release-notes',channel='lab')
+            with self.assertRaisesRegex(ValueError,'invalid trusted source ref'):
+                builder.load_source(src,root/'no_maintenance')
+            src.update(branch='main',channel='stable')
+            build=builder.load_source(src,root/'stable')
+            self.assertEqual(build['channel'],'stable')
+
+    def test_publisher_always_deploys_from_main_and_supports_generic_lab(self):
+        workflow=(ROOT/'.github/workflows/publish-installer.yml').read_text()
+        self.assertIn('branches: [main]',workflow)
+        self.assertIn('ref: main',workflow)
+        self.assertIn("branch.startswith(('feature/','lab/'))",workflow)
+        self.assertIn("channel='stable'",workflow)
+        self.assertIn("channel='lab'",workflow)
+        self.assertIn('profile=mainline_profile(sha)',workflow)
+        self.assertNotIn('pinned_workbench_lab',workflow)
+        self.assertNotIn('maintenance/lab-172r4-pages-publish-20261113',workflow)
+        self.assertNotIn('0b7a2edcd8f7de6fc45ad320a7c0b9f6fa2e8974',workflow)
+
     def test_c5_merge_mismatch_is_rejected(self):
         with tempfile.TemporaryDirectory() as tmp:
             root=Path(tmp)

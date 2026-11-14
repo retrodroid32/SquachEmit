@@ -1,5 +1,9 @@
 
-# SquachEmit CYD 3.2 — ESP32-2432S032R ST7798 LAB
+# SquachEmit CYD 3.2 — ESP32-2432S032R ST7798 (historical LAB notes)
+
+**Historical 49-case development snapshot.** Public v1.1.0 now contains
+172 cases, 3–30-second TX-time editing and reduced touch redraws;
+see the current README and release notes.
 
 This is a third SquachEmit transmitter target, independent of Waveshare C5
 and the ESP32-S3. It uses the tested SquachWatch-CYD 3.2-inch pin mapping.
