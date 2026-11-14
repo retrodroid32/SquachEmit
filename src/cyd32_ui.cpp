@@ -24,7 +24,7 @@ constexpr uint16_t kWhite=0xFFFF,kMuted=0x7393,kInk=0x1801;
 constexpr uint16_t kFurDark=0x38C0,kFurMain=0x5941,kFurLight=0x9326;
 constexpr uint16_t kSkin=0xF60F,kSkinDark=0xCB88;
 
-enum class Screen : uint8_t { Home, Categories, Library, Duration, Details, Diagnostics, Favorites, History };
+enum class Screen : uint8_t { Home, Categories, Library, Duration, Details, Diagnostics, Favorites, History, Settings, Help, Identity, Recovery };
 constexpr size_t kPageRows=4;
 
 TFT_eSPI lcd;
@@ -43,6 +43,12 @@ uint8_t historyHead=0,historyCount=0;
 uint32_t lastListsAt=0;
 bool playlistRunning=false,playlistPaused=false;
 unsigned playlistIndex=0,playlistTotal=0;
+uint8_t brightnessLevel=2,animationLevel=1,screenTimeout=0;
+bool pcControl=false,screenDimmed=false;
+unsigned resetReasonCode=0;
+uint32_t lastTouchActivity=0,lastDeviceAt=0;
+char identityCase[56]={0},identityMac[18]={0};
+uint8_t helpPage=0;
 uint8_t durationSeconds=12; // 3..30s, saved independently of touch calibration
 bool remoteDown=false;
 uint16_t remoteX=0,remoteY=0;
@@ -86,6 +92,19 @@ void titleBar(){
   lcd.drawFastHLine(0,14,kW,kPurple);
   lcd.fillRect(94,2,132,10,kTaskbar);
   label(123,3,"SQUACHEMIT",kWhite);
+  if(pcControl)label(281,3,"PC",kGreen);
+}
+void applyBrightness(){
+  const uint8_t levels[]={64,150,255};
+  ledcWrite(6,screenDimmed?32:levels[brightnessLevel]);
+}
+void persistUiSettings(){
+  if(prefs.begin("sqemit32",false)){
+    prefs.putUChar("bright",brightnessLevel);
+    prefs.putUChar("anim",animationLevel);
+    prefs.putUChar("timeout",screenTimeout);
+    prefs.end();
+  }else Serial.println("WARN,SETTINGS_SAVE_UNAVAILABLE");
 }
 void button(int x,int y,int w,int h,const char* s,bool pressed=false){
   lcd.fillRect(x,y,w,h,pressed?kPurple:kBg);
@@ -387,7 +406,73 @@ void diagnosticsScreen(){
   lcd.fillScreen(kBg);titleBar();
   label(14,25,"DEVICE DIAGNOSTICS",kVaporPink,2);
   diagValues();lastDiagAt=millis();
-  footer("BACK","REFRESH","DETAILS");
+  footer("BACK","SETTINGS","HELP");
+}
+
+
+void settingsScreen(){
+  lcd.fillScreen(kBg);titleBar();
+  label(10,24,"HANDHELD SETTINGS",kVaporPink,2);
+  char line[50];
+  const char* br[]={"DIM","NORMAL","BRIGHT"};
+  snprintf(line,sizeof(line),"BACKLIGHT: %s",br[brightnessLevel]);
+  menuRow(46,line,"TAP TO CYCLE BRIGHTNESS");
+  const char* an[]={"SLOW","NORMAL","FAST"};
+  snprintf(line,sizeof(line),"ANIMATION: %s",an[animationLevel]);
+  menuRow(85,line,"TAP TO CYCLE FRAME RATE");
+  const char* time[]={"OFF","30 SECONDS","60 SECONDS"};
+  snprintf(line,sizeof(line),"IDLE DIM: %s",time[screenTimeout]);
+  menuRow(124,line,"WAKE TOUCH NEVER STARTS A TEST");
+  snprintf(line,sizeof(line),"PANEL INVERT: %s",panelInverted?"ON":"OFF");
+  menuRow(163,line,"BOARD-SPECIFIC DISPLAY POLARITY");
+  footer("BACK","IDENTITY","HELP");
+}
+void identityScreen(){
+  lcd.fillScreen(kBg);titleBar();
+  label(12,26,"SYNTHETIC SIGNAL IDENTITY",kVaporPink,2);
+  const Scenario* chosen=selected<kScenarioCount?&kScenarios[selected]:nullptr;
+  fit(12,66,chosen?chosen->id:"NO CASE",294,kWhite,2);
+  const bool match=chosen&&strcmp(identityCase,chosen->id)==0&&identityMac[0];
+  label(12,107,match?"LAST ON-AIR MAC:":"NO MATCHING TRANSMISSION",kMuted);
+  fit(12,133,match?identityMac:"IDENTITY NOT YET OBSERVED",294,match?kCyan:kYellow,2);
+  label(12,174,"Manufacturer labels are synthetic",kGreen);
+  label(12,190,"Identity only shown after actual TX",kMuted);
+  footer("BACK","HELP","RECOVERY");
+}
+void helpScreen(){
+  lcd.fillScreen(kBg);titleBar();
+  label(12,24,"SQUACHEMIT HELP",kVaporPink,2);
+  if(helpPage==0){
+    label(12,61,"1. Select a test category",kCyan);
+    label(12,92,"2. Choose a synthetic profile",kWhite);
+    label(12,123,"3. Check DETAILS, then RUN",kWhite);
+    label(12,154,"4. STOP ends RF immediately",kGreen);
+  }else if(helpPage==1){
+    label(12,61,"FAVORITES: tap Details to save",kCyan);
+    label(12,92,"RUN LIST: favorites playlist",kWhite);
+    label(12,123,"PAUSE waits for a safe gap",kWhite);
+    label(12,154,"RESUME needs a deliberate tap",kGreen);
+  }else{
+    label(12,61,"USB: 115200 baud, UI ON",kCyan);
+    label(12,92,"HEALTH: heap and radio status",kWhite);
+    label(12,123,"No RF is sent on device boot",kWhite);
+    label(12,154,"Test only with authorization",kGreen);
+  }
+  char pageLabel[28];snprintf(pageLabel,sizeof(pageLabel),"PAGE %u/3",(unsigned)helpPage+1u);
+  label(12,192,pageLabel,kMuted);
+  footer("BACK","NEXT","RECOVERY");
+}
+void recoveryScreen(){
+  lcd.fillScreen(kBg);titleBar();
+  label(12,26,"BOOT / RECOVERY INFO",kVaporPink,2);
+  char msg[58];
+  snprintf(msg,sizeof(msg),"RESET REASON CODE: %u",resetReasonCode);
+  label(12,68,msg,kCyan,2);
+  label(12,105,"NO RF TRANSMISSION ON BOOT",kGreen);
+  label(12,136,"IF TOUCH FAILS, USE CALTOUCH",kWhite);
+  label(12,165,"VERIFY BOARD BEFORE FLASHING",kYellow);
+  label(12,192,"This page does not erase settings",kMuted);
+  footer("BACK","HELP","HOME");
 }
 
 size_t totalMatches(){
@@ -638,8 +723,53 @@ Cyd32UiAction touchDetails(int x,int y,bool active){
 Cyd32UiAction touchDiagnostics(int x,int y){
   if(y<kFooterY)return Cyd32UiAction::None;
   if(x<108){screen=Screen::Details;redraw=true;}
-  else if(x<213){diagValues();lastDiagAt=millis();}
-  else {screen=Screen::Details;redraw=true;}
+  else if(x<213){screen=Screen::Settings;redraw=true;}
+  else {screen=Screen::Help;redraw=true;}
+  return Cyd32UiAction::None;
+}
+Cyd32UiAction touchSettings(int x,int y){
+  if(y>=kFooterY){
+    if(x<108)screen=Screen::Diagnostics;
+    else if(x<213)screen=Screen::Identity;
+    else screen=Screen::Help;
+    redraw=true;return Cyd32UiAction::None;
+  }
+  if(y>=46&&y<201){
+    const int row=(y-46)/39;
+    if(row==0){brightnessLevel=(brightnessLevel+1)%3;applyBrightness();persistUiSettings();}
+    else if(row==1){animationLevel=(animationLevel+1)%3;persistUiSettings();}
+    else if(row==2){screenTimeout=(screenTimeout+1)%3;persistUiSettings();}
+    else if(row==3){panelInverted=!panelInverted;lcd.invertDisplay(panelInverted);
+      if(prefs.begin("sqemit32",false)){prefs.putBool("invert2",panelInverted);prefs.end();}}
+    redraw=true;
+  }
+  return Cyd32UiAction::None;
+}
+Cyd32UiAction touchHelp(int x,int y){
+  if(y>=kFooterY){
+    if(x<108)screen=Screen::Settings;
+    else if(x<213)helpPage=(helpPage+1)%3;
+    else screen=Screen::Recovery;
+    redraw=true;
+  }
+  return Cyd32UiAction::None;
+}
+Cyd32UiAction touchIdentity(int x,int y){
+  if(y>=kFooterY){
+    if(x<108)screen=Screen::Settings;
+    else if(x<213)screen=Screen::Help;
+    else screen=Screen::Recovery;
+    redraw=true;
+  }
+  return Cyd32UiAction::None;
+}
+Cyd32UiAction touchRecovery(int x,int y){
+  if(y>=kFooterY){
+    if(x<108)screen=Screen::Identity;
+    else if(x<213)screen=Screen::Help;
+    else screen=Screen::Home;
+    redraw=true;
+  }
   return Cyd32UiAction::None;
 }
 Cyd32UiAction touchFavorites(int x,int y){
@@ -708,9 +838,15 @@ void cyd32UiBegin(){
     // New key avoids inheriting R3's incorrect "invert=false" default.
     panelInverted=prefs.getBool("invert2",true);
     durationSeconds=prefs.getUChar("txtime",12);
+    brightnessLevel=prefs.getUChar("bright",2);
+    animationLevel=prefs.getUChar("anim",1);
+    screenTimeout=prefs.getUChar("timeout",0);
     prefs.end();
   }
   if(durationSeconds<3 || durationSeconds>30)durationSeconds=12;
+  if(brightnessLevel>2)brightnessLevel=2;
+  if(animationLevel>2)animationLevel=1;
+  if(screenTimeout>2)screenTimeout=0;
   if(prefs.begin("sqemitfav",true)){
     if(prefs.getBytesLength("fav")==sizeof(favBits))prefs.getBytes("fav",favBits,sizeof(favBits));
     prefs.end();
@@ -720,7 +856,10 @@ void cyd32UiBegin(){
   squachSprite.setColorDepth(16);
   squachSpriteReady=(squachSprite.createSprite(112,111)!=nullptr);
   if(!squachSpriteReady)Serial.println("WARN,CYD32_SPRITE_ALLOC;STATIC_FALLBACK");
-  digitalWrite(TFT_BL,HIGH);
+  ledcSetup(6,5000,8);
+  ledcAttachPin(TFT_BL,6);
+  screenDimmed=false;applyBrightness();
+  lastTouchActivity=millis();
   calibrated=loadCal();
   ready=true;
   redraw=true;
@@ -787,6 +926,10 @@ Cyd32UiAction cyd32UiTick(const char* active,uint32_t remaining,bool suite){
     else if(screen==Screen::Diagnostics)diagnosticsScreen();
     else if(screen==Screen::Favorites)favoritesScreen();
     else if(screen==Screen::History)historyScreen();
+    else if(screen==Screen::Settings)settingsScreen();
+    else if(screen==Screen::Help)helpScreen();
+    else if(screen==Screen::Identity)identityScreen();
+    else if(screen==Screen::Recovery)recoveryScreen();
     else libraryScreen(active,suite);
     lastCount=(active&&*active)?((remaining+999)/1000):UINT32_MAX;
     redraw=false;
@@ -795,8 +938,13 @@ Cyd32UiAction cyd32UiTick(const char* active,uint32_t remaining,bool suite){
     if(count!=lastCount){countdownOnly(count);lastCount=count;}
   }
   if(calibrated&&screen==Screen::Diagnostics&&now-lastDiagAt>=1000u){diagValues();lastDiagAt=now;}
+  if(screenTimeout&&!pcControl&&!(active&&*active)&&!suite && !screenDimmed &&
+      now-lastTouchActivity>=(screenTimeout==1?30000UL:60000UL)){
+    screenDimmed=true;applyBrightness();
+  }
+  const uint32_t animDelay=animationLevel==0?200u:animationLevel==1?120u:80u;
   if(calibrated&&screen==Screen::Home&&squachSpriteReady&&
-     now-lastSquachFrame>=120u && colorBarsUntil==0)
+     now-lastSquachFrame>=animDelay && colorBarsUntil==0)
     drawSquachyFrame(active&&*active,suite,now);
   if(now-lastPoll<55)return Cyd32UiAction::None;
   lastPoll=now;
@@ -818,6 +966,11 @@ Cyd32UiAction cyd32UiTick(const char* active,uint32_t remaining,bool suite){
     else {x=remoteX;y=remoteY;pressed=true;}
   }
   Cyd32UiAction action=Cyd32UiAction::None;
+  if(pressed){
+    lastTouchActivity=now;
+    if(screenDimmed){screenDimmed=false;applyBrightness();wasPressed=true;
+      return Cyd32UiAction::None;}
+  }
   if(pressed&&!wasPressed&&now-lastPress>=240&&x<kW&&y<kH){
     if(screen==Screen::Home)action=touchHome(x,y,active&&*active,suite);
     else if(screen==Screen::Categories)action=touchCategories(x,y);
@@ -826,6 +979,10 @@ Cyd32UiAction cyd32UiTick(const char* active,uint32_t remaining,bool suite){
     else if(screen==Screen::Diagnostics)action=touchDiagnostics(x,y);
     else if(screen==Screen::Favorites)action=touchFavorites(x,y);
     else if(screen==Screen::History)action=touchHistory(x,y);
+    else if(screen==Screen::Settings)action=touchSettings(x,y);
+    else if(screen==Screen::Help)action=touchHelp(x,y);
+    else if(screen==Screen::Identity)action=touchIdentity(x,y);
+    else if(screen==Screen::Recovery)action=touchRecovery(x,y);
     else action=touchLibrary(x,y,active&&*active);
     lastPress=now;
     // Only navigation/state changes request a full repaint. Every other
@@ -854,7 +1011,11 @@ void cyd32UiStreamState(const char* activeId,uint32_t remainingMs,
       screen==Screen::Details?"DETAILS":
       screen==Screen::Diagnostics?"DIAGNOSTICS":
       screen==Screen::Favorites?"FAVORITES":
-      screen==Screen::History?"HISTORY":"HOME";
+      screen==Screen::History?"HISTORY":
+      screen==Screen::Settings?"SETTINGS":
+      screen==Screen::Help?"HELP":
+      screen==Screen::Identity?"IDENTITY":
+      screen==Screen::Recovery?"RECOVERY":"HOME";
   const Scenario* chosen=selected<kScenarioCount?&kScenarios[selected]:nullptr;
   const uint32_t petMs=(int32_t)(petUntil-now)>0?petUntil-now:0;
   Serial.printf("UI STATE 1 %s %u %u %u %s %u %s %lu %u %u %s %s %lu %lu\n",
@@ -894,6 +1055,19 @@ void cyd32UiStreamState(const char* activeId,uint32_t remainingMs,
     }
     Serial.println("UI HISTORY END");
   }
+  if((screen==Screen::Settings||screen==Screen::Help||screen==Screen::Recovery)&&
+     (force||now-lastDeviceAt>=1000u)){
+    lastDeviceAt=now;
+    Serial.printf("UI DEVICE 1 %u %u %u %u %u %u\n",
+      brightnessLevel,animationLevel,screenTimeout,panelInverted?1u:0u,
+      pcControl?1u:0u,resetReasonCode);
+  }
+  if(screen==Screen::Identity&&(force||now-lastDeviceAt>=1000u)){
+    lastDeviceAt=now;
+    const bool matches=chosen&&strcmp(identityCase,chosen->id)==0&&identityMac[0];
+    Serial.printf("UI IDENTITY 1 %s %s\n",chosen?chosen->id:"NONE",
+      matches?identityMac:"UNKNOWN");
+  }
   if(screen==Screen::Diagnostics){
     static uint32_t lastHealth=0;
     if(force||now-lastHealth>=1000u){
@@ -912,6 +1086,12 @@ void cyd32UiSetPlaylistState(bool running,bool paused,unsigned index,unsigned to
     playlistRunning=running;playlistPaused=paused;playlistIndex=index;playlistTotal=total;
     if(screen==Screen::Home)redraw=true;
   }
+}
+void cyd32UiSetPcControl(bool enabled){if(pcControl!=enabled){pcControl=enabled;redraw=true;lastTouchActivity=millis();}}
+void cyd32UiSetResetReason(unsigned reason){resetReasonCode=reason;}
+void cyd32UiRecordIdentity(const char* id,const char* mac){
+  snprintf(identityCase,sizeof(identityCase),"%s",id?id:"");
+  snprintf(identityMac,sizeof(identityMac),"%s",mac?mac:"");
 }
 void cyd32UiRecordResult(const char* id,const char* status,uint32_t atMs){
   if(!id||!*id||!status)return;

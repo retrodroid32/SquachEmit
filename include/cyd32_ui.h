@@ -33,3 +33,7 @@ void cyd32UiRecordResult(const char* id,const char* status,uint32_t atMs);
 size_t cyd32UiFavoriteCount();
 const Scenario* cyd32UiFavoriteAt(size_t rank);
 void cyd32UiSetPlaylistState(bool running,bool paused,unsigned index,unsigned total);
+
+void cyd32UiSetPcControl(bool enabled);
+void cyd32UiSetResetReason(unsigned reason);
+void cyd32UiRecordIdentity(const char* id,const char* mac);

@@ -10,6 +10,7 @@ on:
       - feature/handheld-r8-diagnostics-details-20261114
       - feature/handheld-r8-favorites-history-20261114
       - feature/handheld-r8-favorite-playlist-presets-20261114
+      - feature/handheld-r8-settings-help-identity-recovery-20261114
     paths:
       - 'desktop/**'
       - 'workbench/**'
@@ -54,7 +55,7 @@ jobs:
       - name: Upload Windows EXE files for hardware review
         uses: actions/upload-artifact@v4
         with:
-          name: SquachEmit-Workbench-R8_3-Playlist-Presets-Windows-x64-LAB
+          name: SquachEmit-Workbench-R8_4-Settings-Identity-Recovery-Windows-x64-LAB
           path: desktop/dist/*.exe
           retention-days: 14
           if-no-files-found: error

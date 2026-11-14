@@ -28,7 +28,7 @@
     const a=String(line||'').trim().split(/ +/);
     if(a.length!==17||a[0]!=='UI'||a[1]!=='STATE'||a[2]!=='1')
       return null;
-    const screens=['HOME','CATEGORIES','LIBRARY','DURATION','DETAILS','DIAGNOSTICS','FAVORITES','HISTORY','CALIBRATION','COLORS'];
+    const screens=['HOME','CATEGORIES','LIBRARY','DURATION','DETAILS','DIAGNOSTICS','FAVORITES','HISTORY','SETTINGS','HELP','IDENTITY','RECOVERY','CALIBRATION','COLORS'];
     if(!screens.includes(a[3]))return null;
     const num=(i,max)=>/^\d+$/.test(a[i])&&Number.isSafeInteger(Number(a[i]))
       &&Number(a[i])<=max?Number(a[i]):null;
@@ -99,11 +99,12 @@
     }
     return {color,fill,line,outline,tri,round,ring,circle,ellipse,text,blend};
   }
-  function title(p){
+  function title(p,pc=false){
     for(let x=0;x<W;x++){const c=x<160?p.blend(C.purple,C.cyan,Math.trunc(x*255/160)):
       p.blend(C.cyan,C.pink,Math.trunc((x-160)*255/160));p.fill(x,0,1,14,c);}
     p.fill(0,14,320,1,C.purple);p.fill(94,2,132,10,C.taskbar);
     p.text(123,3,'SQUACHEMIT',C.white);
+    if(pc)p.text(281,3,'PC',C.green);
   }
   function button(p,x,y,w,h,s){
     p.fill(x,y,w,h,C.bg);p.outline(x,y,w,h,C.purple);
@@ -287,13 +288,13 @@
     p.fill(0,0,W,H,C.bg);
     const screen=state.calibrated?state.screen:'CALIBRATION';
     if(screen==='CALIBRATION'){
-      title(p);p.text(28,35,'SQUACHEMIT TOUCH SETUP',C.cyan,2);
+      title(p,state.pcControl);p.text(28,35,'SQUACHEMIT TOUCH SETUP',C.cyan,2);
       menuRow(p,87,'TAP SCREEN TO CALIBRATE','FOLLOW THE 5 CROSSHAIRS');
       p.text(12,179,'NO RF ON BOOT  /  115200 BAUD',C.green);
       return true;
     }
     if(screen==='COLORS'){
-      title(p);p.text(24,25,'ST7798 RGB565 TEST',C.cyan,2);
+      title(p,state.pcControl);p.text(24,25,'ST7798 RGB565 TEST',C.cyan,2);
       const colors=['#ff0000','#00ff00','#0000ff','#ffffff','#000000'];
       const names=['RED','GREEN','BLUE','WHITE','BLACK'];
       for(let i=0;i<5;i++){const x=7+62*i;p.fill(x,62,56,84,colors[i]);
@@ -306,7 +307,7 @@
       const chosen=catalog.byId.get(active?state.active:state.starting!=='NONE'?state.starting:state.selected);
       backdrop(p);
       squachy(ctx,p,now,active,state.suite,state.petMs>0);
-      title(p);
+      title(p,state.pcControl);
       p.round(7,20,306,44,4,C.bg);p.ring(7,20,306,44,4,C.vaporPink);
       p.ring(9,22,302,40,3,C.purple);
       const error=state.error!=='NONE',starting=state.starting!=='NONE';
@@ -333,7 +334,7 @@
         state.playlistRunning?(state.playlistPaused?'RESUME':'PAUSE'):'SUITE');
       return true;
     }
-    title(p);
+    title(p,state.pcControl);
     if(screen==='CATEGORIES'){
       p.text(8,21,'TEST LIBRARY / DEVICE TYPE',C.vaporPink,2);
       for(let row=0;row<4;row++){
@@ -406,6 +407,46 @@
       }
       p.text(12,196,'TX RESULTS ONLY - NOT RX DETECTIONS',C.muted);
       footer(p,'BACK','< PREV','NEXT >');return true;
+    }
+    if(screen==='SETTINGS'){
+      const br=['DIM','NORMAL','BRIGHT'],an=['SLOW','NORMAL','FAST'],tm=['OFF','30 SECONDS','60 SECONDS'];
+      const d=state.device||{brightness:2,animation:1,timeout:0,inverted:false};
+      p.text(10,24,'HANDHELD SETTINGS',C.vaporPink,2);
+      menuRow(p,46,'BACKLIGHT: '+br[d.brightness],'TAP TO CYCLE BRIGHTNESS');
+      menuRow(p,85,'ANIMATION: '+an[d.animation],'TAP TO CYCLE FRAME RATE');
+      menuRow(p,124,'IDLE DIM: '+tm[d.timeout],'WAKE TOUCH NEVER STARTS A TEST');
+      menuRow(p,163,'PANEL INVERT: '+(d.inverted?'ON':'OFF'),'BOARD-SPECIFIC DISPLAY POLARITY');
+      footer(p,'BACK','IDENTITY','HELP');return true;
+    }
+    if(screen==='IDENTITY'){
+      const chosen=catalog.byId.get(state.selected),id=state.identity;
+      p.text(12,26,'SYNTHETIC SIGNAL IDENTITY',C.vaporPink,2);
+      p.text(12,66,chosen?chosen.id:'NO CASE',C.white,2,294);
+      const matched=id&&id.id===state.selected&&id.mac!=='UNKNOWN';
+      p.text(12,107,matched?'LAST ON-AIR MAC:':'NO MATCHING TRANSMISSION',C.muted);
+      p.text(12,133,matched?id.mac:'IDENTITY NOT YET OBSERVED',matched?C.cyan:C.yellow,2,294);
+      p.text(12,174,'Manufacturer labels are synthetic',C.green);
+      p.text(12,190,'Identity only shown after actual TX',C.muted);
+      footer(p,'BACK','HELP','RECOVERY');return true;
+    }
+    if(screen==='HELP'){
+      p.text(12,24,'SQUACHEMIT HELP',C.vaporPink,2);
+      const pages=[['1. Select a test category','2. Choose a synthetic profile','3. Check DETAILS, then RUN','4. STOP ends RF immediately'],
+        ['FAVORITES: tap Details to save','RUN LIST: favorites playlist','PAUSE waits for a safe gap','RESUME needs a deliberate tap'],
+        ['USB: 115200 baud, UI ON','HEALTH: heap and radio status','No RF is sent on device boot','Test only with authorization']];
+      const pg=state.helpPage||0;
+      pages[pg].forEach((line,i)=>p.text(12,61+i*31,line,i===0?C.cyan:i===3?C.green:C.white));
+      p.text(12,192,'PAGE '+(pg+1)+'/3',C.muted);
+      footer(p,'BACK','NEXT','RECOVERY');return true;
+    }
+    if(screen==='RECOVERY'){
+      p.text(12,26,'BOOT / RECOVERY INFO',C.vaporPink,2);
+      p.text(12,68,'RESET REASON CODE: '+(state.device?.reset??'—'),C.cyan,2);
+      p.text(12,105,'NO RF TRANSMISSION ON BOOT',C.green);
+      p.text(12,136,'IF TOUCH FAILS, USE CALTOUCH',C.white);
+      p.text(12,165,'VERIFY BOARD BEFORE FLASHING',C.yellow);
+      p.text(12,192,'This page does not erase settings',C.muted);
+      footer(p,'BACK','HELP','HOME');return true;
     }
     if(screen==='DURATION'){
       p.text(20,27,'TRANSMIT TIME',C.vaporPink,2);

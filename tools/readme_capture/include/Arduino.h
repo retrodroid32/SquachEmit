@@ -27,3 +27,7 @@ struct EspMock {
   unsigned getMaxAllocHeap() const { return 90000; }
 };
 inline EspMock ESP;
+
+inline double ledcSetup(int, unsigned, int){return 5000.0;}
+inline void ledcAttachPin(int,int){}
+inline void ledcWrite(int,unsigned){}

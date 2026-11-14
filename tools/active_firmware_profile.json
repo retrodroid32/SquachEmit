@@ -2,24 +2,24 @@
   "schema": 1,
   "scenario_count": 172,
   "firmware_sources": {
-    "src": "dd0d411973801615ef83d3b5f419f0d0a8654785",
-    "include": "cff21065acc664f07f5fe22ca08026cbd938d1a1",
+    "src": "bed173a08a08349bb2423299a889b503f577e398",
+    "include": "bc9871f8110164ecae0e9b177fcb92e59b840b47",
     "lib": "bd0df45f7747bc9971aa4b379a12940dd2d7d98f",
     "SquachEmit.ino": "90b4205813a2f7885bc1e12ce7431eebf7249f45",
     "platformio.ini": "bd67af3ecd6de05f4cef015fe97e17b29ceed574"
   },
   "builds": {
     "cyd32-st7798": {
-      "title": "SquachEmit v1.1.0 CYD 3.2 — R8.3 Favorites Playlist + TX Presets (172 Cases)",
+      "title": "SquachEmit v1.1.0 CYD 3.2 — R8.4 Settings, Identity, Help & Recovery (172 Cases)",
       "version": "v1.1.0 MAINLINE · 172 cases",
-      "summary": "R8.3 LAB CYD32 ST7798 adds an attended standalone Favorites Playlist runner with operator PAUSE/RESUME/STOP, bounded 3-second cooldown, on-device saved favorite selection, 3/10/30-second duration presets, and UI PLAYLIST state for Windows parity. Retains 172 synthetic BLE/Wi-Fi test cases, SHA-256 validated flash parts and existing diagnostics. Hardware validation pending; production unchanged.",
+      "summary": "R8.4 LAB CYD32 ST7798 adds persistent brightness, animation speed, 30/60-second safe idle dim, panel inversion, selected-case last actual synthetic MAC inspector, boot reset reason/recovery guidance and beginner help. Native Windows mirror receives bounded UI DEVICE/IDENTITY values. 172 timed synthetic BLE/Wi-Fi scenarios and SHA-256 validated flash segments. Hardware validation pending.",
       "highlights": [
-        "Favorites list can start a bounded standalone on-device test playlist, without a Windows computer.",
-        "Physical STOP cancels active playlist immediately; PAUSE holds at the next safe off-air boundary.",
-        "Explicit operator RESUME enforces 3-second off-air cooldown before another test case.",
-        "Duration page adds 3/10/30-second presets while retaining 3–30 second manual adjustment.",
-        "Windows R8.3 native view reflects playlist and duration controls via actual device state.",
-        "No unattended test on boot; 172 synthetic cases, board-specific LAB and SHA-256 flashing."
+        "Persistent handheld settings for LED backlight brightness, Squachy animation speed, display inversion and idle dim.",
+        "A wake touch is consumed and never triggers RF RUN; physical STOP remains visible when testing.",
+        "Synthetic identity inspector displays the MAC only if the selected scenario was actually transmitted.",
+        "Help/tutorial and reset-reason recovery information are viewable on the physical touchscreen.",
+        "PC remote-control indicator and new UI DEVICE / IDENTITY metadata allow Windows native view parity.",
+        "172 synthetic cases, LAB-only board firmware, SHA-256 flasher validation, hardware checks pending."
       ]
     },
     "c5-waveshare-28": {

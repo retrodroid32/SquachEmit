@@ -1,4 +1,7 @@
 #include <Arduino.h>
+#if defined(SQE_CYD32)
+#include <esp_system.h>
+#endif
 #include <WiFi.h>
 #include <esp_wifi.h>
 #include <NimBLEDevice.h>
@@ -55,6 +58,7 @@ static uint32_t g_radioIdentity = 0;
 static void truth(const char* event, const Scenario* s, const char* status = "ok") {
   // Existing keys remain stable for the serial truth consumer. 0 = BLE.
 #if defined(SQE_CYD32)
+  if(s && !strcmp(event,"BEGIN"))cyd32UiRecordIdentity(s->id,g_address);
   if(s && (!strcmp(event,"END")||!strcmp(event,"ERROR")))
     cyd32UiRecordResult(s->id,status,millis());
 #endif
@@ -507,11 +511,13 @@ static void command(String cmd) {
     cmd.toUpperCase();
     if(cmd=="UI ON"){
       g_uiStreamOn=true;g_uiStatePending=true;
+      cyd32UiSetPcControl(true);
       Serial.println("UI READY 1 320 240 MODEL");
       return;
     }
     if(cmd=="UI OFF"){
       g_uiStreamOn=false;g_uiStatePending=false;
+      cyd32UiSetPcControl(false);
       cyd32UiRemoteTouch(0,0,"UP");
       Serial.println("UI OFF OK");
       return;
@@ -615,6 +621,7 @@ void setup() {
 #elif defined(SQE_CYD32)
   Serial.println("BOOT,SquachEmit,v1.1.0,ESP32-2432S032R-ST7798,172-CASES-TXTIME");
   cyd32UiBegin();
+  cyd32UiSetResetReason((unsigned)esp_reset_reason());
 #else
   Serial.println("BOOT,SquachEmit,v1.1.0,ESP32-S3,172-CASES");
 #endif
