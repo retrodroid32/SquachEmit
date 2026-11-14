@@ -805,11 +805,6 @@
     return pending;
   }
   async function run(fromBatch){
-    if(receiverMirror){
-      runProgress('Stop SquachWatch LCD mirror first to restore exact-MAC LOG '+
-        'correlation; a screenshot is not detection evidence.');
-      return;
-    }
     if(batch.active&&!fromBatch)return;
     if(fromBatch&&(!batch.active||!batch.current||batch.current.id!==ui.caseSelect.value))return;
     var c=catalog[ui.caseSelect.value],duration=Number(ui.duration.value);
