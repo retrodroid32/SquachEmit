@@ -55,15 +55,15 @@
       'aria-label="USB pixels from physical '+names[role]+' LCD; click or drag to touch" hidden></canvas>'+
       '<div class="dc-placeholder" id="dc-placeholder-'+role+'">'+
       '<div class="dc-placeholder-icon">▣</div>'+
-      '<b>NO LIVE LCD FRAME</b><small>Connect USB and choose Mirror live. '+
-      'The panel stays blank until real pixels arrive.</small></div>'+
+      '<b>NO LIVE DEVICE VIEW</b><small>Connect USB and choose Start live view. '+
+      'A compatible firmware response is required before showing a screen.</small></div>'+
       '</div></div>'+
       '<div class="dc-frame-meta" id="dc-frame-'+role+'" role="status">'+
       'LCD framebuffer: not connected</div>'+
       '<div class="dc-mirror-actions">'+
-      '<button type="button" data-role="'+role+'" data-action="mirror-on">'+(emitter?'Sync device UI':'Mirror live')+'</button>'+
-      '<button type="button" data-role="'+role+'" data-action="mirror-frame">'+(emitter?'Refresh state':'Get frame')+'</button>'+
-      '<button type="button" data-role="'+role+'" data-action="mirror-off">Stop</button></div>'+
+      '<button type="button" data-role="'+role+'" data-action="mirror-on">Start live view</button>'+
+      '<button type="button" data-role="'+role+'" data-action="mirror-frame">Refresh view</button>'+
+      '<button type="button" data-role="'+role+'" data-action="mirror-off">Stop live view</button></div>'+
       (emitter?'<button type="button" data-role="emitter" data-action="mirror-diag">Check device UI state</button>':
         '<div class="dc-mirror-actions"><button type="button" data-role="receiver" data-action="receiver-ui-on">Check native UI protocol</button>'+
         '<button type="button" data-role="receiver" data-action="receiver-ui-off">Stop state telemetry</button></div>'+
@@ -190,9 +190,14 @@
     if(role==='receiver'&&receiverUi.enabled){
       const ok=await api.send('receiver','UI OFF');
       receiverUi.enabled=false;receiverUi.ready=false;
-      get('dc-receiver-ui').textContent=ok?'Native UI stopped; pixel capture requested.':'Native UI stop could not be confirmed.';
+      get('dc-receiver-ui').textContent=ok?'State telemetry stopped. Use Start live view for pixel capture.':'Native UI stop could not be confirmed.';
     }
     const state=api.getState();
+    if(mirrors[role].active){
+      info(role,mirrors[role].ready?'Live view already active. Use Refresh view.':
+        'Waiting for firmware acknowledgment. Check the serial output.');
+      return;
+    }
     if(role==='emitter'){
       if(!isConnected('emitter',state)){
         info('emitter','Connect at 115200 to synchronize the native UI.');return;
@@ -202,12 +207,14 @@
       info('emitter','Requesting real navigation state (not LCD pixels)…');
       const ok=await api.send('emitter','UI ON');
       if(!ok){resetRole('emitter');info('emitter','UI ON failed.');return;}
-      mirrorNote('emitter','Waiting for UI READY from R7 firmware…');
+      mirrorNote('emitter','Checking firmware UI STATE support at 115200 baud…');
       s.handshake=setTimeout(()=>{
         s.handshake=null;
         if(!s.active||s.ready)return;
         resetRole('emitter');
-        const err='No UI READY: flash the R7 LAB firmware and connect at 115200.';
+        const err='SquachEmit did not acknowledge UI ON. The EXE requires R7-compatible '+
+          'SquachEmit firmware with UI READY/UI STATE support at 115200 baud. '+
+          'Older public firmware cannot provide this native view.';
         mirrorNote('emitter',err);info('emitter',err);
       },6000);
       return;
@@ -242,7 +249,11 @@
       const message=role==='emitter'?
         'No MIRROR READY. Device may have reset to 115200 after reconnect, '+
         'or firmware lacks MIRROR support. Reconnect at 115200 and click Diagnose.':
-        'No MIRROR READY. Check the SquachWatch companion mirror firmware and PIN.';
+        'No MIRROR READY. SquachWatch requires firmware with the USB pixel-mirror '+
+        'protocol (PR #225), an unlocked PIN and matching serial baud.';
+      if(role==='receiver'){
+        void api.send('receiver','MIRROR OFF'); // also return serial to LOG polling
+      }
       mirrorNote(role,message);info(role,message);
     },5000);
   }
@@ -327,6 +338,22 @@
     box.scrollTop=box.scrollHeight;
     if(role==='receiver'&&String(line).includes('[security]'))
       info(role,'Receiver reported a security state. Unlock PIN on the physical device.');
+    if(/ERROR,unknown_command/.test(String(line))){
+      if(role==='emitter'&&mirrors.emitter.active&&!mirrors.emitter.ready){
+        resetRole('emitter');
+        const msg='SquachEmit firmware rejected UI ON. This is a firmware/EXE '+
+          'version mismatch, not a USB connection problem. Flash R7-compatible '+
+          'SquachEmit LAB firmware with UI STATE support, then reconnect at 115200.';
+        mirrorNote('emitter',msg);info('emitter',msg);
+      }else if(role==='receiver'&&mirrors.receiver.active&&!mirrors.receiver.ready){
+        resetRole('receiver');
+        void api.send('receiver','MIRROR OFF');
+        const msg='SquachWatch rejected MIRROR ON. Its installed firmware lacks '+
+          'the required USB pixel-mirror command. The EXE cannot create a '+
+          'real LCD view without compatible receiver firmware.';
+        mirrorNote('receiver',msg);info('receiver',msg);
+      }
+    }
   }
   function truth(event){
     info('emitter',event.event+' · '+event.id+
@@ -422,7 +449,7 @@
     if(role==='receiver'&&action==='receiver-ui-off'){
       const ok=await api.send('receiver','UI OFF');
       receiverUi.enabled=false;receiverUi.ready=false;
-      get('dc-receiver-ui').textContent=ok?'Native UI telemetry stopped.':'UI OFF unavailable or receiver offline.';
+      get('dc-receiver-ui').textContent=ok?'Native UI telemetry stopped. Start live view for LCD pixels.':'UI OFF unavailable or receiver offline.';
       return;
     }
     if(action==='mirror-on'){await startMirror(role);return;}
@@ -448,8 +475,8 @@
       info(role,'Choose the '+names[role]+' Windows COM port…');
       await api.connect(role);refreshState();
       const state=api.getState();
-      // Emitters sync automatically; receivers stay on LOG by default.
-      if(role==='emitter'&&isConnected(role,state))await startMirror(role);
+      // Both devices now use the same explicit Start live view action.
+      // Never spam unsupported UI ON after USB connect; require operator choice.
       return;
     }
     if(action==='disconnect'){
