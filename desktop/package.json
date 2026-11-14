@@ -1,8 +1,8 @@
 {
   "name": "squachemit-workbench-desktop",
-  "version": "0.5.0",
+  "version": "0.5.1",
   "private": true,
-  "description": "SquachEmit Windows Workbench R7: 172-case device-state-driven native screen and remote touch, no TFT pixel capture",
+  "description": "SquachEmit Windows Workbench R7.1: camera-free native device screens and remote touch for 172 test cases",
   "main": "main.cjs",
   "license": "GPL-3.0-only",
   "scripts": {

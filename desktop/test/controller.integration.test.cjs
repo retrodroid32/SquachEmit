@@ -76,6 +76,8 @@ test('Windows rail renders authentic USB frame and translates canvas pointer to 
   const rail=elements.get('created-aside-2');
   assert.ok(rail,'real device desk must be built');
   assert.match(rail.innerHTML,/NO LIVE LCD FRAME/);
+  assert.doesNotMatch(rail.innerHTML,/OPTIONAL PHYSICAL CAMERA|dc-camera|dc-video-|dc-source-|Show video/);
+  assert.ok(!elements.has('dc-source-emitter')&&!elements.has('dc-video-receiver'));
   assert.ok(elements.get('dc-canvas-receiver').hidden,'no fake screen before USB pixels');
   const click=(action,role)=>{
     rail.listeners.click({target:{closest:()=>({dataset:{action,role},disabled:false})}});

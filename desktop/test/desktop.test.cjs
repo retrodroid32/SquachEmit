@@ -59,8 +59,7 @@ test('Software-rendered emitter UI and optional receiver LCD mode use native tou
     'putImageData(','MIRROR ON','MIRROR FRAME','MIRROR OFF','MIRROR TOUCH ',
     "'DOWN'","'MOVE'","'UP'",'pointerdown','pointermove','pointerup',
     'touchPoint(','startMirror(','stopMirror(','requestMirrorFrame(',
-    'getUserMedia','enumerateDevices','videoinput','stopCamera',
-    'deviceId:{exact:id}','sqe:serial','sqe:snapshot','sqe:truth'])
+    'sqe:serial','sqe:snapshot','sqe:truth'])
     assert.ok(ui.includes(key),'missing real LCD and remote-control feature: '+key);
   for(const command of ['STATUS|IDENTITY|LIST|HELP|COLORS|STOP',
     'RADIO SCAN','SCAN (?:AUTO|ACTIVE|PASSIVE)','CLOCK [01] [0-2] [0-6]',
@@ -81,7 +80,9 @@ test('Software-rendered emitter UI and optional receiver LCD mode use native tou
   assert.match(ui,/PC-drawn SquachEmit UI/);
   assert.doesNotMatch(ui,/LIVE SERIAL TELEMETRY/);
   assert.doesNotMatch(ui,/dc-screenmetric/);
-  assert.doesNotMatch(wb,/getUserMedia\(\{audio:true/);
+  assert.doesNotMatch(ui,/getUserMedia|enumerateDevices|mediaDevices|dc-camera|dc-source-|dc-video-|OPTIONAL PHYSICAL CAMERA|startCamera|stopCamera/);
+  assert.doesNotMatch(main,/permission==='media'|camera=\(self\)|includes\('video'\)/);
+  assert.match(main,/camera=\(\)/);
 });
 test('real SquachWatch mirror never prevents user-triggered SquachEmit transmission',()=>{
   const wb=read('workbench/app.js'),ui=read('desktop/public/controller.js');

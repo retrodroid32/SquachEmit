@@ -19,7 +19,6 @@
   rail.setAttribute('aria-label','Real USB device displays and remote controls');
   main.appendChild(rail);
   const names={receiver:'SquachWatch',emitter:'SquachEmit'};
-  const cameras={receiver:null,emitter:null};
   const terminals={receiver:'',emitter:''};
   const local={model:null,catalog:native.prepare([]),receivedAt:0};
   const mirrors={};
@@ -56,7 +55,7 @@
       '<div class="dc-placeholder-icon">▣</div>'+
       '<b>NO LIVE LCD FRAME</b><small>Connect USB and choose Mirror live. '+
       'The panel stays blank until real pixels arrive.</small></div>'+
-      '</div><video id="dc-video-'+role+'" autoplay muted playsinline hidden></video></div>'+
+      '</div></div>'+
       '<div class="dc-frame-meta" id="dc-frame-'+role+'" role="status">'+
       'LCD framebuffer: not connected</div>'+
       '<div class="dc-mirror-actions">'+
@@ -67,12 +66,6 @@
       '<div class="dc-displaymode">'+(emitter?
         'PC-drawn SquachEmit UI, synchronized with device navigation and RF state. No screenshots or 2Mbps switch. Click, hold or drag to operate the physical touchscreen.':
         'Optional SquachWatch USB pixel mirror; pause it for receiver LOG tests.')+'</div>'+
-      '<div class="dc-camera"><label for="dc-source-'+role+'">OPTIONAL PHYSICAL CAMERA</label>'+
-      '<select id="dc-source-'+role+'"><option value="">Choose camera…</option></select>'+
-      '<div class="dc-camera-actions">'+
-      '<button type="button" data-action="refresh-cameras" data-role="'+role+'">Refresh cameras</button>'+
-      '<button type="button" data-action="start-camera" data-role="'+role+'">Show video</button>'+
-      '<button type="button" data-action="stop-camera" data-role="'+role+'">Stop video</button></div></div>'+
       '<div class="dc-connections">'+
       '<button type="button" data-action="connect" data-role="'+role+'">Connect USB</button>'+
       '<button type="button" data-action="disconnect" data-role="'+role+'">Disconnect</button></div>'+
@@ -336,56 +329,6 @@
     if(!mirrors.receiver.active)mirrorNote('receiver',msg+
       ' · LCD capture available through Mirror live');
   }
-  async function refreshCameras(){
-    if(!navigator.mediaDevices||!navigator.mediaDevices.enumerateDevices)return;
-    try{
-      const list=(await navigator.mediaDevices.enumerateDevices())
-        .filter(d=>d.kind==='videoinput');
-      for(const role of ['receiver','emitter']){
-        const el=get('dc-source-'+role),old=el.value;
-        el.replaceChildren();
-        const option=document.createElement('option');
-        option.value='';
-        option.textContent=list.length?'Choose Windows camera…':'No cameras detected';
-        el.appendChild(option);
-        list.forEach((device,i)=>{
-          const item=document.createElement('option');
-          item.value=device.deviceId;
-          item.textContent=device.label||'Camera '+(i+1);
-          el.appendChild(item);
-        });
-        if(list.some(d=>d.deviceId===old))el.value=old;
-      }
-    }catch(err){info('receiver','Camera enumeration failed: '+err.message);}
-  }
-  function stopCamera(role){
-    if(cameras[role])cameras[role].getTracks().forEach(t=>t.stop());
-    cameras[role]=null;
-    const video=get('dc-video-'+role);
-    video.pause();video.srcObject=null;video.hidden=true;
-    get('dc-lcd-'+role).hidden=false;
-  }
-  async function startCamera(role){
-    const id=get('dc-source-'+role).value;
-    if(!navigator.mediaDevices||!navigator.mediaDevices.getUserMedia){
-      info(role,'Windows camera not available.');return;
-    }
-    if(!id){info(role,'Choose an actual Windows camera first.');return;}
-    stopCamera(role);
-    try{
-      const stream=await navigator.mediaDevices.getUserMedia({
-        video:{deviceId:{exact:id},width:{ideal:1280},height:{ideal:720},
-          frameRate:{ideal:15,max:30}},audio:false
-      });
-      cameras[role]=stream;
-      const video=get('dc-video-'+role);
-      video.srcObject=stream;
-      await video.play();
-      video.hidden=false;get('dc-lcd-'+role).hidden=true;
-      info(role,'Live physical camera active. Video is local and not uploaded.');
-      await refreshCameras();
-    }catch(err){info(role,'Camera unavailable: '+err.message);}
-  }
   function touchPoint(role,event){
     const canvas=get('dc-canvas-'+role),r=canvas.getBoundingClientRect();
     if(!r.width||!r.height)return null;
@@ -453,9 +396,6 @@
     canvas.addEventListener('lostpointercapture',()=>releaseTouch(role,s.lastPoint,0));
   }
   async function onControl(action,role){
-    if(action==='refresh-cameras'){await refreshCameras();return;}
-    if(action==='start-camera'){await startCamera(role);return;}
-    if(action==='stop-camera'){stopCamera(role);return;}
     if(action==='mirror-on'){await startMirror(role);return;}
     if(role==='emitter'&&action==='mirror-diag'){
       const ok=await api.send(role,'UI GET');
@@ -583,9 +523,7 @@
       if(mirrors[role].touchDown&&isConnected(role,api.getState()))
         sendTouch(role,mirrors[role].lastPoint,'UP');
       resetRole(role);
-      stopCamera(role);
     }
   });
   refreshState();
-  void refreshCameras();
 })();

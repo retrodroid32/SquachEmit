@@ -3,7 +3,7 @@
  * SquachEmit Workbench Desktop
  * Local-only Electron wrapper around the existing, independently tested
  * Detection Workbench. USB serial connections remain Web Serial sessions
- * opened by explicit user clicks. Camera access is optional and local.
+ * opened by explicit user clicks. Physical camera access is disabled.
  */
 const {app,BrowserWindow,dialog,session,shell}=require('electron');
 const fs=require('node:fs');
@@ -74,10 +74,10 @@ function serve(req,res,roots){
       'Content-Type':type,'Content-Length':body.length,
       'Cache-Control':'no-store','X-Content-Type-Options':'nosniff',
       'Referrer-Policy':'no-referrer',
-      'Permissions-Policy':'camera=(self), microphone=(), geolocation=()',
+      'Permissions-Policy':'camera=(), microphone=(), geolocation=()',
       'Content-Security-Policy':
         "default-src 'self'; script-src 'self'; style-src 'self'; "+
-        "img-src 'self' data: blob:; media-src 'self' blob:; "+
+        "img-src 'self' data: blob:; media-src 'none'; "+
         "connect-src 'self'; object-src 'none'; base-uri 'self'; frame-ancestors 'none'"
     };
     res.writeHead(200,headers);
@@ -91,15 +91,11 @@ function sameAppOrigin(input){
 function enablePermissions(win){
   const ses=session.defaultSession;
   ses.setPermissionCheckHandler((_webContents,permission,origin)=>{
-    return sameAppOrigin(origin) && (permission==='serial'||permission==='media');
+    return sameAppOrigin(origin) && permission==='serial';
   });
   ses.setPermissionRequestHandler((webContents,permission,callback,details)=>{
     const url=(details&&details.requestingUrl)||webContents.getURL();
-    const camera=permission==='media' &&
-      Array.isArray(details&&details.mediaTypes) &&
-      details.mediaTypes.includes('video') &&
-      !details.mediaTypes.includes('audio');
-    callback(sameAppOrigin(url) && (permission==='serial'||camera));
+    callback(sameAppOrigin(url) && permission==='serial');
   });
   ses.on('select-serial-port',(event,ports,webContents,callback)=>{
     event.preventDefault();
