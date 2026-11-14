@@ -21,6 +21,8 @@
   const names={receiver:'SquachWatch',emitter:'SquachEmit'};
   const terminals={receiver:'',emitter:''};
   const local={model:null,catalog:native.prepare([]),receivedAt:0};
+  const receiverUi={enabled:false,ready:false,lastAt:0,screen:null};
+  const watchScreenNames=['BOOT','MAIN','ALERT','LOG','SETTINGS','DIARY','OUTFIT','SCAN','WATCH ALERT','DIAGNOSTICS','HUNT','COLOR CHECK','DETECTION FILTER','OUTFIT UNLOCK','POLICIES','POWER SAVER','PHONE','MESH MENU','MESH WARNING','MESH PHRASE','MESH COMPOSE','BEACON WARNING','SECURITY','LOCKED','PIN ENTRY','SQUAD','UPDATE','WIFI PASSWORD','STATUS LIGHT','NUDGE','SQUAD UPDATE','INVITE','DESK','WIFI NETWORKS','WIFI ADD','SYSTEM PROPERTIES','BINGO','DEX','ALERT RULES','WATCH LIST','HUNT LIST','SD FILES'];
   const mirrors={};
   for(const role of ['receiver','emitter']){
     mirrors[role]={active:false,waiting:false,lastFrame:false,lastFrameSequence:0,failures:0,
@@ -62,10 +64,13 @@
       '<button type="button" data-role="'+role+'" data-action="mirror-on">'+(emitter?'Sync device UI':'Mirror live')+'</button>'+
       '<button type="button" data-role="'+role+'" data-action="mirror-frame">'+(emitter?'Refresh state':'Get frame')+'</button>'+
       '<button type="button" data-role="'+role+'" data-action="mirror-off">Stop</button></div>'+
-      (emitter?'<button type="button" data-role="emitter" data-action="mirror-diag">Check device UI state</button>':'')+
+      (emitter?'<button type="button" data-role="emitter" data-action="mirror-diag">Check device UI state</button>':
+        '<div class="dc-mirror-actions"><button type="button" data-role="receiver" data-action="receiver-ui-on">Check native UI protocol</button>'+
+        '<button type="button" data-role="receiver" data-action="receiver-ui-off">Stop state telemetry</button></div>'+
+        '<div id="dc-receiver-ui" class="dc-frame-meta" role="status">Native UI: not checked. Full display uses authentic MIRROR pixels.</div>')+
       '<div class="dc-displaymode">'+(emitter?
         'PC-drawn SquachEmit UI, synchronized with device navigation and RF state. No screenshots or 2Mbps switch. Click, hold or drag to operate the physical touchscreen.':
-        'Optional SquachWatch USB pixel mirror; pause it for receiver LOG tests.')+'</div>'+
+        'Optional SquachWatch USB pixel mirror; pause it for receiver LOG tests. Native UI compatibility shows screen state only (not a reconstructed LCD).')+'</div>'+
       '<div class="dc-connections">'+
       '<button type="button" data-action="connect" data-role="'+role+'">Connect USB</button>'+
       '<button type="button" data-action="disconnect" data-role="'+role+'">Disconnect</button></div>'+
@@ -182,6 +187,11 @@
     },role==='emitter'?(state.emitterBaud===115200?45000:16000):12000);
   }
   async function startMirror(role){
+    if(role==='receiver'&&receiverUi.enabled){
+      const ok=await api.send('receiver','UI OFF');
+      receiverUi.enabled=false;receiverUi.ready=false;
+      get('dc-receiver-ui').textContent=ok?'Native UI stopped; pixel capture requested.':'Native UI stop could not be confirmed.';
+    }
     const state=api.getState();
     if(role==='emitter'){
       if(!isConnected('emitter',state)){
@@ -305,7 +315,7 @@
       '[data-action="switch-baud"]').forEach(b=>{b.disabled=disabled;});
     // Only the SquachWatch receiver USB must switch to LOG during tests.
     // SquachEmit has its own port and can keep streaming actual LCD pixels.
-    rail.querySelectorAll('[data-action="mirror-on"],[data-action="mirror-frame"]').forEach(b=>{
+    rail.querySelectorAll('[data-action="mirror-on"],[data-action="mirror-frame"],[data-action="receiver-ui-on"]').forEach(b=>{
       b.disabled=b.dataset.role==='receiver'&&!!state.testActive;
     });
   }
@@ -396,6 +406,25 @@
     canvas.addEventListener('lostpointercapture',()=>releaseTouch(role,s.lastPoint,0));
   }
   async function onControl(action,role){
+    if(role==='receiver'&&action==='receiver-ui-on'){
+      const state=api.getState();
+      if(!state.receiverConnected||state.testActive){
+        info(role,'Connect SquachWatch USB and stop active detection testing first.');return;
+      }
+      if(mirrors.receiver.active)await stopMirror('receiver',true);
+      const ok=await api.send('receiver','UI ON');
+      if(!ok){info(role,'Native UI probe could not be sent; verify firmware and baud.');return;}
+      receiverUi.enabled=true;receiverUi.ready=false;receiverUi.lastAt=0;
+      get('dc-receiver-ui').textContent='Waiting for UI READY from SquachWatch LAB firmware…';
+      info(role,'Native protocol probe sent. Pixel mirror remains available separately.');
+      return;
+    }
+    if(role==='receiver'&&action==='receiver-ui-off'){
+      const ok=await api.send('receiver','UI OFF');
+      receiverUi.enabled=false;receiverUi.ready=false;
+      get('dc-receiver-ui').textContent=ok?'Native UI telemetry stopped.':'UI OFF unavailable or receiver offline.';
+      return;
+    }
     if(action==='mirror-on'){await startMirror(role);return;}
     if(role==='emitter'&&action==='mirror-diag'){
       const ok=await api.send(role,'UI GET');
@@ -503,6 +532,27 @@
     renderEmitter();
   });
   window.addEventListener('sqe:native-ui',e=>onNativeUi(e.detail));
+  // PR #233 is metadata-only: do not fabricate SquachWatch LCD pixels.
+  function onReceiverUi({role,line}){
+    if(role!=='receiver'||!receiverUi.enabled)return;
+    if(line==='UI READY 1 SQUACHWATCH TOUCH STATE'){
+      receiverUi.ready=true;
+      get('dc-receiver-ui').textContent='SquachWatch native UI protocol ready. Waiting for UI STATE…';
+      void api.send('receiver','UI GET');return;
+    }
+    if(/^UI ERROR/.test(line)){
+      get('dc-receiver-ui').textContent='SquachWatch native UI: '+line;return;
+    }
+    const m=/^UI STATE 1 (\\d{1,3}) (\\d{1,3}) (\\d{1,3}) ([0-3]) (\\d{1,10})$/.exec(line);
+    if(!receiverUi.ready||!m)return;
+    const id=Number(m[1]),w=Number(m[2]),h=Number(m[3]);
+    if(id>=watchScreenNames.length||w<1||w>480||h<1||h>480)return;
+    receiverUi.screen=id;receiverUi.lastAt=Date.now();
+    get('dc-receiver-ui').textContent='LIVE SQUACHWATCH STATE · '+watchScreenNames[id]+
+      ' · '+w+'×'+h+' · rotation '+m[4]+' · uptime '+m[5]+'ms. '+
+      'Full screen remains available via authentic pixel mirror.';
+  }
+  window.addEventListener('sqe:receiver-ui',e=>onReceiverUi(e.detail));
   window.addEventListener('sqe:mirror',e=>onMirror(e.detail));
   window.addEventListener('sqe:mirror-paused',e=>{
     const detail=e.detail||{};
