@@ -213,7 +213,7 @@
     ui.batchPause.disabled=!batch.active;
     ui.batchPause.textContent=batch.paused?'Resume automation':
       batch.pauseRequested?'Pause requested…':'Pause after current case';
-    ui.batchRestore.disabled=batch.active||!ready||!runner.read(localStorage,cases.map(c=>c.id));
+    ui.batchRestore.disabled=batch.active||!ready||!readBatchCheckpoint();
     ['batchScope','batchDuration','batchGap','caseSelect','duration'].forEach(function(id){
       ui[id].disabled=batch.active;
     });
@@ -434,6 +434,10 @@
     },1500);
   }
 
+  function readBatchCheckpoint(){
+    try{return runner.read(localStorage,cases.map(c=>c.id));}
+    catch(_){return null;}
+  }
   // Checkpoint is queue metadata only. Never include receiver classifications or
   // serial device handles; no stored consent or unattended restart on reload.
   function saveBatchCheckpoint(){
@@ -1015,7 +1019,7 @@
   ui.batchRestore.addEventListener('click',function(){
     if(batch.active||startingRun||awaitingBegin||transmitting||
        !devices.emitter.port||!devices.receiver.port||!ui.authorization.checked)return;
-    const checkpoint=runner.read(localStorage,cases.map(c=>c.id));
+    const checkpoint=readBatchCheckpoint();
     if(!checkpoint)return;
     if(!window.confirm('Restore '+(checkpoint.ids.length-checkpoint.index)+
       ' pending cases starting at '+checkpoint.ids[checkpoint.index]+'? '+
