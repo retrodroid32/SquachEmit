@@ -8,6 +8,7 @@
   <title>SquachEmit // Detection Workbench</title>
   <link rel="stylesheet" href="./style.css">
   <script src="./core.js" defer></script>
+  <script src="./runner-v2.js" defer></script>
   <script src="./app.js" defer></script>
 </head>
 <body>
@@ -60,11 +61,11 @@
             <label for="batchDuration">Each signal (seconds)<input id="batchDuration" type="number" min="3" max="30" step="1" value="8"></label>
             <label for="batchGap">Off-air cooldown (seconds)<input id="batchGap" type="number" min="3" max="30" step="1" value="5"></label>
           </div>
-          <div class="buttons wide"><button id="batchStart" class="primary" type="button" disabled>Start automated tests</button><button id="batchStop" class="danger" type="button" disabled>■ Stop automation</button></div>
+          <div class="buttons wide"><button id="batchStart" class="primary" type="button" disabled>Start automated tests</button><button id="batchPause" type="button" disabled>Pause after current case</button><button id="batchRestore" type="button" disabled>Restore checkpoint (manual)</button><button id="batchStop" class="danger" type="button" disabled>■ Stop automation</button></div>
           <progress id="batchProgress" max="172" value="0"></progress>
           <p id="batchCount" class="batch-meta" role="status">0 / 172 completed</p>
           <div id="batchCurrent" class="casebox">Ready to run. Connect both devices and check authorized testing first.</div>
-          <p class="footnote">Keep the browser awake, both USB connections open, and RF testing attended. A USB disconnection stops the sequence; a missing TRUTH END is marked as a transmitter failure and the automated batch continues after a controlled cooldown. No receiver detection is ever invented from silence. Export your CSV before closing.</p>
+          <p class="footnote">Keep the browser awake, both USB connections open, and RF testing attended. A USB disconnection stops the sequence; a missing TRUTH END is marked as a transmitter failure and the automated batch continues after a controlled cooldown. No receiver detection is ever invented from silence. Checkpoints save queue progress but not detection evidence. Restoring requires an explicit operator action, connected hardware and fresh receiver baseline; no automatic RF transmission on page load. Export your CSV before closing.</p>
         </section>
 
         <label class="loglabel" for="emitLog">Transmitter serial log</label>
