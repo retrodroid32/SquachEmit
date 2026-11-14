@@ -547,7 +547,7 @@
       return;
     }
     if(/^UI ERROR/.test(line)){info('emitter',line);return;}
-    const health=/^UI HEALTH 1 (\\d{1,10}) (\\d{1,10}) (\\d{1,6}) (\\d{1,10}) ([01])$/.exec(line);
+    const health=/^UI HEALTH 1 (\d{1,10}) (\d{1,10}) (\d{1,6}) (\d{1,10}) ([01])$/.exec(line);
     if(health){
       if(!s.active||!s.ready||!local.model)return;
       local.model.health={heap:Number(health[1]),largest:Number(health[2]),

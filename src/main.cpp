@@ -528,7 +528,7 @@ static void command(String cmd) {
     return;
   }
   if (cmd.equalsIgnoreCase("HEALTH")) {
-    Serial.printf("HEALTH,heap=%lu,largest=%lu,uptime=%lu,tx=%u,serial_free=%u\\n",
+    Serial.printf("HEALTH,heap=%lu,largest=%lu,uptime=%lu,tx=%u,serial_free=%u\n",
       (unsigned long)ESP.getFreeHeap(),(unsigned long)ESP.getMaxAllocHeap(),
       (unsigned long)(millis()/1000UL),g_active?1u:0u,
       (unsigned)Serial.availableForWrite());return;

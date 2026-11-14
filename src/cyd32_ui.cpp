@@ -752,7 +752,7 @@ void cyd32UiStreamState(const char* activeId,uint32_t remainingMs,
     static uint32_t lastHealth=0;
     if(force||now-lastHealth>=1000u){
       lastHealth=now;
-      Serial.printf("UI HEALTH 1 %lu %lu %u %lu %u\\n",
+      Serial.printf("UI HEALTH 1 %lu %lu %u %lu %u\n",
         (unsigned long)ESP.getFreeHeap(),(unsigned long)ESP.getMaxAllocHeap(),
         (unsigned)Serial.availableForWrite(),(unsigned long)(now/1000UL),
         previousActive[0]?1u:0u);
