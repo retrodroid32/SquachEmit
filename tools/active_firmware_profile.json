@@ -14,7 +14,6 @@
       "version": "v1.1.0 MAINLINE · 172 cases",
       "summary": "LAB candidate based on v1.1.0 firmware for CYD 3.2 ST7798: 172 synthetic BLE/Wi-Fi test cases including 27 UAS vendor-prefix beacons, saved 3–30-second TX-time editor, reduced touchscreen flashing, and animated Squachy. Browser installer verifies all four flash segments by SHA-256. Actual CYD hardware was flashed during development; no device certification. Draft PR #36 displays recognizable per-scenario device names in the native test library, active signal and selected status. Original RUN IDs, payloads and receiver categories stay unchanged.",
       "highlights": [
-        "PR #36 Workbench integration refreshed with current main identity audit and LAB publishing; hardware validation is pending.",
         "Device-first labels on all 172 transmitter signals, including Flipper Zero UUID/name, negative controls and manufacturer OUI cases; stable technical IDs preserved.",
         "172 bounded synthetic BLE/Wi-Fi scenarios; per-case locally administered MAC IDs.",
         "TX TIME [SET] with +/- 1 second, RESET 12 and DONE; persists after reboot.",
@@ -29,7 +28,6 @@
       "version": "v1.1.0 MAINLINE · 172 cases",
       "summary": "LAB candidate based on v1.1.0 firmware for the exact Waveshare ESP32-C5 2.8-inch touchscreen board: 172 synthetic BLE/Wi-Fi test cases including UAV vendor-prefix beacons, controlled RF tests, and SHA-256 verified browser flashing. CYD 3.2-only TX TIME screen is not a C5 feature. Build passes CI; physical C5 hardware verification is still required. Draft PR #36 adds uppercase recognizable device-first names in the native C5 test list and active signal while retaining exact technical IDs.",
       "highlights": [
-        "PR #36 Workbench integration refreshed with current main identity audit and LAB publishing; hardware validation is pending.",
         "Native list names all 172 synthetic signals by device; case IDs remain below each label.",
         "172 shared detection cases and negative controls.",
         "27 UAV vendor Wi-Fi test beacons; no genuine drone RF claim.",
@@ -43,7 +41,6 @@
       "version": "v1.1.0 MAINLINE · 172 cases",
       "summary": "LAB candidate based on v1.1.0 firmware for ESP32-S3 DevKitC-1 with 172 synthetic BLE/Wi-Fi detection test cases, on-demand serial RUN/STOP/SUITE control, UAV vendor-prefix test scenarios, and SHA-256 verified browser flashing. No CYD touchscreen is included. Build passes CI; physical S3 hardware verification is still required.",
       "highlights": [
-        "PR #36 Workbench integration refreshed with current main identity audit and LAB publishing; hardware validation is pending.",
         "172 shared synthetic scenarios and negative controls.",
         "USB serial RUN, STOP and SUITE for bounded transmitter tests.",
         "Vendor OUI-only beacons are not authentic aircraft broadcasts.",
