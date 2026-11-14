@@ -562,6 +562,16 @@
         renderEmitter();
       }return;
     }
+    if(/^UI FILTER (?:BEGIN|ROW|END)/.test(line)){
+      if(!s.active||!s.ready||!local.model)return;
+      const b=/^UI FILTER BEGIN (\d{1,2}) (\d{1,3}) (\d{1,3})$/.exec(line);
+      const row=/^UI FILTER ROW ([0-3]) ([A-Z0-9_-]{2,100})$/.exec(line);
+      if(b){local.filterPending={letter:Number(b[1]),page:Number(b[2]),count:Number(b[3]),rows:[]};return;}
+      if(row&&local.filterPending){local.filterPending.rows[Number(row[1])]=row[2];return;}
+      if(line==='UI FILTER END'&&local.filterPending){
+        local.model.filter=local.filterPending;local.filterPending=null;renderEmitter();
+      }return;
+    }
     const device=/^UI DEVICE 1 ([0-2]) ([0-2]) ([0-2]) ([01]) ([01]) (\d{1,3}) ([0-2])$/.exec(line);
     if(device){
       if(local.model&&s.active&&s.ready){
@@ -626,6 +636,7 @@
       if(local.model.favoriteCount!==undefined)state.favoriteCount=local.model.favoriteCount;
       if(local.model.selected===state.selected&&local.model.favorite!==undefined)state.favorite=local.model.favorite;
       if(local.model.device)state.device=local.model.device;
+      if(local.model.filter)state.filter=local.model.filter;
       if(local.model.txact)state.txact=local.model.txact;
       if(local.model.rxreport)state.rxreport=local.model.rxreport;
       if(local.model.helpPage!==undefined)state.helpPage=local.model.helpPage;

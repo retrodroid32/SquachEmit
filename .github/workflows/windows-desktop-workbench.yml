@@ -12,6 +12,7 @@ on:
       - feature/handheld-r8-favorite-playlist-presets-20261114
       - feature/handheld-r8-settings-help-identity-recovery-20261114
       - feature/handheld-r8-activity-receiver-evidence-20261114
+      - feature/handheld-r8-library-quick-filter-20261114
     paths:
       - 'desktop/**'
       - 'workbench/**'
@@ -56,7 +57,7 @@ jobs:
       - name: Upload Windows EXE files for hardware review
         uses: actions/upload-artifact@v4
         with:
-          name: SquachEmit-Workbench-R8_5-Activity-ReceiverEvidence-Windows-x64-LAB
+          name: SquachEmit-Workbench-R8_6-Handheld-LibraryQuickFilter-Windows-x64-LAB
           path: desktop/dist/*.exe
           retention-days: 14
           if-no-files-found: error

@@ -28,7 +28,7 @@
     const a=String(line||'').trim().split(/ +/);
     if(a.length!==17||a[0]!=='UI'||a[1]!=='STATE'||a[2]!=='1')
       return null;
-    const screens=['HOME','CATEGORIES','LIBRARY','DURATION','DETAILS','DIAGNOSTICS','FAVORITES','HISTORY','SETTINGS','HELP','IDENTITY','RECOVERY','ACTIVITY','EVIDENCE','CALIBRATION','COLORS'];
+    const screens=['HOME','CATEGORIES','LIBRARY','DURATION','DETAILS','DIAGNOSTICS','FAVORITES','HISTORY','SETTINGS','HELP','IDENTITY','RECOVERY','ACTIVITY','EVIDENCE','QUICKFILTER','CALIBRATION','COLORS'];
     if(!screens.includes(a[3]))return null;
     const num=(i,max)=>/^\d+$/.test(a[i])&&Number.isSafeInteger(Number(a[i]))
       &&Number(a[i])<=max?Number(a[i]):null;
@@ -343,6 +343,7 @@
     title(p,state.pcControl);
     if(screen==='CATEGORIES'){
       p.text(8,21,'TEST LIBRARY / DEVICE TYPE',C.vaporPink,2);
+      p.text(245,22,'FIND >',C.cyan);
       for(let row=0;row<4;row++){
         const index=state.categoryPage*4+row;
         if(index>=CATEGORIES.length)break;
@@ -351,6 +352,18 @@
       p.text(12,199,'PAGE '+(state.categoryPage+1)+'/'+Math.ceil(CATEGORIES.length/4),C.muted);
       footer(p,'BACK','< PREV','NEXT >');
       return true;
+    }
+    if(screen==='QUICKFILTER'){
+      p.text(10,23,'QUICK FIND / FIRST LETTER',C.vaporPink,2);
+      const v=state.filter||{letter:0,page:0,count:0,rows:[]};
+      p.text(12,45,'FILTER: '+(v.letter?String.fromCharCode(64+v.letter):'*')+
+        '  ('+v.count+' MATCHES)',C.cyan);
+      p.text(248,45,'<  >',C.yellow);
+      for(let row=0;row<4;row++){
+        const id=v.rows[row],c=id?catalog.byId.get(id):null;
+        menuRow(p,63+row*34,c?deviceName(c):'',c?c.id:'');
+      }
+      footer(p,'BACK','< PREV','NEXT >');return true;
     }
     if(screen==='LIBRARY'){
       const list=catalog.groups[state.category]||[];

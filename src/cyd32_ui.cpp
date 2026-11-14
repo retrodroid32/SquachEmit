@@ -24,7 +24,7 @@ constexpr uint16_t kWhite=0xFFFF,kMuted=0x7393,kInk=0x1801;
 constexpr uint16_t kFurDark=0x38C0,kFurMain=0x5941,kFurLight=0x9326;
 constexpr uint16_t kSkin=0xF60F,kSkinDark=0xCB88;
 
-enum class Screen : uint8_t { Home, Categories, Library, Duration, Details, Diagnostics, Favorites, History, Settings, Help, Identity, Recovery, Activity, Evidence };
+enum class Screen : uint8_t { Home, Categories, Library, Duration, Details, Diagnostics, Favorites, History, Settings, Help, Identity, Recovery, Activity, Evidence, QuickFilter };
 constexpr size_t kPageRows=4;
 
 TFT_eSPI lcd;
@@ -52,7 +52,9 @@ uint32_t txBegins=0,txEnds=0,txErrors=0,actualTxDuration=0,lastActivityAt=0;
 bool txDriverActive=false;
 char rxId[56]={0},rxLabel[28]={0},rxQuality[16]={0};
 int rxRssi=0;
-uint32_t lastEvidenceAt=0;
+uint32_t lastEvidenceAt=0,lastFilterAt=0;
+uint8_t filterLetter=0; // 0 = ALL; 1..26 = A..Z
+size_t filterPage=0;
 uint8_t helpPage=0;
 uint8_t durationSeconds=12; // 3..30s, saved independently of touch calibration
 bool remoteDown=false;
@@ -599,10 +601,44 @@ void historyScreen(){
   footer("BACK","< PREV","NEXT >");
 }
 
+
+bool filterMatch(const Scenario& c){
+  if(!filterLetter)return true;
+  char name[58]={0};scenarioDeviceName(c,name,sizeof(name));
+  char first=name[0];
+  if(first>='a'&&first<='z')first=(char)(first-'a'+'A');
+  return first==(char)('A'+filterLetter-1);
+}
+size_t filterCount(){
+  size_t count=0;for(size_t i=0;i<kScenarioCount;++i)
+    if(filterMatch(kScenarios[i]))++count;
+  return count;
+}
+const Scenario* filterAt(size_t rank,size_t* raw=nullptr){
+  for(size_t i=0;i<kScenarioCount;++i)if(filterMatch(kScenarios[i])){
+    if(rank--==0){if(raw)*raw=i;return &kScenarios[i];}
+  }
+  return nullptr;
+}
+void quickFilterScreen(){
+  lcd.fillScreen(kBg);titleBar();
+  label(10,23,"QUICK FIND / FIRST LETTER",kVaporPink,2);
+  char head[52];snprintf(head,sizeof(head),"FILTER: %c  (%u MATCHES)",
+      filterLetter?(char)('A'+filterLetter-1):'*',(unsigned)filterCount());
+  label(12,45,head,kCyan);
+  label(248,45,"<  >",kYellow);
+  for(size_t row=0;row<4;++row){
+    const Scenario* c=filterAt(filterPage*4+row);
+    char name[58]={0};if(c)scenarioDeviceName(*c,name,sizeof(name));
+    menuRow(63+(int)row*34,c?name:"",c?c->id:"");
+  }
+  footer("BACK","< PREV","NEXT >");
+}
 void categoriesScreen(){
   lcd.fillScreen(kBg);
   titleBar();
   label(8,21,"TEST LIBRARY / DEVICE TYPE",kVaporPink,2);
+  label(245,22,"FIND >",kCyan);
   for(size_t row=0;row<kPageRows;++row){
     const size_t index=categoryPage*kPageRows+row;
     if(index>=kDeviceCategoryCount)break;
@@ -705,6 +741,7 @@ Cyd32UiAction touchHome(int x,int y,bool active,bool suite){
   return Cyd32UiAction::None;
 }
 Cyd32UiAction touchCategories(int x,int y){
+  if(x>=233&&y>=15&&y<43){screen=Screen::QuickFilter;filterPage=0;redraw=true;return Cyd32UiAction::None;}
   if(y>=kFooterY){
     if(x<108){screen=Screen::Home;redraw=true;return Cyd32UiAction::None;}
     if(x<213){if(categoryPage>0){--categoryPage;redraw=true;}return Cyd32UiAction::None;}
@@ -863,6 +900,26 @@ Cyd32UiAction touchHistory(int x,int y){
   }
   return Cyd32UiAction::None;
 }
+Cyd32UiAction touchQuickFilter(int x,int y){
+  if(y>=kFooterY){
+    if(x<108){screen=Screen::Categories;redraw=true;}
+    else if(x<213){if(filterPage>0)--filterPage;redraw=true;}
+    else{if((filterPage+1)*4<filterCount())++filterPage;redraw=true;}
+    return Cyd32UiAction::None;
+  }
+  if(y>=39&&y<63){
+    if(x<158){filterLetter=(uint8_t)((filterLetter+26)%27);}
+    else {filterLetter=(uint8_t)((filterLetter+1)%27);}
+    filterPage=0;redraw=true;return Cyd32UiAction::None;
+  }
+  if(y>=63&&y<199){
+    size_t raw=0;
+    if(filterAt(filterPage*4+(size_t)((y-63)/34),&raw)){
+      selected=raw;screen=Screen::Home;redraw=true;
+    }
+  }
+  return Cyd32UiAction::None;
+}
 void rgbBars(){
   colorBarsUntil=millis()+7000;
   lcd.fillScreen(kBg);
@@ -997,6 +1054,7 @@ Cyd32UiAction cyd32UiTick(const char* active,uint32_t remaining,bool suite){
     else if(screen==Screen::Recovery)recoveryScreen();
     else if(screen==Screen::Activity)activityScreen();
     else if(screen==Screen::Evidence)evidenceScreen();
+    else if(screen==Screen::QuickFilter)quickFilterScreen();
     else libraryScreen(active,suite);
     lastCount=(active&&*active)?((remaining+999)/1000):UINT32_MAX;
     redraw=false;
@@ -1052,6 +1110,7 @@ Cyd32UiAction cyd32UiTick(const char* active,uint32_t remaining,bool suite){
     else if(screen==Screen::Recovery)action=touchRecovery(x,y);
     else if(screen==Screen::Activity)action=touchActivity(x,y);
     else if(screen==Screen::Evidence)action=touchEvidence(x,y);
+    else if(screen==Screen::QuickFilter)action=touchQuickFilter(x,y);
     else action=touchLibrary(x,y,active&&*active);
     lastPress=now;
     // Only navigation/state changes request a full repaint. Every other
@@ -1086,7 +1145,8 @@ void cyd32UiStreamState(const char* activeId,uint32_t remainingMs,
       screen==Screen::Identity?"IDENTITY":
       screen==Screen::Recovery?"RECOVERY":
       screen==Screen::Activity?"ACTIVITY":
-      screen==Screen::Evidence?"EVIDENCE":"HOME";
+      screen==Screen::Evidence?"EVIDENCE":
+      screen==Screen::QuickFilter?"QUICKFILTER":"HOME";
   const Scenario* chosen=selected<kScenarioCount?&kScenarios[selected]:nullptr;
   const uint32_t petMs=(int32_t)(petUntil-now)>0?petUntil-now:0;
   Serial.printf("UI STATE 1 %s %u %u %u %s %u %s %lu %u %u %s %s %lu %lu\n",
@@ -1150,6 +1210,15 @@ void cyd32UiStreamState(const char* activeId,uint32_t remainingMs,
     Serial.printf("UI RXREPORT 1 %s %s %d %s\n",
       rxId[0]?rxId:"NONE",rxLabel[0]?rxLabel:"NONE",rxRssi,
       rxQuality[0]?rxQuality:"UNVERIFIED");
+  }
+  if(screen==Screen::QuickFilter&&(force||now-lastFilterAt>=1000u)){
+    lastFilterAt=now;
+    Serial.printf("UI FILTER BEGIN %u %u %u\n",(unsigned)filterLetter,(unsigned)filterPage,(unsigned)filterCount());
+    for(size_t i=0;i<4;++i){
+      const Scenario* item=filterAt(filterPage*4+i);
+      if(item)Serial.printf("UI FILTER ROW %u %s\n",(unsigned)i,item->id);
+    }
+    Serial.println("UI FILTER END");
   }
   if(screen==Screen::Diagnostics){
     static uint32_t lastHealth=0;
