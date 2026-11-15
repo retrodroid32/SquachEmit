@@ -58,7 +58,8 @@ int rxRssi=0;
 uint32_t lastEvidenceAt=0,lastFilterAt=0;
 uint8_t filterLetter=0; // 0 = ALL; 1..26 = A..Z
 size_t filterPage=0;
-uint8_t helpPage=0,menuPage=0,outfitLevel=0;
+uint8_t helpPage=0,menuPage=0,outfitLevel=0,backgroundLevel=0;
+bool onAirIndicator=false;
 bool portraitCalibrated=false;
 uint16_t portraitTouchData[5]={0};
 uint32_t lastBubbleAt=0;
@@ -104,10 +105,20 @@ void titleBar(){
     lcd.drawFastVLine(x,0,14,c);
   }
   lcd.drawFastHLine(0,14,kW,kPurple);
-  lcd.fillRect(94,2,132,10,kTaskbar);
-  label(123,3,"SQUACHEMIT",kWhite);
-  label(8,3,"MENU",kWhite);
-  if(pcControl)label(281,3,"PC",kGreen);
+  // Black hamburger tile; the full 48x23 top-left area is tappable.
+  lcd.fillRoundRect(5,1,27,13,3,kTaskbar);
+  for(int y=4;y<=10;y+=3)lcd.drawFastHLine(11,y,15,kWhite);
+  lcd.setTextFont(1);
+  const int nameW=lcd.textWidth("SQUACHEMIT");
+  const int nameX=(kW-nameW)/2;
+  lcd.fillRect(nameX-8,1,nameW+16,12,kTaskbar);
+  label(nameX,3,"SQUACHEMIT",kWhite);
+  const uint16_t txColor=onAirIndicator?kGreen:kYellow;
+  lcd.drawLine(292,11,298,3,txColor);
+  lcd.drawLine(298,3,304,11,txColor);
+  lcd.drawFastVLine(298,6,7,txColor);
+  lcd.fillCircle(298,3,2,txColor);
+  if(pcControl)label(313,3,"P",kCyan);
 }
 void applyTheme(){
   static const uint16_t palette[][3]={
@@ -399,7 +410,7 @@ void homeScreen(const char* active,uint32_t remaining,bool suite){
     const int w=duration?int((elapsed*68ULL)/duration):0;
     if(w>0)lcd.fillRect(240,168,w,5,kGreen);
   }
-  footer("MENU",(emitting||playlistRunning||suite)?"STOP":"RUN",
+  footer("TESTS",(emitting||playlistRunning||suite)?"STOP":"RUN",
          playlistRunning?(playlistPaused?"RESUME":"PAUSE"):"SUITE");
 }
 
@@ -834,7 +845,7 @@ void startCal(){
 }
 Cyd32UiAction touchHome(int x,int y,bool active,bool suite){
   if(y>=kFooterY){
-    if(x<108){screen=Screen::MainMenu;menuPage=0;redraw=true;return Cyd32UiAction::None;}
+    if(x<108){screen=Screen::Categories;redraw=true;return Cyd32UiAction::None;}
     if(x<213)return (active||suite||playlistRunning)?Cyd32UiAction::Stop:Cyd32UiAction::Run;
     return playlistRunning?(playlistPaused?Cyd32UiAction::PlaylistResume:Cyd32UiAction::PlaylistPause):Cyd32UiAction::Suite;
   }
@@ -1108,6 +1119,7 @@ void cyd32UiBegin(){
     themeLevel=prefs.getUChar("theme",0);
     fontMode=prefs.getUChar("font",1);
      outfitLevel=prefs.getUChar("outfit",0);
+     backgroundLevel=prefs.getUChar("bg",0);
     prefs.end();
   }
   if(durationSeconds<3 || durationSeconds>30)durationSeconds=12;
@@ -1117,6 +1129,7 @@ void cyd32UiBegin(){
   if(themeLevel>2)themeLevel=0;
   if(fontMode>1)fontMode=1;
   if(outfitLevel>2)outfitLevel=0;
+  if(backgroundLevel>4)backgroundLevel=0;
   applyTheme();
   if(prefs.begin("sqemitfav",true)){
     if(prefs.getBytesLength("fav")==sizeof(favBits))prefs.getBytes("fav",favBits,sizeof(favBits));
@@ -1182,6 +1195,7 @@ Cyd32UiAction cyd32UiTick(const char* active,uint32_t remaining,bool suite){
     screen=Screen::Home;
     redraw=true;
   }
+  if(onAirIndicator!=(active&&*active)) {onAirIndicator=active&&*active;redraw=true;}
   if(strcmp(previousActive,name)!=0||previousSuite!=suite){
     strncpy(previousActive,name,sizeof(previousActive)-1);
     previousActive[sizeof(previousActive)-1]='\0';
@@ -1259,7 +1273,7 @@ Cyd32UiAction cyd32UiTick(const char* active,uint32_t remaining,bool suite){
   }
   if(pressed&&!wasPressed&&now-lastPress>=240&&
      x<(screen==Screen::Portrait?240:kW)&&y<(screen==Screen::Portrait?320:kH)){
-    if(screen!=Screen::Portrait&&y<18&&x<85){
+    if(screen!=Screen::Portrait&&y<23&&x<48){
       screen=Screen::MainMenu;menuPage=0;redraw=true;
     }else if(screen==Screen::MainMenu){
       if(y>=kFooterY){
