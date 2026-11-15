@@ -5,6 +5,10 @@
 #include <cstdlib>
 inline uint32_t mock_time_ms = 1000;
 inline uint32_t millis(){ return mock_time_ms; }
+inline long random(long lower,long upper){
+ if(upper<=lower)return lower;
+ return lower+std::rand()%(upper-lower);
+}
 inline void pinMode(int,int){}
 inline void digitalWrite(int,int){}
 constexpr int OUTPUT=1,LOW=0,HIGH=1;
