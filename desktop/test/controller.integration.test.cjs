@@ -85,10 +85,10 @@ test('Windows rail renders authentic USB frame and translates canvas pointer to 
     rail.listeners.click({target:{closest:()=>({dataset:{action,role},disabled:false})}});
   };
   const drain=async()=>{for(let i=0;i<12;i++)await Promise.resolve();};
-  click('mirror-on','receiver');
+  click('receiver-ui-on','receiver');
   await drain();
   assert.ok(commands.some(([r,c])=>r==='receiver'&&c==='UI HELLO'),
-    'v2 HELLO must be the first receiver live-view request');
+    'optional Native v2 mode explicitly negotiates receiver data-only view');
   const receiveUi=line=>windowEvents.get('sqe:receiver-ui')({detail:{role:'receiver',line}});
   receiveUi('UI CAPS 2 SQUACHWATCH STATE COUNTS RECENT_LOG TOUCH PIXEL_FALLBACK PARTIAL');
   await drain();
@@ -107,12 +107,25 @@ test('Windows rail renders authentic USB frame and translates canvas pointer to 
   assert.ok(commands.some(([r,c])=>r==='receiver'&&c==='UI TOUCH 60 100 DOWN'));
   receiverCanvas.listeners.pointerup({pointerId:3,clientX:60,clientY:100,preventDefault(){}});
   await drain();
-  receiveUi('UI STATE 2 2 4 320 240 1 4800 0 0');
+  const receiverOffBefore=commands.filter(([r,c])=>r==='receiver'&&c==='UI OFF').length;
+  receiveUi('UI STATE 2 2 2 320 240 1 4800 0 0');
   await drain();
-  assert.ok(commands.some(([r,c])=>r==='receiver'&&c==='UI OFF'),
-    'unsupported AppState must turn native mode off before pixel fallback');
+  assert.equal(elements.get('dc-canvas-receiver').hidden,true,
+    'temporary alert must not be represented by a made-up counter layout');
+  assert.equal(elements.get('dc-placeholder-receiver').hidden,false);
+  assert.match(elements.get('dc-frame-receiver').textContent,/session remains active/i);
+  assert.equal(commands.filter(([r,c])=>r==='receiver'&&c==='UI OFF').length,
+    receiverOffBefore,'an alert must not disconnect the native session');
+  receiveUi('UI STATE 2 3 1 320 240 1 5100 0 1');
+  await drain();
+  assert.equal(elements.get('dc-canvas-receiver').hidden,false,
+    'return to MAIN must automatically restore v2 view, no Start click');
+
+  click('receiver-ui-off','receiver');
+  await drain();
+  assert.ok(commands.some(([r,c])=>r==='receiver'&&c==='UI OFF'));
   assert.ok(commands.some(([r,c])=>r==='receiver'&&c==='MIRROR ON'),
-    'unsupported screen uses real RGB332 frames');
+    'explicit pixel fallback requests authentic RGB332 LCD');
   const receive=line=>windowEvents.get('sqe:mirror')({detail:{role:'receiver',line}});
   assert.equal(commands.some(([r,c])=>r==='receiver'&&c==='MIRROR FRAME'),false,
     'frame must wait for a real MIRROR READY acknowledgment');
