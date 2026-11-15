@@ -12,7 +12,7 @@
     "cyd32-st7798": {
       "title": "SquachEmit v1.1.0 CYD 3.2 — R12 LAB Flicker Fix & Genuine Digital Rain (172 Cases)",
       "version": "v1.1.0 MAINLINE · 172 cases",
-      "summary": "R12 LAB CYD 3.2, 172 synthetic cases. Stops repeated 350ms background erases and portrait full-screen countdown repaint that caused severe ST7798 flashing. Uses original SquachWatch Digital Rain algorithm alongside Synthwave, Fireflies and Terminal Log source renderers. Background changes still use left/right main-screen taps. Temporarily pauses continuous scene and character redraw until a memory-safe tear-free compositor is ready. Six scenes and original SquachWatch costume art remain unported; existing outfit previews are approximations. Four-part SHA-256 integrity check and physical CYD 3.2 testing required.",
+      "summary": "R12 LAB CYD3.2, 172 signal cases. Stops 350ms full-scene and portrait full-screen repaints that caused ST7798 flashing. Uses original SquachWatch Digital Rain plus earlier source-level Synthwave, Fireflies and Terminal Log renderers. Scene and character animations are temporarily paused pending tear-free composition. Six scenes and all original costume drawings remain unported; R10 costumes are approximations. Saves background cycling and signal settings. SHA-256 integrity and physical CYD3.2 verification required.",
       "highlights": [
         "Critical ST7798 flicker fix: no automatic full-scene repaint every 350ms.",
         "Portrait TX countdown now changes only a bounded status rectangle.",
