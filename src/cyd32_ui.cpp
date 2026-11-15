@@ -348,6 +348,9 @@ void drawSquachyFrame(bool emitting,bool suite,uint32_t now){
     // SquachEmit-specific black hoodie and lab coat remain custom.
     const int8_t original=(outfitLevel==0)?0:(int8_t)(outfitLevel-2);
     Squachy::setOutfitPreview(original);
+    // SquachEmit owns the speech box. Keep SquachWatch's original
+    // pose/idle animations but suppress its overlapping built-in bubble.
+    Squachy::holdBubble(true);
     Squachy::tick(lcd,160,65,116,now,advanceScene,0.3f,false,0,100);
     lastSquachFrame=now;
     return;
@@ -1327,6 +1330,7 @@ void portraitPage(const char* active,uint32_t remaining,bool suite){
 #if defined(SQE_ORIGINAL_SQUACHY)
     if(outfitLevel!=1&&outfitLevel!=2){
       Squachy::setOutfitPreview(outfitLevel==0?0:(int8_t)(outfitLevel-2));
+      Squachy::holdBubble(true);
       Squachy::tick(lcd,120,68,138,millis(),advanceScene,0.3f,false,0,100);
     }else
 #endif
@@ -1654,6 +1658,11 @@ void cyd32UiBegin(){
   if(outfitLevel>21)outfitLevel=0;
   if(backgroundLevel>9)backgroundLevel=9;
   applyTheme();
+#if defined(SQE_ORIGINAL_SQUACHY)
+  // Keep exactly one speech UI: SquachEmit's top panel. SquachWatch's
+  // own bubble remains suppressed until the user leaves this firmware.
+  Squachy::holdBubble(true);
+#endif
   if(prefs.begin("sqemitfav",true)){
     if(prefs.getBytesLength("fav")==sizeof(favBits))prefs.getBytes("fav",favBits,sizeof(favBits));
     prefs.end();
