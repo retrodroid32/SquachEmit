@@ -1206,9 +1206,42 @@ void portraitPage(const char* active,uint32_t remaining,bool suite){
   if(screen==Screen::Home){
     // Keep the same Squachy and selected profile when rotating to portrait.
     lcd.fillRect(0,60,240,156,lcd.color565(3,4,16));
-    for(int i=0;i<24;++i){
-      const int x=(i*79+21)%240,y=62+(i*61)%146;
-      lcd.drawPixel(x,y,i%3?kCyan:kWhite);
+    // Portrait variant of the selected SquachWatch-style scene.
+    if(backgroundLevel==0){
+      lcd.fillCircle(120,126,38,kPink);
+      for(int x=0;x<240;x+=19)lcd.drawLine(120,169,x,212,kPurple);
+      for(int y=177;y<213;y+=8)lcd.drawFastHLine(0,y,240,kCyan);
+    }else if(backgroundLevel==1||backgroundLevel==7){
+      for(int x=6;x<238;x+=12)
+        for(int j=0;j<9;++j)
+          label(x,65+((x*11+j*18+(int)(millis()/300))%138),
+                j%2?"1":"0",backgroundLevel==1?kGreen:kCyan);
+    }else if(backgroundLevel==2||backgroundLevel==3||backgroundLevel==5){
+      for(int i=0;i<82;++i){
+        const int x=(i*73+17)%240,y=63+(i*83+13)%148;
+        lcd.fillCircle(x,y,backgroundLevel==3&&i%7==0?2:1,
+          backgroundLevel==5?kWhite:backgroundLevel==3?kYellow:(i%3?kCyan:kWhite));
+      }
+    }else if(backgroundLevel==4){
+      for(int i=0;i<54;++i){
+        const int x=(i*41+7)%240,y=90+(i*31)%115;
+        lcd.drawLine(x,213,x-3,y,i%3?kPink:kYellow);
+      }
+    }else if(backgroundLevel==6){
+      lcd.fillRect(0,60,240,156,lcd.color565(0,31,53));
+      for(int x=5;x<240;x+=26){
+        lcd.drawLine(x,214,x+15,139,kGreen);
+        lcd.fillTriangle(x,95,x+18,87,x+18,103,kYellow);
+      }
+    }else if(backgroundLevel==8){
+      for(int i=0;i<8;++i){
+        const int x=12+(i*43)%215,y=71+(i*31)%130;
+        lcd.fillRoundRect(x,y,19,16,3,kYellow);
+        lcd.drawLine(x,y+7,x-7,y-5,kWhite);
+      }
+    }else if(backgroundLevel==9){
+      for(int x=0;x<240;x+=16)lcd.drawFastVLine(x,60,156,kPurple);
+      for(int y=65;y<215;y+=16)lcd.drawFastHLine(0,y,240,kCyan);
     }
     if(squachSpriteReady){
       SquachyPort::render(squachSprite,millis(),active&&*active,suite,
