@@ -666,6 +666,7 @@ void cycleBackground(int delta){
   backgroundLevel=(uint8_t)((backgroundLevel+10+(delta<0?-1:1))%10);
   backgroundPage=backgroundLevel/4;
   if(prior==0&&backgroundLevel!=0)SquachWatchScenes::releaseDigitalRain();
+  if(prior==4&&backgroundLevel!=4)SquachWatchScenes::releaseTerm();
   if(prefs.begin("sqemit32",false)){
     prefs.putUChar("bg_sqwatch",backgroundLevel);prefs.end();
   }
