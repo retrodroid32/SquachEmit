@@ -16,9 +16,6 @@ static int s_redX=0,s_redY=0;
 static uint32_t s_redAt=0;
 static float s_animK=1.0f;
 static constexpr uint16_t VAPOR_PURPLE=0xBB5F;
-static constexpr uint16_t VAPOR_PINK=0xFB99;
-static constexpr uint16_t GREEN=0x07E0;
-static constexpr uint16_t WHITE=0xFFFF;
 static void releaseDigitalRain(){
   if(s_rainBuf){free(s_rainBuf);s_rainBuf=nullptr;s_rainInited=false;}
 }
