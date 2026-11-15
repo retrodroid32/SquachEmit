@@ -29,6 +29,7 @@
   for(const role of ['receiver','emitter']){
     mirrors[role]={active:false,waiting:false,lastFrame:false,lastFrameSequence:0,failures:0,
       assembler:new codec.MirrorAssembler(),timeout:null,next:null,handshake:null,animation:null,ready:false,
+      captureAt:0,progressAt:0,captureRows:0,captureTotal:0,session:0,sequenceAck:false,
       touchDown:false,touchAt:0,touchTimer:null,pendingUp:null,lastPoint:{x:0,y:0},
       lastMove:0};
   }
@@ -110,7 +111,9 @@
   function resetRole(role){
     const s=mirrors[role];
     cancelFrameTimers(role);
+    ++s.session;
     s.active=false;s.waiting=false;s.ready=false;s.failures=0;
+    s.captureAt=0;s.progressAt=0;s.captureRows=0;s.captureTotal=0;s.sequenceAck=false;
     s.lastFrame=false;s.lastFrameSequence=0;
     s.assembler.reset();
     if(role==='emitter'){local.model=null;local.receivedAt=0;}
@@ -174,10 +177,13 @@
     if(!s.active||!s.ready||s.waiting||!isConnected(role,state)||
        (role==='receiver'&&state.testActive))return;
     s.waiting=true;
+    s.captureAt=Date.now();s.progressAt=s.captureAt;
+    s.captureRows=0;s.captureTotal=0;
+    const session=s.session;
     // Firmware sends a full keyframe unless it recognizes the last complete
     // screen the PC actually accepted. A dropped frame can never corrupt
     // a later delta. SquachWatch's existing firmware retains FRAME syntax.
-    const request=(role==='emitter'&&s.lastFrameSequence)?
+    const request=((role==='emitter'||s.sequenceAck)&&s.lastFrameSequence)?
       'MIRROR FRAME '+s.lastFrameSequence:'MIRROR FRAME';
     const ok=await api.send(role,request);
     if(!ok){
@@ -185,20 +191,37 @@
       info(role,'Cannot request USB frame. Verify connection and LAB firmware.');
       return;
     }
-    if(!s.active)return;
+    if(!s.active||!s.waiting||s.session!==session)return;
+    armCaptureWatchdog(role);
+  }
+  function armCaptureWatchdog(role){
+    const s=mirrors[role],session=s.session;
+    if(s.timeout!==null)clearTimeout(s.timeout);
+    if(!s.active||!s.waiting)return;
     s.timeout=setTimeout(()=>{
-      if(!s.active||!s.waiting)return;
-      s.assembler.reset();s.waiting=false;s.failures++;
-      if(s.failures>=3){
-        info(role,'No complete LCD frame after three requests. Confirm firmware MIRROR support, '+
-          'receiver PIN unlock, TFT framebuffer availability and serial baud.');
-        void stopMirror(role,true);
-        return;
+      if(!s.active||!s.waiting||s.session!==session)return;
+      const now=Date.now();
+      // Six seconds is not enough when MCU copies at most two scanlines per
+      // render opportunity. Keep an absolute cap plus a shorter idle watchdog.
+      const hardLimit=role==='receiver'?120000:60000;
+      const idleLimit=role==='receiver'?30000:20000;
+      if(now-s.captureAt<hardLimit&&now-s.progressAt<idleLimit){
+        armCaptureWatchdog(role);return;
       }
-      mirrorNote(role,'No complete LCD pixels; retrying frame ('+
-        s.failures+'/3). Check device mirror firmware and TFT readback.');
-      s.next=setTimeout(()=>void requestMirrorFrame(role),700);
-    },role==='emitter'?(state.emitterBaud===115200?45000:16000):12000);
+      s.assembler.invalidate();s.waiting=false;s.failures++;
+      s.lastFrame=false;s.lastFrameSequence=0;
+      get('dc-canvas-'+role).hidden=true;
+      get('dc-placeholder-'+role).hidden=false;
+      const problem=now-s.captureAt>=hardLimit?'capture exceeded absolute deadline':
+        'capture stalled without row progress';
+      mirrorNote(role,'Authentic LCD '+problem+' ('+s.captureRows+'/'+s.captureTotal+
+        ' rows). Resynchronizing with a new baseline.');
+      if(s.failures>=3){
+        info(role,'LCD capture stalled repeatedly; mirror stopped to avoid endless MIRROR OFF/ON cycles. Check firmware capture progress and baud.');
+        void stopMirror(role,true);return;
+      }
+      s.next=setTimeout(()=>void requestMirrorFrame(role),1000);
+    },5000);
   }
   async function startMirror(role,forcePixel=false){
     // The receiver's primary Live view must be the physical LCD, not a
@@ -270,17 +293,36 @@
         void api.send('receiver','MIRROR OFF'); // also return serial to LOG polling
       }
       mirrorNote(role,message);info(role,message);
-    },5000);
+    },role==='receiver'?12000:5000);
   }
   function onMirror({role,line}){
     if(!mirrors[role])return;
-    const s=mirrors[role],result=s.assembler.feed(line);
+    const s=mirrors[role];
+    if(!s.active||role==='receiver'&&receiverUi.mode!=='pixel')return;
+    // Optional bounded capture protocol: firmware announces any physical
+    // screen/rotation generation change before transmitting a fresh baseline.
+    // No reconstructed UI may be shown while the new capture is pending.
+    if(/^MIRROR INVALIDATE(?: |$)/.test(String(line))){
+      s.assembler.invalidate();s.lastFrame=false;s.lastFrameSequence=0;
+      get('dc-canvas-'+role).hidden=true;
+      get('dc-placeholder-'+role).hidden=false;
+      if(s.timeout!==null){clearTimeout(s.timeout);s.timeout=null;}
+      s.waiting=false;
+      mirrorNote(role,'Physical LCD changed · requesting a new complete baseline.');
+      if(s.next!==null){clearTimeout(s.next);s.next=null;}
+      if(s.ready)s.next=setTimeout(()=>void requestMirrorFrame(role),450);
+      return;
+    }
+    const result=s.assembler.feed(line);
     if(result.kind==='info'){
       if(/^MIRROR DIAG/.test(result.message)){
         mirrorNote(role,result.message);
         info(role,result.message);
       }else if(/^MIRROR READY\b/.test(result.message)&&s.active&&!s.ready){
         s.ready=true;
+        // SEQBASE is optional; legacy SquachWatch accepts plain MIRROR FRAME.
+        // Only newer firmware can consume a last-accepted sequence argument.
+        s.sequenceAck=/\bSEQBASE\b/.test(result.message);
         if(s.handshake!==null){clearTimeout(s.handshake);s.handshake=null;}
         mirrorNote(role,'Firmware acknowledged. Capturing authentic LCD pixels…');
         void requestMirrorFrame(role);
@@ -289,6 +331,9 @@
     }
     if(result.kind==='error'){
       cancelFrameTimers(role);s.waiting=false;s.failures++;
+      s.lastFrame=false;s.lastFrameSequence=0;s.assembler.invalidate();
+      get('dc-canvas-'+role).hidden=true;
+      get('dc-placeholder-'+role).hidden=false;
       info(role,result.message);
       if(/LCD_READ_UNAVAILABLE|LCD_NOT_READY|BAD_DISPLAY_SIZE/.test(result.message)){
         void stopMirror(role,true).then(()=>{
@@ -301,14 +346,31 @@
       if(s.active)s.next=setTimeout(()=>void requestMirrorFrame(role),450);
       return;
     }
-    if(!s.active||role==='receiver'&&receiverUi.mode!=='pixel')return; // Never display unsolicited screen bytes.
     if(result.kind==='begin'){
+      s.captureRows=0;s.captureTotal=result.height;
+      s.captureAt=Date.now();s.progressAt=s.captureAt;
+      if(!result.delta){
+        // Do not show stale pixels while another full baseline (possibly
+        // after rotation or an alert) is still being assembled.
+        s.lastFrame=false;s.lastFrameSequence=0;
+        get('dc-canvas-'+role).hidden=true;
+        get('dc-placeholder-'+role).hidden=false;
+      }
+      armCaptureWatchdog(role);
       mirrorNote(role,'Receiving '+(result.delta?'changed rows from':'full')+
         ' physical LCD '+result.width+'×'+result.height+' '+result.format+'…');
       return;
     }
-    if(result.kind==='row'){
-      if(result.rows===result.total||result.rows%64===0){
+    if(result.kind==='row'||result.kind==='progress'){
+      if(!s.waiting)return;
+      // Only independently received rows (or a strictly advancing device
+      // capture counter) extend the watchdog. Repeated heartbeats cannot
+      // conceal a permanently stalled transfer.
+      if(result.rows>s.captureRows)s.progressAt=Date.now();
+      s.captureRows=Math.max(s.captureRows,result.rows);
+      s.captureTotal=result.total;
+      armCaptureWatchdog(role);
+      if(result.rows===result.total||result.rows%16===0){
         mirrorNote(role,'LCD capture '+result.rows+'/'+result.total+' rows…');
       }
       return;

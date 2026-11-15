@@ -12,10 +12,12 @@
   'use strict';
   function MirrorAssembler(){this.pending=null;this.last=null;}
   MirrorAssembler.prototype.reset=function(){this.pending=null;this.last=null;};
+  MirrorAssembler.prototype.invalidate=function(){this.pending=null;this.last=null;};
+  MirrorAssembler.prototype.abortPending=function(){this.pending=null;};
   MirrorAssembler.prototype.feed=function(line){
     line=String(line||'').trim();
     if(/^MIRROR ERROR(?: |$)/.test(line)){
-      this.pending=null;
+      this.invalidate();
       return {kind:'error',message:line};
     }
     let m=/^MIRROR BEGIN (\d+) (\d{1,3}) (\d{1,3}) (RGB332|RGB565)$/.exec(line);
@@ -33,10 +35,11 @@
          (delta&&(!this.last||this.last.sequence!==base||
                   this.last.width!==width||this.last.height!==height||
                   this.last.format!==format||sequence<=base))){
-        this.pending=null;
+        this.invalidate();
         return {kind:'error',message:delta?'Invalid or stale MIRROR DELTA baseline':
           'Invalid MIRROR image dimensions'};
       }
+      if(!delta)this.last=null; // A fresh baseline invalidates the old display until complete.
       this.pending={sequence,width,height,format,delta,base,
         seen:new Uint8Array(height),rows:0,
         pixels:delta?new Uint8ClampedArray(this.last.pixels):
@@ -46,20 +49,20 @@
     if(/^MIRROR ROW(?: |$)/.test(line)){
       m=/^MIRROR ROW (\d+) (\d{1,3}) ([A-Za-z0-9+/]+={0,2})$/.exec(line);
       if(!m){
-        this.pending=null;
+        this.invalidate();
         return {kind:'error',message:'Malformed LCD row encoding'};
       }
       const f=this.pending,sequence=Number(m[1]),y=Number(m[2]);
       if(!f||f.sequence!==sequence||y>=f.height||f.seen[y]){
-        this.pending=null;return {kind:'error',message:'Out-of-sequence or duplicate LCD row'};
+        this.invalidate();return {kind:'error',message:'Out-of-sequence or duplicate LCD row'};
       }
       const expected=f.width*(f.format==='RGB565'?2:1);
       let binary;
       try{binary=atob(m[3]);}catch(_){
-        this.pending=null;return {kind:'error',message:'Invalid LCD row base64'};
+        this.invalidate();return {kind:'error',message:'Invalid LCD row base64'};
       }
       if(binary.length!==expected){
-        this.pending=null;return {kind:'error',message:'Incomplete LCD row'};
+        this.invalidate();return {kind:'error',message:'Incomplete LCD row'};
       }
       for(let x=0;x<f.width;x++){
         const p=(y*f.width+x)*4;
@@ -84,13 +87,22 @@
     if(m){
       const f=this.pending;
       if(!f||f.sequence!==Number(m[1])||(!f.delta&&f.rows!==f.height)){
-        this.pending=null;return {kind:'error',message:'Incomplete or mismatched LCD frame'};
+        this.invalidate();return {kind:'error',message:'Incomplete or mismatched LCD frame'};
       }
       this.pending=null;
       this.last={sequence:f.sequence,width:f.width,height:f.height,format:f.format,
         pixels:f.pixels};
       return {kind:'frame',frame:{sequence:f.sequence,width:f.width,height:f.height,
         format:f.format,pixels:f.pixels,delta:f.delta,changedRows:f.rows}};
+    }
+    // Optional firmware progress/heartbeat. Existing MIRROR ROW events remain authoritative.
+    m=/^MIRROR PROGRESS (\d+) (\d{1,3})\/(\d{1,3})$/.exec(line);
+    if(m){
+      const sequence=Number(m[1]),rows=Number(m[2]),total=Number(m[3]);
+      const f=this.pending;
+      if(!f||f.sequence!==sequence||total!==f.height||rows<f.rows||rows>total)
+        return {kind:'error',message:'Invalid LCD capture progress'};
+      return {kind:'progress',sequence,rows,total};
     }
     return {kind:'info',message:line};
   };
