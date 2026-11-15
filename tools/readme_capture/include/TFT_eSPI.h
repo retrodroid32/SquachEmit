@@ -24,7 +24,10 @@ public:
    if(root)MockDisplay::screen=this;
  }
  void init(){}
- void setRotation(int){}
+ void setRotation(int value){
+   w=(value&1)?320:240;h=(value&1)?240:320;
+   pixel.assign(size_t(w)*h,0);
+ }
  void invertDisplay(bool){} // physical panel inversion not applied to RGB buffer
  void setTouch(uint16_t*){}
  void calibrateTouch(uint16_t*,uint16_t,uint16_t,uint8_t){}
