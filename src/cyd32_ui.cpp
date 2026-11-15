@@ -26,7 +26,7 @@ constexpr uint16_t kWhite=0xFFFF,kMuted=0x7393,kInk=0x1801;
 constexpr uint16_t kFurDark=0x38C0,kFurMain=0x5941,kFurLight=0x9326;
 constexpr uint16_t kSkin=0xF60F,kSkinDark=0xCB88;
 
-enum class Screen : uint8_t { Home, Categories, Library, Duration, Details, Diagnostics, Favorites, History, Settings, Help, Identity, Recovery, Activity, Evidence, QuickFilter, Portrait, MainMenu, Outfits, OtaInfo };
+enum class Screen : uint8_t { Home, Categories, Library, Duration, Details, Diagnostics, Favorites, History, Settings, Help, Identity, Recovery, Activity, Evidence, QuickFilter, Portrait, MainMenu, Outfits, OtaInfo, Backgrounds };
 constexpr size_t kPageRows=4;
 
 TFT_eSPI lcd;
@@ -172,6 +172,29 @@ void wedge(int x1,int y1,int x2,int y2,int r,uint16_t col){
   lcd.fillCircle(x2,y2,r,col);
 }
 void retroBackdrop(){
+  if(backgroundLevel!=0){
+    lcd.fillRect(0,15,320,166,lcd.color565(3,4,16));
+    if(backgroundLevel==1){ // SquachWatch Digital Rain motif; bounded static glyphs
+      for(int x=7;x<320;x+=14){
+        const int head=22+(x*17+(int)(millis()/220))%145;
+        for(int j=0;j<8;++j){
+          const int y=15+(head-15-j*10+166)%166;
+          label(x,y,(j%3)==0?"1":"0",j==0?kWhite:blend(kGreen,kBg,(uint8_t)(j*25)));
+        }
+      }
+    }else if(backgroundLevel==2){ // SquachWatch Starfield motif
+      for(int i=0;i<95;++i){
+        const int x=(i*157+29)%320, y=17+(i*83+11)%162;
+        lcd.drawPixel(x,y,i%9==0?kWhite:(i%3==0?kCyan:kMuted));
+      }
+    }else if(backgroundLevel==3){ // SquachWatch Fireflies motif
+      for(int i=0;i<38;++i){
+        const int x=(i*79+31)%320,y=19+(i*67+9)%157;
+        lcd.fillCircle(x,y,i%5==0?2:1,i%3==0?kYellow:kGreen);
+      }
+    }
+    return;
+  }
   // Synthwave night-scape: matches SquachWatch's actual dark, detailed
   // backgrounds rather than leaving a flat near-black void.
   // Designed independently in TFT primitives, no bitmap/PSRAM required.
@@ -568,15 +591,15 @@ void settingsScreen(){
   footer("BACK","MORE >","HELP");
 }
 
-constexpr uint8_t kMenuEntries=11;
+constexpr uint8_t kMenuEntries=12;
 const char* const menuTitles[kMenuEntries]={
  "TEST LIBRARY","QUICK FIND","FAVORITES","TX HISTORY",
  "HEALTH / DIAGNOSTICS","SETTINGS","SQUACHY OUTFITS",
- "OTA UPDATES","TX ACTIVITY","HELP","RECOVERY"};
+ "OTA UPDATES","TX ACTIVITY","HELP","RECOVERY","BACKGROUNDS"};
 const char* const menuHints[kMenuEntries]={
  "172 SYNTHETIC CASES","A-Z CASE FILTER","SAVED SIGNALS","LAST TRANSMISSIONS",
  "HEAP, RADIO, UPTIME","DISPLAY, ROTATION, THEME","COSTUMES AND ANIMATION",
- "FIRMWARE UPDATE STATUS","DRIVER EVENTS","USAGE AND SAFETY","BOOT AND TOUCH"};
+ "FIRMWARE UPDATE STATUS","DRIVER EVENTS","USAGE AND SAFETY","BOOT AND TOUCH","FIVE SCENES"};
 void mainMenuScreen(){
   lcd.fillScreen(kBg);titleBar();label(13,25,"SQUACHEMIT / MENU",kVaporPink,2);
   for(uint8_t i=0;i<4;++i){
@@ -592,6 +615,14 @@ void outfitScreen(){
   for(uint8_t i=0;i<3;++i)menuRow(50+i*48,styles[i],
     outfitLevel==i?"EQUIPPED":"TAP TO WEAR",outfitLevel==i);
   label(12,198,"COSTUME SAVED TO DEVICE",kMuted);footer("BACK","CLASSIC","HOME");
+}
+void backgroundsScreen(){
+  lcd.fillScreen(kBg);titleBar();label(13,25,"SQUACHEMIT / BACKGROUNDS",kVaporPink,2);
+  const char* names[]={"SYNTHWAVE","DIGITAL RAIN","STARFIELD","FIREFLIES"};
+  const char* desc[]={"NEON CITY","MATRIX GLYPHS","DEEP SPACE","GLOWING NIGHT"};
+  for(uint8_t i=0;i<4;++i)menuRow(46+i*39,names[i],
+    backgroundLevel==i?"ACTIVE - TAP AGAIN":desc[i],backgroundLevel==i);
+  footer("BACK","HOME","HOME");
 }
 void otaInfoScreen(){
   lcd.fillScreen(kBg);titleBar();label(12,25,"FIRMWARE / OTA",kVaporPink,2);
@@ -1221,6 +1252,7 @@ Cyd32UiAction cyd32UiTick(const char* active,uint32_t remaining,bool suite){
     else if(screen==Screen::Portrait)portraitScreen(active,remaining,suite);
     else if(screen==Screen::MainMenu)mainMenuScreen();
     else if(screen==Screen::Outfits)outfitScreen();
+    else if(screen==Screen::Backgrounds)backgroundsScreen();
     else if(screen==Screen::OtaInfo)otaInfoScreen();
     else libraryScreen(active,suite);
     lastCount=(active&&*active)?((remaining+999)/1000):UINT32_MAX;
@@ -1287,7 +1319,7 @@ Cyd32UiAction cyd32UiTick(const char* active,uint32_t remaining,bool suite){
           const Screen targets[]={Screen::Categories,Screen::QuickFilter,
             Screen::Favorites,Screen::History,Screen::Diagnostics,
             Screen::Settings,Screen::Outfits,Screen::OtaInfo,
-            Screen::Activity,Screen::Help,Screen::Recovery};
+            Screen::Activity,Screen::Help,Screen::Recovery,Screen::Backgrounds};
           screen=targets[n];redraw=true;
           if(screen==Screen::Favorites)favoritesPage=0;
           if(screen==Screen::History)historyPage=0;
@@ -1312,6 +1344,13 @@ Cyd32UiAction cyd32UiTick(const char* active,uint32_t remaining,bool suite){
           }
           redraw=true;
         }
+      }
+    }else if(screen==Screen::Backgrounds){
+      if(y>=kFooterY){screen=x<108?Screen::MainMenu:Screen::Home;redraw=true;}
+      else if(y>=46&&y<202){backgroundLevel=(uint8_t)((y-46)/39);
+        if(backgroundLevel>3)backgroundLevel=3;
+        if(prefs.begin("sqemit32",false)){prefs.putUChar("bg",backgroundLevel);prefs.end();}
+        redraw=true;
       }
     }else if(screen==Screen::OtaInfo){
       if(y>=kFooterY){
@@ -1372,7 +1411,8 @@ void cyd32UiStreamState(const char* activeId,uint32_t remainingMs,
       screen==Screen::Portrait?"PORTRAIT":
        screen==Screen::MainMenu?"MENU":
        screen==Screen::Outfits?"OUTFITS":
-       screen==Screen::OtaInfo?"OTA":"HOME";
+       screen==Screen::OtaInfo?"OTA":
+       screen==Screen::Backgrounds?"BACKGROUNDS":"HOME";
   const Scenario* chosen=selected<kScenarioCount?&kScenarios[selected]:nullptr;
   const uint32_t petMs=(int32_t)(petUntil-now)>0?petUntil-now:0;
   Serial.printf("UI STATE 1 %s %u %u %u %s %u %s %lu %u %u %s %s %lu %lu\n",
