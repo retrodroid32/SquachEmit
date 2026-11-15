@@ -75,6 +75,17 @@ public:
    for(int x=cx0-r;x<=cx0+r;x++)
     if((x-cx0)*(x-cx0)+(y-cy0)*(y-cy0)<=r*r)drawPixel(x,y,c);
  }
+ void drawCircle(int cx0,int cy0,int r,uint16_t c){
+  if(r<1)return;
+  int x=r,y=0,err=1-r;
+  while(x>=y){
+    drawPixel(cx0+x,cy0+y,c);drawPixel(cx0+y,cy0+x,c);
+    drawPixel(cx0-y,cy0+x,c);drawPixel(cx0-x,cy0+y,c);
+    drawPixel(cx0-x,cy0-y,c);drawPixel(cx0-y,cy0-x,c);
+    drawPixel(cx0+y,cy0-x,c);drawPixel(cx0+x,cy0-y,c);
+    ++y;if(err<0)err+=2*y+1;else{--x;err+=2*(y-x+1);}
+  }
+ }
  void fillEllipse(int cx0,int cy0,int rx,int ry,uint16_t c){
   if(rx<1||ry<1)return;
   for(int y=cy0-ry;y<=cy0+ry;y++)
