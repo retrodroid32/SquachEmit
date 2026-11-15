@@ -106,8 +106,8 @@ void titleBar(){
   }
   lcd.drawFastHLine(0,14,kW,kPurple);
   // Black hamburger tile; the full 48x23 top-left area is tappable.
-  lcd.fillRoundRect(5,1,27,13,3,kTaskbar);
-  for(int y=4;y<=10;y+=3)lcd.drawFastHLine(11,y,15,kWhite);
+  lcd.fillRoundRect(5,1,27,13,3,kWhite);
+  for(int y=4;y<=10;y+=3)lcd.drawFastHLine(11,y,15,kInk);
   lcd.setTextFont(1);
   const int nameW=lcd.textWidth("SQUACHEMIT");
   const int nameX=(kW-nameW)/2;
@@ -1180,8 +1180,8 @@ void portraitPage(const char* active,uint32_t remaining,bool suite){
   // Every page shares the same logical Screen and selection in both rotations.
   lcd.fillScreen(kBg);
   lcd.fillRect(0,0,240,26,kPurple);
-  lcd.fillRoundRect(5,3,31,20,3,kTaskbar);
-  for(int y=7;y<20;y+=5)lcd.drawFastHLine(12,y,17,kWhite);
+  lcd.fillRoundRect(5,3,31,20,3,kWhite);
+  for(int y=7;y<20;y+=5)lcd.drawFastHLine(12,y,17,kInk);
   label(81,9,"SQUACHEMIT",kWhite);
   const uint16_t tx=active&&*active?kGreen:kYellow;
   lcd.drawLine(215,14,221,4,tx);lcd.drawLine(221,4,227,14,tx);
