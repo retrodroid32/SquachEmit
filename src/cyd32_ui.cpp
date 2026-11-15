@@ -1600,7 +1600,9 @@ void cyd32UiBegin(){
     panel.width(),panel.height()/2,
     (unsigned long)ESP.getFreeHeap(),
     (unsigned long)ESP.getMaxAllocHeap());
-  squachSprite.setColorDepth(16);
+  // Match SquachWatch's RGB332 draw buffers: ~12KB mascot instead of
+  // a 24KB RGB565 sprite, preserving heap for RF and the half-screen band.
+  squachSprite.setColorDepth(8);
   squachSpriteReady=(squachSprite.createSprite(112,111)!=nullptr);
   if(!squachSpriteReady)Serial.println("WARN,CYD32_SPRITE_ALLOC;STATIC_FALLBACK");
   ledcSetup(6,5000,8);
