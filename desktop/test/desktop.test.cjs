@@ -87,8 +87,8 @@ test('Software-rendered emitter UI and optional receiver LCD mode use native tou
 test('real SquachWatch mirror never prevents user-triggered SquachEmit transmission',()=>{
   const wb=read('workbench/app.js'),ui=read('desktop/public/controller.js');
   assert.match(wb,/async function pauseReceiverMirrorForDetection\(/);
-  assert.match(wb,/const off=await sendReceiver\('MIRROR OFF'\)/);
-  assert.match(wb,/receiverMirror=false;\s*if\(devices\.receiver\.port\)startWatchPolling\(\)/);
+  assert.match(wb,/const off=await sendReceiver\(wasNative\?'UI OFF':'MIRROR OFF'\)/);
+  assert.match(wb,/receiverMirror=false;receiverNative=false;\s*if\(devices\.receiver\.port\)startWatchPolling\(\)/);
   assert.match(wb,/var receiverLogsReady=await pauseReceiverMirrorForDetection\(\)/);
   assert.match(wb,/async function startBatch\(\)/);
   assert.match(wb,/snapshot=await Promise\.race\(/);

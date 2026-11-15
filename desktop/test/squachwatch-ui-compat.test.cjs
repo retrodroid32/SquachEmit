@@ -17,7 +17,7 @@ test('receiver UI v2 remains separate from independent LOG scoring',()=>{
 test('Windows supports CAPS2, READY2, state, real counts, LIST and pixel fallback',()=>{
  assert.match(v2,/UI CAPS 2 SQUACHWATCH STATE COUNTS RECENT_LOG TOUCH PIXEL_FALLBACK PARTIAL/);
  assert.match(v2,/UI READY 2 SQUACHWATCH TOUCH PARTIAL/);
- assert.match(v2,/UI STATE/);
+ assert.match(v2,/a\[1\]!=='STATE'/);
  assert.match(v2,/UI COUNTS 2/);
  assert.match(v2,/UI ROW 2/);
  assert.match(ui,/UI HELLO/);
