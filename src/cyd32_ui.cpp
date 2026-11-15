@@ -248,50 +248,7 @@ void retroBackdrop(){
   // Exact source from SquachWatch-CYD/src/theme.cpp (full-band adapter).
   SquachWatchScenes::drawSynthwave(lcd,millis(),15,181,0.44f);
   return;
-  // Synthwave night-scape: matches SquachWatch's actual dark, detailed
-  // backgrounds rather than leaving a flat near-black void.
-  // Designed independently in TFT primitives, no bitmap/PSRAM required.
-  lcd.fillRect(0,15,320,164,lcd.color565(4,4,18));
-  for (int y=16; y<155; y+=8){
-    const uint8_t shift=(uint8_t)((y-16)/8);
-    const uint16_t dusk=lcd.color565((uint8_t)(4+shift/3),
-                                     (uint8_t)(5+shift/4),
-                                     (uint8_t)(25+shift));
-    lcd.drawFastHLine(0,y,320,dusk);
-  }
-  // Stars use deterministic fixed coordinates: no animated background
-  // repaints during countdown, unlike the old flickering 3.2 render.
-  static const uint16_t stars[][2]={
-    {13,27},{48,42},{81,23},{114,37},{154,25},{203,39},{243,26},
-    {290,33},{306,47},{27,66},{65,79},{94,55},{137,86},{181,63},
-    {236,81},{277,68},{311,94},{17,116},{73,124},{222,116},{296,130}};
-  for(const auto& st:stars){
-    lcd.drawPixel(st[0],st[1],kCyan);
-    if((st[0]%3)==0)lcd.drawPixel(st[0]+1,st[1],kVaporPurple);
-  }
-  // Distant neon mountains and city buildings form a readable silhouette.
-  lcd.fillTriangle(0,146,53,87,115,146,lcd.color565(17,3,44));
-  lcd.fillTriangle(62,146,138,93,201,146,lcd.color565(15,2,36));
-  lcd.fillTriangle(166,146,252,83,320,146,lcd.color565(20,3,48));
-  const struct {uint16_t x,y,w;} buildings[]={
-    {0,132,19},{22,116,15},{42,128,14},{61,100,19},
-    {86,123,18},{111,116,12},{215,116,20},{240,99,16},
-    {263,128,17},{284,107,20},{308,123,12}};
-  for(const auto& b:buildings){
-    lcd.fillRect(b.x,b.y,b.w,168-b.y,lcd.color565(5,2,24));
-    lcd.drawFastVLine(b.x,b.y,168-b.y,kVaporPurple);
-    for(int y=b.y+5;y<163;y+=10){
-      for(int x=b.x+4;x<(int)b.x+b.w-2;x+=7)
-        lcd.fillRect(x,y,2,3,(x+y)%3==0?kPink:kCyan);
-    }
-  }
-  // Retro ground grid, a signature SquachWatch scene motif.
-  lcd.fillRect(0,168,320,13,lcd.color565(3,1,13));
-  lcd.drawFastHLine(0,167,320,kVaporPink);
-  for(int x=0;x<320;x+=28)
-    lcd.drawLine(160,167,x,181,kPurple);
-  lcd.drawFastHLine(0,174,320,kPurple);
-  lcd.drawFastHLine(0,180,320,kCyan);
+
 }
 
 void oldSquachy(bool emitting,bool suite){
