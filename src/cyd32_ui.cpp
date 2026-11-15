@@ -7,6 +7,7 @@
 #include "squachwatch_synthwave_exact.h"
 #include "squachwatch_fireflies_exact.h"
 #include "squachwatch_terminal_exact.h"
+#include "squachwatch_digital_rain_exact.h"
 #include <Arduino.h>
 #include <TFT_eSPI.h>
 #include <Preferences.h>
@@ -177,14 +178,8 @@ void wedge(int x1,int y1,int x2,int y2,int r,uint16_t col){
 void retroBackdrop(){
   if(backgroundLevel!=9){
     lcd.fillRect(0,15,320,166,lcd.color565(3,4,16));
-    if(backgroundLevel==0){ // SquachWatch Digital Rain motif; bounded static glyphs
-      for(int x=7;x<320;x+=14){
-        const int head=22+(x*17+(int)(millis()/220))%145;
-        for(int j=0;j<8;++j){
-          const int y=15+(head-15-j*10+166)%166;
-          label(x,y,(j%3)==0?"1":"0",j==0?kWhite:blend(kGreen,kBg,(uint8_t)(j*25)));
-        }
-      }
+    if(backgroundLevel==0){
+      SquachWatchScenes::drawDigitalRain(lcd,millis(),15,181,true);
     }else if(backgroundLevel==1){ // SquachWatch Starfield motif
       for(int i=0;i<95;++i){
         const int x=(i*157+29)%320, y=17+(i*83+11)%162;
@@ -667,8 +662,10 @@ static const char* const kBackgroundNames[]={
   "TERMINAL LOG","FIREFLIES","FIRE","SNOWFALL",
   "THE GIBSON","SYNTHWAVE"};
 void cycleBackground(int delta){
+  const uint8_t prior=backgroundLevel;
   backgroundLevel=(uint8_t)((backgroundLevel+10+(delta<0?-1:1))%10);
   backgroundPage=backgroundLevel/4;
+  if(prior==0&&backgroundLevel!=0)SquachWatchScenes::releaseDigitalRain();
   if(prefs.begin("sqemit32",false)){
     prefs.putUChar("bg_sqwatch",backgroundLevel);prefs.end();
   }
@@ -1194,10 +1191,7 @@ void portraitPage(const char* active,uint32_t remaining,bool suite){
     }else if(backgroundLevel==4){
       SquachWatchScenes::drawTerminalLog(lcd,millis(),60,215);
     }else if(backgroundLevel==0){
-      for(int x=6;x<238;x+=12)
-        for(int j=0;j<9;++j)
-          label(x,65+((x*11+j*18+(int)(millis()/300))%138),
-                j%2?"1":"0",backgroundLevel==0?kGreen:kCyan);
+      SquachWatchScenes::drawDigitalRain(lcd,millis(),60,215,true);
     }else if(backgroundLevel==5){
       SquachWatchScenes::drawFireflies(lcd,millis(),60,215);
     }else if(backgroundLevel==1||backgroundLevel==7){
