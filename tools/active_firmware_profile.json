@@ -10,9 +10,9 @@
   },
   "builds": {
     "cyd32-st7798": {
-      "title": "SquachEmit CYD 3.2 R9 LAB — Menu, Portrait Touch, Wardrobe & Speech (172 Cases)",
+      "title": "SquachEmit v1.1.0 CYD 3.2 — R9 LAB Menu, Portrait Touch & Costumes (172 Cases)",
       "version": "v1.1.0 MAINLINE · 172 cases",
-      "summary": "R9 LAB: centralized paged menu, direct Health/Settings, saved portrait touch calibration, Classic/Black Hoodie/Neon Jacket Squachy wardrobes, dance animation and context-aware bubbles. OTA page reports the single-slot huge_app limitation and does not perform OTA installation. Physical hardware verification required.",
+      "summary": "SquachEmit R9 LAB with 172 synthetic cases: centralized menu, direct Health/Settings, saved portrait touch calibration, Classic/Black Hoodie/Neon Jacket Squachy wardrobes, dance and context-aware bubbles. OTA page safely reports the single-slot huge_app limitation; wireless OTA installation remains unsupported until partition migration and trusted update handling. LAB firmware requires physical verification.",
       "highlights": [
         "SquachWatch-style paged home menu with Health and Settings directly accessible.",
         "Portrait separately calibrates XPT2046 touch and restores landscape calibration.",
