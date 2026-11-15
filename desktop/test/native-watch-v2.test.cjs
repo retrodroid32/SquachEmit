@@ -47,7 +47,7 @@ test('privacy change revokes incomplete LIST and leaves no stale rows',()=>{
 });
 test('WINDOWS receiver start negotiates CAPS2 and routes UI TOUCH',()=>{
   assert.match(ctrl,/UI HELLO/);
-  assert.match(ctrl,/UI READY 2/); // asserted via v2 parser or explicit UI v2 text
+  assert.match(read('desktop/public/native-watch-v2.js'),/UI READY 2 SQUACHWATCH TOUCH PARTIAL/);
   assert.match(ctrl,/UI LIST 0 6/);
   assert.match(ctrl,/UI COUNTS/);
   assert.match(ctrl,/receiverUi\.mode==='native'\?'UI TOUCH ':'MIRROR TOUCH '/);

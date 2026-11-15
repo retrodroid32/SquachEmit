@@ -9,7 +9,7 @@ const read=rel=>fs.readFileSync(path.join(root,rel),'utf8');
 
 test('all desktop JS is syntactically valid',()=>{
   for(const file of ['desktop/main.cjs','desktop/public/controller.js','desktop/public/mirror.js',
-    'desktop/public/native-emitter.js',
+    'desktop/public/native-emitter.js','desktop/public/native-watch-v2.js',
     'workbench/app.js','workbench/core.js']){
     assert.doesNotThrow(()=>new vm.Script(read(file),{filename:file}),file);
   }
@@ -33,7 +33,7 @@ test('desktop is local only with restricted renderer and USB chooser',()=>{
     "'Content-Security-Policy'","'X-Content-Type-Options'",
     "event.preventDefault()","dialog.showMessageBox",
     "file:path.join(roots.workbench,'index.html')",
-    "'/desktop/controller.js'","'/desktop/mirror.js'","'/desktop/native-emitter.js'","'webSecurity'"]){
+    "'/desktop/controller.js'","'/desktop/mirror.js'","'/desktop/native-emitter.js'","'/desktop/native-watch-v2.js'","'webSecurity'"]){
     if(required==="'webSecurity'")assert.match(s,/webSecurity:true/);
     else assert.ok(s.includes(required),'missing desktop contract: '+required);
   }
@@ -63,7 +63,7 @@ test('Software-rendered emitter UI and optional receiver LCD mode use native tou
     assert.ok(ui.includes(key),'missing real LCD and remote-control feature: '+key);
   for(const command of ['STATUS|IDENTITY|LIST|HELP|COLORS|STOP',
     'RADIO SCAN','SCAN (?:AUTO|ACTIVE|PASSIVE)','CLOCK [01] [0-2] [0-6]',
-    'MIRROR (?:ON|OFF|FRAME','UI (?:ON|OFF|GET'])
+    'MIRROR (?:ON|OFF|FRAME','UI (?:HELLO|ON|OFF|GET'])
     assert.ok(wb.includes(command),'missing serial control: '+command);
   assert.match(wb,/if\(batch\.active&&!\//);
   assert.ok(main.includes('/desktop/mirror.js')&&main.indexOf(
