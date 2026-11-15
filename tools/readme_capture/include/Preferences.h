@@ -10,6 +10,7 @@ public:
  bool begin(const char*,bool){return true;}
  void end(){}
  bool getBool(const char*,bool defaultVal){return defaultVal;}
+ bool isKey(const char*){return false;}
  size_t getBytesLength(const char*){return 10;} // simulated previously calibrated touch
  size_t getBytes(const char*,void* output,size_t length){
    std::memset(output,0,length);return length;
