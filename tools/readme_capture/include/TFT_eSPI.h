@@ -188,6 +188,7 @@ class TFT_eSprite : public TFT_eSPI {
 public:
  explicit TFT_eSprite(TFT_eSPI* parent):TFT_eSPI(112,111,false),target(parent){}
  void setColorDepth(int){}
+ void deleteSprite(){pixel.clear();w=0;h=0;}
  bool pushToSprite(TFT_eSprite* dest,int x,int y,uint16_t key){
   if(!dest)return false;
   for(int yy=0;yy<h;++yy)for(int xx=0;xx<w;++xx){
