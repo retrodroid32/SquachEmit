@@ -3,5 +3,5 @@
 #if defined(SQE_CYD32)
 #include <stdint.h>
 class TFT_eSprite;
-namespace SquachyPort { void render(TFT_eSprite& t,uint32_t now,bool onAir,bool suite,bool pet); }
+namespace SquachyPort { void render(TFT_eSprite& t,uint32_t now,bool onAir,bool suite,bool pet,uint8_t outfit); }
 #endif
