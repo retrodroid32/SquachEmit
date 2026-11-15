@@ -2,25 +2,26 @@
   "schema": 1,
   "scenario_count": 172,
   "firmware_sources": {
-    "src": "6059b5ffdce6c8f8122bcf17db65ffc74668776f",
-    "include": "569dc626a95e66d82193877c0f7766cc64843d46",
+    "src": "5f7dc6f18d4fe6726b3879f3a6279df32aacafa1",
+    "include": "c1192f0625c5c587697b20897df0c585edd82a76",
     "lib": "bd0df45f7747bc9971aa4b379a12940dd2d7d98f",
     "SquachEmit.ino": "90b4205813a2f7885bc1e12ce7431eebf7249f45",
     "platformio.ini": "bd67af3ecd6de05f4cef015fe97e17b29ceed574"
   },
   "builds": {
     "cyd32-st7798": {
-      "title": "SquachEmit v1.1.0 CYD 3.2 — R10 Responsive Portrait, 10 Scenes & 22 Outfits (172 Cases)",
+      "title": "SquachEmit v1.1.0 CYD 3.2 — R11 Upstream Scenes, Edge Taps & Portrait (172 Cases)",
       "version": "v1.1.0 MAINLINE · 172 cases",
-      "summary": "R10 LAB 172-case synthetic transmitter firmware: preserve page navigation on 240x320 portrait, restore bottom TESTS library button, add black hamburger menu, centered title and green-on-air/yellow-idle transmit icon. Ten SquachWatch-inspired lightweight scene renderings and 22 simplified costume variants including Black Hoodie. Four-segment SHA-256 flash verification and physical hardware acceptance required. OTA still unavailable on huge_app partition.",
+      "summary": "R11 CYD32 LAB firmware: SquachWatch-style left/right 10% Home edge taps, canonical background cycle order with migration of R10 saved preference, shared saved portrait/landscape rotation preserving logical page and touch calibration. Actual upstream source drawing routines imported for Synthwave, Fireflies and Terminal Log and transparently composited with Squachy. Seven other background scenes and the 22 outfit overlays are NOT yet pixel-identical ports. 172 synthetic test cases retained. Four-segment SHA-256 flash verification and physical CYD 3.2 acceptance are required. OTA remains unsupported on huge_app partition.",
       "highlights": [
-        "Portrait reflows the same logical screen and retains library/category/selection state; orientation-specific touch calibration.",
-        "Bottom-left TESTS returns to signal library, top-left black three-line hamburger opens paged menu.",
-        "SQUACHEMIT title centered; top-right antenna green only during a confirmed active transmitter, yellow when idle.",
-        "Ten lightweight scene choices: Synthwave, Digital Rain, Starfield, Fireflies, Fire, Snowfall, Aquarium, Terminal Log, Flying Toasters and The Gibson.",
-        "22 wardrobe options: Classic, Black Hoodie, Neon Lab Jacket and 19 SquachWatch-named compact costume treatments.",
-        "Full upstream animated backgrounds/costumes are not pixel-identical; LAB physical performance and touch validation pending.",
-        "Controlled 172-case signals, no RF on boot, four-part SHA-256 integrity checks; OTA disabled pending a safe partition migration."
+        "Exact SquachWatch source renderer: Synthwave gradient sunset, animated sun/reflection, ridgeline and birds.",
+        "Exact SquachWatch source renderer: Fireflies meadow, bloom, sky, moving lights and events.",
+        "Exact SquachWatch source renderer: Terminal Log two scrolling columns and XYZZY overlay.",
+        "The other seven scenes still use R10 reduced substitutes; 22 costume choices still use R10 reduced overlays — full one-for-one art port is outstanding.",
+        "Main-screen outer 10% tap zones cycle the previous/next background in the same order as SquachWatch on both rotations.",
+        "Rotation preserves current screen and selected signal, reloads orientation-specific touch calibration, clears old ST7798 pixels, and persists the orientation.",
+        "Squachy is transparently composited on the selected animated scene; background region repaints on a bounded ~350ms cadence without full-screen clears.",
+        "172 controlled test cases, no RF on boot; LAB SHA-256 integrity check and real hardware testing required."
       ]
     },
     "c5-waveshare-28": {
