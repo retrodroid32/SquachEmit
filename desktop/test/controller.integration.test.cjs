@@ -85,6 +85,16 @@ test('Windows rail renders authentic USB frame and translates canvas pointer to 
     rail.listeners.click({target:{closest:()=>({dataset:{action,role},disabled:false})}});
   };
   const drain=async()=>{for(let i=0;i<12;i++)await Promise.resolve();};
+  // User-facing Start live view prioritizes actual device pixels, not
+  // the partial v2 counter dashboard.
+  click('mirror-on','receiver');
+  await drain();
+  assert.ok(commands.some(([r,c])=>r==='receiver'&&c==='MIRROR ON'),
+    'primary Start live view must request authentic physical LCD pixels');
+  assert.equal(commands.some(([r,c])=>r==='receiver'&&c==='UI HELLO'),false,
+    'native data-only mode must be explicitly selected');
+  click('mirror-off','receiver');
+  await drain();
   click('receiver-ui-on','receiver');
   await drain();
   assert.ok(commands.some(([r,c])=>r==='receiver'&&c==='UI HELLO'),
