@@ -39,6 +39,13 @@ int main(){
  assert(mock_background_saved&&mock_background_value==8);
  touch(316,100);
  assert(mock_background_value==9);
+ // R12 display regression: 350ms idle animation MUST NOT clear/repaint
+ // the entire scene on a single-buffered ST7798.
+ const auto stableLandscape=t->pixel;
+ const unsigned clearsLandscape=t->fillScreenCalls;
+ for(int k=0;k<7;++k)idle();
+ assert(t->pixel==stableLandscape);
+ assert(t->fillScreenCalls==clearsLandscape);
  // Header icon rotates the CURRENT Home, without navigating and without RF.
  touch(300,8);idle();
  assert(t->width()==240&&t->height()==320);
@@ -48,6 +55,11 @@ int main(){
  assert(mock_background_value==8);
  touch(236,110);
  assert(mock_background_value==9);
+ const auto stablePortrait=t->pixel;
+ const unsigned clearsPortrait=t->fillScreenCalls;
+ for(int k=0;k<7;++k)idle();
+ assert(t->pixel==stablePortrait);
+ assert(t->fillScreenCalls==clearsPortrait);
  // Return to landscape, preserving selection and still transmitting nothing.
  touch(221,8);idle();
  assert(t->width()==320&&t->height()==240);
