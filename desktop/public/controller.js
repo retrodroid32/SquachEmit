@@ -23,7 +23,7 @@
   const terminals={receiver:'',emitter:''};
   const local={model:null,catalog:native.prepare([]),receivedAt:0};
   const receiverUi={enabled:false,ready:false,lastAt:0,screen:null,
-    mode:'off',caps:false,model:watch?watch.create():null,lastListAt:0};
+    mode:'off',caps:false,model:watch?watch.create():null,lastListAt:0,listRequestedAt:0};
   const watchScreenNames=['BOOT','MAIN','ALERT','LOG','SETTINGS','DIARY','OUTFIT','SCAN','WATCH ALERT','DIAGNOSTICS','HUNT','COLOR CHECK','DETECTION FILTER','OUTFIT UNLOCK','POLICIES','POWER SAVER','PHONE','MESH MENU','MESH WARNING','MESH PHRASE','MESH COMPOSE','BEACON WARNING','SECURITY','LOCKED','PIN ENTRY','SQUAD','UPDATE','WIFI PASSWORD','STATUS LIGHT','NUDGE','SQUAD UPDATE','INVITE','DESK','WIFI NETWORKS','WIFI ADD','SYSTEM PROPERTIES','BINGO','DEX','ALERT RULES','WATCH LIST','HUNT LIST','SD FILES'];
   const mirrors={};
   for(const role of ['receiver','emitter']){
@@ -671,6 +671,13 @@
     if(receiverUi.mode!=='native'||!receiverUi.ready||!receiverUi.model)return;
     const model=receiverUi.model.snapshot();
     if(!model.state||model.state.kind===0)return;
+    if(Date.now()-receiverUi.lastAt>3000){
+      get('dc-canvas-receiver').hidden=true;
+      get('dc-placeholder-receiver').hidden=false;
+      mirrors.receiver.lastFrame=false;
+      mirrorNote('receiver','Native v2 UI STATE stale; check receiver USB, baud, PIN and firmware.');
+      return;
+    }
     const canvas=get('dc-canvas-receiver'),ctx=canvas.getContext('2d',{alpha:false});
     if(!ctx||!watch.render(ctx,model))return;
     const panel=get('dc-display-receiver');
@@ -694,6 +701,7 @@
     const s=mirrors.receiver;
     s.active=true;receiverUi.enabled=true;receiverUi.mode='negotiating';
     receiverUi.ready=false;receiverUi.caps=false;receiverUi.screen=null;
+    receiverUi.lastListAt=0;receiverUi.listRequestedAt=0;
     mirrorNote('receiver','Checking SquachWatch UI CAPS v2 at connected receiver baud…');
     const ok=await api.send('receiver','UI HELLO');
     if(!ok){resetRole('receiver');receiverUi.mode='off';info('receiver','UI HELLO write failed.');return;}
@@ -731,6 +739,7 @@
       receiverUi.mode='native';receiverUi.ready=true;receiverUi.enabled=true;
       if(mirrors.receiver.handshake!==null){clearTimeout(mirrors.receiver.handshake);mirrors.receiver.handshake=null;}
       mirrorNote('receiver','SquachWatch native UI v2 connected · partial MAIN/LOG models');
+      if(mirrors.receiver.animation===null)mirrors.receiver.animation=setInterval(renderWatch,450);
       get('dc-receiver-ui').textContent='Native v2 active: MAIN counters, DEVICES RAM log. Other screens switch to authentic LCD.';
       void api.send('receiver','UI GET');
       return;
@@ -745,9 +754,11 @@
         return;
       }
       renderWatch();
-      if(changed){
-        if(st.kind===1)void api.send('receiver','UI COUNTS');
-        if(st.kind===2)void api.send('receiver','UI LIST 0 6');
+      if(changed&&st.kind===1)void api.send('receiver','UI COUNTS');
+      if(st.kind===2&&(changed||Date.now()-receiverUi.lastListAt>=3500)&&
+         Date.now()-receiverUi.listRequestedAt>=2500){
+        receiverUi.listRequestedAt=Date.now();
+        void api.send('receiver','UI LIST 0 6');
       }
       return;
     }
