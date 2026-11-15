@@ -10,7 +10,7 @@
   },
   "builds": {
     "cyd32-st7798": {
-      "title": "SquachEmit CYD 3.2 R14 LAB — Original SquachWatch Art & Animated Scenes (172 Cases)",
+      "title": "SquachEmit v1.1.0 CYD 3.2 R14 LAB — Original SquachWatch Art (172 Cases)",
       "version": "v1.1.0 MAINLINE · 172 cases",
       "summary": "R14 CYD 3.2 LAB firmware, 172 synthetic signals. Imports SquachWatch's real Squachy character, outfit geometry and ten background renderers through two-pass 8-bit offscreen animation bands. SquachEmit's Black Hoodie and Neon Lab Jacket remain custom. Receiver-dependent visuals use zero receiver data rather than fabricated detections. Four-part SHA-256 flashing preflight and physical ST7798 acceptance are required; compiled does not mean hardware-verified. LAB only; no merge or production release.",
       "highlights": [
