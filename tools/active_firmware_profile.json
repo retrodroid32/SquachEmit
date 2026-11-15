@@ -12,7 +12,7 @@
     "cyd32-st7798": {
       "title": "SquachEmit v1.1.0 CYD 3.2 — R13 LAB Buffered Animation (172 Cases)",
       "version": "v1.1.0 MAINLINE · 172 cases",
-      "summary": "R13 LAB CYD3.2 uses SquachWatch-style two-pass half-height 8-bit buffering to animate Home without revealing intermediate LCD clears. Includes fixed touch, background selection, responsive portrait, original source renderers for four scenes, and reduced 22-outfit mascot sprites. This is not full SquachWatch artwork parity; six scenes and original costume engine are not yet ported. Uses allocation-failure static fallback and needs physical ST7798 testing. OTA unsupported on huge_app.",
+      "summary": "R13 LAB CYD3.2 with 172 synthetic test cases uses SquachWatch-style two-pass half-height 8-bit buffering to animate Home without revealing intermediate LCD clears. Includes fixed touch, background selection, responsive portrait, original source renderers for four scenes, and reduced 22-outfit mascot sprites. This is not full SquachWatch artwork parity; six scenes and original costume engine are not yet ported. Uses allocation-failure static fallback and needs physical ST7798 testing. OTA unsupported on huge_app.",
       "highlights": [
         "Restores animated Home with a two-pass 8-bit 320x120 or 240x160 offscreen band.",
         "No second full-screen framebuffer; each completed band pushes to ST7798 as one sprite.",
