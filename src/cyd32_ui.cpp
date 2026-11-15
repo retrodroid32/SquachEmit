@@ -1196,6 +1196,13 @@ void portraitPage(const char* active,uint32_t remaining,bool suite){
     screen==Screen::Activity?"TX ACTIVITY":screen==Screen::Evidence?"EVIDENCE":
     screen==Screen::Help?"HELP":screen==Screen::Identity?"IDENTITY":"RECOVERY";
   label(12,37,name,kVaporPink,2);
+  if(screen==Screen::QuickFilter){
+    char filterInfo[28];
+    snprintf(filterInfo,sizeof(filterInfo),"%c >",
+             filterLetter?(char)('A'+filterLetter-1):'*');
+    label(195,43,filterInfo,kYellow);
+  }
+  if(screen==Screen::Favorites)label(151,43,"RUN LIST",kGreen);
   if(screen==Screen::Home){
     // Keep the same Squachy and selected profile when rotating to portrait.
     lcd.fillRect(0,60,240,156,lcd.color565(3,4,16));
@@ -1251,7 +1258,18 @@ void portraitPage(const char* active,uint32_t remaining,bool suite){
     }else if(screen==Screen::Settings){
       static const char* basics[]={"BACKLIGHT","ANIMATION","IDLE DIM","INVERSION"};
       static const char* more[]={"THEME","FONT SIZE","IDENTITY","LANDSCAPE"};
-      head=settingsMore?more[i]:basics[i];sub="TAP TO ADJUST";
+      head=settingsMore?more[i]:basics[i];
+      if(!settingsMore){
+        const char* br[]={"DIM","NORMAL","BRIGHT"};
+        const char* an[]={"SLOW","NORMAL","FAST"};
+        const char* idle[]={"OFF","30 SECONDS","60 SECONDS"};
+        sub=i==0?br[brightnessLevel]:i==1?an[animationLevel]:
+            i==2?idle[screenTimeout]:panelInverted?"ON":"OFF";
+      }else{
+        static const char* theme[]={"VAPOR","OCEAN","SUNSET"};
+        sub=i==0?theme[themeLevel]:i==1?(fontMode?"STANDARD":"COMPACT"):
+            i==2?"LAST TX MAC":"TAP TO RETURN";
+      }
     }else if(screen==Screen::Home){
       const Scenario* current=selected<kScenarioCount?&kScenarios[selected]:nullptr;
       if(i==0){head="SELECTED PROFILE";sub=current?current->id:"NONE";}
@@ -1267,6 +1285,49 @@ void portraitPage(const char* active,uint32_t remaining,bool suite){
       if(i==1){head="LARGEST BLOCK";snprintf(value,sizeof(value),"%lu BYTES",(unsigned long)ESP.getMaxAllocHeap());sub=value;}
       if(i==2){head="UPTIME";snprintf(value,sizeof(value),"%lu SEC",(unsigned long)(millis()/1000));sub=value;}
       if(i==3){head="TRANSMITTER";sub=active&&*active?"ON AIR":"IDLE";}
+    }else if(screen==Screen::Details){
+      const Scenario* c=selected<kScenarioCount?&kScenarios[selected]:nullptr;
+      if(i==0){head="SELECTED SIGNAL";sub=c?c->id:"NONE";}
+      if(i==1){head="EXPECTED CLASS";sub=c?c->expected:"NONE";}
+      if(i==2){head="FAVORITE - TAP TO TOGGLE";
+        sub=c&&((favBits[selected/8]>>(selected%8))&1u)?"SAVED":"NOT SAVED";}
+      if(i==3){head="DURATION";snprintf(value,sizeof(value),"%u SECONDS",durationSeconds);sub=value;}
+    }else if(screen==Screen::Activity){
+      static const char* labels[]={"RADIO DRIVER","START EVENTS","END EVENTS","START/END ERRORS"};
+      head=labels[i];
+      if(i==0)sub=txDriverActive?"ACTIVE":"IDLE";
+      else{
+        const uint32_t count=i==1?txBegins:i==2?txEnds:txErrors;
+        snprintf(value,sizeof(value),"%lu",(unsigned long)count);sub=value;
+      }
+    }else if(screen==Screen::Evidence){
+      static const char* labels[]={"RECEIVER RESULT","REPORTED CLASS","SIGNAL RSSI","SOURCE"};
+      head=labels[i];
+      if(i==0)sub=rxId[0]?rxId:"NO REPORT";
+      if(i==1)sub=rxLabel[0]?rxLabel:"NONE";
+      if(i==2){snprintf(value,sizeof(value),"%d dBm",rxRssi);sub=rxId[0]?value:"UNKNOWN";}
+      if(i==3)sub="PC LOG - NOT SELF VERIFIED";
+    }else if(screen==Screen::Identity){
+      static const char* labels[]={"CURRENT PROFILE","LAST TX MAC","IDENTITY STATUS","SOURCE"};
+      head=labels[i];
+      if(i==0)sub=selected<kScenarioCount?kScenarios[selected].id:"NONE";
+      if(i==1)sub=identityMac[0]?identityMac:"NO OBSERVATION";
+      if(i==2)sub=identityCase[0]?identityCase:"NONE";
+      if(i==3)sub="ACTUAL TX RECORD";
+    }else if(screen==Screen::Recovery){
+      static const char* labels[]={"RESET REASON","RF ON BOOT","TOUCH RECOVERY","FIRMWARE"};
+      head=labels[i];
+      if(i==0){snprintf(value,sizeof(value),"%u",resetReasonCode);sub=value;}
+      if(i==1)sub="TRANSMISSION DISABLED";
+      if(i==2)sub="SERIAL CALTOUCH";
+      if(i==3)sub="USE LAB USB FLASHER";
+    }else if(screen==Screen::OtaInfo){
+      static const char* labels[]={"OTA STATUS","PARTITION","SAFE UPDATE SLOT","INSTALL METHOD"};
+      static const char* values[]={"UNAVAILABLE","HUGE_APP SINGLE SLOT","NOT AVAILABLE","USB WEB FLASHER"};
+      head=labels[i];sub=values[i];
+    }else if(screen==Screen::Help){
+      static const char* labels[]={"CHOOSE SIGNAL","CHECK PROFILE","RUN TX","STOP TX"};
+      head=labels[i];sub=i==0?"TESTS / QUICK FIND":i==1?"DETAILS":i==2?"3-30 SECONDS":"ANYTIME";
     }else{
       static const char* h[]={"CURRENT PROFILE","DEVICE STATUS","INFORMATION","BACK TO MENU"};
       head=h[i];sub=i==0?(selected<kScenarioCount?kScenarios[selected].id:"NONE"):
@@ -1300,6 +1361,13 @@ Cyd32UiAction portraitTap(int x,int y,bool active,bool suite){
     else if(y>=240&&y<263){screen=Screen::Details;redraw=true;}
     else if(y>=263&&y<287){screen=Screen::Duration;redraw=true;}
     return Cyd32UiAction::None;
+  }
+  if(screen==Screen::QuickFilter&&y>=29&&y<65&&x>=170){
+    filterLetter=(uint8_t)((filterLetter+1)%27);filterPage=0;redraw=true;
+    return Cyd32UiAction::None;
+  }
+  if(screen==Screen::Favorites&&y>=29&&y<65&&x>=145&&favoriteCount()){
+    return Cyd32UiAction::PlaylistStart;
   }
   if(y>=287){
     if(x<80){screen=Screen::MainMenu;redraw=true;return Cyd32UiAction::None;}
@@ -1360,8 +1428,9 @@ Cyd32UiAction portraitTap(int x,int y,bool active,bool suite){
   }else if(screen==Screen::Duration){
     setDuration(i==0?3:i==1?10:i==2?30:(durationSeconds<30?durationSeconds+1:30));
     redraw=true;
-  }else if(screen==Screen::Details&&i==3){
-    screen=Screen::Duration;redraw=true;
+  }else if(screen==Screen::Details){
+    if(i==2)toggleFavorite();
+    if(i==3){screen=Screen::Duration;redraw=true;}
   }
   return Cyd32UiAction::None;
 }
