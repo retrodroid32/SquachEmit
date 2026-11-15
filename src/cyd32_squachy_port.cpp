@@ -39,7 +39,7 @@ static void backdrop(TFT_eSprite& t){
   t.drawFastHLine(0,104,112,0xAC1F);
   t.drawFastHLine(0,110,112,CYAN);
 }
-void render(TFT_eSprite& t,uint32_t now,bool onAir,bool suite,bool pet){
+void render(TFT_eSprite& t,uint32_t now,bool onAir,bool suite,bool pet,uint8_t outfit){
   if(t.width()!=112||t.height()!=111)return;
   backdrop(t);
   // Preserve SquachWatch's source body proportions, procedural eye timing,
@@ -49,12 +49,13 @@ void render(TFT_eSprite& t,uint32_t now,bool onAir,bool suite,bool pet){
   const bool sleep=!onAir&&!suite&&phase>19000&&!pet;
   const bool walk=!onAir&&!suite&&phase>16200&&phase<18800;
   const bool bounce=!onAir&&!suite&&phase>6500&&phase<7400;
+  const bool dance=!onAir&&!suite&&phase>14200&&phase<16100;
   const bool wink=!onAir&&!suite&&phase>9600&&phase<10300;
   const float speed=bounce?220.0f:(sleep?2200.0f:1100.0f);
   const float amount=(bounce?9.0f:(sleep?1.5f:3.0f))*K;
   float bob=sinf((float)(now%(uint32_t)speed)/speed*6.2831853f)*amount;
   if(bounce)bob=-fabsf(bob);
-  const int cx=56+(walk?(int)(sinf(now/700.0f)*S(5)):0);
+  const int cx=56+(walk?(int)(sinf(now/700.0f)*S(5)):dance?(int)(sinf(now/230.0f)*S(5)):0);
   const int hy=22+(int)bob, hh=hy-(int)(bob*0.16f);
   const float ph=(float)(now%400u)/400.0f*6.2831853f;
   const int leg=(walk?(int)(sinf(ph)*S(3)):0);
@@ -69,12 +70,26 @@ void render(TFT_eSprite& t,uint32_t now,bool onAir,bool suite,bool pet){
   }
   t.fillRoundRect(cx-S(12),hy+S(22),S(24),S(20),S(5),BLACK);
   t.fillRoundRect(cx-S(11),hy+S(23),S(22),S(18),S(5),FUR);
+  if(outfit==1){
+    // BLACK HOODIE: unmistakable dark sweatshirt, pocket and drawstrings.
+    t.fillRoundRect(cx-S(13),hy+S(20),S(26),S(25),S(5),BLACK);
+    t.fillRoundRect(cx-S(11),hy+S(23),S(22),S(18),S(4),0x1082);
+    t.drawRoundRect(cx-S(7),hy+S(33),S(14),S(8),S(2),0x4208);
+    t.drawFastVLine(cx-S(3),hy+S(23),S(7),WHITE);
+    t.drawFastVLine(cx+S(3),hy+S(23),S(7),WHITE);
+    t.drawFastHLine(cx-S(10),hy+S(43),S(20),0x4208);
+  }else if(outfit==2){
+    t.fillRoundRect(cx-S(11),hy+S(23),S(22),S(19),S(4),0x19EF);
+    t.drawFastVLine(cx,hy+S(23),S(19),CYAN);
+    t.drawFastHLine(cx-S(9),hy+S(34),S(18),PINK);
+    t.fillCircle(cx+S(7),hy+S(28),S(2),WHITE);
+  }
   auto limb=[&](int x0,int y0,int x1,int y1){
     wedge(t,x0,y0,x1,y1,S(7)+2,BLACK);
     wedge(t,x0,y0,x1,y1,S(7),LIGHT);
   };
-  if(wave){
-    const float a=-1.0f+sinf((float)(now%400u)/400.0f*6.2831853f)*0.5f;
+  if(wave||dance){
+    const float a=-1.0f+sinf((float)(now%(dance?260u:400u))/(dance?260.0f:400.0f)*6.2831853f)*0.5f;
     limb(cx+S(11),hy+S(28),cx+S(13)+(int)(cosf(a)*18*K),hy+S(28)+(int)(sinf(a)*18*K));
     limb(cx-S(14),hy+S(24),cx-S(14),hy+S(44));
   }else if(onAir){
@@ -93,6 +108,11 @@ void render(TFT_eSprite& t,uint32_t now,bool onAir,bool suite,bool pet){
     t.fillRoundRect(cx+S(10)-1,hy+S(22)+r-1,S(8)+2,S(22)+2,S(3),BLACK);
     t.fillRoundRect(cx-S(18),hy+S(22)+l,S(8),S(22),S(3),LIGHT);
     t.fillRoundRect(cx+S(10),hy+S(22)+r,S(8),S(22),S(3),LIGHT);
+  }
+  if(outfit==1){
+    // Hood frames the head without covering the animated face or glasses.
+    t.fillRoundRect(cx-S(18),hh-S(3),S(36),S(30),S(10),BLACK);
+    t.drawRoundRect(cx-S(17),hh-S(2),S(34),S(28),S(9),0x4208);
   }
   t.fillRoundRect(cx-S(16),hh-1,S(32),S(26),S(8),BLACK);
   t.fillRoundRect(cx-S(15),hh,S(30),S(24),S(7),LIGHT);
