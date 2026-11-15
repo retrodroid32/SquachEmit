@@ -58,7 +58,7 @@ int rxRssi=0;
 uint32_t lastEvidenceAt=0,lastFilterAt=0;
 uint8_t filterLetter=0; // 0 = ALL; 1..26 = A..Z
 size_t filterPage=0;
-uint8_t helpPage=0,menuPage=0,outfitLevel=0,backgroundLevel=0;
+uint8_t helpPage=0,menuPage=0,outfitLevel=0,backgroundLevel=0,backgroundPage=0;
 bool onAirIndicator=false;
 bool portraitCalibrated=false,portraitMode=false;
 uint16_t portraitTouchData[5]={0};
@@ -616,13 +616,20 @@ void outfitScreen(){
     outfitLevel==i?"EQUIPPED":"TAP TO WEAR",outfitLevel==i);
   label(12,198,"COSTUME SAVED TO DEVICE",kMuted);footer("BACK","CLASSIC","HOME");
 }
+static const char* const kBackgroundNames[]={
+  "SYNTHWAVE","DIGITAL RAIN","STARFIELD","FIREFLIES",
+  "FIRE","SNOWFALL","AQUARIUM","TERMINAL LOG",
+  "FLYING TOASTERS","THE GIBSON"};
 void backgroundsScreen(){
   lcd.fillScreen(kBg);titleBar();label(13,25,"SQUACHEMIT / BACKGROUNDS",kVaporPink,2);
-  const char* names[]={"SYNTHWAVE","DIGITAL RAIN","STARFIELD","FIREFLIES"};
-  const char* desc[]={"NEON CITY","MATRIX GLYPHS","DEEP SPACE","GLOWING NIGHT"};
-  for(uint8_t i=0;i<4;++i)menuRow(46+i*39,names[i],
-    backgroundLevel==i?"ACTIVE - TAP AGAIN":desc[i],backgroundLevel==i);
-  footer("BACK","HOME","HOME");
+  for(uint8_t i=0;i<4;++i){
+    const uint8_t n=backgroundPage*4+i;
+    menuRow(46+i*39,n<10?kBackgroundNames[n]:"",
+      n<10?(backgroundLevel==n?"ACTIVE - TAP AGAIN":"TAP TO SET"):"",n<10&&backgroundLevel==n);
+  }
+  char pg[24];snprintf(pg,sizeof(pg),"PAGE %u/3",(unsigned)(backgroundPage+1));
+  label(10,202,pg,kMuted);
+  footer("BACK","< PREV","NEXT >");
 }
 void otaInfoScreen(){
   lcd.fillScreen(kBg);titleBar();label(12,25,"FIRMWARE / OTA",kVaporPink,2);
@@ -1151,8 +1158,8 @@ void portraitPage(const char* active,uint32_t remaining,bool suite){
       static const char* names[]={"CLASSIC SQUACHY","BLACK HOODIE","NEON LAB JACKET","PREVIEW"};
       head=names[i];sub=i==outfitLevel?"EQUIPPED":"SELECT OUTFIT";
     }else if(screen==Screen::Backgrounds){
-      static const char* names[]={"SYNTHWAVE","DIGITAL RAIN","STARFIELD","FIREFLIES"};
-      head=names[i];sub=i==backgroundLevel?"ACTIVE":"SELECT BACKGROUND";
+      const int n=backgroundPage*4+i;
+      if(n<10){head=kBackgroundNames[n];sub=n==backgroundLevel?"ACTIVE":"SELECT BACKGROUND";}
     }else if(screen==Screen::Settings){
       static const char* basics[]={"BACKLIGHT","ANIMATION","IDLE DIM","INVERSION"};
       static const char* more[]={"THEME","FONT SIZE","IDENTITY","LANDSCAPE"};
@@ -1223,6 +1230,11 @@ Cyd32UiAction portraitTap(int x,int y,bool active,bool suite){
     if(screen==Screen::History)return touchHistory(px,218);
     if(screen==Screen::QuickFilter)return touchQuickFilter(px,218);
     if(screen==Screen::Settings)return touchSettings(px,218);
+    if(screen==Screen::Backgrounds){
+      if(x<160){if(backgroundPage)--backgroundPage;}
+      else if(backgroundPage<2)++backgroundPage;
+      redraw=true;return Cyd32UiAction::None;
+    }
     if(screen==Screen::Duration)return touchDuration(px,218);
     if(screen==Screen::Help)return touchHelp(px,218);
     screen=Screen::MainMenu;redraw=true;return Cyd32UiAction::None;
@@ -1251,9 +1263,10 @@ Cyd32UiAction portraitTap(int x,int y,bool active,bool suite){
       if(prefs.begin("sqemit32",false)){prefs.putUChar("outfit",outfitLevel);prefs.end();}
       redraw=true;}
   }else if(screen==Screen::Backgrounds){
-    backgroundLevel=(uint8_t)i;
-    if(prefs.begin("sqemit32",false)){prefs.putUChar("bg",backgroundLevel);prefs.end();}
-    redraw=true;
+    const int n=backgroundPage*4+i;
+    if(n<10){backgroundLevel=(uint8_t)n;
+      if(prefs.begin("sqemit32",false)){prefs.putUChar("bg",backgroundLevel);prefs.end();}
+      redraw=true;}
   }else if(screen==Screen::Duration){
     setDuration(i==0?3:i==1?10:i==2?30:(durationSeconds<30?durationSeconds+1:30));
     redraw=true;
@@ -1318,7 +1331,7 @@ void cyd32UiBegin(){
   if(themeLevel>2)themeLevel=0;
   if(fontMode>1)fontMode=1;
   if(outfitLevel>2)outfitLevel=0;
-  if(backgroundLevel>4)backgroundLevel=0;
+  if(backgroundLevel>9)backgroundLevel=0;
   applyTheme();
   if(prefs.begin("sqemitfav",true)){
     if(prefs.getBytesLength("fav")==sizeof(favBits))prefs.getBytes("fav",favBits,sizeof(favBits));
@@ -1507,11 +1520,18 @@ Cyd32UiAction cyd32UiTick(const char* active,uint32_t remaining,bool suite){
         }
       }
     }else if(screen==Screen::Backgrounds){
-      if(y>=kFooterY){screen=x<108?Screen::MainMenu:Screen::Home;redraw=true;}
-      else if(y>=46&&y<202){backgroundLevel=(uint8_t)((y-46)/39);
-        if(backgroundLevel>3)backgroundLevel=3;
-        if(prefs.begin("sqemit32",false)){prefs.putUChar("bg",backgroundLevel);prefs.end();}
+      if(y>=kFooterY){
+        if(x<108)screen=Screen::MainMenu;
+        else if(x<213){if(backgroundPage)--backgroundPage;}
+        else if(backgroundPage<2)++backgroundPage;
         redraw=true;
+      }else if(y>=46&&y<202){
+        const uint8_t n=backgroundPage*4+(uint8_t)((y-46)/39);
+        if(n<10){
+          backgroundLevel=n;
+          if(prefs.begin("sqemit32",false)){prefs.putUChar("bg",backgroundLevel);prefs.end();}
+          redraw=true;
+        }
       }
     }else if(screen==Screen::OtaInfo){
       if(y>=kFooterY){
