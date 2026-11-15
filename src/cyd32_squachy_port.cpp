@@ -41,7 +41,9 @@ static void backdrop(TFT_eSprite& t){
 }
 void render(TFT_eSprite& t,uint32_t now,bool onAir,bool suite,bool pet,uint8_t outfit){
   if(t.width()!=112||t.height()!=111)return;
-  backdrop(t);
+  // Transparent sprite overlays the actual selected background, instead of
+  // smuggling an unrelated synthwave rectangle behind every costume.
+  t.fillSprite(0xF81E);
   // Preserve SquachWatch's source body proportions, procedural eye timing,
   // arm movement, head bob, bounce, wave, shocked, dance, walking and nap.
   const uint32_t phase=now%22000u;
