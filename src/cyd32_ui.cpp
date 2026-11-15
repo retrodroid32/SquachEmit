@@ -311,7 +311,7 @@ void drawSquachyFrame(bool emitting,bool suite,uint32_t now){
   if(!squachSpriteReady)return;
   SquachyPort::render(squachSprite,now,emitting,suite,(int32_t)(petUntil-now)>0,outfitLevel);
   if(bandFrameActive){
-    squachSprite.pushToSprite(&halfFrame,104,70-bandFrameTop,0xF81E);
+    squachSprite.pushToSprite(&halfFrame,104,70,0xF81E);
   }else squachSprite.pushSprite(104,70,0xF81E);
   lastSquachFrame=now;
 }
@@ -1266,7 +1266,7 @@ void portraitPage(const char* active,uint32_t remaining,bool suite){
       SquachyPort::render(squachSprite,millis(),active&&*active,suite,
                           (int32_t)(petUntil-millis())>0,outfitLevel);
       if(bandFrameActive)
-        squachSprite.pushToSprite(&halfFrame,64,75-bandFrameTop,0xF81E);
+        squachSprite.pushToSprite(&halfFrame,64,75,0xF81E);
       else squachSprite.pushSprite(64,75,0xF81E);
     }
     lcd.fillRoundRect(7,205,226,34,4,kTaskbar);
