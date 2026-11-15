@@ -333,15 +333,15 @@ void oldSquachy(bool emitting,bool suite){
 
 void drawSquachyFrame(bool emitting,bool suite,uint32_t now){
 #if defined(SQE_ORIGINAL_SQUACHY)
-  if(outfitLevel!=1&&outfitLevel!=2){
-    // Original SquachWatch's costume geometry and source pose scheduler.
-    // SquachEmit-specific black hoodie and lab coat remain custom.
-    const int8_t original=(outfitLevel==0)?0:(int8_t)(outfitLevel-2);
-    Squachy::setOutfitPreview(original);
-    Squachy::tick(lcd,160,65,116,now,advanceScene,0.3f,false,0,100);
-    lastSquachFrame=now;
-    return;
-  }
+  // All 22 selectable styles now use SquachWatch's actual procedural
+  // body/pose engine. The hoodie/lab garments are custom overlays ON the
+  // original moving character rather than separate transparent sprites.
+  Squachy::setOutfitPreview(outfitLevel<=2?0:(int8_t)(outfitLevel-2));
+  Squachy::setSqemitCustomLook(outfitLevel==1?1:outfitLevel==2?2:0);
+  Squachy::tick(lcd,160,25,155,now,advanceScene,0.3f,false,0,100);
+  Squachy::setOutfitPreview(-1);
+  lastSquachFrame=now;
+  return;
 #endif
   if(!squachSpriteReady)return;
   SquachyPort::render(squachSprite,now,emitting,suite,(int32_t)(petUntil-now)>0,outfitLevel);
@@ -351,8 +351,12 @@ void drawSquachyFrame(bool emitting,bool suite,uint32_t now){
   lastSquachFrame=now;
 }
 void bigSquachy(bool emitting,bool suite){
+#if defined(SQE_ORIGINAL_SQUACHY)
+  drawSquachyFrame(emitting,suite,millis());
+#else
   if(squachSpriteReady)drawSquachyFrame(emitting,suite,millis());
   else oldSquachy(emitting,suite);
+#endif
 }
 // Right-side status is ONE label on ONE baseline.  During an active test,
 // countdown REPLACES the case total; never render both in the same 15px band.
@@ -1290,19 +1294,11 @@ void portraitPage(const char* active,uint32_t remaining,bool suite){
     // Portrait variant of the selected SquachWatch-style scene.
 #if defined(SQE_ORIGINAL_SQUACHY)
     drawOriginalScene(60,215);
-    const int8_t original=(outfitLevel==0)?0:(int8_t)(outfitLevel-2);
-    if(outfitLevel!=1&&outfitLevel!=2){
-      Squachy::setOutfitPreview(original);
-      Squachy::tick(lcd,120,61,145,millis(),advanceScene,0.3f,false,0,100);
-      Theme::drawBackgroundOverlay(lcd,millis());
-    }else{
-      // Custom SquachEmit designs remain temporary until authored on
-      // top of the original body renderer.
-      SquachyPort::render(squachSprite,millis(),active&&*active,suite,
-                         (int32_t)(petUntil-millis())>0,outfitLevel);
-      if(bandFrameActive)squachSprite.pushToSprite(&halfFrame,64,75,0xF81E);
-      else squachSprite.pushSprite(64,75,0xF81E);
-    }
+    Squachy::setOutfitPreview(outfitLevel<=2?0:(int8_t)(outfitLevel-2));
+    Squachy::setSqemitCustomLook(outfitLevel==1?1:outfitLevel==2?2:0);
+    Squachy::tick(lcd,120,60,150,millis(),advanceScene,0.3f,false,0,100);
+    Squachy::setOutfitPreview(-1);
+    Theme::drawBackgroundOverlay(lcd,millis());
 #else
     if(backgroundLevel==9){
       SquachWatchScenes::drawSynthwave(lcd,millis(),60,215,0.44f);
@@ -1679,9 +1675,15 @@ void cyd32UiBegin(){
     (unsigned long)ESP.getMaxAllocHeap());
   // Match SquachWatch's RGB332 draw buffers: ~12KB mascot instead of
   // a 24KB RGB565 sprite, preserving heap for RF and the half-screen band.
+#if defined(SQE_ORIGINAL_SQUACHY)
+  // Original engine paints directly into the half-height RGB332 band.
+  // Do not allocate an extra mascot sprite or produce a magenta key square.
+  squachSpriteReady=false;
+#else
   squachSprite.setColorDepth(8);
   squachSpriteReady=(squachSprite.createSprite(112,111)!=nullptr);
   if(!squachSpriteReady)Serial.println("WARN,CYD32_SPRITE_ALLOC;STATIC_FALLBACK");
+#endif
   ledcSetup(6,5000,8);
   ledcAttachPin(TFT_BL,6);
   screenDimmed=false;applyBrightness();
