@@ -269,7 +269,7 @@ void oldSquachy(bool emitting,bool suite){
 
 void drawSquachyFrame(bool emitting,bool suite,uint32_t now){
   if(!squachSpriteReady)return;
-  SquachyPort::render(squachSprite,now,emitting,suite,(int32_t)(petUntil-now)>0);
+  SquachyPort::render(squachSprite,now,emitting,suite,(int32_t)(petUntil-now)>0,outfitLevel);
   squachSprite.pushSprite(104,70);
   lastSquachFrame=now;
 }
@@ -303,11 +303,16 @@ void speechBubble(const char* active,bool suite){
   const Scenario* chosen=selected<kScenarioCount?&kScenarios[selected]:nullptr;
   const bool failed=!(active&&*active) && radioStartError[0];
   const bool starting=!(active&&*active) && !failed && radioStartingProfile[0];
+  static const char* idleTalk[]={"READY FOR A SIGNAL CHECK!","PICK A PROFILE. I WILL EMIT!",
+    "172 TESTS. ONE LITTLE SQUACH.","NO RF UNTIL YOU PRESS RUN.",
+    "LET US TEST THAT DETECTOR!"};
+  static const char* activeTalk[]={"SENDING SYNTHETIC SIGNAL...",
+    "CHECK YOUR RECEIVER NOW!","TEST SIGNAL IS ON THE AIR!"};
   const char* phrase=failed?"WIFI START FAILED":
       starting?"STARTING WIFI TRANSMISSION":
-      (active&&*active)?"RF LAB TRANSMITTING":playlistRunning?"FAVORITES PLAYLIST":
-      suite?"TEST SUITE RUNNING":
-      "READY TO TEST. PICK A PROFILE.";
+      (active&&*active)?activeTalk[(millis()/5500u)%3u]:
+      playlistRunning?"FAVORITES PLAYLIST":
+      suite?"TEST SUITE RUNNING":idleTalk[(millis()/6500u)%5u];
   fit(16,25,phrase,285,failed?kPink:(starting?kYellow:kWhite),2);
   char friendly[58]={0};
   const Scenario* showing=(active&&*active)?findScenario(active):
@@ -1212,6 +1217,9 @@ Cyd32UiAction cyd32UiTick(const char* active,uint32_t remaining,bool suite){
     if(count!=lastCount){countdownOnly(count);lastCount=count;}
   }
   if(calibrated&&screen==Screen::Diagnostics&&now-lastDiagAt>=1000u){diagValues();lastDiagAt=now;}
+  if(calibrated&&screen==Screen::Home&&now-lastBubbleAt>6500u){
+    speechBubble(active,suite);lastBubbleAt=now;
+  }
   if(calibrated&&screen==Screen::Portrait){
     const uint32_t count=(active&&*active)?((remaining+999)/1000):UINT32_MAX;
     if(count!=portraitLastCount){portraitCounter(active,remaining,suite);portraitLastCount=count;}
