@@ -51,7 +51,7 @@ TFT_eSprite squachSprite(&panel);
 bool squachSpriteReady=false,bandFrameReady=false,bandFrameActive=false;
 int bandFrameTop=0;
 bool advanceScene=true;
-uint32_t lastSquachFrame=0, lastSceneFrame=0, petUntil=0;
+uint32_t lastSquachFrame=0, lastSceneFrame=0, petUntil=0, renderFrameNow=0;
 Preferences prefs;
 Screen screen=Screen::Home;
 DeviceCategory category=DeviceCategory::Axon;
@@ -132,6 +132,7 @@ void titleBar(){
   const int nameX=(kW-nameW)/2;
   lcd.fillRect(nameX-8,1,nameW+16,12,kTaskbar);
   label(nameX,3,"SQUACHEMIT",kWhite);
+  label(255,3,"ROT",kWhite);
   const uint16_t txColor=onAirIndicator?kGreen:kYellow;
   lcd.drawLine(292,11,298,3,txColor);
   lcd.drawLine(298,3,304,11,txColor);
@@ -199,7 +200,7 @@ void drawOriginalScene(int top,int bottom){
   // and all ten original procedural animations keep their authored timing.
   SquachWatchVisual::setBackground(backgroundLevel);
   static const DetectionEngine noReceiver; // zero observations, not fake
-  Theme::drawActiveBackground(lcd,millis(),top,bottom,noReceiver,advanceScene);
+  Theme::drawActiveBackground(lcd,renderFrameNow?renderFrameNow:millis(),top,bottom,noReceiver,advanceScene);
 }
 
 #endif
@@ -352,7 +353,7 @@ void drawSquachyFrame(bool emitting,bool suite,uint32_t now){
 }
 void bigSquachy(bool emitting,bool suite){
 #if defined(SQE_ORIGINAL_SQUACHY)
-  drawSquachyFrame(emitting,suite,millis());
+  drawSquachyFrame(emitting,suite,renderFrameNow?renderFrameNow:millis());
 #else
   if(squachSpriteReady)drawSquachyFrame(emitting,suite,millis());
   else oldSquachy(emitting,suite);
@@ -471,6 +472,7 @@ void renderBufferedHome(const char* active,uint32_t remaining,bool suite){
   if(!bandFrameReady)return;
   const int w=panel.width(),h=panel.height(),half=h/2;
   const uint32_t frameMs=millis();
+  renderFrameNow=frameMs;
   for(int pass=0;pass<2;++pass){
     bandFrameTop=pass*half;
     advanceScene=(pass==0);
@@ -492,6 +494,7 @@ void renderBufferedHome(const char* active,uint32_t remaining,bool suite){
     halfFrame.pushSprite(0,bandFrameTop);
   }
   lastSceneFrame=frameMs;
+  renderFrameNow=0;
 }
 void homeScreen(const char* active,uint32_t remaining,bool suite){
   const bool emitting=active&&*active;
@@ -499,7 +502,7 @@ void homeScreen(const char* active,uint32_t remaining,bool suite){
   retroBackdrop();
   bigSquachy(emitting,suite);
 #if defined(SQE_ORIGINAL_SQUACHY)
-  Theme::drawBackgroundOverlay(lcd,millis());
+  Theme::drawBackgroundOverlay(lcd,renderFrameNow?renderFrameNow:millis());
 #endif
   titleBar();
 #if !defined(SQE_ORIGINAL_SQUACHY)
@@ -1268,6 +1271,7 @@ void portraitPage(const char* active,uint32_t remaining,bool suite){
   lcd.fillRoundRect(5,3,31,20,3,kWhite);
   for(int y=7;y<20;y+=5)lcd.drawFastHLine(12,y,17,kInk);
   label(81,9,"SQUACHEMIT",kWhite);
+  label(178,9,"ROT",kWhite);
   const uint16_t tx=active&&*active?kGreen:kYellow;
   lcd.drawLine(215,14,221,4,tx);lcd.drawLine(221,4,227,14,tx);
   lcd.drawFastVLine(221,9,12,tx);
@@ -1296,7 +1300,7 @@ void portraitPage(const char* active,uint32_t remaining,bool suite){
     drawOriginalScene(60,215);
     Squachy::setOutfitPreview(outfitLevel<=2?0:(int8_t)(outfitLevel-2));
     Squachy::setSqemitCustomLook(outfitLevel==1?1:outfitLevel==2?2:0);
-    Squachy::tick(lcd,120,60,150,millis(),advanceScene,0.3f,false,0,100);
+    Squachy::tick(lcd,120,60,150,renderFrameNow?renderFrameNow:millis(),advanceScene,0.3f,false,0,100);
     Squachy::setOutfitPreview(-1);
     Theme::drawBackgroundOverlay(lcd,millis());
 #else
@@ -1342,11 +1346,17 @@ void portraitPage(const char* active,uint32_t remaining,bool suite){
       else squachSprite.pushSprite(64,75,0xF81E);
     }
 #endif
+#if defined(SQE_ORIGINAL_SQUACHY)
+    // Original Squachy already draws his own animated speech bubble.
+    label(12,222,active&&*active?"SYNTHETIC TEST ON AIR":
+      suite?"RUNNING TEST SUITE":"READY FOR SIGNAL CHECK",active&&*active?kGreen:kCyan);
+#else
     lcd.fillRoundRect(7,205,226,34,4,kTaskbar);
     lcd.drawRoundRect(7,205,226,34,4,kPink);
     const char* talk=active&&*active?"SYNTHETIC TX IN PROGRESS":
       suite?"RUNNING FULL 172-CASE SUITE":"PICK A PROFILE. PRESS RUN!";
     fit(13,212,talk,212,kWhite,2);
+#endif
     const Scenario* current=selected<kScenarioCount?&kScenarios[selected]:nullptr;
     fit(12,246,current?current->id:"NO PROFILE",216,kCyan);
     char status[42];
@@ -1475,7 +1485,7 @@ void portraitPage(const char* active,uint32_t remaining,bool suite){
 Cyd32UiAction portraitTap(int x,int y,bool active,bool suite){
   if(y<27){
     if(x<45){screen=Screen::MainMenu;menuPage=0;redraw=true;}
-    else if(x>=195){rotateCurrentScreen();}
+    else if(x>=170&&x<210){rotateCurrentScreen();}
     return Cyd32UiAction::None;
   }
   if(screen==Screen::Home){
@@ -1840,7 +1850,7 @@ Cyd32UiAction cyd32UiTick(const char* active,uint32_t remaining,bool suite){
      x<(portraitMode?240:kW)&&y<(portraitMode?320:kH)){
     if(portraitMode){
       action=portraitTap(x,y,active&&*active,suite);
-    }else if(y<23&&x>=275){
+    }else if(y<23&&x>=252&&x<286){
       rotateCurrentScreen();
     }else if(y<23&&x<48){
       screen=Screen::MainMenu;menuPage=0;redraw=true;
