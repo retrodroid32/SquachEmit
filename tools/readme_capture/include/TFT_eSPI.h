@@ -184,9 +184,11 @@ public:
   return pixel.data();
  }
  void fillSprite(uint16_t c){fillScreen(c);}
- void pushSprite(int x,int y){
-  for(int yy=0;yy<h;yy++)for(int xx=0;xx<w;xx++)
-   target->drawPixel(x+xx,y+yy,pixel[size_t(yy)*w+xx]);
+ void pushSprite(int x,int y,uint16_t transparent=0xF81E){
+  for(int yy=0;yy<h;yy++)for(int xx=0;xx<w;xx++){
+   const uint16_t color=pixel[size_t(yy)*w+xx];
+   if(color!=transparent)target->drawPixel(x+xx,y+yy,color);
+  }
  }
 };
 constexpr uint16_t TFT_RED=0xF800,TFT_GREEN=0x07E0,TFT_BLUE=0x001F,TFT_WHITE=0xFFFF,TFT_BLACK=0;
