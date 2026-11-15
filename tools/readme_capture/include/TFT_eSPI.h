@@ -8,6 +8,7 @@
 namespace MockDisplay {
   class TFTMarker;
   inline bool touch=false;
+  inline unsigned completedBandPushes=0;
   inline uint16_t x=0,y=0;
 }
 class TFT_eSPI;
@@ -203,6 +204,7 @@ public:
  }
  void fillSprite(uint16_t c){fillScreen(c);}
  void pushSprite(int x,int y,uint16_t transparent=0xF81E){
+  ++MockDisplay::completedBandPushes;
   for(int yy=0;yy<h;yy++)for(int xx=0;xx<w;xx++){
    const uint16_t color=pixel[size_t(yy)*w+xx];
    if(color!=transparent)target->drawPixel(x+xx,y+yy,color);
