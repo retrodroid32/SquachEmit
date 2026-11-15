@@ -1196,6 +1196,34 @@ void portraitPage(const char* active,uint32_t remaining,bool suite){
     screen==Screen::Activity?"TX ACTIVITY":screen==Screen::Evidence?"EVIDENCE":
     screen==Screen::Help?"HELP":screen==Screen::Identity?"IDENTITY":"RECOVERY";
   label(12,37,name,kVaporPink,2);
+  if(screen==Screen::Home){
+    // Keep the same Squachy and selected profile when rotating to portrait.
+    lcd.fillRect(0,60,240,156,lcd.color565(3,4,16));
+    for(int i=0;i<24;++i){
+      const int x=(i*79+21)%240,y=62+(i*61)%146;
+      lcd.drawPixel(x,y,i%3?kCyan:kWhite);
+    }
+    if(squachSpriteReady){
+      SquachyPort::render(squachSprite,millis(),active&&*active,suite,
+                          (int32_t)(petUntil-millis())>0,outfitLevel);
+      squachSprite.pushSprite(64,75);
+    }
+    lcd.fillRoundRect(7,205,226,34,4,kTaskbar);
+    lcd.drawRoundRect(7,205,226,34,4,kPink);
+    const char* talk=active&&*active?"SYNTHETIC TX IN PROGRESS":
+      suite?"RUNNING FULL 172-CASE SUITE":"PICK A PROFILE. PRESS RUN!";
+    fit(13,212,talk,212,kWhite,2);
+    const Scenario* current=selected<kScenarioCount?&kScenarios[selected]:nullptr;
+    fit(12,246,current?current->id:"NO PROFILE",216,kCyan);
+    char status[42];
+    snprintf(status,sizeof(status),active&&*active?"TX %lus LEFT":"TX TIME %us",
+             (unsigned long)(active&&*active?(remaining+999)/1000:durationSeconds));
+    fit(12,267,status,216,active&&*active?kGreen:kYellow);
+    button(3,287,74,30,"TESTS");
+    button(83,287,74,30,active||suite?"STOP":"RUN");
+    button(163,287,74,30,"SUITE");
+    return;
+  }
   for(int i=0;i<4;++i){
     const char* head="",*sub="";
     char labelBuf[64]={0},value[48]={0};
@@ -1268,13 +1296,9 @@ Cyd32UiAction portraitTap(int x,int y,bool active,bool suite){
       if(x<160)return active||suite||playlistRunning?Cyd32UiAction::Stop:Cyd32UiAction::Run;
       return Cyd32UiAction::Suite;
     }
-    if(y>=65&&y<261){
-      const int n=(y-65)/49;
-      if(n==0)screen=Screen::Categories;
-      else if(n==1)screen=Screen::Duration;
-      else if(n==3)screen=Screen::Details;
-      redraw=true;
-    }
+    if(y>=80&&y<204){petUntil=millis()+1600;redraw=true;}
+    else if(y>=240&&y<263){screen=Screen::Details;redraw=true;}
+    else if(y>=263&&y<287){screen=Screen::Duration;redraw=true;}
     return Cyd32UiAction::None;
   }
   if(y>=287){
@@ -1502,7 +1526,9 @@ Cyd32UiAction cyd32UiTick(const char* active,uint32_t remaining,bool suite){
   }
   if(calibrated&&screen==Screen::Diagnostics&&now-lastDiagAt>=1000u){diagValues();lastDiagAt=now;}
   if(calibrated&&screen==Screen::Home&&now-lastBubbleAt>6500u){
-    speechBubble(active,suite);lastBubbleAt=now;
+    if(portraitMode)redraw=true;
+    else speechBubble(active,suite);
+    lastBubbleAt=now;
   }
   if(calibrated&&portraitMode){
     const uint32_t count=(active&&*active)?((remaining+999)/1000):UINT32_MAX;
@@ -1513,9 +1539,12 @@ Cyd32UiAction cyd32UiTick(const char* active,uint32_t remaining,bool suite){
     screenDimmed=true;applyBrightness();
   }
   const uint32_t animDelay=animationLevel==0?200u:animationLevel==1?120u:80u;
-  if(calibrated&&!portraitMode&&screen==Screen::Home&&squachSpriteReady&&
-     now-lastSquachFrame>=animDelay && colorBarsUntil==0)
-    drawSquachyFrame(active&&*active,suite,now);
+  if(calibrated&&screen==Screen::Home&&squachSpriteReady&&
+     now-lastSquachFrame>=animDelay && colorBarsUntil==0){
+    if(portraitMode){
+      if(now-lastSquachFrame>=350u){lastSquachFrame=now;redraw=true;}
+    }else drawSquachyFrame(active&&*active,suite,now);
+  }
   if(now-lastPoll<55)return Cyd32UiAction::None;
   lastPoll=now;
   if(!calibrated){
