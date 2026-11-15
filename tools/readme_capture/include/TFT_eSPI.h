@@ -129,6 +129,7 @@ public:
  }
  void setTextFont(uint8_t f){font=(f==2?2:1);}
  void setTextSize(uint8_t s){size=(s?s:1);}
+ void setTextWrap(bool){}
  void setTextColor(uint16_t c){fg=c;}
  void setCursor(int x,int y){cx=x;cy=y;}
  int charWidth(unsigned ch) const {
