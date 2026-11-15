@@ -46,6 +46,18 @@ class Cyd32UiGuards(unittest.TestCase):
         self.assertNotIn('"WIFI / BEACONS"',self.s)
         self.assertIn('categoryPage*kPageRows',self.s)
         self.assertIn('deviceCategoryCaseAtRank(',self.s)
+    def test_r14_single_speech_bubble_with_original_squachy(self):
+        # SquachWatch already provides a built-in speech suppression switch.
+        # Its original body/pose/outfit engine must stay enabled; the user
+        # should see SquachEmit's top text box, never two stacked bubbles.
+        native = (ROOT/"lib"/"SquachWatchOriginal"/"src"/"squachy.cpp").read_text()
+        self.assertIn("void holdBubble(bool held) { s_bubbleHeld = held; }", native)
+        self.assertIn("if (s_bubbleHeld) return;", native)
+        self.assertIn("void speechBubble(", self.s)
+        self.assertIn("Squachy::tick(lcd,160,65,116", self.s)
+        self.assertIn("Squachy::tick(lcd,120,68,138", self.s)
+        self.assertGreaterEqual(self.s.count("Squachy::holdBubble(true);"), 3)
+
     def test_r9_handheld_navigation_and_touch(self):
         for name in ('Screen::MainMenu','Screen::Outfits','Screen::OtaInfo',
                      'mainMenuScreen()', 'outfitScreen()', 'otaInfoScreen()',
