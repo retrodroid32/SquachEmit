@@ -2,7 +2,7 @@
   "schema": 1,
   "scenario_count": 172,
   "firmware_sources": {
-    "src": "674a4fede840071d895a5605e71f92ca1691aa93",
+    "src": "6af35e8fdd2c4da7aeb57912e199369a582b43a6",
     "include": "569dc626a95e66d82193877c0f7766cc64843d46",
     "lib": "bd0df45f7747bc9971aa4b379a12940dd2d7d98f",
     "SquachEmit.ino": "90b4205813a2f7885bc1e12ce7431eebf7249f45",
@@ -10,16 +10,17 @@
   },
   "builds": {
     "cyd32-st7798": {
-      "title": "SquachEmit v1.1.0 CYD 3.2 — R9 LAB Menu, Portrait Touch & Costumes (172 Cases)",
+      "title": "SquachEmit v1.1.0 CYD 3.2 — R10 Responsive Portrait, 10 Scenes & 22 Outfits (172 Cases)",
       "version": "v1.1.0 MAINLINE · 172 cases",
-      "summary": "SquachEmit R9 LAB with 172 synthetic cases: centralized menu, direct Health/Settings, saved portrait touch calibration, Classic/Black Hoodie/Neon Jacket Squachy wardrobes, dance and context-aware bubbles. OTA page safely reports the single-slot huge_app limitation; wireless OTA installation remains unsupported until partition migration and trusted update handling. LAB firmware requires physical verification. Four-segment SHA-256 verification required before flashing.",
+      "summary": "R10 LAB 172-case synthetic transmitter firmware: preserve page navigation on 240x320 portrait, restore bottom TESTS library button, add black hamburger menu, centered title and green-on-air/yellow-idle transmit icon. Ten SquachWatch-inspired lightweight scene renderings and 22 simplified costume variants including Black Hoodie. Four-segment SHA-256 flash verification and physical hardware acceptance required. OTA still unavailable on huge_app partition.",
       "highlights": [
-        "SquachWatch-style paged home menu with Health and Settings directly accessible.",
-        "Portrait separately calibrates XPT2046 touch and restores landscape calibration.",
-        "Saved Classic, Black Hoodie, and Neon Lab Jacket character outfits.",
-        "Additional dance animation and idle/transmission-specific rotating speech.",
-        "Safe OTA status page; actual OTA blocked pending dual-app partition and network/update integrity design.",
-        "172 controlled synthetic tests retained; no RF on boot; draft LAB pending hardware review."
+        "Portrait reflows the same logical screen and retains library/category/selection state; orientation-specific touch calibration.",
+        "Bottom-left TESTS returns to signal library, top-left black three-line hamburger opens paged menu.",
+        "SQUACHEMIT title centered; top-right antenna green only during a confirmed active transmitter, yellow when idle.",
+        "Ten lightweight scene choices: Synthwave, Digital Rain, Starfield, Fireflies, Fire, Snowfall, Aquarium, Terminal Log, Flying Toasters and The Gibson.",
+        "22 wardrobe options: Classic, Black Hoodie, Neon Lab Jacket and 19 SquachWatch-named compact costume treatments.",
+        "Full upstream animated backgrounds/costumes are not pixel-identical; LAB physical performance and touch validation pending.",
+        "Controlled 172-case signals, no RF on boot, four-part SHA-256 integrity checks; OTA disabled pending a safe partition migration."
       ]
     },
     "c5-waveshare-28": {
