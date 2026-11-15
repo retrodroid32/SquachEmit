@@ -47,7 +47,7 @@ int main(){
  assert(MockDisplay::completedBandPushes>pushesLandscape);
  assert(t->fillScreenCalls==clearsLandscape);
  // Header icon rotates the CURRENT Home, without navigating and without RF.
- touch(300,8);idle();
+ touch(269,8);idle();
  assert(t->width()==240&&t->height()==320);
  assert(cyd32UiSelection()==first);
  // Portrait left/right edges match the same upstream order.
@@ -61,7 +61,7 @@ int main(){
  assert(MockDisplay::completedBandPushes>pushesPortrait);
  assert(t->fillScreenCalls==clearsPortrait);
  // Return to landscape, preserving selection and still transmitting nothing.
- touch(221,8);idle();
+ touch(184,8);idle();
  assert(t->width()==320&&t->height()==240);
  assert(cyd32UiSelection()==first);
  return 0;
