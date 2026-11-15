@@ -106,10 +106,42 @@ test('delta to missing baseline or wrong size fails closed; full frame restores 
   assert.equal(fixed.frame.pixels[1],255);
   assert.equal(asm.feed('MIRROR DELTA 17 16 1 1 RGB565').kind,'begin');
   assert.equal(asm.feed('MIRROR ROW 17 0 malformed!').kind,'error');
-  assert.equal(asm.last.sequence,16,'corrupt delta must never destroy last valid base');
-  assert.equal(asm.feed('MIRROR DELTA 18 16 1 1 RGB565').kind,'begin');
-  assert.equal(asm.feed('MIRROR END 18').kind,'frame');
+  assert.equal(asm.last,null,'corrupt delta invalidates host baseline, so stale pixels cannot return');
+  assert.equal(asm.feed('MIRROR DELTA 18 16 1 1 RGB565').kind,'error');
   asm.reset();
   assert.equal(asm.feed('MIRROR DELTA 19 18 1 1 RGB565').kind,'error',
     'reconnecting requires fresh full keyframe');
+});
+
+test('full baseline waits for every authentic row and reports progress without publishing partial pixels',()=>{
+  const asm=new MirrorAssembler();
+  assert.equal(asm.feed('MIRROR BEGIN 32 2 3 RGB332').kind,'begin');
+  assert.equal(asm.last,null);
+  assert.equal(asm.feed('MIRROR PROGRESS 32 0/3').kind,'progress');
+  assert.equal(asm.feed(row(32,0,[0xe0,0x03])).kind,'row');
+  assert.equal(asm.feed('MIRROR PROGRESS 32 2/3').kind,'progress');
+  assert.equal(asm.last,null);
+  assert.equal(asm.feed(row(32,1,[0x1c,0xff])).kind,'row');
+  assert.equal(asm.feed(row(32,2,[0xe0,0xe0])).kind,'row');
+  const done=asm.feed('MIRROR END 32');
+  assert.equal(done.kind,'frame');
+  assert.equal(done.frame.changedRows,3);
+  assert.equal(asm.feed('MIRROR DELTA 33 32 2 3 RGB332').kind,'begin');
+  assert.equal(asm.feed(row(33,1,[0,0])).kind,'row');
+  assert.equal(asm.feed('MIRROR END 33').kind,'frame');
+});
+
+test('invalid baseline progress, malformed rows, and dimension changes revoke trusted pixels',()=>{
+  const asm=new MirrorAssembler();
+  image(asm,10,2,1,'RGB332',[[0xe0,0x03]]);
+  assert.equal(asm.feed('MIRROR DELTA 11 10 2 1 RGB332').kind,'begin');
+  assert.equal(asm.feed('MIRROR PROGRESS 11 2/1').kind,'error');
+  asm.invalidate();
+  assert.equal(asm.last,null);
+  assert.equal(asm.feed('MIRROR DELTA 12 10 2 1 RGB332').kind,'error');
+  image(asm,13,2,1,'RGB332',[[0x00,0xff]]);
+  assert.equal(asm.feed('MIRROR BEGIN 14 240 320 RGB332').kind,'begin');
+  assert.equal(asm.last,null,'rotation cannot display the old complete frame');
+  assert.equal(asm.feed('MIRROR ROW 14 0 invalid!').kind,'error');
+  assert.equal(asm.last,null);
 });
