@@ -2,9 +2,9 @@
   "schema": 1,
   "scenario_count": 172,
   "firmware_sources": {
-    "src": "1793b2e6088cc59ead2ee05c08dd324205efdb42",
+    "src": "6a4f7e01ec99024a72cdafa8d93fe3af87104496",
     "include": "8253b90b87623b164881b6a20663d16bcd05a85b",
-    "lib": "6b71210c54326993094202a480fc96139f27ef44",
+    "lib": "7ec610781e26cf640878a1d0c2a5df6387259ea5",
     "SquachEmit.ino": "90b4205813a2f7885bc1e12ce7431eebf7249f45",
     "platformio.ini": "c3ff3725248b4c67d60da6903982515031c501f6"
   },
@@ -19,7 +19,7 @@
         "Magenta/pink mascot square removed, all costume geometry integrated into original body renderer.",
         "Custom SquachEmit Black Hoodie and Neon Lab Jacket draw on the authentic character without a separate sprite.",
         "Digital Rain, Starfield, Flying Toasters, Aquarium, Terminal, Fireflies, Fire, Snowfall, The Gibson and Synthwave.",
-        "Keeps 172 synthetic test cases, left/right background cycling and portrait content reflow.",
+        "172 synthetic tests, left/right background cycling, explicitly labeled ROT icon, and properly reflowed portrait controls.",
         "LAB hardware verification needed: CPU/heap, seamless layering, touch rotation and TX STOP; never merge automatically."
       ]
     },
