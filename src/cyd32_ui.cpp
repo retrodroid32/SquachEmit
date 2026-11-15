@@ -1435,7 +1435,29 @@ Cyd32UiAction portraitTap(int x,int y,bool active,bool suite){
     return Cyd32UiAction::PlaylistStart;
   }
   if(y>=287){
-    if(x<80){screen=Screen::MainMenu;redraw=true;return Cyd32UiAction::None;}
+    if(x<80){
+      // BACK has the same destination as the corresponding landscape page.
+      if(screen==Screen::MainMenu||screen==Screen::Backgrounds||
+         screen==Screen::Outfits||screen==Screen::OtaInfo){
+        screen=screen==Screen::MainMenu?Screen::Home:Screen::MainMenu;
+        redraw=true;return Cyd32UiAction::None;
+      }
+      if(screen==Screen::Categories)return touchCategories(50,218);
+      if(screen==Screen::Library)return touchLibrary(50,218,active);
+      if(screen==Screen::Favorites)return touchFavorites(50,218);
+      if(screen==Screen::History)return touchHistory(50,218);
+      if(screen==Screen::QuickFilter)return touchQuickFilter(50,218);
+      if(screen==Screen::Details)return touchDetails(50,218,active);
+      if(screen==Screen::Diagnostics)return touchDiagnostics(50,218);
+      if(screen==Screen::Activity)return touchActivity(50,218);
+      if(screen==Screen::Evidence)return touchEvidence(50,218);
+      if(screen==Screen::Settings)return touchSettings(50,218);
+      if(screen==Screen::Identity)return touchIdentity(50,218);
+      if(screen==Screen::Recovery)return touchRecovery(50,218);
+      if(screen==Screen::Help)return touchHelp(50,218);
+      if(screen==Screen::Duration)return touchDuration(50,218);
+      screen=Screen::MainMenu;redraw=true;return Cyd32UiAction::None;
+    }
     const int px=x<160?150:250;
     if(screen==Screen::MainMenu){
       if(x<160){if(menuPage)--menuPage;}else if(menuPage<2)++menuPage;
@@ -1458,6 +1480,12 @@ Cyd32UiAction portraitTap(int x,int y,bool active,bool suite){
       redraw=true;return Cyd32UiAction::None;
     }
     if(screen==Screen::Duration)return touchDuration(px,218);
+    if(screen==Screen::Details)return touchDetails(px,218,active);
+    if(screen==Screen::Diagnostics)return touchDiagnostics(px,218);
+    if(screen==Screen::Activity)return touchActivity(px,218);
+    if(screen==Screen::Evidence)return touchEvidence(px,218);
+    if(screen==Screen::Identity)return touchIdentity(px,218);
+    if(screen==Screen::Recovery)return touchRecovery(px,218);
     if(screen==Screen::Help)return touchHelp(px,218);
     screen=Screen::MainMenu;redraw=true;return Cyd32UiAction::None;
   }
@@ -1528,6 +1556,7 @@ void cyd32UiSetRadioError(const char* stage){
   redraw=true;
 }
 void cyd32UiBegin(){
+  bool savedPortrait=false;
   pinMode(TFT_BL,OUTPUT);
   digitalWrite(TFT_BL,LOW);
   lcd.init();
@@ -1544,6 +1573,7 @@ void cyd32UiBegin(){
     screenTimeout=prefs.getUChar("timeout",0);
     themeLevel=prefs.getUChar("theme",0);
     fontMode=prefs.getUChar("font",1);
+    savedPortrait=prefs.getBool("portrait",false);
      outfitLevel=prefs.getUChar("outfit",0);
      if(prefs.isKey("bg_sqwatch")){
         backgroundLevel=prefs.getUChar("bg_sqwatch",9);
@@ -1578,6 +1608,7 @@ void cyd32UiBegin(){
   screenDimmed=false;applyBrightness();
   lastTouchActivity=millis();
   calibrated=loadCal();
+  if(calibrated&&savedPortrait)rotateCurrentScreen();
   ready=true;
   redraw=true;
   Serial.printf("CYD32,PANEL,BGR,INVERT_%s\n",panelInverted?"ON":"OFF");
