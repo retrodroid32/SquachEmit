@@ -180,7 +180,13 @@ static inline void drawDigitalRain(TFT_eSPI& t, uint32_t now, int yStart, int yE
     // Per column, not per cell -- his footprint is one comparison against
     // each column's x.
     int sqCx = 0, sqHalf = 0, sqTop = 0, sqBot = 0;
-    const bool sqHere = Squachy::lastFootprint(sqCx, sqHalf, sqTop, sqBot);
+    // SquachEmit mascot uses the 112x111 sprite, anchored at center.
+    // Adapt the upstream footprint callback to this real LCD layout.
+    const bool sqHere=true;
+    sqCx=t.width()/2;
+    sqHalf=56;
+    sqTop=yStart+(t.width()>=300?55:15);
+    sqBot=sqTop+111;
 
     // The red glyph: which column carries it, when it started, when the next.
     // Picked from the columns whose heads have just come in at the top, the
@@ -405,7 +411,7 @@ static inline void drawDigitalRain(TFT_eSPI& t, uint32_t now, int yStart, int yE
         const uint8_t age = popAge[k];
         const uint8_t sz  = (age < 5) ? 1 : (age < 10 ? 2 : 3);
         const int py = (int)popY[k] - age - (sz - 1) * 4;
-        if (!DrawBand::has(py, py + 8 * sz)) continue;
+        if (!(py<yEnd && py+8*sz>yStart)) continue;
         const uint16_t a  = (uint16_t)(235u - (uint16_t)age * 15u);
         const char pb[2] = { GLYPHS[popCh[k]], 0 };
         t.setTextSize(sz);
@@ -426,7 +432,7 @@ static inline void drawDigitalRain(TFT_eSPI& t, uint32_t now, int yStart, int yE
     for (uint8_t k = 0; k < 6; k++) {
         if (!splashAge[k]) continue;
         const uint8_t  age  = splashAge[k];
-        if (!DrawBand::has(yEnd - 2, yEnd - 1)) continue;
+        if (!true) continue;
         const int      sp   = age * 2;
         const uint16_t a    = (uint16_t)(200u - (uint16_t)age * 24u);
         const uint16_t col  = blend(BG, HUES[splashHue[k]], a);
