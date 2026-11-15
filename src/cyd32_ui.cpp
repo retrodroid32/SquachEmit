@@ -26,7 +26,7 @@ constexpr uint16_t kWhite=0xFFFF,kMuted=0x7393,kInk=0x1801;
 constexpr uint16_t kFurDark=0x38C0,kFurMain=0x5941,kFurLight=0x9326;
 constexpr uint16_t kSkin=0xF60F,kSkinDark=0xCB88;
 
-enum class Screen : uint8_t { Home, Categories, Library, Duration, Details, Diagnostics, Favorites, History, Settings, Help, Identity, Recovery, Activity, Evidence, QuickFilter, Portrait };
+enum class Screen : uint8_t { Home, Categories, Library, Duration, Details, Diagnostics, Favorites, History, Settings, Help, Identity, Recovery, Activity, Evidence, QuickFilter, Portrait, MainMenu, Outfits, OtaInfo };
 constexpr size_t kPageRows=4;
 
 TFT_eSPI lcd;
@@ -58,7 +58,10 @@ int rxRssi=0;
 uint32_t lastEvidenceAt=0,lastFilterAt=0;
 uint8_t filterLetter=0; // 0 = ALL; 1..26 = A..Z
 size_t filterPage=0;
-uint8_t helpPage=0;
+uint8_t helpPage=0,menuPage=0,outfitLevel=0;
+bool portraitCalibrated=false;
+uint16_t portraitTouchData[5]={0};
+uint32_t lastBubbleAt=0;
 uint8_t durationSeconds=12; // 3..30s, saved independently of touch calibration
 bool remoteDown=false;
 uint16_t remoteX=0,remoteY=0;
@@ -103,6 +106,7 @@ void titleBar(){
   lcd.drawFastHLine(0,14,kW,kPurple);
   lcd.fillRect(94,2,132,10,kTaskbar);
   label(123,3,"SQUACHEMIT",kWhite);
+  label(8,3,"MENU",kWhite);
   if(pcControl)label(281,3,"PC",kGreen);
 }
 void applyTheme(){
@@ -390,7 +394,7 @@ void homeScreen(const char* active,uint32_t remaining,bool suite){
     const int w=duration?int((elapsed*68ULL)/duration):0;
     if(w>0)lcd.fillRect(240,168,w,5,kGreen);
   }
-  footer("TESTS",(emitting||playlistRunning||suite)?"STOP":"RUN",
+  footer("MENU",(emitting||playlistRunning||suite)?"STOP":"RUN",
          playlistRunning?(playlistPaused?"RESUME":"PAUSE"):"SUITE");
 }
 
@@ -542,6 +546,42 @@ void settingsScreen(){
   snprintf(line,sizeof(line),"PANEL INVERT: %s",panelInverted?"ON":"OFF");
   menuRow(163,line,"BOARD-SPECIFIC DISPLAY POLARITY");
   footer("BACK","MORE >","HELP");
+}
+
+constexpr uint8_t kMenuEntries=11;
+const char* const menuTitles[kMenuEntries]={
+ "TEST LIBRARY","QUICK FIND","FAVORITES","TX HISTORY",
+ "HEALTH / DIAGNOSTICS","SETTINGS","SQUACHY OUTFITS",
+ "OTA UPDATES","TX ACTIVITY","HELP","RECOVERY"};
+const char* const menuHints[kMenuEntries]={
+ "172 SYNTHETIC CASES","A-Z CASE FILTER","SAVED SIGNALS","LAST TRANSMISSIONS",
+ "HEAP, RADIO, UPTIME","DISPLAY, ROTATION, THEME","COSTUMES AND ANIMATION",
+ "FIRMWARE UPDATE STATUS","DRIVER EVENTS","USAGE AND SAFETY","BOOT AND TOUCH"};
+void mainMenuScreen(){
+  lcd.fillScreen(kBg);titleBar();label(13,25,"SQUACHEMIT / MENU",kVaporPink,2);
+  for(uint8_t i=0;i<4;++i){
+    const uint8_t n=menuPage*4+i;
+    if(n<kMenuEntries)menuRow(46+i*39,menuTitles[n],menuHints[n]);
+  }
+  char count[24];snprintf(count,sizeof(count),"PAGE %u/3",(unsigned)(menuPage+1));
+  label(12,201,count,kMuted);footer("HOME","< PREV","NEXT >");
+}
+void outfitScreen(){
+  lcd.fillScreen(kBg);titleBar();label(13,25,"SQUACHY / WARDROBE",kVaporPink,2);
+  const char* styles[]={"CLASSIC SQUACHY","BLACK HOODIE","NEON LAB JACKET"};
+  for(uint8_t i=0;i<3;++i)menuRow(50+i*48,styles[i],
+    outfitLevel==i?"EQUIPPED":"TAP TO WEAR",outfitLevel==i);
+  label(12,198,"COSTUME SAVED TO DEVICE",kMuted);footer("BACK","CLASSIC","HOME");
+}
+void otaInfoScreen(){
+  lcd.fillScreen(kBg);titleBar();label(12,25,"FIRMWARE / OTA",kVaporPink,2);
+  label(12,59,"OTA UNAVAILABLE ON THIS BUILD",kYellow);
+  label(12,83,"CURRENT: HUGE_APP PARTITION",kCyan);
+  label(12,107,"NO SAFE SECOND APP SLOT",kWhite);
+  label(12,131,"USE LAB WEB FLASHER OVER USB",kWhite);
+  label(12,156,"DO NOT FLASH WHILE TX ACTIVE",kGreen);
+  label(12,180,"DUAL SLOT OTA NEEDS BUILD GATE",kMuted);
+  footer("BACK","HELP","HOME");
 }
 void identityScreen(){
   lcd.fillScreen(kBg);titleBar();
@@ -785,7 +825,7 @@ void startCal(){
 }
 Cyd32UiAction touchHome(int x,int y,bool active,bool suite){
   if(y>=kFooterY){
-    if(x<108){screen=Screen::Categories;redraw=true;return Cyd32UiAction::None;}
+    if(x<108){screen=Screen::MainMenu;menuPage=0;redraw=true;return Cyd32UiAction::None;}
     if(x<213)return (active||suite||playlistRunning)?Cyd32UiAction::Stop:Cyd32UiAction::Run;
     return playlistRunning?(playlistPaused?Cyd32UiAction::PlaylistResume:Cyd32UiAction::PlaylistPause):Cyd32UiAction::Suite;
   }
@@ -1134,6 +1174,9 @@ Cyd32UiAction cyd32UiTick(const char* active,uint32_t remaining,bool suite){
     else if(screen==Screen::Evidence)evidenceScreen();
     else if(screen==Screen::QuickFilter)quickFilterScreen();
     else if(screen==Screen::Portrait)portraitScreen(active,remaining,suite);
+    else if(screen==Screen::MainMenu)mainMenuScreen();
+    else if(screen==Screen::Outfits)outfitScreen();
+    else if(screen==Screen::OtaInfo)otaInfoScreen();
     else libraryScreen(active,suite);
     lastCount=(active&&*active)?((remaining+999)/1000):UINT32_MAX;
     portraitLastCount=(active&&*active)?((remaining+999)/1000):UINT32_MAX;
