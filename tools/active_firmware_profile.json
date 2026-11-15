@@ -12,7 +12,7 @@
     "cyd32-st7798": {
       "title": "SquachEmit v1.1.0 CYD 3.2 — R11 Upstream Scenes, Edge Taps & Portrait (172 Cases)",
       "version": "v1.1.0 MAINLINE · 172 cases",
-      "summary": "R11 CYD32 LAB firmware: SquachWatch-style left/right 10% Home edge taps, canonical background cycle order with migration of R10 saved preference, shared saved portrait/landscape rotation preserving logical page and touch calibration. Actual upstream source drawing routines imported for Synthwave, Fireflies and Terminal Log and transparently composited with Squachy. Seven other background scenes and the 22 outfit overlays are NOT yet pixel-identical ports. 172 synthetic test cases retained. Four-segment SHA-256 flash verification and physical CYD 3.2 acceptance are required. OTA remains unsupported on huge_app partition.",
+      "summary": "R11 CYD32 LAB, 172 synthetic test cases. SquachWatch left/right 10% main-screen edge taps, saved canonical background order, and shared portrait/landscape rotation preserving current page, selected signal, and touch calibration. Original upstream Synthwave, Fireflies and Terminal Log rendering source is included; seven other scenes and all 22 outfit renderings still need exact source port. Four-segment SHA-256 integrity checks and hardware verification required. Single-slot huge_app: wireless OTA unsupported.",
       "highlights": [
         "Exact SquachWatch source renderer: Synthwave gradient sunset, animated sun/reflection, ridgeline and birds.",
         "Exact SquachWatch source renderer: Fireflies meadow, bloom, sky, moving lights and events.",
@@ -20,8 +20,7 @@
         "The other seven scenes still use R10 reduced substitutes; 22 costume choices still use R10 reduced overlays — full one-for-one art port is outstanding.",
         "Main-screen outer 10% tap zones cycle the previous/next background in the same order as SquachWatch on both rotations.",
         "Rotation preserves current screen and selected signal, reloads orientation-specific touch calibration, clears old ST7798 pixels, and persists the orientation.",
-        "Squachy is transparently composited on the selected animated scene; background region repaints on a bounded ~350ms cadence without full-screen clears.",
-        "172 controlled test cases, no RF on boot; LAB SHA-256 integrity check and real hardware testing required."
+        "Squachy is transparently composited on the selected animated scene; background region repaints on a bounded ~350ms cadence without full-screen clears."
       ]
     },
     "c5-waveshare-28": {
