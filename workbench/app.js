@@ -41,6 +41,7 @@
   var emitterWrites=Promise.resolve();
   var receiverWrites=Promise.resolve();
   var receiverMirror=false;
+  var receiverNative=false;
   var preparingBatch=false;
   var desktopMode=(new URLSearchParams(window.location.search)).get('desktop')==='1';
   function desktopEvent(type,detail){
@@ -437,9 +438,9 @@
     stopWatchPolling();
     // Explicitly connected port is the only trigger. No radio commands here.
     autoStatus('Connected. Requesting the initial SquachWatch LOG baseline…');
-    if(!receiverMirror)void requestWatchSnapshot();
+    if(!receiverMirror&&!receiverNative)void requestWatchSnapshot();
     d.pollTimer=setInterval(function(){
-      if(d.port && !d.pending && !receiverMirror)void requestWatchSnapshot();
+      if(d.port && !d.pending && !receiverMirror&&!receiverNative)void requestWatchSnapshot();
     },1500);
   }
 
@@ -447,18 +448,19 @@
   // When a user starts RF testing, switch to genuine LOG automatically.
   // SquachEmit's independent USB LCD remains untouched.
   async function pauseReceiverMirrorForDetection(){
-    if(!receiverMirror)return true;
+    if(!receiverMirror&&!receiverNative)return true;
+    const wasNative=receiverNative;
     desktopEvent('mirror-paused',{role:'receiver',
       reason:'SquachWatch LCD paused automatically for LOG detection. '+
         'The SquachEmit LCD can stay live; restore receiver mirroring after testing.'});
     autoStatus('Pausing SquachWatch LCD to restore exact-MAC LOG evidence...');
-    const off=await sendReceiver('MIRROR OFF');
+    const off=await sendReceiver(wasNative?'UI OFF':'MIRROR OFF');
     if(!off){
       autoStatus('Receiver mirror-off command failed: RUN still allowed, but '+
         'automatic detection scoring requires a verified LOG baseline.');
       return false;
     }
-    receiverMirror=false;
+    receiverMirror=false;receiverNative=false;
     if(devices.receiver.port)startWatchPolling();
     autoStatus('SquachWatch LCD paused; receiver LOG collection restored.');
     return true;
@@ -803,7 +805,7 @@
     var d=devices[role],p=d.port;
     if(!p)return;
     d.port=null;
-    if(role==='receiver')receiverMirror=false;
+    if(role==='receiver'){receiverMirror=false;receiverNative=false;}
     if(batch.active)endBatch('Automation stopped: '+role+' disconnected.',role==='receiver');
     if(role==='receiver')stopWatchPolling();
     if(role==='emitter'){
@@ -1150,33 +1152,46 @@
     function desktopSend(role,cmd){
       var value=String(cmd||'').trim().toUpperCase();
       if(role==='receiver'){
-        if(!/^(LOG|RADIO|RADIO SCAN|MEM|WIFI|BLACKBOX|ROT|SCAN (?:AUTO|ACTIVE|PASSIVE)|CLOCK [01] [0-2] [0-6]|BG (?:[0-9]|1[0-9])|MIRROR (?:ON|OFF|FRAME|TOUCH [0-9]{1,3} [0-9]{1,3} (?:DOWN|MOVE|UP))|UI (?:ON|OFF|GET|TOUCH [0-9]{1,3} [0-9]{1,3} (?:DOWN|MOVE|UP)))$/.test(value))
+        if(!/^(LOG|RADIO|RADIO SCAN|MEM|WIFI|BLACKBOX|ROT|SCAN (?:AUTO|ACTIVE|PASSIVE)|CLOCK [01] [0-2] [0-6]|BG (?:[0-9]|1[0-9])|MIRROR (?:ON|OFF|FRAME(?: [0-9]{1,5})?|TOUCH [0-9]{1,3} [0-9]{1,3} (?:DOWN|MOVE|UP))|UI (?:HELLO|ON|OFF|GET|STATUS|COUNTS|LIST (?:[0-9]|[1-5][0-9]|6[0-3]) [1-8]|TOUCH [0-9]{1,3} [0-9]{1,3} (?:DOWN|MOVE|UP)))$/.test(value))
           return Promise.resolve(false);
-        if((batch.active||preparingBatch||startingRun||awaitingBegin||transmitting)&&
-           /^(?:MIRROR (?:ON|FRAME|TOUCH)|UI (?:ON|GET|TOUCH))/.test(value))return Promise.resolve(false);
+        const testing=batch.active||preparingBatch||startingRun||awaitingBegin||transmitting;
+        if(testing&&/^(?:MIRROR (?:ON|FRAME|TOUCH)|UI (?:ON|GET|COUNTS|LIST|TOUCH))/.test(value))
+          return Promise.resolve(false);
         if(batch.active&&!/^(?:RADIO|MEM|MIRROR OFF|UI OFF)$/.test(value))
           return Promise.resolve(false);
+        if(value==='UI ON'){
+          // Native state and independent LOG compete for the single receiver port.
+          // Test execution explicitly closes UI and restores a fresh LOG baseline.
+          stopWatchPolling();receiverMirror=false;receiverNative=true;
+          return sendReceiver(value).then(function(ok){
+            if(!ok){receiverNative=false;if(devices.receiver.port)startWatchPolling();}
+            return ok;
+          });
+        }
+        if(value==='UI OFF'){
+          return sendReceiver(value).then(function(ok){
+            receiverNative=false;
+            if(devices.receiver.port&&!receiverMirror)startWatchPolling();
+            return ok;
+          });
+        }
         if(value==='MIRROR ON'){
           if(receiverMirror)return Promise.resolve(true);
-          receiverMirror=true;
-          // Prevent the structured LOG poller and binary image transport
-          // competing for the same serial channel. The caller explicitly
-          // chose LCD mirroring, not automated signal scoring.
-          stopWatchPolling();
+          stopWatchPolling();receiverNative=false;receiverMirror=true;
           return sendReceiver(value).then(function(ok){
-            if(!ok){receiverMirror=false;startWatchPolling();}
+            if(!ok){receiverMirror=false;if(devices.receiver.port)startWatchPolling();}
             return ok;
           });
         }
         if(value==='MIRROR OFF'){
           return sendReceiver(value).then(function(ok){
             receiverMirror=false;
-            if(devices.receiver.port)startWatchPolling();
+            if(devices.receiver.port&&!receiverNative)startWatchPolling();
             return ok;
           });
         }
         if(value==='LOG'){
-          if(receiverMirror)return Promise.resolve(false);
+          if(receiverMirror||receiverNative)return Promise.resolve(false);
           return requestWatchSnapshot().then(function(r){return !!r;});
         }
         return sendReceiver(value);
