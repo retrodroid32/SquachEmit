@@ -507,11 +507,15 @@ void portraitScreen(const char* active,uint32_t remaining,bool suite){
   button(8,278,72,34,"BACK");
   button(84,278,72,34,(active&&*active)||suite||playlistRunning?"STOP":"RUN");
   button(160,278,72,34,playlistRunning?(playlistPaused?"RESUME":"PAUSE"):"SUITE");
+  label(15,264,"TOUCH CONTROLS ENABLED",kGreen);
 }
+bool loadCal();
 Cyd32UiAction touchPortrait(int x,int y,bool active,bool suite){
   if(y<278)return Cyd32UiAction::None;
   if(x<80){
-    lcd.setRotation(1);screen=Screen::Home;redraw=true;
+    lcd.setRotation(1);
+    if(calibrated)loadCal();
+    wasPressed=true;screen=Screen::Home;redraw=true;
     return Cyd32UiAction::None;
   }
   if(x<160)
@@ -948,7 +952,27 @@ Cyd32UiAction touchSettings(int x,int y){
       if(row==0){themeLevel=(themeLevel+1)%3;applyTheme();persistUiSettings();}
       else if(row==1){fontMode=(fontMode+1)%2;persistUiSettings();}
       else if(row==2)screen=Screen::Identity;
-      else if(row==3){lcd.setRotation(0);screen=Screen::Portrait;portraitLastCount=UINT32_MAX;}
+      else if(row==3){
+         lcd.setRotation(0);
+         if(!portraitCalibrated){
+           if(prefs.begin("sqemit32",true)){
+             portraitCalibrated=prefs.getBytesLength("touchport")==10 &&
+                 prefs.getBytes("touchport",portraitTouchData,10)==10;
+             prefs.end();
+           }
+           if(!portraitCalibrated){
+             lcd.fillScreen(kBg);
+             label(12,15,"CALIBRATE PORTRAIT TOUCH",kCyan,2);
+             lcd.calibrateTouch(portraitTouchData,kWhite,kBg,15);
+             portraitCalibrated=true;
+             if(prefs.begin("sqemit32",false)){
+               prefs.putBytes("touchport",portraitTouchData,10);prefs.end();
+             }
+           }
+         }
+         lcd.setTouch(portraitTouchData);
+         wasPressed=true;screen=Screen::Portrait;portraitLastCount=UINT32_MAX;
+       }
       redraw=true;return Cyd32UiAction::None;
     }
     if(row==0){brightnessLevel=(brightnessLevel+1)%3;applyBrightness();persistUiSettings();}
