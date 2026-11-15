@@ -4,6 +4,7 @@
 #include "scenario_library.h"
 #include "scenario_display.h"
 #include "cyd32_squachy_port.h"
+#include "squachwatch_synthwave_exact.h"
 #include <Arduino.h>
 #include <TFT_eSPI.h>
 #include <Preferences.h>
@@ -244,6 +245,9 @@ void retroBackdrop(){
     }
     return;
   }
+  // Exact source from SquachWatch-CYD/src/theme.cpp (full-band adapter).
+  SquachWatchScenes::drawSynthwave(lcd,millis(),15,181,0.44f);
+  return;
   // Synthwave night-scape: matches SquachWatch's actual dark, detailed
   // backgrounds rather than leaving a flat near-black void.
   // Designed independently in TFT primitives, no bitmap/PSRAM required.
@@ -1236,9 +1240,7 @@ void portraitPage(const char* active,uint32_t remaining,bool suite){
     lcd.fillRect(0,60,240,156,lcd.color565(3,4,16));
     // Portrait variant of the selected SquachWatch-style scene.
     if(backgroundLevel==9){
-      lcd.fillCircle(120,126,38,kPink);
-      for(int x=0;x<240;x+=19)lcd.drawLine(120,169,x,212,kPurple);
-      for(int y=177;y<213;y+=8)lcd.drawFastHLine(0,y,240,kCyan);
+      SquachWatchScenes::drawSynthwave(lcd,millis(),60,215,0.44f);
     }else if(backgroundLevel==0||backgroundLevel==4){
       for(int x=6;x<238;x+=12)
         for(int j=0;j<9;++j)
