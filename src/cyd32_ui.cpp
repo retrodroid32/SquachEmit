@@ -424,7 +424,7 @@ void detailScreen(){
   label(14,196,fav?"FAVORITE: YES [TAP TO REMOVE]":"FAVORITE: NO [TAP TO ADD]",kMuted);
   label(246,22,"FAVS >",kCyan);
   label(246,44,"HIST >",kCyan);
-  footer("BACK","HEALTH","RUN");
+  footer("BACK","FAVORITES","RUN");
 }
 void diagValues(){
   lcd.fillRect(8,61,304,144,kBg);
@@ -445,7 +445,7 @@ void diagnosticsScreen(){
   lcd.fillScreen(kBg);titleBar();
   label(14,25,"DEVICE DIAGNOSTICS",kVaporPink,2);
   diagValues();lastDiagAt=millis();
-  footer("BACK","SETTINGS","HELP");
+  footer("MENU","REFRESH","HOME");
 }
 
 
@@ -919,15 +919,15 @@ Cyd32UiAction touchDetails(int x,int y,bool active){
   if(!active&&y>=188&&y<211){toggleFavorite();return Cyd32UiAction::None;}
   if(y<kFooterY)return Cyd32UiAction::None;
   if(x<108){screen=Screen::Home;redraw=true;return Cyd32UiAction::None;}
-  if(x<213){screen=Screen::Diagnostics;redraw=true;return Cyd32UiAction::None;}
+  if(x<213){favoritesPage=0;screen=Screen::Favorites;redraw=true;return Cyd32UiAction::None;}
   if(!active){screen=Screen::Home;redraw=true;return Cyd32UiAction::Run;}
   return Cyd32UiAction::None;
 }
 Cyd32UiAction touchDiagnostics(int x,int y){
   if(y<kFooterY)return Cyd32UiAction::None;
-  if(x<108){screen=Screen::Details;redraw=true;}
-  else if(x<213){screen=Screen::Settings;redraw=true;}
-  else {screen=Screen::Help;redraw=true;}
+  if(x<108)screen=Screen::MainMenu;
+  else if(x>=213)screen=Screen::Home;
+  redraw=true;
   return Cyd32UiAction::None;
 }
 Cyd32UiAction touchActivity(int x,int y){
@@ -946,7 +946,7 @@ Cyd32UiAction touchEvidence(int x,int y){
 }
 Cyd32UiAction touchSettings(int x,int y){
   if(y>=kFooterY){
-    if(x<108){screen=Screen::Diagnostics;settingsMore=false;}
+    if(x<108){screen=Screen::MainMenu;settingsMore=false;}
     else if(x<213){settingsMore=!settingsMore;}
     else {screen=Screen::Help;settingsMore=false;}
     redraw=true;return Cyd32UiAction::None;
@@ -991,7 +991,7 @@ Cyd32UiAction touchSettings(int x,int y){
 }
 Cyd32UiAction touchHelp(int x,int y){
   if(y>=kFooterY){
-    if(x<108)screen=Screen::Settings;
+    if(x<108)screen=Screen::MainMenu;
     else if(x<213)helpPage=(helpPage+1)%3;
     else screen=Screen::Recovery;
     redraw=true;
