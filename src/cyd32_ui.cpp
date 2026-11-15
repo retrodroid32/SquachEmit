@@ -6,6 +6,7 @@
 #include "cyd32_squachy_port.h"
 #if defined(SQE_ORIGINAL_SQUACHY)
 #include <squachy.h>
+#include <theme.h>
 #endif
 #include "squachwatch_synthwave_exact.h"
 #include "squachwatch_fireflies_exact.h"
@@ -186,7 +187,35 @@ void wedge(int x1,int y1,int x2,int y2,int r,uint16_t col){
   lcd.fillCircle(x1,y1,r,col);
   lcd.fillCircle(x2,y2,r,col);
 }
+#if defined(SQE_ORIGINAL_SQUACHY)
+// These are the original upstream draw functions, not R10 lookalikes.
+// SquachWatch's Theme.cpp is compiled as a shared GPL module on CYD32.
+void drawOriginalScene(int top,int bottom){
+  const uint32_t now=millis();
+  switch(backgroundLevel){
+    case 0: Theme::drawDigitalRain(lcd,now,top,bottom,advanceScene);break;
+    case 1: Theme::drawStarfield(lcd,now,top,bottom);break;
+    case 2: Theme::drawFlyingToasters(lcd,now,top,bottom);break;
+    case 3: Theme::drawAquarium(lcd,now,top,bottom);break;
+    case 4: Theme::drawTerminalLog(lcd,now,top,bottom);break;
+    case 5: Theme::drawFireflies(lcd,now,top,bottom);break;
+    case 6: Theme::drawFire(lcd,now,top,bottom);break;
+    case 7: Theme::drawSnowfall(lcd,now,top,bottom);break;
+    case 8: {
+      // The original Gibson uses receiver channel-activity and log data.
+      // SquachEmit does not have a receiver; this must not fake one.
+      Theme::drawStarfield(lcd,now,top,bottom);break;
+    }
+    default:Theme::drawSynthwave(lcd,now,top,bottom,0.44f);break;
+  }
+}
+
+#endif
 void retroBackdrop(){
+#if defined(SQE_ORIGINAL_SQUACHY)
+  drawOriginalScene(15,181);
+  return;
+#endif
   if(backgroundLevel!=9){
     lcd.fillRect(0,15,320,166,lcd.color565(3,4,16));
     if(backgroundLevel==0){
@@ -1255,6 +1284,9 @@ void portraitPage(const char* active,uint32_t remaining,bool suite){
     // Keep the same Squachy and selected profile when rotating to portrait.
     lcd.fillRect(0,60,240,156,lcd.color565(3,4,16));
     // Portrait variant of the selected SquachWatch-style scene.
+#if defined(SQE_ORIGINAL_SQUACHY)
+    drawOriginalScene(60,215);
+#else
     if(backgroundLevel==9){
       SquachWatchScenes::drawSynthwave(lcd,millis(),60,215,0.44f);
     }else if(backgroundLevel==4){
@@ -1295,6 +1327,7 @@ void portraitPage(const char* active,uint32_t remaining,bool suite){
       Squachy::setOutfitPreview(outfitLevel==0?0:(int8_t)(outfitLevel-2));
       Squachy::tick(lcd,120,68,138,millis(),advanceScene,0.3f,false,0,100);
     }else
+#endif
 #endif
     if(squachSpriteReady){
       SquachyPort::render(squachSprite,millis(),active&&*active,suite,
