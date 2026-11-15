@@ -2,7 +2,7 @@
   "schema": 1,
   "scenario_count": 172,
   "firmware_sources": {
-    "src": "1230119c6d93b290d231d5455f016308d65e8132",
+    "src": "b2f3a72a094d2e1294dcdcef21e9ff7e9d606893",
     "include": "8253b90b87623b164881b6a20663d16bcd05a85b",
     "lib": "0f68b608bf8030719f523d78aaebf119ad0aab5e",
     "SquachEmit.ino": "90b4205813a2f7885bc1e12ce7431eebf7249f45",
@@ -10,17 +10,17 @@
   },
   "builds": {
     "cyd32-st7798": {
-      "title": "SquachEmit v1.1.0 CYD 3.2 R14 LAB — Original SquachWatch Art (172 Cases)",
+      "title": "SquachEmit v1.1.0 CYD 3.2 R14.1 LAB — One Speech Bubble Fix (172 Cases)",
       "version": "v1.1.0 MAINLINE · 172 cases",
-      "summary": "R14 CYD 3.2 LAB firmware, 172 synthetic signals. Imports SquachWatch's real Squachy character, outfit geometry and ten background renderers through two-pass 8-bit offscreen animation bands. SquachEmit's Black Hoodie and Neon Lab Jacket remain custom. Receiver-dependent visuals use zero receiver data rather than fabricated detections. Four-part SHA-256 flashing preflight and physical ST7798 acceptance are required; compiled does not mean hardware-verified. LAB only; no merge or production release.",
+      "summary": "R14.1 LAB CYD 3.2 for 172 synthetic signals. Prevents the original SquachWatch mascot from drawing a second dialogue bubble behind SquachEmit's top message box, using SquachWatch's built-in holdBubble control in landscape and portrait. Preserves original Squachy poses, costume rendering, ten background renderers and two-pass 8-bit offscreen animation. Four-part SHA-256 flashing preflight and physical CYD 3.2 touch, redraw and memory checks required. LAB only; no merge or production release.",
       "highlights": [
-        "Genuine SquachWatch Squachy body, poses, and 19 source-level costume renderers.",
-        "Original SquachWatch render functions for all ten animated backgrounds.",
-        "Two-pass RGB332 320x120/240x160 band renderer avoids flashing the live LCD with full-screen erases.",
-        "Custom Black Hoodie and Neon Lab Jacket stay SquachEmit-specific outfits.",
-        "SquachEmit-only clock, PIN and Wi-Fi visual adapters do not enable receiver scanning or OTA.",
-        "172 bounded synthetic signal tests with existing RUN, STOP and SUITE controls.",
-        "LAB hardware-unverified: confirm exact output, stable heap, portrait touch and animation before merging."
+        "Fixes duplicate SquachWatch dialogue bubble under SquachEmit's top text box.",
+        "Squachy::holdBubble(true) suppresses only mascot dialogue, not character animation or costumes.",
+        "Applies to Home in landscape and portrait, and is initialized before first draw.",
+        "Retains original SquachWatch character/pose engine and ten background renderers.",
+        "Retains 8-bit two-pass buffered animations and original RUN/STOP/SUITE controls.",
+        "172 controlled synthetic signal cases; physical CYD 3.2 ST7798 acceptance still required.",
+        "LAB-only build with four-part SHA-256 preflight; no production release or merge."
       ]
     },
     "c5-waveshare-28": {
