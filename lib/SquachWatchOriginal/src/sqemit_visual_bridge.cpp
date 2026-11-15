@@ -6,16 +6,13 @@
 #include "sqemit_visual_bridge.h"
 #include "clock.h"
 #include "security.h"
-namespace {
-  uint8_t chosenBackground=10; // SquachWatch enum SYNTHWAVE
-}
 namespace SquachWatchVisual {
 void setBackground(uint8_t index){
-  chosenBackground=index<9?index:10;
+  // Use SquachWatch's actual Settings implementation, never redefine its
+  // background accessor or shadow its original scene preferences.
+  const uint8_t upstream=index<9?index:10;
+  Settings::previewBackground(static_cast<Settings::Background>(upstream));
 }
-}
-namespace Settings {
-Background background(){return static_cast<Background>(chosenBackground);}
 }
 // SquachEmit has no SquachWatch GPS-backed trusted Clock or PIN lock.
 // Explicitly report untrusted time; the original Squachy animation then
