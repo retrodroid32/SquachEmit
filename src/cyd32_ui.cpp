@@ -1654,34 +1654,36 @@ Cyd32UiAction cyd32UiTick(const char* active,uint32_t remaining,bool suite){
   }
   if(calibrated&&screen==Screen::Diagnostics&&now-lastDiagAt>=1000u){diagValues();lastDiagAt=now;}
   if(calibrated&&screen==Screen::Home&&now-lastBubbleAt>6500u){
-    if(portraitMode)redraw=true;
-    else speechBubble(active,suite);
+    if(portraitMode){
+      // No portrait full-screen flash simply to rotate a speech bubble.
+      // The portrait bubble is redrawn only when page/TX state changes.
+    }else speechBubble(active,suite);
     lastBubbleAt=now;
   }
-  if(calibrated&&portraitMode){
-    const uint32_t count=(active&&*active)?((remaining+999)/1000):UINT32_MAX;
-    if(count!=portraitLastCount){portraitPage(active,remaining,suite);portraitLastCount=count;}
+  if(calibrated&&portraitMode&&screen==Screen::Home&&active&&*active){
+    const uint32_t count=(remaining+999)/1000;
+    if(count!=portraitLastCount){
+      // Update ONLY the countdown region; do not repaint background,
+      // mascot, header, or portrait buttons every second.
+      lcd.fillRect(8,265,223,20,kBg);
+      char left[28];snprintf(left,sizeof(left),"%lus LEFT",(unsigned long)count);
+      label(10,267,left,kGreen);
+      portraitLastCount=count;
+    }
   }
   if(screenTimeout&&!pcControl&&!(active&&*active)&&!suite && !screenDimmed &&
       now-lastTouchActivity>=(screenTimeout==1?30000UL:60000UL)){
     screenDimmed=true;applyBrightness();
   }
   const uint32_t animDelay=animationLevel==0?200u:animationLevel==1?120u:80u;
-  if(calibrated&&screen==Screen::Home&&squachSpriteReady&&
-     now-lastSceneFrame>=350u && colorBarsUntil==0){
-    lastSceneFrame=now;
-    if(portraitMode){
-      lastSquachFrame=now;
-      redraw=true;
-    }else{
-      // Repaint the scene before each transparent Squachy pose, so neither
-      // old limb positions nor old background frames leave ghost pixels.
-      // Do NOT clear the entire panel; keep title, controls and TX status.
-      retroBackdrop();
-      drawSquachyFrame(active&&*active,suite,now);
-      speechBubble(active,suite);
-    }
-  }
+  // R12: physical ST7798 has NO secondary LCD framebuffer.  The prior
+  // 350-ms loop erased the entire scene, then repainted it, then drew
+  // Squachy. That produces visible flash/tearing and blocks touch polling.
+  // Only draw a complete scene on navigation, background/costume selection,
+  // or changed TX state. Small dynamic elements (speech/countdown) can
+  // update their own rectangles without clearing the LCD's scene.
+  // Restoring animation requires a bounded, tear-free scanline compositor,
+  // NOT a blind full-background repaint in the main input loop.
   if(now-lastPoll<55)return Cyd32UiAction::None;
   lastPoll=now;
   if(!calibrated){
