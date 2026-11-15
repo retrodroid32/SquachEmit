@@ -19,6 +19,7 @@ public:
  uint16_t fg=0xffff;
  unsigned fillScreenCalls=0; // test-only counter: detect visible full-screen clears
  int cx=0,cy=0,font=1,size=1;
+ int viewportX=0,viewportY=0;
  explicit TFT_eSPI(int width=320,int height=240,bool root=true)
  :w(width),h(height),pixel(size_t(width)*height,0){
    if(root)MockDisplay::screen=this;
@@ -52,10 +53,14 @@ public:
    }
  }
  void drawPixel(int x,int y,uint16_t c){
+  x+=viewportX;y+=viewportY;
   if(x>=0&&x<w&&y>=0&&y<h)pixel[size_t(y)*w+x]=c;
  }
  void fillScreen(uint16_t c){++fillScreenCalls;std::fill(pixel.begin(),pixel.end(),c);}
+ void setViewport(int x,int y,int,int,bool){viewportX=x;viewportY=y;}
+ void resetViewport(){viewportX=0;viewportY=0;}
  void fillRect(int x,int y,int ww,int hh,uint16_t c){
+  x+=viewportX;y+=viewportY;
   int x0=std::max(0,x),y0=std::max(0,y);
   int x1=std::min(w,x+ww),y1=std::min(h,y+hh);
   for(int yy=y0;yy<y1;yy++)
@@ -183,6 +188,14 @@ class TFT_eSprite : public TFT_eSPI {
 public:
  explicit TFT_eSprite(TFT_eSPI* parent):TFT_eSPI(112,111,false),target(parent){}
  void setColorDepth(int){}
+ bool pushToSprite(TFT_eSprite* dest,int x,int y,uint16_t key){
+  if(!dest)return false;
+  for(int yy=0;yy<h;++yy)for(int xx=0;xx<w;++xx){
+    const uint16_t c=pixel[size_t(yy)*w+xx];
+    if(c!=key)dest->drawPixel(x+xx,y+yy,c);
+  }
+  return true;
+ }
  void* createSprite(int width,int height){
   w=width;h=height;pixel.assign(size_t(w)*h,0);
   return pixel.data();
