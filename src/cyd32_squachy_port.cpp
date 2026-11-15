@@ -153,8 +153,8 @@ void render(TFT_eSprite& t,uint32_t now,bool onAir,bool suite,bool pet,uint8_t o
       t.fillRoundRect(cx-S(13),hh-S(15),S(26),S(15),S(3),0x07E0);
       t.drawFastHLine(cx-S(17),hh, S(34),0x07E0);break;
     case 9: // SPACE helmet
-      t.drawCircle(cx,hh+S(11),S(18),0xFFFF);
-      t.drawCircle(cx,hh+S(11),S(19),CYAN);
+      t.drawRoundRect(cx-S(18),hh-S(7),S(36),S(36),S(12),0xFFFF);
+      t.drawRoundRect(cx-S(19),hh-S(8),S(38),S(38),S(12),CYAN);
       t.fillRect(cx-S(9),hy+S(32),S(18),S(10),0x4208);break;
     case 10: // BLUE BLUR quills
       for(int i=0;i<4;++i)
