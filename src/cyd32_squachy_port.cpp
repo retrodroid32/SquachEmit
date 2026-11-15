@@ -128,6 +128,87 @@ void render(TFT_eSprite& t,uint32_t now,bool onAir,bool suite,bool pet,uint8_t o
     t.fillCircle(cx+side*S(15),hh+S(13),S(1),SKIN);
     t.fillCircle(cx+side*S(8),hh+S(15),S(2),0xFB99);
   }
+  // Compact costume accents based on SquachWatch's outfit catalog.
+  // Distinct simplified renders deliberately fit the existing 112x111 sprite.
+  switch(outfit){
+    case 3: // TANOOKI: ears and striped tail
+      t.fillCircle(cx-S(13),hh+S(1),S(6),0x79C3);
+      t.fillCircle(cx+S(13),hh+S(1),S(6),0x79C3);
+      t.drawLine(cx+S(13),hy+S(38),cx+S(26),hy+S(47),0x79C3);
+      break;
+    case 4: // UNICORN
+      t.fillTriangle(cx-S(4),hh+S(1),cx,hh-S(20),cx+S(4),hh+S(1),0xFFFF);
+      t.drawFastVLine(cx,hh-S(15),S(9),PINK);break;
+    case 5: // TINFOIL antenna
+      t.fillTriangle(cx-S(12),hh+S(3),cx,hh-S(14),cx+S(13),hh+S(3),0xC638);
+      t.fillCircle(cx,hh-S(16),S(2),WHITE);break;
+    case 6: // SHADOW
+      t.drawRoundRect(cx-S(17),hh-S(1),S(34),S(27),S(7),0x3186);
+      t.fillRoundRect(cx-S(14),hy+S(27),S(28),S(14),S(5),0x2104);break;
+    case 7: // PLUMBER BRO
+      t.fillRoundRect(cx-S(16),hh-S(7),S(32),S(9),S(3),0xF800);
+      t.drawFastHLine(cx-S(18),hh+S(1),S(36),0xF800);
+      t.fillRect(cx-S(10),hy+S(31),S(20),S(12),0x001F);break;
+    case 8: // TALL BRO, high cap
+      t.fillRoundRect(cx-S(13),hh-S(15),S(26),S(15),S(3),0x07E0);
+      t.drawFastHLine(cx-S(17),hh, S(34),0x07E0);break;
+    case 9: // SPACE helmet
+      t.drawCircle(cx,hh+S(11),S(18),0xFFFF);
+      t.drawCircle(cx,hh+S(11),S(19),CYAN);
+      t.fillRect(cx-S(9),hy+S(32),S(18),S(10),0x4208);break;
+    case 10: // BLUE BLUR quills
+      for(int i=0;i<4;++i)
+        t.fillTriangle(cx-S(13),hh+S(i*5),cx-S(28),hh-S(8)+S(i*5),
+                       cx-S(12),hh+S(8+i*3),0x05FF);
+      break;
+    case 11: // CAPTAIN, tricorn hat
+      t.fillTriangle(cx-S(20),hh+S(1),cx-S(17),hh-S(15),cx,hh-S(2),0x2104);
+      t.fillTriangle(cx+S(20),hh+S(1),cx+S(17),hh-S(15),cx,hh-S(2),0x2104);
+      t.drawFastHLine(cx-S(19),hh+S(1),S(38),0xFFD0);break;
+    case 12: // WOLF PELT
+      t.fillTriangle(cx-S(17),hh+S(4),cx-S(18),hh-S(17),cx-S(4),hh+S(1),0x8410);
+      t.fillTriangle(cx+S(17),hh+S(4),cx+S(18),hh-S(17),cx+S(4),hh+S(1),0x8410);
+      break;
+    case 13: // CHROME WING
+      for(int side=-1;side<=1;side+=2)
+        t.fillTriangle(cx+side*S(11),hy+S(24),
+                       cx+side*S(33),hy+S(4),
+                       cx+side*S(29),hy+S(42),0xC638);
+      break;
+    case 14: // VOID EYE
+      t.fillCircle(cx,hh-S(9),S(6),0xA81F);
+      t.fillCircle(cx,hh-S(9),S(3),BLACK);
+      t.fillCircle(cx,hh-S(9),S(1),WHITE);break;
+    case 15: // SNOW PARKA
+      t.drawRoundRect(cx-S(19),hh-S(5),S(38),S(33),S(9),WHITE);
+      t.fillRect(cx-S(12),hy+S(26),S(24),S(16),0xA514);break;
+    case 16: // SHARK SUIT dorsal fin
+      t.fillTriangle(cx-S(4),hh, cx+S(13),hh-S(23),
+                     cx+S(13),hh+S(4),0x7BEF);
+      t.drawRoundRect(cx-S(17),hh-S(3),S(34),S(30),S(8),0x7BEF);
+      break;
+    case 17: // YZZERD, wizard hat
+      t.fillTriangle(cx-S(12),hh, cx+S(2),hh-S(22),cx+S(14),hh,0x8010);
+      t.drawFastHLine(cx-S(19),hh,S(38),0xE51F);
+      t.fillCircle(cx+S(1),hh-S(11),S(2),WHITE);break;
+    case 18: // OVER 9000 hair
+      for(int i=-2;i<=2;++i)
+        t.fillTriangle(cx+S(i*6-2),hh+S(4),cx+S(i*7),hh-S(20-(i&1)*5),
+                       cx+S(i*6+4),hh+S(4),0xFD20);
+      break;
+    case 19: // SHAMBLER: flies
+      for(int i=0;i<8;++i)t.fillCircle(cx-S(20)+(i*13)%S(41),
+        hh-S(15)+(i*7)%S(13),1,i%2?0x07E0:0xFFFF);
+      break;
+    case 20: // TH3 0N3: digital green marks
+      t.drawRoundRect(cx-S(16),hh-S(4),S(32),S(30),S(7),0x07E0);
+      t.drawFastVLine(cx-S(14),hh+S(5),S(16),0x07E0);break;
+    case 21: // STRIPES: vertical prison shirt stripes
+      for(int i=-2;i<=2;++i)
+        t.drawFastVLine(cx+S(i*4),hy+S(24),S(19),WHITE);
+      break;
+    default:break;
+  }
   if(onAir){
     for(int side=-1;side<=1;side+=2){
       t.fillEllipse(cx+side*S(5),hh+S(9),S(3),S(4),WHITE);
