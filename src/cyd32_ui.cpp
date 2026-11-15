@@ -7,6 +7,7 @@
 #if defined(SQE_ORIGINAL_SQUACHY)
 #include <squachy.h>
 #include <theme.h>
+#include <detection.h>
 #endif
 #include "squachwatch_synthwave_exact.h"
 #include "squachwatch_fireflies_exact.h"
@@ -202,9 +203,10 @@ void drawOriginalScene(int top,int bottom){
     case 6: Theme::drawFire(lcd,now,top,bottom);break;
     case 7: Theme::drawSnowfall(lcd,now,top,bottom);break;
     case 8: {
-      // The original Gibson uses receiver channel-activity and log data.
-      // SquachEmit does not have a receiver; this must not fake one.
-      Theme::drawStarfield(lcd,now,top,bottom);break;
+      // The original Gibson renderer receives an intentionally empty
+      // detector facade: no invented sightings or channel statistics.
+      static const DetectionEngine noReceiver;
+      Theme::drawGibson(lcd,now,top,bottom,noReceiver);break;
     }
     default:Theme::drawSynthwave(lcd,now,top,bottom,0.44f);break;
   }
