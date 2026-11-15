@@ -5,6 +5,7 @@
 #include "scenario_display.h"
 #include "cyd32_squachy_port.h"
 #include "squachwatch_synthwave_exact.h"
+#include "squachwatch_fireflies_exact.h"
 #include <Arduino.h>
 #include <TFT_eSPI.h>
 #include <Preferences.h>
@@ -188,11 +189,8 @@ void retroBackdrop(){
         const int x=(i*157+29)%320, y=17+(i*83+11)%162;
         lcd.drawPixel(x,y,i%9==0?kWhite:(i%3==0?kCyan:kMuted));
       }
-    }else if(backgroundLevel==5){ // Fireflies
-      for(int i=0;i<38;++i){
-        const int x=(i*79+31)%320,y=19+(i*67+9)%157;
-        lcd.fillCircle(x,y,i%5==0?2:1,i%3==0?kYellow:kGreen);
-      }
+    }else if(backgroundLevel==5){
+      SquachWatchScenes::drawFireflies(lcd,millis(),15,181);
     }else if(backgroundLevel==6){ // FIRE: glowing embers and tongues
       lcd.fillRect(0,130,320,51,lcd.color565(49,6,2));
       for(int i=0;i<72;++i){
@@ -1203,11 +1201,13 @@ void portraitPage(const char* active,uint32_t remaining,bool suite){
         for(int j=0;j<9;++j)
           label(x,65+((x*11+j*18+(int)(millis()/300))%138),
                 j%2?"1":"0",backgroundLevel==0?kGreen:kCyan);
-    }else if(backgroundLevel==1||backgroundLevel==5||backgroundLevel==7){
+    }else if(backgroundLevel==5){
+      SquachWatchScenes::drawFireflies(lcd,millis(),60,215);
+    }else if(backgroundLevel==1||backgroundLevel==7){
       for(int i=0;i<82;++i){
         const int x=(i*73+17)%240,y=63+(i*83+13)%148;
-        lcd.fillCircle(x,y,backgroundLevel==5&&i%7==0?2:1,
-          backgroundLevel==7?kWhite:backgroundLevel==5?kYellow:(i%3?kCyan:kWhite));
+        lcd.fillCircle(x,y,i%7==0?2:1,
+          backgroundLevel==7?kWhite:(i%3?kCyan:kWhite));
       }
     }else if(backgroundLevel==6){
       for(int i=0;i<54;++i){
