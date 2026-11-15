@@ -172,9 +172,9 @@ void wedge(int x1,int y1,int x2,int y2,int r,uint16_t col){
   lcd.fillCircle(x2,y2,r,col);
 }
 void retroBackdrop(){
-  if(backgroundLevel!=0){
+  if(backgroundLevel!=9){
     lcd.fillRect(0,15,320,166,lcd.color565(3,4,16));
-    if(backgroundLevel==1){ // SquachWatch Digital Rain motif; bounded static glyphs
+    if(backgroundLevel==0){ // SquachWatch Digital Rain motif; bounded static glyphs
       for(int x=7;x<320;x+=14){
         const int head=22+(x*17+(int)(millis()/220))%145;
         for(int j=0;j<8;++j){
@@ -182,29 +182,29 @@ void retroBackdrop(){
           label(x,y,(j%3)==0?"1":"0",j==0?kWhite:blend(kGreen,kBg,(uint8_t)(j*25)));
         }
       }
-    }else if(backgroundLevel==2){ // SquachWatch Starfield motif
+    }else if(backgroundLevel==1){ // SquachWatch Starfield motif
       for(int i=0;i<95;++i){
         const int x=(i*157+29)%320, y=17+(i*83+11)%162;
         lcd.drawPixel(x,y,i%9==0?kWhite:(i%3==0?kCyan:kMuted));
       }
-    }else if(backgroundLevel==3){ // Fireflies
+    }else if(backgroundLevel==5){ // Fireflies
       for(int i=0;i<38;++i){
         const int x=(i*79+31)%320,y=19+(i*67+9)%157;
         lcd.fillCircle(x,y,i%5==0?2:1,i%3==0?kYellow:kGreen);
       }
-    }else if(backgroundLevel==4){ // FIRE: glowing embers and tongues
+    }else if(backgroundLevel==6){ // FIRE: glowing embers and tongues
       lcd.fillRect(0,130,320,51,lcd.color565(49,6,2));
       for(int i=0;i<72;++i){
         const int x=(i*47+13)%320,y=50+(i*83+29)%120;
         const uint16_t glow=i%3==0?kYellow:i%3==1?kPink:lcd.color565(220,35,0);
         lcd.drawLine(x,180,x-((i%3)-1)*6,y,glow);
       }
-    }else if(backgroundLevel==5){ // SNOWFALL: moon and drifting flakes
+    }else if(backgroundLevel==7){ // SNOWFALL: moon and drifting flakes
       lcd.fillCircle(275,43,18,kWhite);
       lcd.fillRect(0,152,320,29,lcd.color565(19,47,81));
       for(int i=0;i<100;++i)lcd.fillCircle((i*73+23)%320,
           18+(i*101+17)%151,i%7==0?2:1,kWhite);
-    }else if(backgroundLevel==6){ // AQUARIUM: waves, plants and fish
+    }else if(backgroundLevel==3){ // AQUARIUM: waves, plants and fish
       lcd.fillRect(0,15,320,166,lcd.color565(0,34,52));
       for(int y=25;y<180;y+=20)lcd.drawFastHLine(0,y,320,lcd.color565(0,65,80));
       for(int x=0;x<320;x+=42){
@@ -216,7 +216,7 @@ void retroBackdrop(){
         lcd.fillTriangle(x,y,x+17,y-7,x+17,y+7,i%2?kYellow:kPink);
         lcd.fillTriangle(x+18,y,x+25,y-6,x+25,y+6,kCyan);
       }
-    }else if(backgroundLevel==7){ // TERMINAL LOG: matrix console text
+    }else if(backgroundLevel==4){ // TERMINAL LOG: matrix console text
       for(int row=0;row<12;++row){
         char log[42];
         snprintf(log,sizeof(log),"%02d %04X:%04X TX_%s",row,
@@ -224,7 +224,7 @@ void retroBackdrop(){
           row%3==0?"IDLE":"READY");
         label(7,20+row*13,log,row%3==0?kCyan:kGreen);
       }
-    }else if(backgroundLevel==8){ // FLYING TOASTERS: procedural silhouettes
+    }else if(backgroundLevel==2){ // FLYING TOASTERS: procedural silhouettes
       for(int i=0;i<10;++i){
         const int x=12+(i*83)%287,y=28+(i*41)%127;
         lcd.fillRoundRect(x,y,21,19,4,kYellow);
@@ -232,7 +232,7 @@ void retroBackdrop(){
         lcd.drawLine(x,y+7,x-9,y-4,kWhite);
         lcd.drawLine(x+21,y+7,x+30,y-4,kWhite);
       }
-    }else if(backgroundLevel==9){ // THE GIBSON: circuit grid, dynamic activity
+    }else if(backgroundLevel==8){ // THE GIBSON: circuit grid, dynamic activity
       for(int x=12;x<320;x+=22){
         lcd.drawFastVLine(x,18,163,x%3?kPurple:kCyan);
       }
@@ -706,10 +706,12 @@ void outfitScreen(){
   char pg[30];snprintf(pg,sizeof(pg),"PAGE %u/6",(unsigned)(outfitPage+1));
   label(12,202,pg,kMuted);footer("BACK","< PREV","NEXT >");
 }
+// SquachWatch Settings::Background selectable order (retired TUNNEL and
+// BORING-only BLACK intentionally omitted). Keep cycle order identical.
 static const char* const kBackgroundNames[]={
-  "SYNTHWAVE","DIGITAL RAIN","STARFIELD","FIREFLIES",
-  "FIRE","SNOWFALL","AQUARIUM","TERMINAL LOG",
-  "FLYING TOASTERS","THE GIBSON"};
+  "DIGITAL RAIN","STARFIELD","FLYING TOASTERS","AQUARIUM",
+  "TERMINAL LOG","FIREFLIES","FIRE","SNOWFALL",
+  "THE GIBSON","SYNTHWAVE"};
 void backgroundsScreen(){
   lcd.fillScreen(kBg);titleBar();label(13,25,"SQUACHEMIT / BACKGROUNDS",kVaporPink,2);
   for(uint8_t i=0;i<4;++i){
@@ -1217,39 +1219,39 @@ void portraitPage(const char* active,uint32_t remaining,bool suite){
     // Keep the same Squachy and selected profile when rotating to portrait.
     lcd.fillRect(0,60,240,156,lcd.color565(3,4,16));
     // Portrait variant of the selected SquachWatch-style scene.
-    if(backgroundLevel==0){
+    if(backgroundLevel==9){
       lcd.fillCircle(120,126,38,kPink);
       for(int x=0;x<240;x+=19)lcd.drawLine(120,169,x,212,kPurple);
       for(int y=177;y<213;y+=8)lcd.drawFastHLine(0,y,240,kCyan);
-    }else if(backgroundLevel==1||backgroundLevel==7){
+    }else if(backgroundLevel==0||backgroundLevel==4){
       for(int x=6;x<238;x+=12)
         for(int j=0;j<9;++j)
           label(x,65+((x*11+j*18+(int)(millis()/300))%138),
-                j%2?"1":"0",backgroundLevel==1?kGreen:kCyan);
-    }else if(backgroundLevel==2||backgroundLevel==3||backgroundLevel==5){
+                j%2?"1":"0",backgroundLevel==0?kGreen:kCyan);
+    }else if(backgroundLevel==1||backgroundLevel==5||backgroundLevel==7){
       for(int i=0;i<82;++i){
         const int x=(i*73+17)%240,y=63+(i*83+13)%148;
-        lcd.fillCircle(x,y,backgroundLevel==3&&i%7==0?2:1,
-          backgroundLevel==5?kWhite:backgroundLevel==3?kYellow:(i%3?kCyan:kWhite));
+        lcd.fillCircle(x,y,backgroundLevel==5&&i%7==0?2:1,
+          backgroundLevel==7?kWhite:backgroundLevel==5?kYellow:(i%3?kCyan:kWhite));
       }
-    }else if(backgroundLevel==4){
+    }else if(backgroundLevel==6){
       for(int i=0;i<54;++i){
         const int x=(i*41+7)%240,y=90+(i*31)%115;
         lcd.drawLine(x,213,x-3,y,i%3?kPink:kYellow);
       }
-    }else if(backgroundLevel==6){
+    }else if(backgroundLevel==3){
       lcd.fillRect(0,60,240,156,lcd.color565(0,31,53));
       for(int x=5;x<240;x+=26){
         lcd.drawLine(x,214,x+15,139,kGreen);
         lcd.fillTriangle(x,95,x+18,87,x+18,103,kYellow);
       }
-    }else if(backgroundLevel==8){
+    }else if(backgroundLevel==2){
       for(int i=0;i<8;++i){
         const int x=12+(i*43)%215,y=71+(i*31)%130;
         lcd.fillRoundRect(x,y,19,16,3,kYellow);
         lcd.drawLine(x,y+7,x-7,y-5,kWhite);
       }
-    }else if(backgroundLevel==9){
+    }else if(backgroundLevel==8){
       for(int x=0;x<240;x+=16)lcd.drawFastVLine(x,60,156,kPurple);
       for(int y=65;y<215;y+=16)lcd.drawFastHLine(0,y,240,kCyan);
     }
@@ -1466,7 +1468,7 @@ Cyd32UiAction portraitTap(int x,int y,bool active,bool suite){
   }else if(screen==Screen::Backgrounds){
     const int n=backgroundPage*4+i;
     if(n<10){backgroundLevel=(uint8_t)n;
-      if(prefs.begin("sqemit32",false)){prefs.putUChar("bg",backgroundLevel);prefs.end();}
+      if(prefs.begin("sqemit32",false)){prefs.putUChar("bg_sqwatch",backgroundLevel);prefs.end();}
       redraw=true;}
   }else if(screen==Screen::Duration){
     setDuration(i==0?3:i==1?10:i==2?30:(durationSeconds<30?durationSeconds+1:30));
@@ -1523,7 +1525,14 @@ void cyd32UiBegin(){
     themeLevel=prefs.getUChar("theme",0);
     fontMode=prefs.getUChar("font",1);
      outfitLevel=prefs.getUChar("outfit",0);
-     backgroundLevel=prefs.getUChar("bg",0);
+     if(prefs.isKey("bg_sqwatch")){
+        backgroundLevel=prefs.getUChar("bg_sqwatch",9);
+      }else{
+        // Migrate the old R10 catalog to the upstream selection order.
+        static const uint8_t oldToUpstream[]={9,0,1,5,6,7,3,4,2,8};
+        const uint8_t previous=prefs.getUChar("bg",0);
+        backgroundLevel=previous<10?oldToUpstream[previous]:9;
+      }
     prefs.end();
   }
   if(durationSeconds<3 || durationSeconds>30)durationSeconds=12;
@@ -1533,7 +1542,7 @@ void cyd32UiBegin(){
   if(themeLevel>2)themeLevel=0;
   if(fontMode>1)fontMode=1;
   if(outfitLevel>21)outfitLevel=0;
-  if(backgroundLevel>9)backgroundLevel=0;
+  if(backgroundLevel>9)backgroundLevel=9;
   applyTheme();
   if(prefs.begin("sqemitfav",true)){
     if(prefs.getBytesLength("fav")==sizeof(favBits))prefs.getBytes("fav",favBits,sizeof(favBits));
@@ -1735,7 +1744,7 @@ Cyd32UiAction cyd32UiTick(const char* active,uint32_t remaining,bool suite){
         const uint8_t n=backgroundPage*4+(uint8_t)((y-46)/39);
         if(n<10){
           backgroundLevel=n;
-          if(prefs.begin("sqemit32",false)){prefs.putUChar("bg",backgroundLevel);prefs.end();}
+          if(prefs.begin("sqemit32",false)){prefs.putUChar("bg_sqwatch",backgroundLevel);prefs.end();}
           redraw=true;
         }
       }
