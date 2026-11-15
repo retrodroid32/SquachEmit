@@ -60,7 +60,7 @@ class Cyd32UiGuards(unittest.TestCase):
         self.assertIn('const bool dance=',port)
         self.assertIn('NO SAFE SECOND APP SLOT',self.s)
     def test_r10_chrome_and_responsive_portrait(self):
-        for term in ('footer("TESTS"', 'portraitMode=true',
+        for term in ('footer("TESTS"', 'portraitMode=makePortrait',
                      'else if(portraitMode)portraitPage(',
                      'portraitTap(x,y,active&&*active,suite)',
                      'kBackgroundNames[]', 'kOutfitNames[]',
