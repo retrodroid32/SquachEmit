@@ -8,6 +8,8 @@
 #include <squachy.h>
 #include <theme.h>
 #include <detection.h>
+#include <draw_band.h>
+#include <sqemit_visual_bridge.h>
 #endif
 #include "squachwatch_synthwave_exact.h"
 #include "squachwatch_fireflies_exact.h"
@@ -192,24 +194,12 @@ void wedge(int x1,int y1,int x2,int y2,int r,uint16_t col){
 // These are the original upstream draw functions, not R10 lookalikes.
 // SquachWatch's Theme.cpp is compiled as a shared GPL module on CYD32.
 void drawOriginalScene(int top,int bottom){
-  const uint32_t now=millis();
-  switch(backgroundLevel){
-    case 0: Theme::drawDigitalRain(lcd,now,top,bottom,advanceScene);break;
-    case 1: Theme::drawStarfield(lcd,now,top,bottom);break;
-    case 2: Theme::drawFlyingToasters(lcd,now,top,bottom);break;
-    case 3: Theme::drawAquarium(lcd,now,top,bottom);break;
-    case 4: Theme::drawTerminalLog(lcd,now,top,bottom);break;
-    case 5: Theme::drawFireflies(lcd,now,top,bottom);break;
-    case 6: Theme::drawFire(lcd,now,top,bottom);break;
-    case 7: Theme::drawSnowfall(lcd,now,top,bottom);break;
-    case 8: {
-      // The original Gibson renderer receives an intentionally empty
-      // detector facade: no invented sightings or channel statistics.
-      static const DetectionEngine noReceiver;
-      Theme::drawGibson(lcd,now,top,bottom,noReceiver);break;
-    }
-    default:Theme::drawSynthwave(lcd,now,top,bottom,0.44f);break;
-  }
+  // Use the COMPLETE SquachWatch dispatcher so s_animK only advances on
+  // the first half-frame, original scene buffers release automatically,
+  // and all ten original procedural animations keep their authored timing.
+  SquachWatchVisual::setBackground(backgroundLevel);
+  static const DetectionEngine noReceiver; // zero observations, not fake
+  Theme::drawActiveBackground(lcd,millis(),top,bottom,noReceiver,advanceScene);
 }
 
 #endif
@@ -483,11 +473,18 @@ void renderBufferedHome(const char* active,uint32_t remaining,bool suite){
     paint=&halfFrame;
     bandFrameActive=true;
     halfFrame.setViewport(0,-bandFrameTop,w,h,true);
+#if defined(SQE_ORIGINAL_SQUACHY)
+    DrawBand::setEnabled(true);
+    DrawBand::set(bandFrameTop,bandFrameTop+half);
+#endif
     if(portraitMode)portraitPage(active,remaining,suite);
     else homeScreen(active,remaining,suite);
     paint=&panel;
     bandFrameActive=false;
     halfFrame.resetViewport();
+#if defined(SQE_ORIGINAL_SQUACHY)
+    DrawBand::all();
+#endif
     halfFrame.pushSprite(0,bandFrameTop);
   }
   lastSceneFrame=frameMs;
@@ -497,8 +494,13 @@ void homeScreen(const char* active,uint32_t remaining,bool suite){
   lcd.fillScreen(kBg);
   retroBackdrop();
   bigSquachy(emitting,suite);
+#if defined(SQE_ORIGINAL_SQUACHY)
+  Theme::drawBackgroundOverlay(lcd,millis());
+#endif
   titleBar();
+#if !defined(SQE_ORIGINAL_SQUACHY)
   speechBubble(active,suite);
+#endif
   // Status is in the bottom strip: no huge headline over the mascot.
   statusStrip(active,suite);
   if(emitting){
@@ -1288,6 +1290,19 @@ void portraitPage(const char* active,uint32_t remaining,bool suite){
     // Portrait variant of the selected SquachWatch-style scene.
 #if defined(SQE_ORIGINAL_SQUACHY)
     drawOriginalScene(60,215);
+    const int8_t original=(outfitLevel==0)?0:(int8_t)(outfitLevel-2);
+    if(outfitLevel!=1&&outfitLevel!=2){
+      Squachy::setOutfitPreview(original);
+      Squachy::tick(lcd,120,61,145,millis(),advanceScene,0.3f,false,0,100);
+      Theme::drawBackgroundOverlay(lcd,millis());
+    }else{
+      // Custom SquachEmit designs remain temporary until authored on
+      // top of the original body renderer.
+      SquachyPort::render(squachSprite,millis(),active&&*active,suite,
+                         (int32_t)(petUntil-millis())>0,outfitLevel);
+      if(bandFrameActive)squachSprite.pushToSprite(&halfFrame,64,75,0xF81E);
+      else squachSprite.pushSprite(64,75,0xF81E);
+    }
 #else
     if(backgroundLevel==9){
       SquachWatchScenes::drawSynthwave(lcd,millis(),60,215,0.44f);
@@ -1324,20 +1339,13 @@ void portraitPage(const char* active,uint32_t remaining,bool suite){
       for(int x=0;x<240;x+=16)lcd.drawFastVLine(x,60,156,kPurple);
       for(int y=65;y<215;y+=16)lcd.drawFastHLine(0,y,240,kCyan);
     }
-#if defined(SQE_ORIGINAL_SQUACHY)
-    if(outfitLevel!=1&&outfitLevel!=2){
-      Squachy::setOutfitPreview(outfitLevel==0?0:(int8_t)(outfitLevel-2));
-      Squachy::tick(lcd,120,68,138,millis(),advanceScene,0.3f,false,0,100);
-    }else
-#endif
-#endif
     if(squachSpriteReady){
       SquachyPort::render(squachSprite,millis(),active&&*active,suite,
-                          (int32_t)(petUntil-millis())>0,outfitLevel);
-      if(bandFrameActive)
-        squachSprite.pushToSprite(&halfFrame,64,75,0xF81E);
+                         (int32_t)(petUntil-millis())>0,outfitLevel);
+      if(bandFrameActive)squachSprite.pushToSprite(&halfFrame,64,75,0xF81E);
       else squachSprite.pushSprite(64,75,0xF81E);
     }
+#endif
     lcd.fillRoundRect(7,205,226,34,4,kTaskbar);
     lcd.drawRoundRect(7,205,226,34,4,kPink);
     const char* talk=active&&*active?"SYNTHETIC TX IN PROGRESS":
@@ -1771,10 +1779,9 @@ Cyd32UiAction cyd32UiTick(const char* active,uint32_t remaining,bool suite){
   }
   if(calibrated&&screen==Screen::Diagnostics&&now-lastDiagAt>=1000u){diagValues();lastDiagAt=now;}
   if(calibrated&&screen==Screen::Home&&now-lastBubbleAt>6500u){
-    if(portraitMode){
-      // No portrait full-screen flash simply to rotate a speech bubble.
-      // The portrait bubble is redrawn only when page/TX state changes.
-    }else speechBubble(active,suite);
+#if !defined(SQE_ORIGINAL_SQUACHY)
+    if(!portraitMode)speechBubble(active,suite);
+#endif
     lastBubbleAt=now;
   }
   if(calibrated&&portraitMode&&screen==Screen::Home&&active&&*active){
