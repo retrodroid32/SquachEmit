@@ -7,7 +7,7 @@
 #include <string.h>
 namespace SquachWatchScenes {
 constexpr uint16_t GREEN = 0x07E0;
-constexpr uint16_t VAPOR_YELLOW = 0xFFB2;
+constexpr uint16_t VAPOR_YELLOW = 0xFFD2;
 constexpr uint16_t VAPOR_PINK = 0xFB99;
 static const uint32_t XYZZY_SHOW_MS = 3500;
 static const uint8_t  XYZZY_NEEDED  = 3;
