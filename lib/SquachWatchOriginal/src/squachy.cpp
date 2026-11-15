@@ -2,6 +2,7 @@
 #if defined(SQE_CYD32) && defined(SQE_ORIGINAL_SQUACHY)
 // SquachWatch-CYD — Squachy implementation
 #include "squachy.h"
+#include "draw_band.h"
 #include "theme.h"
 #include "signatures.h"
 #include "settings.h"
@@ -30,6 +31,11 @@ static inline uint32_t tempo(uint32_t ms) { return ms * s_tempoPct / 100; }
 #include <Preferences.h>
 
 namespace Squachy {
+#if !SQUACH_MESH
+// No visitors in SquachEmit transmitter mode. Upstream uses this flag
+// for host layout; keep exactly the solo-host branch of its draw code.
+static bool s_company=false;
+#endif
 
 // Single switch for the silhouette keyline added to drawBody(). Left as a
 // named constant rather than inlined so taking it back out is one edit,
