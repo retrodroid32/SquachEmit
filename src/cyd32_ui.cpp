@@ -35,7 +35,7 @@ constexpr size_t kPageRows=4;
 TFT_eSPI lcd;
 TFT_eSprite squachSprite(&lcd);
 bool squachSpriteReady=false;
-uint32_t lastSquachFrame=0, petUntil=0;
+uint32_t lastSquachFrame=0, lastSceneFrame=0, petUntil=0;
 Preferences prefs;
 Screen screen=Screen::Home;
 DeviceCategory category=DeviceCategory::Axon;
@@ -307,7 +307,7 @@ void oldSquachy(bool emitting,bool suite){
 void drawSquachyFrame(bool emitting,bool suite,uint32_t now){
   if(!squachSpriteReady)return;
   SquachyPort::render(squachSprite,now,emitting,suite,(int32_t)(petUntil-now)>0,outfitLevel);
-  squachSprite.pushSprite(104,70);
+  squachSprite.pushSprite(104,70,0xF81E);
   lastSquachFrame=now;
 }
 void bigSquachy(bool emitting,bool suite){
@@ -1230,7 +1230,7 @@ void portraitPage(const char* active,uint32_t remaining,bool suite){
     if(squachSpriteReady){
       SquachyPort::render(squachSprite,millis(),active&&*active,suite,
                           (int32_t)(petUntil-millis())>0,outfitLevel);
-      squachSprite.pushSprite(64,75);
+      squachSprite.pushSprite(64,75,0xF81E);
     }
     lcd.fillRoundRect(7,205,226,34,4,kTaskbar);
     lcd.drawRoundRect(7,205,226,34,4,kPink);
@@ -1668,10 +1668,19 @@ Cyd32UiAction cyd32UiTick(const char* active,uint32_t remaining,bool suite){
   }
   const uint32_t animDelay=animationLevel==0?200u:animationLevel==1?120u:80u;
   if(calibrated&&screen==Screen::Home&&squachSpriteReady&&
-     now-lastSquachFrame>=animDelay && colorBarsUntil==0){
+     now-lastSceneFrame>=350u && colorBarsUntil==0){
+    lastSceneFrame=now;
     if(portraitMode){
-      if(now-lastSquachFrame>=350u){lastSquachFrame=now;redraw=true;}
-    }else drawSquachyFrame(active&&*active,suite,now);
+      lastSquachFrame=now;
+      redraw=true;
+    }else{
+      // Repaint the scene before each transparent Squachy pose, so neither
+      // old limb positions nor old background frames leave ghost pixels.
+      // Do NOT clear the entire panel; keep title, controls and TX status.
+      retroBackdrop();
+      drawSquachyFrame(active&&*active,suite,now);
+      speechBubble(active,suite);
+    }
   }
   if(now-lastPoll<55)return Cyd32UiAction::None;
   lastPoll=now;
