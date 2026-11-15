@@ -59,6 +59,20 @@ class Cyd32UiGuards(unittest.TestCase):
         self.assertIn('BLACK HOODIE:',port)
         self.assertIn('const bool dance=',port)
         self.assertIn('NO SAFE SECOND APP SLOT',self.s)
+    def test_r10_chrome_and_responsive_portrait(self):
+        for term in ('footer("TESTS"', 'portraitMode=true',
+                     'else if(portraitMode)portraitPage(',
+                     'portraitTap(x,y,active&&*active,suite)',
+                     'kBackgroundNames[]', 'kOutfitNames[]',
+                     'backgroundPage', 'outfitPage',
+                     'lcd.fillRoundRect(5,1,27,13,3,kWhite)',
+                     'onAirIndicator?kGreen:kYellow'):
+            with self.subTest(term=term):
+                self.assertIn(term,self.s)
+        self.assertIn('constexpr uint8_t kOutfitCount=22;',self.s)
+        sprite=(ROOT/"src"/"cyd32_squachy_port.cpp").read_text()
+        for outfit in range(3,22):
+            self.assertIn(f'case {outfit}:',sprite)
     def test_source_derived_core(self):
         p=(ROOT/"src"/"cyd32_squachy_port.cpp").read_text()
         for s in ("void render(", "static void wedge(", "const int tuft[4][6]",
