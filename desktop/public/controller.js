@@ -69,10 +69,10 @@
       (emitter?'<button type="button" data-role="emitter" data-action="mirror-diag">Check device UI state</button>':
         '<div class="dc-mirror-actions"><button type="button" data-role="receiver" data-action="receiver-ui-on">Native v2 mode</button>'+
         '<button type="button" data-role="receiver" data-action="receiver-ui-off">Pixel fallback</button></div>'+
-        '<div id="dc-receiver-ui" class="dc-frame-meta" role="status">Native v2 partial MAIN / DEVICES model; other screens use authentic pixels.</div>')+
+        '<div id="dc-receiver-ui" class="dc-frame-meta" role="status">Start live view = authentic LCD pixels. Native v2 mode = partial DATA visualization, not the physical screen.</div>')+
       '<div class="dc-displaymode">'+(emitter?
         'PC-drawn SquachEmit UI, synchronized with device navigation and RF state. No screenshots or 2Mbps switch. Click, hold or drag to operate the physical touchscreen.':
-        'SquachWatch v2: PC renders real MAIN counters and DEVICES log rows. All unsupported screens use authentic RGB332 pixels. No invented UI content.')+'</div>'+
+        'SquachWatch: Start live view requests authentic RGB332 LCD pixels. Native v2 mode is an optional simplified diagnostic view, NOT a reproduction of the device LCD.')+'</div>'+
       '<div class="dc-connections">'+
       '<button type="button" data-action="connect" data-role="'+role+'">Connect USB</button>'+
       '<button type="button" data-action="disconnect" data-role="'+role+'">Disconnect</button></div>'+
@@ -93,10 +93,10 @@
       '</section>';
   }
   rail.innerHTML='<div class="dc-railhead"><div><div class="dc-overline">WINDOWS CONTROL CENTER</div>'+
-    '<h2>Interactive device screens</h2><p>SquachEmit drawn locally · hardware authoritative</p></div>'+
+    '<h2>Interactive device screens</h2><p>SquachEmit state model · SquachWatch physical LCD capture</p></div>'+
     '<button type="button" id="dc-export">Export CSV</button></div>'+
     markup('receiver')+markup('emitter')+
-    '<div class="dc-footnote"><b>DUAL NATIVE USB UI.</b> SquachEmit is state-rendered. SquachWatch uses partial authoritative v2 MAIN/DEVICES models and authentic LCD pixel fallback elsewhere. Neither UI model substitutes for receiver LOG evidence.</div>';
+    '<div class="dc-footnote"><b>PHYSICAL LCD ACCURACY:</b> SquachEmit is PC-drawn from state. SquachWatch requires authentic MIRROR pixels for an identical screen; Native v2 is explicitly a partial data-only view. Receiver LOG remains the independent detection evidence.</div>';
   function info(role,message){get('dc-feedback-'+role).textContent=message;}
   function mirrorNote(role,message){get('dc-frame-'+role).textContent=message;}
   function cancelFrameTimers(role){
@@ -201,7 +201,10 @@
     },role==='emitter'?(state.emitterBaud===115200?45000:16000):12000);
   }
   async function startMirror(role,forcePixel=false){
-    if(role==='receiver'&&!forcePixel)return startWatchNative();
+    // The receiver's primary Live view must be the physical LCD, not a
+    // fabricated counter grid. Native UI v2 remains an explicitly labeled
+    // optional diagnostics mode until SquachWatch exports full view models.
+    if(role==='receiver'&&!forcePixel)return startMirror('receiver',true);
     if(role==='receiver'&&receiverUi.mode==='native')await stopMirror('receiver',true);
     const state=api.getState();
     if(mirrors[role].active){
@@ -670,7 +673,19 @@
   function renderWatch(){
     if(receiverUi.mode!=='native'||!receiverUi.ready||!receiverUi.model)return;
     const model=receiverUi.model.snapshot();
-    if(!model.state||model.state.kind===0)return;
+    if(!model.state)return;
+    if(model.state.kind===0){
+      // Alerts and other unsupported overlays are TEMPORARY. Do not tear down
+      // the v2 session: doing so prevents automatic recovery when MAIN returns.
+      const canvas=get('dc-canvas-receiver');
+      canvas.hidden=true;get('dc-placeholder-receiver').hidden=false;
+      mirrors.receiver.lastFrame=false;
+      mirrorNote('receiver','SquachWatch screen '+model.state.screen+
+        ' is not represented by native v2. UI session remains active; '+
+        'MAIN/DEVICES will return automatically. Use Pixel fallback for '+
+        'authentic alert pixels (firmware readback required).');
+      return;
+    }
     if(Date.now()-receiverUi.lastAt>3000){
       get('dc-canvas-receiver').hidden=true;
       get('dc-placeholder-receiver').hidden=false;
@@ -740,7 +755,7 @@
       if(mirrors.receiver.handshake!==null){clearTimeout(mirrors.receiver.handshake);mirrors.receiver.handshake=null;}
       mirrorNote('receiver','SquachWatch native UI v2 connected · partial MAIN/LOG models');
       if(mirrors.receiver.animation===null)mirrors.receiver.animation=setInterval(renderWatch,450);
-      get('dc-receiver-ui').textContent='Native v2 active: MAIN counters, DEVICES RAM log. Other screens switch to authentic LCD.';
+      get('dc-receiver-ui').textContent='Native v2 DATA VIEW (not the LCD): MAIN counters and DEVICES log. Unsupported screens resume automatically when MAIN returns; use Pixel fallback for authentic pixels.';
       void api.send('receiver','UI GET');
       return;
     }
@@ -750,7 +765,9 @@
       const changed=receiverUi.screen!==st.screen;
       receiverUi.screen=st.screen;receiverUi.lastAt=Date.now();
       if(st.kind===0){
-        void fallbackWatch('SquachWatch screen '+st.screen+' not modeled in v2; using authentic LCD pixel fallback.');
+        // Keep consuming UI STATE during transient alerts and resume native
+        // MAIN automatically when kind=1 returns. No manual Start click.
+        renderWatch();
         return;
       }
       renderWatch();
