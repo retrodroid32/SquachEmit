@@ -29,7 +29,7 @@
   for(const role of ['receiver','emitter']){
     mirrors[role]={active:false,waiting:false,lastFrame:false,lastFrameSequence:0,failures:0,
       assembler:new codec.MirrorAssembler(),timeout:null,next:null,handshake:null,animation:null,ready:false,
-      captureAt:0,progressAt:0,captureRows:0,captureTotal:0,session:0,
+      captureAt:0,progressAt:0,captureRows:0,captureTotal:0,session:0,sequenceAck:false,
       touchDown:false,touchAt:0,touchTimer:null,pendingUp:null,lastPoint:{x:0,y:0},
       lastMove:0};
   }
@@ -113,7 +113,7 @@
     cancelFrameTimers(role);
     ++s.session;
     s.active=false;s.waiting=false;s.ready=false;s.failures=0;
-    s.captureAt=0;s.progressAt=0;s.captureRows=0;s.captureTotal=0;
+    s.captureAt=0;s.progressAt=0;s.captureRows=0;s.captureTotal=0;s.sequenceAck=false;
     s.lastFrame=false;s.lastFrameSequence=0;
     s.assembler.reset();
     if(role==='emitter'){local.model=null;local.receivedAt=0;}
@@ -183,7 +183,7 @@
     // Firmware sends a full keyframe unless it recognizes the last complete
     // screen the PC actually accepted. A dropped frame can never corrupt
     // a later delta. SquachWatch's existing firmware retains FRAME syntax.
-    const request=(role==='emitter'&&s.lastFrameSequence)?
+    const request=((role==='emitter'||s.sequenceAck)&&s.lastFrameSequence)?
       'MIRROR FRAME '+s.lastFrameSequence:'MIRROR FRAME';
     const ok=await api.send(role,request);
     if(!ok){
@@ -299,6 +299,20 @@
     if(!mirrors[role])return;
     const s=mirrors[role];
     if(!s.active||role==='receiver'&&receiverUi.mode!=='pixel')return;
+    // Optional bounded capture protocol: firmware announces any physical
+    // screen/rotation generation change before transmitting a fresh baseline.
+    // No reconstructed UI may be shown while the new capture is pending.
+    if(/^MIRROR INVALIDATE(?: |$)/.test(String(line))){
+      s.assembler.invalidate();s.lastFrame=false;s.lastFrameSequence=0;
+      get('dc-canvas-'+role).hidden=true;
+      get('dc-placeholder-'+role).hidden=false;
+      if(s.timeout!==null){clearTimeout(s.timeout);s.timeout=null;}
+      s.waiting=false;
+      mirrorNote(role,'Physical LCD changed · requesting a new complete baseline.');
+      if(s.next!==null){clearTimeout(s.next);s.next=null;}
+      if(s.ready)s.next=setTimeout(()=>void requestMirrorFrame(role),450);
+      return;
+    }
     const result=s.assembler.feed(line);
     if(result.kind==='info'){
       if(/^MIRROR DIAG/.test(result.message)){
@@ -306,6 +320,9 @@
         info(role,result.message);
       }else if(/^MIRROR READY\b/.test(result.message)&&s.active&&!s.ready){
         s.ready=true;
+        // SEQBASE is optional; legacy SquachWatch accepts plain MIRROR FRAME.
+        // Only newer firmware can consume a last-accepted sequence argument.
+        s.sequenceAck=/\bSEQBASE\b/.test(result.message);
         if(s.handshake!==null){clearTimeout(s.handshake);s.handshake=null;}
         mirrorNote(role,'Firmware acknowledged. Capturing authentic LCD pixels…');
         void requestMirrorFrame(role);
@@ -346,8 +363,12 @@
     }
     if(result.kind==='row'||result.kind==='progress'){
       if(!s.waiting)return;
-      s.progressAt=Date.now();
-      s.captureRows=result.rows;s.captureTotal=result.total;
+      // Only independently received rows (or a strictly advancing device
+      // capture counter) extend the watchdog. Repeated heartbeats cannot
+      // conceal a permanently stalled transfer.
+      if(result.rows>s.captureRows)s.progressAt=Date.now();
+      s.captureRows=Math.max(s.captureRows,result.rows);
+      s.captureTotal=result.total;
       armCaptureWatchdog(role);
       if(result.rows===result.total||result.rows%16===0){
         mirrorNote(role,'LCD capture '+result.rows+'/'+result.total+' rows…');
