@@ -4,6 +4,9 @@
 #include "scenario_library.h"
 #include "scenario_display.h"
 #include "cyd32_squachy_port.h"
+#if defined(SQE_ORIGINAL_SQUACHY)
+#include <squachy.h>
+#endif
 #include "squachwatch_synthwave_exact.h"
 #include "squachwatch_fireflies_exact.h"
 #include "squachwatch_terminal_exact.h"
@@ -308,6 +311,17 @@ void oldSquachy(bool emitting,bool suite){
 }
 
 void drawSquachyFrame(bool emitting,bool suite,uint32_t now){
+#if defined(SQE_ORIGINAL_SQUACHY)
+  if(outfitLevel!=1&&outfitLevel!=2){
+    // Original SquachWatch's costume geometry and source pose scheduler.
+    // SquachEmit-specific black hoodie and lab coat remain custom.
+    const int8_t original=(outfitLevel==0)?0:(int8_t)(outfitLevel-2);
+    Squachy::setOutfitPreview(original);
+    Squachy::tick(lcd,160,65,116,now,advanceScene,0.3f,false,0,100);
+    lastSquachFrame=now;
+    return;
+  }
+#endif
   if(!squachSpriteReady)return;
   SquachyPort::render(squachSprite,now,emitting,suite,(int32_t)(petUntil-now)>0,outfitLevel);
   if(bandFrameActive){
@@ -1276,6 +1290,12 @@ void portraitPage(const char* active,uint32_t remaining,bool suite){
       for(int x=0;x<240;x+=16)lcd.drawFastVLine(x,60,156,kPurple);
       for(int y=65;y<215;y+=16)lcd.drawFastHLine(0,y,240,kCyan);
     }
+#if defined(SQE_ORIGINAL_SQUACHY)
+    if(outfitLevel!=1&&outfitLevel!=2){
+      Squachy::setOutfitPreview(outfitLevel==0?0:(int8_t)(outfitLevel-2));
+      Squachy::tick(lcd,120,68,138,millis(),advanceScene,0.3f,false,0,100);
+    }else
+#endif
     if(squachSpriteReady){
       SquachyPort::render(squachSprite,millis(),active&&*active,suite,
                           (int32_t)(petUntil-millis())>0,outfitLevel);
