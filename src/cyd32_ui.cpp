@@ -598,12 +598,42 @@ void portraitScreen(const char* active,uint32_t remaining,bool suite){
   label(15,264,"TOUCH CONTROLS ENABLED",kGreen);
 }
 bool loadCal();
+void rotateCurrentScreen(){
+  const bool makePortrait=!portraitMode;
+  // Preserve the logical screen, selected case and list page.
+  lcd.setRotation(makePortrait?0:1);
+  lcd.invertDisplay(panelInverted);
+  lcd.fillScreen(kBg);
+  if(makePortrait){
+    if(!portraitCalibrated&&prefs.begin("sqemit32",true)){
+      portraitCalibrated=prefs.getBytesLength("touchport")==sizeof(portraitTouchData) &&
+        prefs.getBytes("touchport",portraitTouchData,sizeof(portraitTouchData))==sizeof(portraitTouchData);
+      prefs.end();
+    }
+    if(!portraitCalibrated){
+      label(8,15,"PORTRAIT TOUCH CAL",kCyan,2);
+      lcd.calibrateTouch(portraitTouchData,kWhite,kBg,15);
+      portraitCalibrated=true;
+      if(prefs.begin("sqemit32",false)){
+        prefs.putBytes("touchport",portraitTouchData,sizeof(portraitTouchData));
+        prefs.end();
+      }
+    }
+    lcd.setTouch(portraitTouchData);
+  }else if(calibrated)loadCal();
+  portraitMode=makePortrait;
+  portraitLastCount=UINT32_MAX;lastCount=UINT32_MAX;
+  wasPressed=true;redraw=true;
+  if(prefs.begin("sqemit32",false)){
+    prefs.putBool("portrait",portraitMode);prefs.end();
+  }
+  Serial.printf("CYD32,ROTATE,%s,%dx%d\n",
+    portraitMode?"PORTRAIT":"LANDSCAPE",lcd.width(),lcd.height());
+}
 Cyd32UiAction touchPortrait(int x,int y,bool active,bool suite){
   if(y<278)return Cyd32UiAction::None;
   if(x<80){
-    lcd.setRotation(1);
-    if(calibrated)loadCal();
-    wasPressed=true;screen=Screen::Home;redraw=true;
+    rotateCurrentScreen();
     return Cyd32UiAction::None;
   }
   if(x<160)
@@ -1066,27 +1096,7 @@ Cyd32UiAction touchSettings(int x,int y){
       if(row==0){themeLevel=(themeLevel+1)%3;applyTheme();persistUiSettings();}
       else if(row==1){fontMode=(fontMode+1)%2;persistUiSettings();}
       else if(row==2)screen=Screen::Identity;
-      else if(row==3){
-         lcd.setRotation(0);
-         if(!portraitCalibrated){
-           if(prefs.begin("sqemit32",true)){
-             portraitCalibrated=prefs.getBytesLength("touchport")==10 &&
-                 prefs.getBytes("touchport",portraitTouchData,10)==10;
-             prefs.end();
-           }
-           if(!portraitCalibrated){
-             lcd.fillScreen(kBg);
-             label(12,15,"CALIBRATE PORTRAIT TOUCH",kCyan,2);
-             lcd.calibrateTouch(portraitTouchData,kWhite,kBg,15);
-             portraitCalibrated=true;
-             if(prefs.begin("sqemit32",false)){
-               prefs.putBytes("touchport",portraitTouchData,10);prefs.end();
-             }
-           }
-         }
-         lcd.setTouch(portraitTouchData);
-         wasPressed=true;portraitMode=true;portraitLastCount=UINT32_MAX;
-       }
+      else if(row==3){rotateCurrentScreen();}
       redraw=true;return Cyd32UiAction::None;
     }
     if(row==0){brightnessLevel=(brightnessLevel+1)%3;applyBrightness();persistUiSettings();}
@@ -1381,7 +1391,7 @@ void portraitPage(const char* active,uint32_t remaining,bool suite){
 Cyd32UiAction portraitTap(int x,int y,bool active,bool suite){
   if(y<27){
     if(x<45){screen=Screen::MainMenu;menuPage=0;redraw=true;}
-    else if(x>=195){lcd.setRotation(1);loadCal();portraitMode=false;wasPressed=true;redraw=true;}
+    else if(x>=195){rotateCurrentScreen();}
     return Cyd32UiAction::None;
   }
   if(screen==Screen::Home){
@@ -1446,7 +1456,7 @@ Cyd32UiAction portraitTap(int x,int y,bool active,bool suite){
   else if(screen==Screen::QuickFilter)return touchQuickFilter(150,68+i*34);
   else if(screen==Screen::Settings){
     if(settingsMore&&i==3){
-      lcd.setRotation(1);loadCal();portraitMode=false;wasPressed=true;redraw=true;
+      rotateCurrentScreen();
     }else return touchSettings(150,50+i*39);
   }else if(screen==Screen::Outfits){
     const int n=outfitPage*4+i;
@@ -1676,6 +1686,8 @@ Cyd32UiAction cyd32UiTick(const char* active,uint32_t remaining,bool suite){
      x<(portraitMode?240:kW)&&y<(portraitMode?320:kH)){
     if(portraitMode){
       action=portraitTap(x,y,active&&*active,suite);
+    }else if(y<23&&x>=275){
+      rotateCurrentScreen();
     }else if(y<23&&x<48){
       screen=Screen::MainMenu;menuPage=0;redraw=true;
     }else if(screen==Screen::MainMenu){
