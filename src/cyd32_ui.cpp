@@ -584,9 +584,23 @@ bool loadCal();
 void rotateCurrentScreen(){
   const bool makePortrait=!portraitMode;
   // Preserve the logical screen, selected case and list page.
-  lcd.setRotation(makePortrait?0:1);
-  lcd.invertDisplay(panelInverted);
-  lcd.fillScreen(kBg);
+  // Finish any offscreen pass before touching the panel or the sprite.
+  paint=&panel;bandFrameActive=false;
+  panel.setRotation(makePortrait?0:1);
+  panel.invertDisplay(panelInverted);
+  panel.fillScreen(kBg);
+  // Exactly the same 38,400-pixel allocation size in either orientation.
+  // Recreate during an explicit user rotate only (never per animation
+  // frame); if memory is fragmented, fall back to static rather than
+  // drawing erase/redraw directly on the ST7798.
+  if(bandFrameReady){halfFrame.deleteSprite();bandFrameReady=false;}
+  halfFrame.setColorDepth(8);
+  bandFrameReady=(halfFrame.createSprite(panel.width(),panel.height()/2)!=nullptr);
+  Serial.printf("CYD32,FRAME,ROTATED_%s,%dx%d,heap=%lu,largest=%lu\n",
+    bandFrameReady?"HALF8":"STATIC_FALLBACK",
+    panel.width(),panel.height()/2,
+    (unsigned long)ESP.getFreeHeap(),
+    (unsigned long)ESP.getMaxAllocHeap());
   if(makePortrait){
     if(!portraitCalibrated&&prefs.begin("sqemit32",true)){
       portraitCalibrated=prefs.getBytesLength("touchport")==sizeof(portraitTouchData) &&
