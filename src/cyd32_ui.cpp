@@ -187,10 +187,59 @@ void retroBackdrop(){
         const int x=(i*157+29)%320, y=17+(i*83+11)%162;
         lcd.drawPixel(x,y,i%9==0?kWhite:(i%3==0?kCyan:kMuted));
       }
-    }else if(backgroundLevel==3){ // SquachWatch Fireflies motif
+    }else if(backgroundLevel==3){ // Fireflies
       for(int i=0;i<38;++i){
         const int x=(i*79+31)%320,y=19+(i*67+9)%157;
         lcd.fillCircle(x,y,i%5==0?2:1,i%3==0?kYellow:kGreen);
+      }
+    }else if(backgroundLevel==4){ // FIRE: glowing embers and tongues
+      lcd.fillRect(0,130,320,51,lcd.color565(49,6,2));
+      for(int i=0;i<72;++i){
+        const int x=(i*47+13)%320,y=50+(i*83+29)%120;
+        const uint16_t glow=i%3==0?kYellow:i%3==1?kPink:lcd.color565(220,35,0);
+        lcd.drawLine(x,180,x-((i%3)-1)*6,y,glow);
+      }
+    }else if(backgroundLevel==5){ // SNOWFALL: moon and drifting flakes
+      lcd.fillCircle(275,43,18,kWhite);
+      lcd.fillRect(0,152,320,29,lcd.color565(19,47,81));
+      for(int i=0;i<100;++i)lcd.fillCircle((i*73+23)%320,
+          18+(i*101+17)%151,i%7==0?2:1,kWhite);
+    }else if(backgroundLevel==6){ // AQUARIUM: waves, plants and fish
+      lcd.fillRect(0,15,320,166,lcd.color565(0,34,52));
+      for(int y=25;y<180;y+=20)lcd.drawFastHLine(0,y,320,lcd.color565(0,65,80));
+      for(int x=0;x<320;x+=42){
+        lcd.drawLine(x,180,x+13,116,kGreen);
+        lcd.drawLine(x+4,167,x+22,135,kCyan);
+      }
+      for(int i=0;i<7;++i){
+        const int x=20+(i*49)%290,y=40+(i*37)%112;
+        lcd.fillTriangle(x,y,x+17,y-7,x+17,y+7,i%2?kYellow:kPink);
+        lcd.fillTriangle(x+18,y,x+25,y-6,x+25,y+6,kCyan);
+      }
+    }else if(backgroundLevel==7){ // TERMINAL LOG: matrix console text
+      for(int row=0;row<12;++row){
+        char log[42];
+        snprintf(log,sizeof(log),"%02d %04X:%04X TX_%s",row,
+          (row*173+38)&0xFFFF,(row*119+22)&0xFFFF,
+          row%3==0?"IDLE":"READY");
+        label(7,20+row*13,log,row%3==0?kCyan:kGreen);
+      }
+    }else if(backgroundLevel==8){ // FLYING TOASTERS: procedural silhouettes
+      for(int i=0;i<10;++i){
+        const int x=12+(i*83)%287,y=28+(i*41)%127;
+        lcd.fillRoundRect(x,y,21,19,4,kYellow);
+        lcd.fillRect(x+4,y+4,13,8,lcd.color565(84,42,3));
+        lcd.drawLine(x,y+7,x-9,y-4,kWhite);
+        lcd.drawLine(x+21,y+7,x+30,y-4,kWhite);
+      }
+    }else if(backgroundLevel==9){ // THE GIBSON: circuit grid, dynamic activity
+      for(int x=12;x<320;x+=22){
+        lcd.drawFastVLine(x,18,163,x%3?kPurple:kCyan);
+      }
+      for(int y=24;y<178;y+=18)lcd.drawFastHLine(0,y,320,kPurple);
+      for(int i=0;i<25;++i){
+        const int x=(i*79+33)%320,y=22+(i*53)%145;
+        lcd.fillRect(x,y,4,4,i%3?kGreen:kPink);
       }
     }
     return;
