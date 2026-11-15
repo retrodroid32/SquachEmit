@@ -6,6 +6,7 @@
 #include "cyd32_squachy_port.h"
 #include "squachwatch_synthwave_exact.h"
 #include "squachwatch_fireflies_exact.h"
+#include "squachwatch_terminal_exact.h"
 #include <Arduino.h>
 #include <TFT_eSPI.h>
 #include <Preferences.h>
@@ -215,14 +216,8 @@ void retroBackdrop(){
         lcd.fillTriangle(x,y,x+17,y-7,x+17,y+7,i%2?kYellow:kPink);
         lcd.fillTriangle(x+18,y,x+25,y-6,x+25,y+6,kCyan);
       }
-    }else if(backgroundLevel==4){ // TERMINAL LOG: matrix console text
-      for(int row=0;row<12;++row){
-        char log[42];
-        snprintf(log,sizeof(log),"%02d %04X:%04X TX_%s",row,
-          (row*173+38)&0xFFFF,(row*119+22)&0xFFFF,
-          row%3==0?"IDLE":"READY");
-        label(7,20+row*13,log,row%3==0?kCyan:kGreen);
-      }
+    }else if(backgroundLevel==4){
+      SquachWatchScenes::drawTerminalLog(lcd,millis(),15,181);
     }else if(backgroundLevel==2){ // FLYING TOASTERS: procedural silhouettes
       for(int i=0;i<10;++i){
         const int x=12+(i*83)%287,y=28+(i*41)%127;
@@ -1196,7 +1191,9 @@ void portraitPage(const char* active,uint32_t remaining,bool suite){
     // Portrait variant of the selected SquachWatch-style scene.
     if(backgroundLevel==9){
       SquachWatchScenes::drawSynthwave(lcd,millis(),60,215,0.44f);
-    }else if(backgroundLevel==0||backgroundLevel==4){
+    }else if(backgroundLevel==4){
+      SquachWatchScenes::drawTerminalLog(lcd,millis(),60,215);
+    }else if(backgroundLevel==0){
       for(int x=6;x<238;x+=12)
         for(int j=0;j<9;++j)
           label(x,65+((x*11+j*18+(int)(millis()/300))%138),
