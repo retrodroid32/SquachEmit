@@ -33,9 +33,17 @@ constexpr uint16_t kSkin=0xF60F,kSkinDark=0xCB88;
 enum class Screen : uint8_t { Home, Categories, Library, Duration, Details, Diagnostics, Favorites, History, Settings, Help, Identity, Recovery, Activity, Evidence, QuickFilter, Portrait, MainMenu, Outfits, OtaInfo, Backgrounds };
 constexpr size_t kPageRows=4;
 
-TFT_eSPI lcd;
-TFT_eSprite squachSprite(&lcd);
-bool squachSpriteReady=false;
+// SquachWatch-style staged rendering: physical ST7798 panel is never
+// cleared on animated frames. Only a 320x120 / 240x160 8-bit band is
+// allocated, not a second full-screen buffer.
+TFT_eSPI panel;
+TFT_eSPI* paint=&panel;
+#define lcd (*paint)
+TFT_eSprite halfFrame(&panel);
+TFT_eSprite squachSprite(&panel);
+bool squachSpriteReady=false,bandFrameReady=false,bandFrameActive=false;
+int bandFrameTop=0;
+bool advanceScene=true;
 uint32_t lastSquachFrame=0, lastSceneFrame=0, petUntil=0;
 Preferences prefs;
 Screen screen=Screen::Home;
@@ -179,7 +187,7 @@ void retroBackdrop(){
   if(backgroundLevel!=9){
     lcd.fillRect(0,15,320,166,lcd.color565(3,4,16));
     if(backgroundLevel==0){
-      SquachWatchScenes::drawDigitalRain(lcd,millis(),15,181,true);
+      SquachWatchScenes::drawDigitalRain(lcd,millis(),15,181,advanceScene);
     }else if(backgroundLevel==1){ // SquachWatch Starfield motif
       for(int i=0;i<95;++i){
         const int x=(i*157+29)%320, y=17+(i*83+11)%162;
@@ -302,7 +310,9 @@ void oldSquachy(bool emitting,bool suite){
 void drawSquachyFrame(bool emitting,bool suite,uint32_t now){
   if(!squachSpriteReady)return;
   SquachyPort::render(squachSprite,now,emitting,suite,(int32_t)(petUntil-now)>0,outfitLevel);
-  squachSprite.pushSprite(104,70,0xF81E);
+  if(bandFrameActive){
+    squachSprite.pushToSprite(&halfFrame,104,70,0xF81E);
+  }else squachSprite.pushSprite(104,70,0xF81E);
   lastSquachFrame=now;
 }
 void bigSquachy(bool emitting,bool suite){
@@ -413,6 +423,30 @@ void setDuration(uint8_t value){
   durationValue();
 }
 
+void portraitPage(const char* active,uint32_t remaining,bool suite);
+void homeScreen(const char* active,uint32_t remaining,bool suite);
+// One complete logical frame, assembled as two memory-bounded 8-bit
+// bands exactly like SquachWatch's CYD recovery renderer. The TFT sees
+// only a finished sprite per band, not erase/redraw primitives.
+void renderBufferedHome(const char* active,uint32_t remaining,bool suite){
+  if(!bandFrameReady)return;
+  const int w=panel.width(),h=panel.height(),half=h/2;
+  const uint32_t frameMs=millis();
+  for(int pass=0;pass<2;++pass){
+    bandFrameTop=pass*half;
+    advanceScene=(pass==0);
+    paint=&halfFrame;
+    bandFrameActive=true;
+    halfFrame.setViewport(0,-bandFrameTop,w,h,true);
+    if(portraitMode)portraitPage(active,remaining,suite);
+    else homeScreen(active,remaining,suite);
+    paint=&panel;
+    bandFrameActive=false;
+    halfFrame.resetViewport();
+    halfFrame.pushSprite(0,bandFrameTop);
+  }
+  lastSceneFrame=frameMs;
+}
 void homeScreen(const char* active,uint32_t remaining,bool suite){
   const bool emitting=active&&*active;
   lcd.fillScreen(kBg);
@@ -550,9 +584,23 @@ bool loadCal();
 void rotateCurrentScreen(){
   const bool makePortrait=!portraitMode;
   // Preserve the logical screen, selected case and list page.
-  lcd.setRotation(makePortrait?0:1);
-  lcd.invertDisplay(panelInverted);
-  lcd.fillScreen(kBg);
+  // Finish any offscreen pass before touching the panel or the sprite.
+  paint=&panel;bandFrameActive=false;
+  panel.setRotation(makePortrait?0:1);
+  panel.invertDisplay(panelInverted);
+  panel.fillScreen(kBg);
+  // Exactly the same 38,400-pixel allocation size in either orientation.
+  // Recreate during an explicit user rotate only (never per animation
+  // frame); if memory is fragmented, fall back to static rather than
+  // drawing erase/redraw directly on the ST7798.
+  if(bandFrameReady){halfFrame.deleteSprite();bandFrameReady=false;}
+  halfFrame.setColorDepth(8);
+  bandFrameReady=(halfFrame.createSprite(panel.width(),panel.height()/2)!=nullptr);
+  Serial.printf("CYD32,FRAME,ROTATED_%s,%dx%d,heap=%lu,largest=%lu\n",
+    bandFrameReady?"HALF8":"STATIC_FALLBACK",
+    panel.width(),panel.height()/2,
+    (unsigned long)ESP.getFreeHeap(),
+    (unsigned long)ESP.getMaxAllocHeap());
   if(makePortrait){
     if(!portraitCalibrated&&prefs.begin("sqemit32",true)){
       portraitCalibrated=prefs.getBytesLength("touchport")==sizeof(portraitTouchData) &&
@@ -1198,7 +1246,7 @@ void portraitPage(const char* active,uint32_t remaining,bool suite){
     }else if(backgroundLevel==4){
       SquachWatchScenes::drawTerminalLog(lcd,millis(),60,215);
     }else if(backgroundLevel==0){
-      SquachWatchScenes::drawDigitalRain(lcd,millis(),60,215,true);
+      SquachWatchScenes::drawDigitalRain(lcd,millis(),60,215,advanceScene);
     }else if(backgroundLevel==5){
       SquachWatchScenes::drawFireflies(lcd,millis(),60,215);
     }else if(backgroundLevel==1||backgroundLevel==7){
@@ -1231,7 +1279,9 @@ void portraitPage(const char* active,uint32_t remaining,bool suite){
     if(squachSpriteReady){
       SquachyPort::render(squachSprite,millis(),active&&*active,suite,
                           (int32_t)(petUntil-millis())>0,outfitLevel);
-      squachSprite.pushSprite(64,75,0xF81E);
+      if(bandFrameActive)
+        squachSprite.pushToSprite(&halfFrame,64,75,0xF81E);
+      else squachSprite.pushSprite(64,75,0xF81E);
     }
     lcd.fillRoundRect(7,205,226,34,4,kTaskbar);
     lcd.drawRoundRect(7,205,226,34,4,kPink);
@@ -1555,7 +1605,18 @@ void cyd32UiBegin(){
   }
   lcd.invertDisplay(panelInverted);
   lcd.fillScreen(kBg);
-  squachSprite.setColorDepth(16);
+  // Allocate the animation band FIRST, before the mascot's separate
+  // 16-bit scratch sprite, to retain one large contiguous block.
+  halfFrame.setColorDepth(8);
+  bandFrameReady=(halfFrame.createSprite(panel.width(),panel.height()/2)!=nullptr);
+  Serial.printf("CYD32,FRAME,%s,%dx%d,heap=%lu,largest=%lu\n",
+    bandFrameReady?"HALF8":"STATIC_FALLBACK",
+    panel.width(),panel.height()/2,
+    (unsigned long)ESP.getFreeHeap(),
+    (unsigned long)ESP.getMaxAllocHeap());
+  // Match SquachWatch's RGB332 draw buffers: ~12KB mascot instead of
+  // a 24KB RGB565 sprite, preserving heap for RF and the half-screen band.
+  squachSprite.setColorDepth(8);
   squachSpriteReady=(squachSprite.createSprite(112,111)!=nullptr);
   if(!squachSpriteReady)Serial.println("WARN,CYD32_SPRITE_ALLOC;STATIC_FALLBACK");
   ledcSetup(6,5000,8);
@@ -1623,6 +1684,8 @@ Cyd32UiAction cyd32UiTick(const char* active,uint32_t remaining,bool suite){
   }
   if(redraw){
     if(!calibrated)calibrationScreen();
+    else if(screen==Screen::Home&&bandFrameReady)
+      renderBufferedHome(active,remaining,suite);
     else if(portraitMode)portraitPage(active,remaining,suite);
     else if(screen==Screen::Home)homeScreen(active,remaining,suite);
     else if(screen==Screen::Categories)categoriesScreen();
@@ -1675,14 +1738,15 @@ Cyd32UiAction cyd32UiTick(const char* active,uint32_t remaining,bool suite){
     screenDimmed=true;applyBrightness();
   }
   const uint32_t animDelay=animationLevel==0?200u:animationLevel==1?120u:80u;
-  // R12: physical ST7798 has NO secondary LCD framebuffer.  The prior
-  // 350-ms loop erased the entire scene, then repainted it, then drew
-  // Squachy. That produces visible flash/tearing and blocks touch polling.
-  // Only draw a complete scene on navigation, background/costume selection,
-  // or changed TX state. Small dynamic elements (speech/countdown) can
-  // update their own rectangles without clearing the LCD's scene.
-  // Restoring animation requires a bounded, tear-free scanline compositor,
-  // NOT a blind full-background repaint in the main input loop.
+  // R13: all motion is rendered into SquachWatch-style half-height 8-bit
+  // bands first; only completed bands are submitted to the LCD.
+  // If memory pressure prevents band allocation, retain R12's static
+  // no-flicker fallback instead of direct-to-panel erase/redraw.
+  const uint32_t frameCadence=animationLevel==0?200u:animationLevel==1?130u:95u;
+  if(calibrated&&screen==Screen::Home&&bandFrameReady&&
+     now-lastSceneFrame>=frameCadence&&colorBarsUntil==0){
+    renderBufferedHome(active,remaining,suite);
+  }
   if(now-lastPoll<55)return Cyd32UiAction::None;
   lastPoll=now;
   if(!calibrated){

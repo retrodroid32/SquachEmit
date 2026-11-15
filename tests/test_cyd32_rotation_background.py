@@ -39,12 +39,12 @@ int main(){
  assert(mock_background_saved&&mock_background_value==8);
  touch(316,100);
  assert(mock_background_value==9);
- // R12 display regression: 350ms idle animation MUST NOT clear/repaint
- // the entire scene on a single-buffered ST7798.
- const auto stableLandscape=t->pixel;
+ // R13 restore animation via completed 8-bit band pushes, never
+ // direct physical LCD fillScreen in the animation loop.
+ const unsigned pushesLandscape=MockDisplay::completedBandPushes;
  const unsigned clearsLandscape=t->fillScreenCalls;
  for(int k=0;k<7;++k)idle();
- assert(t->pixel==stableLandscape);
+ assert(MockDisplay::completedBandPushes>pushesLandscape);
  assert(t->fillScreenCalls==clearsLandscape);
  // Header icon rotates the CURRENT Home, without navigating and without RF.
  touch(300,8);idle();
@@ -55,10 +55,10 @@ int main(){
  assert(mock_background_value==8);
  touch(236,110);
  assert(mock_background_value==9);
- const auto stablePortrait=t->pixel;
+ const unsigned pushesPortrait=MockDisplay::completedBandPushes;
  const unsigned clearsPortrait=t->fillScreenCalls;
  for(int k=0;k<7;++k)idle();
- assert(t->pixel==stablePortrait);
+ assert(MockDisplay::completedBandPushes>pushesPortrait);
  assert(t->fillScreenCalls==clearsPortrait);
  // Return to landscape, preserving selection and still transmitting nothing.
  touch(221,8);idle();

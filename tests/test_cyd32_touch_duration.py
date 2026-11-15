@@ -64,7 +64,7 @@ int main(){
  assert(lcd->fillScreenCalls==editorClears);
  touchAt(267,226); // DONE
  idleTick();
- assert(lcd->fillScreenCalls==editorClears+1);
+ assert(lcd->fillScreenCalls==editorClears); // Home draws into bands, not directly to physical LCD
  // Preference persists over begin() and home screen reflects selected time.
  touchAt(145,189);
  idleTick();
