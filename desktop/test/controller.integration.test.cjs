@@ -164,6 +164,15 @@ test('Windows rail renders authentic USB frame and translates canvas pointer to 
   }
   await drain();
   assert.ok(commands.some(([r,c])=>r==='receiver'&&c==='MIRROR TOUCH 1 0 UP'));
+  // A new display generation or portrait rotation must invalidate every
+  // previously verified pixel until another complete physical baseline.
+  receive('MIRROR INVALIDATE ROTATION');
+  assert.equal(canvas.hidden,true);
+  assert.equal(elements.get('dc-placeholder-receiver').hidden,false);
+  assert.match(elements.get('dc-frame-receiver').textContent,/new complete baseline/);
+  assert.equal(commands.filter(([r,c])=>r==='receiver'&&c==='MIRROR OFF').length,0,
+    'rotation invalidation must not force a MIRROR OFF/ON cycle');
+
   click('mirror-off','receiver');
   await drain();
   assert.ok(commands.some(([r,c])=>r==='receiver'&&c==='MIRROR OFF'));
