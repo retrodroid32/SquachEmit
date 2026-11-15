@@ -58,7 +58,7 @@ int rxRssi=0;
 uint32_t lastEvidenceAt=0,lastFilterAt=0;
 uint8_t filterLetter=0; // 0 = ALL; 1..26 = A..Z
 size_t filterPage=0;
-uint8_t helpPage=0,menuPage=0,outfitLevel=0,backgroundLevel=0,backgroundPage=0;
+uint8_t helpPage=0,menuPage=0,outfitLevel=0,backgroundLevel=0,backgroundPage=0,outfitPage=0;
 bool onAirIndicator=false;
 bool portraitCalibrated=false,portraitMode=false;
 uint16_t portraitTouchData[5]={0};
@@ -658,12 +658,23 @@ void mainMenuScreen(){
   char count[24];snprintf(count,sizeof(count),"PAGE %u/3",(unsigned)(menuPage+1));
   label(12,201,count,kMuted);footer("HOME","< PREV","NEXT >");
 }
+static const char* const kOutfitNames[]={
+  "CLASSIC SQUACHY","BLACK HOODIE","NEON LAB JACKET",
+  "TANOOKI","UNICORN","TINFOIL","SHADOW","PLUMBER BRO","TALL BRO",
+  "SPACE","BLUE BLUR","CAPTAIN","WOLF PELT","CHROME WING",
+  "VOID EYE","SNOW PARKA","SHARK SUIT","YZZERD","OVER 9000",
+  "SHAMBLER","TH3 0N3","STRIPES"};
+constexpr uint8_t kOutfitCount=22;
 void outfitScreen(){
   lcd.fillScreen(kBg);titleBar();label(13,25,"SQUACHY / WARDROBE",kVaporPink,2);
-  const char* styles[]={"CLASSIC SQUACHY","BLACK HOODIE","NEON LAB JACKET"};
-  for(uint8_t i=0;i<3;++i)menuRow(50+i*48,styles[i],
-    outfitLevel==i?"EQUIPPED":"TAP TO WEAR",outfitLevel==i);
-  label(12,198,"COSTUME SAVED TO DEVICE",kMuted);footer("BACK","CLASSIC","HOME");
+  for(uint8_t i=0;i<4;++i){
+    const uint8_t n=outfitPage*4+i;
+    menuRow(46+i*39,n<kOutfitCount?kOutfitNames[n]:"",
+      n<kOutfitCount?(outfitLevel==n?"EQUIPPED":"TAP TO WEAR"):"",
+      n<kOutfitCount&&outfitLevel==n);
+  }
+  char pg[30];snprintf(pg,sizeof(pg),"PAGE %u/6",(unsigned)(outfitPage+1));
+  label(12,202,pg,kMuted);footer("BACK","< PREV","NEXT >");
 }
 static const char* const kBackgroundNames[]={
   "SYNTHWAVE","DIGITAL RAIN","STARFIELD","FIREFLIES",
@@ -1204,8 +1215,8 @@ void portraitPage(const char* active,uint32_t remaining,bool suite){
       const HistoryEntry* h=historyAt(historyPage*4+i);
       if(h){head=h->id;sub=h->status;}
     }else if(screen==Screen::Outfits){
-      static const char* names[]={"CLASSIC SQUACHY","BLACK HOODIE","NEON LAB JACKET","PREVIEW"};
-      head=names[i];sub=i==outfitLevel?"EQUIPPED":"SELECT OUTFIT";
+      const int n=outfitPage*4+i;
+      if(n<kOutfitCount){head=kOutfitNames[n];sub=n==outfitLevel?"EQUIPPED":"SELECT OUTFIT";}
     }else if(screen==Screen::Backgrounds){
       const int n=backgroundPage*4+i;
       if(n<10){head=kBackgroundNames[n];sub=n==backgroundLevel?"ACTIVE":"SELECT BACKGROUND";}
@@ -1284,6 +1295,11 @@ Cyd32UiAction portraitTap(int x,int y,bool active,bool suite){
       else if(backgroundPage<2)++backgroundPage;
       redraw=true;return Cyd32UiAction::None;
     }
+    if(screen==Screen::Outfits){
+      if(x<160){if(outfitPage)--outfitPage;}
+      else if(outfitPage<5)++outfitPage;
+      redraw=true;return Cyd32UiAction::None;
+    }
     if(screen==Screen::Duration)return touchDuration(px,218);
     if(screen==Screen::Help)return touchHelp(px,218);
     screen=Screen::MainMenu;redraw=true;return Cyd32UiAction::None;
@@ -1308,7 +1324,8 @@ Cyd32UiAction portraitTap(int x,int y,bool active,bool suite){
       lcd.setRotation(1);loadCal();portraitMode=false;wasPressed=true;redraw=true;
     }else return touchSettings(150,50+i*39);
   }else if(screen==Screen::Outfits){
-    if(i<3){outfitLevel=(uint8_t)i;
+    const int n=outfitPage*4+i;
+    if(n<kOutfitCount){outfitLevel=(uint8_t)n;
       if(prefs.begin("sqemit32",false)){prefs.putUChar("outfit",outfitLevel);prefs.end();}
       redraw=true;}
   }else if(screen==Screen::Backgrounds){
@@ -1379,7 +1396,7 @@ void cyd32UiBegin(){
   if(screenTimeout>2)screenTimeout=0;
   if(themeLevel>2)themeLevel=0;
   if(fontMode>1)fontMode=1;
-  if(outfitLevel>2)outfitLevel=0;
+  if(outfitLevel>21)outfitLevel=0;
   if(backgroundLevel>9)backgroundLevel=0;
   applyTheme();
   if(prefs.begin("sqemitfav",true)){
@@ -1552,16 +1569,13 @@ Cyd32UiAction cyd32UiTick(const char* active,uint32_t remaining,bool suite){
     }else if(screen==Screen::Outfits){
       if(y>=kFooterY){
         if(x<108)screen=Screen::MainMenu;
-        else if(x<213)outfitLevel=0;
-        else screen=Screen::Home;
-        if(x>=108&&x<213&&prefs.begin("sqemit32",false)){
-          prefs.putUChar("outfit",outfitLevel);prefs.end();
-        }
+        else if(x<213){if(outfitPage)--outfitPage;}
+        else if(outfitPage<5)++outfitPage;
         redraw=true;
-      }else if(y>=50&&y<194){
-        const int choice=(y-50)/48;
-        if(choice<3){
-          outfitLevel=(uint8_t)choice;
+      }else if(y>=46&&y<202){
+        const uint8_t n=outfitPage*4+(uint8_t)((y-46)/39);
+        if(n<kOutfitCount){
+          outfitLevel=n;
           if(prefs.begin("sqemit32",false)){
             prefs.putUChar("outfit",outfitLevel);prefs.end();
           }
