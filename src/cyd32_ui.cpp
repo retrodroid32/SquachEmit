@@ -1078,6 +1078,7 @@ void cyd32UiBegin(){
     screenTimeout=prefs.getUChar("timeout",0);
     themeLevel=prefs.getUChar("theme",0);
     fontMode=prefs.getUChar("font",1);
+     outfitLevel=prefs.getUChar("outfit",0);
     prefs.end();
   }
   if(durationSeconds<3 || durationSeconds>30)durationSeconds=12;
@@ -1086,6 +1087,7 @@ void cyd32UiBegin(){
   if(screenTimeout>2)screenTimeout=0;
   if(themeLevel>2)themeLevel=0;
   if(fontMode>1)fontMode=1;
+  if(outfitLevel>2)outfitLevel=0;
   applyTheme();
   if(prefs.begin("sqemitfav",true)){
     if(prefs.getBytesLength("fav")==sizeof(favBits))prefs.getBytes("fav",favBits,sizeof(favBits));
@@ -1225,7 +1227,52 @@ Cyd32UiAction cyd32UiTick(const char* active,uint32_t remaining,bool suite){
   }
   if(pressed&&!wasPressed&&now-lastPress>=240&&
      x<(screen==Screen::Portrait?240:kW)&&y<(screen==Screen::Portrait?320:kH)){
-    if(screen==Screen::Home)action=touchHome(x,y,active&&*active,suite);
+    if(screen!=Screen::Portrait&&y<18&&x<85){
+      screen=Screen::MainMenu;menuPage=0;redraw=true;
+    }else if(screen==Screen::MainMenu){
+      if(y>=kFooterY){
+        if(x<108)screen=Screen::Home;
+        else if(x<213){if(menuPage)--menuPage;}
+        else if(menuPage<2)++menuPage;
+        redraw=true;
+      }else if(y>=46&&y<202){
+        const uint8_t n=menuPage*4+(uint8_t)((y-46)/39);
+        if(n<kMenuEntries){
+          const Screen targets[]={Screen::Categories,Screen::QuickFilter,
+            Screen::Favorites,Screen::History,Screen::Diagnostics,
+            Screen::Settings,Screen::Outfits,Screen::OtaInfo,
+            Screen::Activity,Screen::Help,Screen::Recovery};
+          screen=targets[n];redraw=true;
+          if(screen==Screen::Favorites)favoritesPage=0;
+          if(screen==Screen::History)historyPage=0;
+          if(screen==Screen::QuickFilter)filterPage=0;
+        }
+      }
+    }else if(screen==Screen::Outfits){
+      if(y>=kFooterY){
+        if(x<108)screen=Screen::MainMenu;
+        else if(x<213)outfitLevel=0;
+        else screen=Screen::Home;
+        if(x>=108&&x<213&&prefs.begin("sqemit32",false)){
+          prefs.putUChar("outfit",outfitLevel);prefs.end();
+        }
+        redraw=true;
+      }else if(y>=50&&y<194){
+        const int choice=(y-50)/48;
+        if(choice<3){
+          outfitLevel=(uint8_t)choice;
+          if(prefs.begin("sqemit32",false)){
+            prefs.putUChar("outfit",outfitLevel);prefs.end();
+          }
+          redraw=true;
+        }
+      }
+    }else if(screen==Screen::OtaInfo){
+      if(y>=kFooterY){
+        screen=x<108?Screen::MainMenu:x<213?Screen::Help:Screen::Home;
+        redraw=true;
+      }
+    }else if(screen==Screen::Home)action=touchHome(x,y,active&&*active,suite);
     else if(screen==Screen::Categories)action=touchCategories(x,y);
     else if(screen==Screen::Duration)action=touchDuration(x,y);
     else if(screen==Screen::Details)action=touchDetails(x,y,active&&*active);
@@ -1276,7 +1323,10 @@ void cyd32UiStreamState(const char* activeId,uint32_t remainingMs,
       screen==Screen::Activity?"ACTIVITY":
       screen==Screen::Evidence?"EVIDENCE":
       screen==Screen::QuickFilter?"QUICKFILTER":
-      screen==Screen::Portrait?"PORTRAIT":"HOME";
+      screen==Screen::Portrait?"PORTRAIT":
+       screen==Screen::MainMenu?"MENU":
+       screen==Screen::Outfits?"OUTFITS":
+       screen==Screen::OtaInfo?"OTA":"HOME";
   const Scenario* chosen=selected<kScenarioCount?&kScenarios[selected]:nullptr;
   const uint32_t petMs=(int32_t)(petUntil-now)>0?petUntil-now:0;
   Serial.printf("UI STATE 1 %s %u %u %u %s %u %s %lu %u %u %s %s %lu %lu\n",
