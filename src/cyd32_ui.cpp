@@ -712,6 +712,15 @@ static const char* const kBackgroundNames[]={
   "DIGITAL RAIN","STARFIELD","FLYING TOASTERS","AQUARIUM",
   "TERMINAL LOG","FIREFLIES","FIRE","SNOWFALL",
   "THE GIBSON","SYNTHWAVE"};
+void cycleBackground(int delta){
+  backgroundLevel=(uint8_t)((backgroundLevel+10+(delta<0?-1:1))%10);
+  backgroundPage=backgroundLevel/4;
+  if(prefs.begin("sqemit32",false)){
+    prefs.putUChar("bg_sqwatch",backgroundLevel);prefs.end();
+  }
+  // Changing scenes never changes the selected signal or TX state.
+  redraw=true;
+}
 void backgroundsScreen(){
   lcd.fillScreen(kBg);titleBar();label(13,25,"SQUACHEMIT / BACKGROUNDS",kVaporPink,2);
   for(uint8_t i=0;i<4;++i){
@@ -973,7 +982,14 @@ void startCal(){
   redraw=true;
   Serial.println("CYD32,TOUCH,CALIBRATED_LANDSCAPE");
 }
+void cycleBackground(int delta);
 Cyd32UiAction touchHome(int x,int y,bool active,bool suite){
+  // Same gesture as SquachWatch CLEAR: outer 10% of the main scene.
+  // Exclude top status bar, footer, and current transmit safety controls.
+  if(y>=23&&y<182&&(x<kW/10||x>=kW-kW/10)){
+    cycleBackground(x<kW/10?-1:+1);
+    return Cyd32UiAction::None;
+  }
   if(y>=kFooterY){
     if(x<108){screen=Screen::Categories;redraw=true;return Cyd32UiAction::None;}
     if(x<213)return (active||suite||playlistRunning)?Cyd32UiAction::Stop:Cyd32UiAction::Run;
@@ -1397,6 +1413,10 @@ Cyd32UiAction portraitTap(int x,int y,bool active,bool suite){
     return Cyd32UiAction::None;
   }
   if(screen==Screen::Home){
+    // 240px portrait uses the same SquachWatch edge gesture (10%).
+    if(y>=60&&y<215&&(x<24||x>=216)){
+      cycleBackground(x<24?-1:+1);return Cyd32UiAction::None;
+    }
     if(y>=287){
       if(x<80){screen=Screen::Categories;redraw=true;return Cyd32UiAction::None;}
       if(x<160)return active||suite||playlistRunning?Cyd32UiAction::Stop:Cyd32UiAction::Run;
