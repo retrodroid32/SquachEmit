@@ -131,6 +131,7 @@ public:
  void setTextSize(uint8_t s){size=(s?s:1);}
  void setTextWrap(bool){}
  void setTextColor(uint16_t c){fg=c;}
+ void setTextColor(uint16_t c,uint16_t){fg=c;}
  void setCursor(int x,int y){cx=x;cy=y;}
  int charWidth(unsigned ch) const {
    if(font==1)return 6*size;
