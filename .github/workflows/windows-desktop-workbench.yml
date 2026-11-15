@@ -60,7 +60,7 @@ jobs:
       - name: Upload Windows EXE files for hardware review
         uses: actions/upload-artifact@v4
         with:
-          name: SquachEmit-Workbench-R8_9-SquachWatch-NativeV2-PartialMirror-Windows-x64-LAB
+          name: SquachEmit-Workbench-R8_9_1-StartupFix-NativeV2-BothLiveViews-Windows-x64-LAB
           path: desktop/dist/*.exe
           retention-days: 14
           if-no-files-found: error
