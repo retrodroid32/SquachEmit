@@ -285,6 +285,8 @@ namespace Squachy {
     // the override. Set it, draw, clear it -- leaving it set would
     // silently take over every other screen.
     void setOutfitPreview(int8_t idx);
+    // SquachEmit-only optional garment on the original animated body.
+    void setSqemitCustomLook(uint8_t look); // 0=off, 1=hoodie, 2=lab jacket
 
     // The same override for the shades tint, and it exists for the same
     // reason setOutfitPreview does: a visiting Squachy has to arrive in his
