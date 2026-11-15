@@ -661,17 +661,23 @@ static const char* const kBackgroundNames[]={
   "DIGITAL RAIN","STARFIELD","FLYING TOASTERS","AQUARIUM",
   "TERMINAL LOG","FIREFLIES","FIRE","SNOWFALL",
   "THE GIBSON","SYNTHWAVE"};
-void cycleBackground(int delta){
+void selectBackground(uint8_t next){
+  if(next>=10||next==backgroundLevel)return;
   const uint8_t prior=backgroundLevel;
-  backgroundLevel=(uint8_t)((backgroundLevel+10+(delta<0?-1:1))%10);
-  backgroundPage=backgroundLevel/4;
-  if(prior==0&&backgroundLevel!=0)SquachWatchScenes::releaseDigitalRain();
-  if(prior==4&&backgroundLevel!=4)SquachWatchScenes::releaseTerm();
+  backgroundLevel=next;
+  backgroundPage=next/4;
+  // Original SquachWatch background states allocate memory only when needed.
+  // Release these bounded allocations every time a scene is changed.
+  if(prior==0)SquachWatchScenes::releaseDigitalRain();
+  if(prior==4)SquachWatchScenes::releaseTerm();
   if(prefs.begin("sqemit32",false)){
     prefs.putUChar("bg_sqwatch",backgroundLevel);prefs.end();
   }
-  // Changing scenes never changes the selected signal or TX state.
+  // Changing a background never changes the selected case or radio state.
   redraw=true;
+}
+void cycleBackground(int delta){
+  selectBackground((uint8_t)((backgroundLevel+10+(delta<0?-1:1))%10));
 }
 void backgroundsScreen(){
   lcd.fillScreen(kBg);titleBar();label(13,25,"SQUACHEMIT / BACKGROUNDS",kVaporPink,2);
@@ -1466,9 +1472,7 @@ Cyd32UiAction portraitTap(int x,int y,bool active,bool suite){
       redraw=true;}
   }else if(screen==Screen::Backgrounds){
     const int n=backgroundPage*4+i;
-    if(n<10){backgroundLevel=(uint8_t)n;
-      if(prefs.begin("sqemit32",false)){prefs.putUChar("bg_sqwatch",backgroundLevel);prefs.end();}
-      redraw=true;}
+    if(n<10)selectBackground((uint8_t)n);
   }else if(screen==Screen::Duration){
     setDuration(i==0?3:i==1?10:i==2?30:(durationSeconds<30?durationSeconds+1:30));
     redraw=true;
@@ -1756,9 +1760,7 @@ Cyd32UiAction cyd32UiTick(const char* active,uint32_t remaining,bool suite){
       }else if(y>=46&&y<202){
         const uint8_t n=backgroundPage*4+(uint8_t)((y-46)/39);
         if(n<10){
-          backgroundLevel=n;
-          if(prefs.begin("sqemit32",false)){prefs.putUChar("bg_sqwatch",backgroundLevel);prefs.end();}
-          redraw=true;
+          selectBackground(n);
         }
       }
     }else if(screen==Screen::OtaInfo){
