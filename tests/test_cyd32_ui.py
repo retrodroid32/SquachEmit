@@ -12,7 +12,7 @@ class Cyd32UiGuards(unittest.TestCase):
                      "homeScreen(", "categoriesScreen(", "libraryScreen(",
                      "touchHome(","touchCategories(","touchLibrary(",
                      "pinnedBack(", "titleBar(", "bigSquachy(",
-                     '"TESTS"', '"RUN"', '"STOP"', '"SUITE"',
+                     '"MENU"', '"RUN"', '"STOP"', '"SUITE"',
                      '"TEST LIBRARY / DEVICE TYPE"', 'deviceCategoryName(',
                      'deviceCategoryCaseAtRank(', '"< PREV"', '"NEXT >"'):
             self.assertIn(name,self.s)
@@ -46,6 +46,19 @@ class Cyd32UiGuards(unittest.TestCase):
         self.assertNotIn('"WIFI / BEACONS"',self.s)
         self.assertIn('categoryPage*kPageRows',self.s)
         self.assertIn('deviceCategoryCaseAtRank(',self.s)
+    def test_r9_handheld_navigation_and_touch(self):
+        for name in ('Screen::MainMenu','Screen::Outfits','Screen::OtaInfo',
+                     'mainMenuScreen()', 'outfitScreen()', 'otaInfoScreen()',
+                     '"HEALTH / DIAGNOSTICS"', '"SETTINGS"',
+                     '"BLACK HOODIE"', '"touchport"', 'portraitTouchData',
+                     'lcd.setTouch(portraitTouchData)', 'loadCal();',
+                     '"outfit"', 'outfitLevel'):
+            self.assertIn(name, self.s)
+        port=(ROOT/"src"/"cyd32_squachy_port.cpp").read_text()
+        self.assertIn('uint8_t outfit',port)
+        self.assertIn('BLACK HOODIE:',port)
+        self.assertIn('const bool dance=',port)
+        self.assertIn('NO SAFE SECOND APP SLOT',self.s)
     def test_source_derived_core(self):
         p=(ROOT/"src"/"cyd32_squachy_port.cpp").read_text()
         for s in ("void render(", "static void wedge(", "const int tuft[4][6]",
