@@ -40,7 +40,7 @@ function resolveResource(urlPath,roots){
     return {file:app.isPackaged ?
       path.join(roots.workbench,'cases.json'):
       path.resolve(__dirname,'..','tests','cases.json')};
-  if(/^\/workbench\/(?:app|core)\.js$/.test(name) ||
+  if(/^\/workbench\/(?:app|core|runner-v2)\.js$/.test(name) ||
      name==='/workbench/style.css')
     return {file:path.join(roots.workbench,path.basename(name))};
   if(name==='/desktop/controller.js' || name==='/desktop/controller.css' ||
