@@ -44,7 +44,8 @@ function resolveResource(urlPath,roots){
      name==='/workbench/style.css')
     return {file:path.join(roots.workbench,path.basename(name))};
   if(name==='/desktop/controller.js' || name==='/desktop/controller.css' ||
-      name==='/desktop/mirror.js' || name==='/desktop/native-emitter.js')
+      name==='/desktop/mirror.js' || name==='/desktop/native-emitter.js' ||
+      name==='/desktop/native-watch-v2.js')
     return {file:path.join(roots.panel,path.basename(name))};
   return null;
 }
@@ -66,6 +67,7 @@ function serve(req,res,roots){
           '  <link rel="stylesheet" href="/desktop/controller.css">\n'+
           '  <script src="/desktop/mirror.js" defer></script>\n'+
            '  <script src="/desktop/native-emitter.js" defer></script>\n'+
+           '  <script src="/desktop/native-watch-v2.js" defer></script>\n'+
            '  <script src="/desktop/controller.js" defer></script>\n</head>');
       body=Buffer.from(html,'utf8');
     }
