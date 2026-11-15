@@ -6,6 +6,7 @@ const path=require('node:path');
 const vm=require('node:vm');
 const mirrorCodec=require('../public/mirror.js');
 const native=require('../public/native-emitter.js');
+const watch=require('../public/native-watch-v2.js');
 
 test('Windows rail renders authentic USB frame and translates canvas pointer to MIRROR TOUCH',async()=>{
   const elements=new Map(),windowEvents=new Map(),timers=new Map();
@@ -23,7 +24,7 @@ test('Windows rail renders authentic USB frame and translates canvas pointer to 
       getContext(){
         const el=this;
         return {canvas:el,putImageData:(image)=>{el.lastImage=image;},
-          fillRect(){el.drawCount=(el.drawCount||0)+1;},beginPath(){},
+          fillRect(){el.drawCount=(el.drawCount||0)+1;},scale(){},beginPath(){},
           moveTo(){},lineTo(){},stroke(){},fill(){},arc(){},rect(){},
           roundRect(){},ellipse(){},closePath(){},save(){},restore(){},
           translate(){},clip(){},fillText(){},measureText(x){return {width:String(x).length*6};}
@@ -55,6 +56,7 @@ test('Windows rail renders authentic USB frame and translates canvas pointer to 
   };
   const win={
     SQEWorkbenchDesktop:api,SQEMirrorCodec:mirrorCodec,SQECydNative:native,
+    SQEWatchNativeV2:watch,
     addEventListener:(name,callback)=>windowEvents.set(name,callback)
   };
   const context={
@@ -85,7 +87,32 @@ test('Windows rail renders authentic USB frame and translates canvas pointer to 
   const drain=async()=>{for(let i=0;i<12;i++)await Promise.resolve();};
   click('mirror-on','receiver');
   await drain();
-  assert.ok(commands.some(([r,c])=>r==='receiver'&&c==='MIRROR ON'));
+  assert.ok(commands.some(([r,c])=>r==='receiver'&&c==='UI HELLO'),
+    'v2 HELLO must be the first receiver live-view request');
+  const receiveUi=line=>windowEvents.get('sqe:receiver-ui')({detail:{role:'receiver',line}});
+  receiveUi('UI CAPS 2 SQUACHWATCH STATE COUNTS RECENT_LOG TOUCH PIXEL_FALLBACK PARTIAL');
+  await drain();
+  assert.ok(commands.some(([r,c])=>r==='receiver'&&c==='UI ON'));
+  receiveUi('UI READY 2 SQUACHWATCH TOUCH PARTIAL');
+  receiveUi('UI STATE 2 1 1 320 240 1 4567 0 1');
+  await drain();
+  assert.ok(commands.some(([r,c])=>r==='receiver'&&c==='UI COUNTS'));
+  receiveUi('UI COUNTS 2 1 1:1:2 2:1:2 3:1:2 4:1:2 5:1:2 6:1:2 7:1:2 8:1:2 9:1:2 17:1:2 14:1:2');
+  await drain();
+  assert.equal(elements.get('dc-canvas-receiver').hidden,false,
+    'native MAIN should render real counter data');
+  const receiverCanvas=elements.get('dc-canvas-receiver');
+  receiverCanvas.listeners.pointerdown({pointerId:3,clientX:60,clientY:100,preventDefault(){}});
+  await drain();
+  assert.ok(commands.some(([r,c])=>r==='receiver'&&c==='UI TOUCH 60 100 DOWN'));
+  receiverCanvas.listeners.pointerup({pointerId:3,clientX:60,clientY:100,preventDefault(){}});
+  await drain();
+  receiveUi('UI STATE 2 2 4 320 240 1 4800 0 0');
+  await drain();
+  assert.ok(commands.some(([r,c])=>r==='receiver'&&c==='UI OFF'),
+    'unsupported AppState must turn native mode off before pixel fallback');
+  assert.ok(commands.some(([r,c])=>r==='receiver'&&c==='MIRROR ON'),
+    'unsupported screen uses real RGB332 frames');
   const receive=line=>windowEvents.get('sqe:mirror')({detail:{role:'receiver',line}});
   assert.equal(commands.some(([r,c])=>r==='receiver'&&c==='MIRROR FRAME'),false,
     'frame must wait for a real MIRROR READY acknowledgment');
@@ -121,7 +148,7 @@ test('Windows rail renders authentic USB frame and translates canvas pointer to 
 
   // The workbench automatically stops the receiver mirror during a signal
   // test. The UI must hide the old pixels without issuing a duplicate OFF.
-  click('mirror-on','receiver');
+  click('receiver-ui-off','receiver');
   await drain();
   receive('MIRROR READY RGB332 320x240');
   await drain();

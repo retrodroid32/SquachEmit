@@ -67,7 +67,7 @@ test('Windows bridge does not request TFT readback for SquachEmit',()=>{
   assert.match(main,/cyd32UiStreamState\(/);
   assert.match(wb,/sqe:|desktopEvent\('native-ui'/);
   assert.match(controller,/native\.render\(/);
-  assert.match(controller,/role==='emitter'\?'UI TOUCH '/);
+  assert.match(controller,/role==='emitter'\|\|receiverUi\.mode==='native'\?'UI TOUCH '/);
   assert.match(controller,/api\.send\('emitter','UI ON'\)/);
   assert.match(controller,/api\.send\('emitter','UI GET'\)/);
 });

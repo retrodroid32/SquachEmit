@@ -26,7 +26,7 @@ test('unknown command gives explicit mismatch and turns off pending live UI',()=
   assert.match(ctrl,/void api\.send\('receiver','MIRROR OFF'\)/);
 });
 test('no fabricated SquachWatch pixels and serial LOG path preserved',()=>{
-  assert.match(ctrl,/Full screen remains available via authentic pixel mirror/);
+  assert.match(ctrl,/authentic RGB332/);
   assert.match(ctrl,/data-action="receiver-ui-on"/);
   assert.match(ctrl,/MIRROR FRAME/);
   assert.match(ctrl,/sqe:mirror-paused/);

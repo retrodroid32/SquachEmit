@@ -5,7 +5,8 @@
 (function(){
   'use strict';
   if(new URLSearchParams(location.search).get('desktop')!=='1')return;
-  const api=window.SQEWorkbenchDesktop,codec=window.SQEMirrorCodec,native=window.SQECydNative;
+  const api=window.SQEWorkbenchDesktop,codec=window.SQEMirrorCodec,native=window.SQECydNative,
+    watch=window.SQEWatchNativeV2;
   if(!api||!codec||!native)throw Error('Windows USB native UI or mirror decoder missing');
   const main=document.querySelector('main');
   if(!main)throw Error('Workbench content unavailable');
@@ -21,7 +22,8 @@
   const names={receiver:'SquachWatch',emitter:'SquachEmit'};
   const terminals={receiver:'',emitter:''};
   const local={model:null,catalog:native.prepare([]),receivedAt:0};
-  const receiverUi={enabled:false,ready:false,lastAt:0,screen:null};
+  const receiverUi={enabled:false,ready:false,lastAt:0,screen:null,
+    mode:'off',caps:false,model:watch?watch.create():null,lastListAt:0,listRequestedAt:0};
   const watchScreenNames=['BOOT','MAIN','ALERT','LOG','SETTINGS','DIARY','OUTFIT','SCAN','WATCH ALERT','DIAGNOSTICS','HUNT','COLOR CHECK','DETECTION FILTER','OUTFIT UNLOCK','POLICIES','POWER SAVER','PHONE','MESH MENU','MESH WARNING','MESH PHRASE','MESH COMPOSE','BEACON WARNING','SECURITY','LOCKED','PIN ENTRY','SQUAD','UPDATE','WIFI PASSWORD','STATUS LIGHT','NUDGE','SQUAD UPDATE','INVITE','DESK','WIFI NETWORKS','WIFI ADD','SYSTEM PROPERTIES','BINGO','DEX','ALERT RULES','WATCH LIST','HUNT LIST','SD FILES'];
   const mirrors={};
   for(const role of ['receiver','emitter']){
@@ -52,7 +54,7 @@
       '<div class="dc-display" id="dc-display-'+role+'">'+
       '<div class="dc-lcd" id="dc-lcd-'+role+'">'+
       '<canvas id="dc-canvas-'+role+'" width="320" height="240" tabindex="0" '+
-      'aria-label="USB pixels from physical '+names[role]+' LCD; click or drag to touch" hidden></canvas>'+
+      'aria-label="Device native UI state or authentic LCD pixels from '+names[role]+'; click or drag to touch" hidden></canvas>'+
       '<div class="dc-placeholder" id="dc-placeholder-'+role+'">'+
       '<div class="dc-placeholder-icon">▣</div>'+
       '<b>NO LIVE LCD FRAME</b><small>Connect USB and choose Start live view. '+
@@ -65,12 +67,12 @@
       '<button type="button" data-role="'+role+'" data-action="mirror-frame">Refresh view</button>'+
       '<button type="button" data-role="'+role+'" data-action="mirror-off">Stop live view</button></div>'+
       (emitter?'<button type="button" data-role="emitter" data-action="mirror-diag">Check device UI state</button>':
-        '<div class="dc-mirror-actions"><button type="button" data-role="receiver" data-action="receiver-ui-on">Check native UI protocol</button>'+
-        '<button type="button" data-role="receiver" data-action="receiver-ui-off">Stop state telemetry</button></div>'+
-        '<div id="dc-receiver-ui" class="dc-frame-meta" role="status">Native UI: not checked. Full display uses authentic MIRROR pixels.</div>')+
+        '<div class="dc-mirror-actions"><button type="button" data-role="receiver" data-action="receiver-ui-on">Native v2 mode</button>'+
+        '<button type="button" data-role="receiver" data-action="receiver-ui-off">Pixel fallback</button></div>'+
+        '<div id="dc-receiver-ui" class="dc-frame-meta" role="status">Native v2 partial MAIN / DEVICES model; other screens use authentic pixels.</div>')+
       '<div class="dc-displaymode">'+(emitter?
         'PC-drawn SquachEmit UI, synchronized with device navigation and RF state. No screenshots or 2Mbps switch. Click, hold or drag to operate the physical touchscreen.':
-        'Optional SquachWatch USB pixel mirror; pause it for receiver LOG tests. Native UI compatibility shows screen state only (not a reconstructed LCD).')+'</div>'+
+        'SquachWatch v2: PC renders real MAIN counters and DEVICES log rows. All unsupported screens use authentic RGB332 pixels. No invented UI content.')+'</div>'+
       '<div class="dc-connections">'+
       '<button type="button" data-action="connect" data-role="'+role+'">Connect USB</button>'+
       '<button type="button" data-action="disconnect" data-role="'+role+'">Disconnect</button></div>'+
@@ -94,7 +96,7 @@
     '<h2>Interactive device screens</h2><p>SquachEmit drawn locally · hardware authoritative</p></div>'+
     '<button type="button" id="dc-export">Export CSV</button></div>'+
     markup('receiver')+markup('emitter')+
-    '<div class="dc-footnote"><b>NATIVE SQUACHEMIT UI.</b> The right-side interface is drawn on the PC from real hardware state, not captured LCD pixels. Procedural artwork and font fidelity require device testing. SquachWatch receiver mirroring remains optional and separate.</div>';
+    '<div class="dc-footnote"><b>DUAL NATIVE USB UI.</b> SquachEmit is state-rendered. SquachWatch uses partial authoritative v2 MAIN/DEVICES models and authentic LCD pixel fallback elsewhere. Neither UI model substitutes for receiver LOG evidence.</div>';
   function info(role,message){get('dc-feedback-'+role).textContent=message;}
   function mirrorNote(role,message){get('dc-frame-'+role).textContent=message;}
   function cancelFrameTimers(role){
@@ -112,6 +114,7 @@
     s.lastFrame=false;s.lastFrameSequence=0;
     s.assembler.reset();
     if(role==='emitter'){local.model=null;local.receivedAt=0;}
+    if(role==='receiver'&&receiverUi.model)receiverUi.model.reset();
     // Do not present a stale screen as live.
     get('dc-canvas-'+role).hidden=true;
     get('dc-placeholder-'+role).hidden=false;
@@ -125,10 +128,14 @@
     // Deliver an explicit UP before switching off or disconnecting. A lost
     // pointer capture must not leave the physical device pressed.
     if(send&&was&&connected&&(s.touchDown||s.pendingUp!==null))
-      await api.send(role,(role==='emitter'?'UI TOUCH ':'MIRROR TOUCH ')+s.lastPoint.x+' '+s.lastPoint.y+' UP');
+      await api.send(role,(role==='emitter'||receiverUi.mode==='native'?'UI TOUCH ':'MIRROR TOUCH ')+s.lastPoint.x+' '+s.lastPoint.y+' UP');
+    const priorMode=role==='receiver'?receiverUi.mode:null;
     resetRole(role);
+    if(role==='receiver'){
+      receiverUi.enabled=false;receiverUi.ready=false;receiverUi.mode='off';receiverUi.caps=false;
+    }
     if(send&&was&&connected){
-      const ok=await api.send(role,role==='emitter'?'UI OFF':'MIRROR OFF');
+      const ok=await api.send(role,role==='emitter'||priorMode!=='pixel'?'UI OFF':'MIRROR OFF');
       mirrorNote(role,ok?'USB mirror stopped. LCD view disconnected.':
         'USB mirror stop was not acknowledged; view is disconnected.');
     }else mirrorNote(role,'USB mirror offline. Connect to show real LCD pixels.');
@@ -154,6 +161,13 @@
       if(!mirrors.emitter.active||!isConnected(role,api.getState()))return;
       const ok=await api.send('emitter','UI GET');
       if(!ok)info('emitter','UI GET failed; check USB and firmware.');
+      return;
+    }
+    if(role==='receiver'&&receiverUi.mode==='native'){
+      if(!mirrors.receiver.active||!receiverUi.ready)return;
+      await api.send('receiver','UI GET');
+      if(receiverUi.screen===1)await api.send('receiver','UI COUNTS');
+      if(receiverUi.screen===3)await api.send('receiver','UI LIST 0 6');
       return;
     }
     const s=mirrors[role],state=api.getState();
@@ -186,12 +200,9 @@
       s.next=setTimeout(()=>void requestMirrorFrame(role),700);
     },role==='emitter'?(state.emitterBaud===115200?45000:16000):12000);
   }
-  async function startMirror(role){
-    if(role==='receiver'&&receiverUi.enabled){
-      const ok=await api.send('receiver','UI OFF');
-      receiverUi.enabled=false;receiverUi.ready=false;
-      get('dc-receiver-ui').textContent=ok?'State telemetry stopped. Use Start live view for pixel capture.':'Native UI stop could not be confirmed.';
-    }
+  async function startMirror(role,forcePixel=false){
+    if(role==='receiver'&&!forcePixel)return startWatchNative();
+    if(role==='receiver'&&receiverUi.mode==='native')await stopMirror('receiver',true);
     const state=api.getState();
     if(mirrors[role].active){
       info(role,mirrors[role].ready?'Live view already active. Use Refresh view.':
@@ -236,6 +247,7 @@
     const s=mirrors[role];
     resetRole(role);
     s.active=true;
+    if(role==='receiver')receiverUi.mode='pixel';
     info(role,'Enabling opt-in USB mirroring…');
     const ok=await api.send(role,'MIRROR ON');
     if(!ok){resetRole(role);info(role,'MIRROR ON command rejected or unavailable.');return;}
@@ -286,7 +298,7 @@
       if(s.active)s.next=setTimeout(()=>void requestMirrorFrame(role),450);
       return;
     }
-    if(!s.active)return; // Never display unsolicited screen bytes.
+    if(!s.active||role==='receiver'&&receiverUi.mode!=='pixel')return; // Never display unsolicited screen bytes.
     if(result.kind==='begin'){
       mirrorNote(role,'Receiving '+(result.delta?'changed rows from':'full')+
         ' physical LCD '+result.width+'×'+result.height+' '+result.format+'…');
@@ -312,6 +324,9 @@
     el.classList.toggle('online',yes);
     if(!yes&&mirrors[role].active){
       resetRole(role);
+      if(role==='receiver'){
+        receiverUi.mode='off';receiverUi.enabled=false;receiverUi.ready=false;receiverUi.caps=false;
+      }
       mirrorNote(role,'USB disconnected — no live LCD image.');
     }
     // Normal 115200 baud carries UI states; no forced 2Mbps handoff.
@@ -378,7 +393,7 @@
   }
   function sendTouch(role,point,phase){
     if(!isConnected(role,api.getState()))return;
-    void api.send(role,(role==='emitter'?'UI TOUCH ':'MIRROR TOUCH ')+point.x+' '+point.y+' '+phase)
+    void api.send(role,(role==='emitter'||receiverUi.mode==='native'?'UI TOUCH ':'MIRROR TOUCH ')+point.x+' '+point.y+' '+phase)
       .then(ok=>{if(!ok)info(role,'Remote touch rejected; check PIN or USB mirror firmware.');})
       .catch(err=>info(role,'Remote touch error: '+err.message));
   }
@@ -434,23 +449,11 @@
   }
   async function onControl(action,role){
     if(role==='receiver'&&action==='receiver-ui-on'){
-      const state=api.getState();
-      if(!state.receiverConnected||state.testActive){
-        info(role,'Connect SquachWatch USB and stop active detection testing first.');return;
-      }
-      if(mirrors.receiver.active)await stopMirror('receiver',true);
-      const ok=await api.send('receiver','UI ON');
-      if(!ok){info(role,'Native UI probe could not be sent; verify firmware and baud.');return;}
-      receiverUi.enabled=true;receiverUi.ready=false;receiverUi.lastAt=0;
-      get('dc-receiver-ui').textContent='Waiting for UI READY from SquachWatch LAB firmware…';
-      info(role,'Native protocol probe sent. Pixel mirror remains available separately.');
-      return;
+      await startWatchNative();return;
     }
     if(role==='receiver'&&action==='receiver-ui-off'){
-      const ok=await api.send('receiver','UI OFF');
-      receiverUi.enabled=false;receiverUi.ready=false;
-      get('dc-receiver-ui').textContent=ok?'Native UI telemetry stopped. Start live view for LCD pixels.':'UI OFF unavailable or receiver offline.';
-      return;
+      await stopMirror('receiver',true);
+      await startMirror('receiver',true);return;
     }
     if(action==='mirror-on'){await startMirror(role);return;}
     if(role==='emitter'&&action==='mirror-diag'){
@@ -663,25 +666,107 @@
     renderEmitter();
   });
   window.addEventListener('sqe:native-ui',e=>onNativeUi(e.detail));
-  // PR #233 is metadata-only: do not fabricate SquachWatch LCD pixels.
+  // Native v2: independently sourced partial MAIN and DEVICES model.
+  function renderWatch(){
+    if(receiverUi.mode!=='native'||!receiverUi.ready||!receiverUi.model)return;
+    const model=receiverUi.model.snapshot();
+    if(!model.state||model.state.kind===0)return;
+    if(Date.now()-receiverUi.lastAt>3000){
+      get('dc-canvas-receiver').hidden=true;
+      get('dc-placeholder-receiver').hidden=false;
+      mirrors.receiver.lastFrame=false;
+      mirrorNote('receiver','Native v2 UI STATE stale; check receiver USB, baud, PIN and firmware.');
+      return;
+    }
+    const canvas=get('dc-canvas-receiver'),ctx=canvas.getContext('2d',{alpha:false});
+    if(!ctx||!watch.render(ctx,model))return;
+    const panel=get('dc-display-receiver');
+    if(panel)panel.style.aspectRatio=model.state.width+' / '+model.state.height;
+    canvas.hidden=false;get('dc-placeholder-receiver').hidden=true;
+    mirrors.receiver.lastFrame=true;
+    mirrorNote('receiver','NATIVE V2 PARTIAL · '+(model.state.kind===1?'MAIN COUNTS':'RAM DEVICES LOG')+
+      ' · '+model.state.width+'×'+model.state.height+
+      (model.state.privacy?' · PRIVACY':'')+' · not a pixel-perfect screenshot');
+  }
+  async function startWatchNative(){
+    const state=api.getState();
+    if(!state.receiverConnected||state.testActive){
+      info('receiver','Connect SquachWatch USB and stop active detection testing first.');return;
+    }
+    if(!watch||!receiverUi.model){
+      info('receiver','Native v2 renderer unavailable in this EXE build.');return;
+    }
+    if(mirrors.receiver.active)await stopMirror('receiver',true);
+    resetRole('receiver');
+    const s=mirrors.receiver;
+    s.active=true;receiverUi.enabled=true;receiverUi.mode='negotiating';
+    receiverUi.ready=false;receiverUi.caps=false;receiverUi.screen=null;
+    receiverUi.lastListAt=0;receiverUi.listRequestedAt=0;
+    mirrorNote('receiver','Checking SquachWatch UI CAPS v2 at connected receiver baud…');
+    const ok=await api.send('receiver','UI HELLO');
+    if(!ok){resetRole('receiver');receiverUi.mode='off';info('receiver','UI HELLO write failed.');return;}
+    s.handshake=setTimeout(()=>{
+      if(!s.active||receiverUi.ready)return;
+      void fallbackWatch('Native v2 capabilities/READY not received; switching to authentic RGB332 LCD.');
+    },6000);
+  }
+  async function fallbackWatch(reason){
+    if(receiverUi.mode==='pixel')return;
+    if(!api.getState().receiverConnected){resetRole('receiver');receiverUi.mode='off';return;}
+    info('receiver',reason);
+    await stopMirror('receiver',true);
+    if(!api.getState().testActive)await startMirror('receiver',true);
+  }
   function onReceiverUi({role,line}){
-    if(role!=='receiver'||!receiverUi.enabled)return;
-    if(line==='UI READY 1 SQUACHWATCH TOUCH STATE'){
-      receiverUi.ready=true;
-      get('dc-receiver-ui').textContent='SquachWatch native UI protocol ready. Waiting for UI STATE…';
-      void api.send('receiver','UI GET');return;
+    if(role!=='receiver'||!receiverUi.model)return;
+    const result=receiverUi.model.feed(line);
+    if(result.kind==='error'){
+      info('receiver','Native UI: '+result.reason);
+      if(result.reason==='LOCKED'||result.reason==='DISABLED'){
+        void stopMirror('receiver',false);return;
+      }
+      if(result.reason==='PRIVACY_CHANGED'||result.reason==='LIST_CHANGED'){
+        void api.send('receiver','UI GET');return;
+      }
+      return;
     }
-    if(/^UI ERROR/.test(line)){
-      get('dc-receiver-ui').textContent='SquachWatch native UI: '+line;return;
+    if(receiverUi.mode==='negotiating'&&result.kind==='caps'){
+      receiverUi.caps=true;
+      void api.send('receiver','UI ON');
+      return;
     }
-    const m=/^UI STATE 1 (\d{1,3}) (\d{1,3}) (\d{1,3}) ([0-3]) (\d{1,10})$/.exec(line);
-    if(!receiverUi.ready||!m)return;
-    const id=Number(m[1]),w=Number(m[2]),h=Number(m[3]);
-    if(id>=watchScreenNames.length||w<1||w>480||h<1||h>480)return;
-    receiverUi.screen=id;receiverUi.lastAt=Date.now();
-    get('dc-receiver-ui').textContent='LIVE SQUACHWATCH STATE · '+watchScreenNames[id]+
-      ' · '+w+'×'+h+' · rotation '+m[4]+' · uptime '+m[5]+'ms. '+
-      'Full screen remains available via authentic pixel mirror.';
+    if(result.kind==='ready'&&receiverUi.caps&&mirrors.receiver.active){
+      receiverUi.mode='native';receiverUi.ready=true;receiverUi.enabled=true;
+      if(mirrors.receiver.handshake!==null){clearTimeout(mirrors.receiver.handshake);mirrors.receiver.handshake=null;}
+      mirrorNote('receiver','SquachWatch native UI v2 connected · partial MAIN/LOG models');
+      if(mirrors.receiver.animation===null)mirrors.receiver.animation=setInterval(renderWatch,450);
+      get('dc-receiver-ui').textContent='Native v2 active: MAIN counters, DEVICES RAM log. Other screens switch to authentic LCD.';
+      void api.send('receiver','UI GET');
+      return;
+    }
+    if(receiverUi.mode!=='native'||!receiverUi.ready)return;
+    if(result.kind==='state'){
+      const st=result.state;
+      const changed=receiverUi.screen!==st.screen;
+      receiverUi.screen=st.screen;receiverUi.lastAt=Date.now();
+      if(st.kind===0){
+        void fallbackWatch('SquachWatch screen '+st.screen+' not modeled in v2; using authentic LCD pixel fallback.');
+        return;
+      }
+      renderWatch();
+      if(changed&&st.kind===1)void api.send('receiver','UI COUNTS');
+      if(st.kind===2&&(changed||Date.now()-receiverUi.lastListAt>=3500)&&
+         Date.now()-receiverUi.listRequestedAt>=2500){
+        receiverUi.listRequestedAt=Date.now();
+        void api.send('receiver','UI LIST 0 6');
+      }
+      return;
+    }
+    if(result.kind==='counts'||result.kind==='list'){
+      renderWatch();
+      if(result.kind==='list')receiverUi.lastListAt=Date.now();
+    }
+    if(result.kind==='status')get('dc-receiver-ui').textContent=result.text;
   }
   window.addEventListener('sqe:receiver-ui',e=>onReceiverUi(e.detail));
   window.addEventListener('sqe:mirror',e=>onMirror(e.detail));
@@ -691,6 +776,7 @@
     // The detection runner owns the serial MIRROR OFF. Hide authentic pixels
     // immediately and cancel outstanding frame timers; don't send it twice.
     resetRole('receiver');
+    receiverUi.mode='off';receiverUi.enabled=false;receiverUi.ready=false;receiverUi.caps=false;
     mirrorNote('receiver',detail.reason||
       'Receiver LCD paused to collect exact-MAC LOG evidence. Restore after testing.');
     info('receiver','Receiver mirroring paused automatically. '+ 
