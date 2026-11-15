@@ -60,7 +60,7 @@ uint8_t filterLetter=0; // 0 = ALL; 1..26 = A..Z
 size_t filterPage=0;
 uint8_t helpPage=0,menuPage=0,outfitLevel=0,backgroundLevel=0;
 bool onAirIndicator=false;
-bool portraitCalibrated=false;
+bool portraitCalibrated=false,portraitMode=false;
 uint16_t portraitTouchData[5]={0};
 uint32_t lastBubbleAt=0;
 uint8_t durationSeconds=12; // 3..30s, saved independently of touch calibration
@@ -1018,7 +1018,7 @@ Cyd32UiAction touchSettings(int x,int y){
            }
          }
          lcd.setTouch(portraitTouchData);
-         wasPressed=true;screen=Screen::Portrait;portraitLastCount=UINT32_MAX;
+         wasPressed=true;portraitMode=true;portraitLastCount=UINT32_MAX;
        }
       redraw=true;return Cyd32UiAction::None;
     }
@@ -1101,6 +1101,164 @@ Cyd32UiAction touchQuickFilter(int x,int y){
     if(filterAt(filterPage*4+(size_t)((y-63)/34),&raw)){
       selected=raw;screen=Screen::Home;redraw=true;
     }
+  }
+  return Cyd32UiAction::None;
+}
+
+void portraitRow(int y,const char* head,const char* sub){
+  lcd.fillRect(5,y,230,44,kBg);lcd.drawRect(5,y,230,44,kPurple);
+  fit(13,y+5,head,212,kCyan,2);if(sub)fit(13,y+25,sub,212,kMuted,1);
+}
+void portraitPage(const char* active,uint32_t remaining,bool suite){
+  // Every page shares the same logical Screen and selection in both rotations.
+  lcd.fillScreen(kBg);
+  lcd.fillRect(0,0,240,26,kPurple);
+  lcd.fillRoundRect(5,3,31,20,3,kTaskbar);
+  for(int y=7;y<20;y+=5)lcd.drawFastHLine(12,y,17,kWhite);
+  label(81,9,"SQUACHEMIT",kWhite);
+  const uint16_t tx=active&&*active?kGreen:kYellow;
+  lcd.drawLine(215,14,221,4,tx);lcd.drawLine(221,4,227,14,tx);
+  lcd.drawFastVLine(221,9,12,tx);
+  const char* name=screen==Screen::Home?"HOME":screen==Screen::MainMenu?"MENU":
+    screen==Screen::Categories?"TEST LIBRARY":screen==Screen::Library?"SIGNALS":
+    screen==Screen::Settings?"SETTINGS":screen==Screen::Outfits?"OUTFITS":
+    screen==Screen::Backgrounds?"BACKGROUNDS":screen==Screen::Favorites?"FAVORITES":
+    screen==Screen::QuickFilter?"QUICK FIND":screen==Screen::History?"HISTORY":
+    screen==Screen::Duration?"TX TIME":screen==Screen::Details?"DETAILS":
+    screen==Screen::Diagnostics?"HEALTH":screen==Screen::OtaInfo?"OTA":
+    screen==Screen::Activity?"TX ACTIVITY":screen==Screen::Evidence?"EVIDENCE":
+    screen==Screen::Help?"HELP":screen==Screen::Identity?"IDENTITY":"RECOVERY";
+  label(12,37,name,kVaporPink,2);
+  for(int i=0;i<4;++i){
+    const char* head="",*sub="";
+    char labelBuf[64]={0},value[48]={0};
+    const Scenario* c=nullptr;
+    if(screen==Screen::MainMenu){
+      const int n=menuPage*4+i;
+      if(n<kMenuEntries){head=menuTitles[n];sub=menuHints[n];}
+    }else if(screen==Screen::Categories){
+      const int n=categoryPage*4+i;
+      if(n<(int)kDeviceCategoryCount){head=deviceCategoryName((DeviceCategory)n);sub="TAP TO VIEW SIGNALS";}
+    }else if(screen==Screen::Library||screen==Screen::Favorites||screen==Screen::QuickFilter){
+      if(screen==Screen::Library)c=atRank(page*4+i);
+      else if(screen==Screen::Favorites)c=favoriteAt(favoritesPage*4+i);
+      else c=filterAt(filterPage*4+i);
+      if(c){scenarioDeviceName(*c,labelBuf,sizeof(labelBuf));head=labelBuf;sub=c->id;}
+    }else if(screen==Screen::History){
+      const HistoryEntry* h=historyAt(historyPage*4+i);
+      if(h){head=h->id;sub=h->status;}
+    }else if(screen==Screen::Outfits){
+      static const char* names[]={"CLASSIC SQUACHY","BLACK HOODIE","NEON LAB JACKET","PREVIEW"};
+      head=names[i];sub=i==outfitLevel?"EQUIPPED":"SELECT OUTFIT";
+    }else if(screen==Screen::Backgrounds){
+      static const char* names[]={"SYNTHWAVE","DIGITAL RAIN","STARFIELD","FIREFLIES"};
+      head=names[i];sub=i==backgroundLevel?"ACTIVE":"SELECT BACKGROUND";
+    }else if(screen==Screen::Settings){
+      static const char* basics[]={"BACKLIGHT","ANIMATION","IDLE DIM","INVERSION"};
+      static const char* more[]={"THEME","FONT SIZE","IDENTITY","LANDSCAPE"};
+      head=settingsMore?more[i]:basics[i];sub="TAP TO ADJUST";
+    }else if(screen==Screen::Home){
+      const Scenario* current=selected<kScenarioCount?&kScenarios[selected]:nullptr;
+      if(i==0){head="SELECTED PROFILE";sub=current?current->id:"NONE";}
+      if(i==1){head="TRANSMIT DURATION";snprintf(value,sizeof(value),"%u SECONDS",durationSeconds);sub=value;}
+      if(i==2){head=active&&*active?"ON AIR":suite?"SUITE ACTIVE":"TRANSMITTER READY";
+        sub=active&&*active?"SYNTHETIC TEST IN PROGRESS":"NO RF UNTIL RUN";}
+      if(i==3){head="PROFILE DETAILS";sub="TAP TO OPEN";}
+    }else if(screen==Screen::Duration){
+      static const char* d[]={"3 SECONDS","10 SECONDS","30 SECONDS","+1 SECOND"};
+      head=d[i];sub="TAP TO SET";
+    }else if(screen==Screen::Diagnostics){
+      if(i==0){head="FREE HEAP";snprintf(value,sizeof(value),"%lu BYTES",(unsigned long)ESP.getFreeHeap());sub=value;}
+      if(i==1){head="LARGEST BLOCK";snprintf(value,sizeof(value),"%lu BYTES",(unsigned long)ESP.getMaxAllocHeap());sub=value;}
+      if(i==2){head="UPTIME";snprintf(value,sizeof(value),"%lu SEC",(unsigned long)(millis()/1000));sub=value;}
+      if(i==3){head="TRANSMITTER";sub=active&&*active?"ON AIR":"IDLE";}
+    }else{
+      static const char* h[]={"CURRENT PROFILE","DEVICE STATUS","INFORMATION","BACK TO MENU"};
+      head=h[i];sub=i==0?(selected<kScenarioCount?kScenarios[selected].id:"NONE"):
+        i==1?(active&&*active?"TRANSMITTING":"IDLE"):
+        i==2?(screen==Screen::OtaInfo?"USB FLASHER REQUIRED":"SEE LANDSCAPE DETAILS"):
+        "TAP BACK";
+    }
+    portraitRow(65+i*49,head,sub);
+  }
+  if(screen==Screen::Home&&active&&*active){
+    char left[24];snprintf(left,sizeof(left),"%lus LEFT",(unsigned long)((remaining+999)/1000));
+    label(10,267,left,kGreen);
+  }else label(10,267,"ROTATE: TOP-RIGHT",kMuted);
+  button(3,287,74,30,screen==Screen::Home?"TESTS":"BACK");
+  button(83,287,74,30,screen==Screen::Home?(active||suite?"STOP":"RUN"):"PREV");
+  button(163,287,74,30,screen==Screen::Home?"SUITE":"NEXT");
+}
+Cyd32UiAction portraitTap(int x,int y,bool active,bool suite){
+  if(y<27){
+    if(x<45){screen=Screen::MainMenu;menuPage=0;redraw=true;}
+    else if(x>=195){lcd.setRotation(1);loadCal();portraitMode=false;wasPressed=true;redraw=true;}
+    return Cyd32UiAction::None;
+  }
+  if(screen==Screen::Home){
+    if(y>=287){
+      if(x<80){screen=Screen::Categories;redraw=true;return Cyd32UiAction::None;}
+      if(x<160)return active||suite||playlistRunning?Cyd32UiAction::Stop:Cyd32UiAction::Run;
+      return Cyd32UiAction::Suite;
+    }
+    if(y>=65&&y<261){
+      const int n=(y-65)/49;
+      if(n==0)screen=Screen::Categories;
+      else if(n==1)screen=Screen::Duration;
+      else if(n==3)screen=Screen::Details;
+      redraw=true;
+    }
+    return Cyd32UiAction::None;
+  }
+  if(y>=287){
+    if(x<80){screen=Screen::MainMenu;redraw=true;return Cyd32UiAction::None;}
+    const int px=x<160?150:250;
+    if(screen==Screen::MainMenu){
+      if(x<160){if(menuPage)--menuPage;}else if(menuPage<2)++menuPage;
+      redraw=true;return Cyd32UiAction::None;
+    }
+    if(screen==Screen::Categories)return touchCategories(px,218);
+    if(screen==Screen::Library)return touchLibrary(px,218,active);
+    if(screen==Screen::Favorites)return touchFavorites(px,218);
+    if(screen==Screen::History)return touchHistory(px,218);
+    if(screen==Screen::QuickFilter)return touchQuickFilter(px,218);
+    if(screen==Screen::Settings)return touchSettings(px,218);
+    if(screen==Screen::Duration)return touchDuration(px,218);
+    if(screen==Screen::Help)return touchHelp(px,218);
+    screen=Screen::MainMenu;redraw=true;return Cyd32UiAction::None;
+  }
+  if(y<65||y>=261)return Cyd32UiAction::None;
+  const int i=(y-65)/49;
+  if(screen==Screen::MainMenu){
+    const int n=menuPage*4+i;
+    if(n<kMenuEntries){
+      static const Screen targets[]={Screen::Categories,Screen::QuickFilter,
+        Screen::Favorites,Screen::History,Screen::Diagnostics,Screen::Settings,
+        Screen::Outfits,Screen::OtaInfo,Screen::Activity,Screen::Help,
+        Screen::Recovery,Screen::Backgrounds};
+      screen=targets[n];redraw=true;
+    }
+  }else if(screen==Screen::Categories)return touchCategories(150,48+i*39);
+  else if(screen==Screen::Library)return touchLibrary(150,53+i*36,active);
+  else if(screen==Screen::Favorites)return touchFavorites(150,50+i*37);
+  else if(screen==Screen::QuickFilter)return touchQuickFilter(150,68+i*34);
+  else if(screen==Screen::Settings){
+    if(settingsMore&&i==3){
+      lcd.setRotation(1);loadCal();portraitMode=false;wasPressed=true;redraw=true;
+    }else return touchSettings(150,50+i*39);
+  }else if(screen==Screen::Outfits){
+    if(i<3){outfitLevel=(uint8_t)i;
+      if(prefs.begin("sqemit32",false)){prefs.putUChar("outfit",outfitLevel);prefs.end();}
+      redraw=true;}
+  }else if(screen==Screen::Backgrounds){
+    backgroundLevel=(uint8_t)i;
+    if(prefs.begin("sqemit32",false)){prefs.putUChar("bg",backgroundLevel);prefs.end();}
+    redraw=true;
+  }else if(screen==Screen::Duration){
+    setDuration(i==0?3:i==1?10:i==2?30:(durationSeconds<30?durationSeconds+1:30));
+    redraw=true;
+  }else if(screen==Screen::Details&&i==3){
+    screen=Screen::Duration;redraw=true;
   }
   return Cyd32UiAction::None;
 }
@@ -1222,7 +1380,7 @@ Cyd32UiAction cyd32UiTick(const char* active,uint32_t remaining,bool suite){
   const char* name=active?active:"";
   // A serial-initiated RUN or SUITE must not leave a hidden STOP button
   // behind the duration editor.
-  if(((active&&*active)||suite)&&screen!=Screen::Home&&screen!=Screen::Portrait){
+  if(((active&&*active)||suite)&&screen!=Screen::Home){
     screen=Screen::Home;
     redraw=true;
   }
@@ -1235,6 +1393,7 @@ Cyd32UiAction cyd32UiTick(const char* active,uint32_t remaining,bool suite){
   }
   if(redraw){
     if(!calibrated)calibrationScreen();
+    else if(portraitMode)portraitPage(active,remaining,suite);
     else if(screen==Screen::Home)homeScreen(active,remaining,suite);
     else if(screen==Screen::Categories)categoriesScreen();
     else if(screen==Screen::Duration)durationScreen();
@@ -1266,16 +1425,16 @@ Cyd32UiAction cyd32UiTick(const char* active,uint32_t remaining,bool suite){
   if(calibrated&&screen==Screen::Home&&now-lastBubbleAt>6500u){
     speechBubble(active,suite);lastBubbleAt=now;
   }
-  if(calibrated&&screen==Screen::Portrait){
+  if(calibrated&&portraitMode){
     const uint32_t count=(active&&*active)?((remaining+999)/1000):UINT32_MAX;
-    if(count!=portraitLastCount){portraitCounter(active,remaining,suite);portraitLastCount=count;}
+    if(count!=portraitLastCount){portraitPage(active,remaining,suite);portraitLastCount=count;}
   }
   if(screenTimeout&&!pcControl&&!(active&&*active)&&!suite && !screenDimmed &&
       now-lastTouchActivity>=(screenTimeout==1?30000UL:60000UL)){
     screenDimmed=true;applyBrightness();
   }
   const uint32_t animDelay=animationLevel==0?200u:animationLevel==1?120u:80u;
-  if(calibrated&&screen==Screen::Home&&squachSpriteReady&&
+  if(calibrated&&!portraitMode&&screen==Screen::Home&&squachSpriteReady&&
      now-lastSquachFrame>=animDelay && colorBarsUntil==0)
     drawSquachyFrame(active&&*active,suite,now);
   if(now-lastPoll<55)return Cyd32UiAction::None;
@@ -1304,8 +1463,10 @@ Cyd32UiAction cyd32UiTick(const char* active,uint32_t remaining,bool suite){
       return Cyd32UiAction::None;}
   }
   if(pressed&&!wasPressed&&now-lastPress>=240&&
-     x<(screen==Screen::Portrait?240:kW)&&y<(screen==Screen::Portrait?320:kH)){
-    if(screen!=Screen::Portrait&&y<23&&x<48){
+     x<(portraitMode?240:kW)&&y<(portraitMode?320:kH)){
+    if(portraitMode){
+      action=portraitTap(x,y,active&&*active,suite);
+    }else if(y<23&&x<48){
       screen=Screen::MainMenu;menuPage=0;redraw=true;
     }else if(screen==Screen::MainMenu){
       if(y>=kFooterY){
