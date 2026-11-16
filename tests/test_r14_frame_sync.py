@@ -18,7 +18,7 @@ class OriginalArtBandSync(unittest.TestCase):
         s = self.ui
         self.assertIn("logicalFrameMs=frameMs;", s)
         self.assertIn("uint32_t frameNow(){return bandFrameActive?logicalFrameMs:millis();}", s)
-        self.assertIn("const uint32_t now=frameNow();", s)
+        self.assertIn("Theme::drawActiveBackground(lcd,frameNow(),top,bottom,noReceiver,advanceScene);", s)
         self.assertIn("drawSquachyFrame(emitting,suite,frameNow());", s)
         self.assertNotIn("Squachy::tick(lcd,120,68,138,millis()", s)
         self.assertNotIn("Squachy::tick(lcd,160,65,116,millis()", s)
