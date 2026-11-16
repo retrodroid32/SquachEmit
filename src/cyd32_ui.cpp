@@ -9,6 +9,7 @@
 #include <theme.h>
 #include <detection.h>
 #include <draw_band.h>
+#include <settings.h>
 #endif
 #include "squachwatch_synthwave_exact.h"
 #include "squachwatch_fireflies_exact.h"
@@ -197,24 +198,15 @@ void wedge(int x1,int y1,int x2,int y2,int r,uint16_t col){
 // These are the original upstream draw functions, not R10 lookalikes.
 // SquachWatch's Theme.cpp is compiled as a shared GPL module on CYD32.
 void drawOriginalScene(int top,int bottom){
-  const uint32_t now=frameNow();
-  switch(backgroundLevel){
-    case 0: Theme::drawDigitalRain(lcd,now,top,bottom,advanceScene);break;
-    case 1: Theme::drawStarfield(lcd,now,top,bottom);break;
-    case 2: Theme::drawFlyingToasters(lcd,now,top,bottom);break;
-    case 3: Theme::drawAquarium(lcd,now,top,bottom);break;
-    case 4: Theme::drawTerminalLog(lcd,now,top,bottom);break;
-    case 5: Theme::drawFireflies(lcd,now,top,bottom);break;
-    case 6: Theme::drawFire(lcd,now,top,bottom);break;
-    case 7: Theme::drawSnowfall(lcd,now,top,bottom);break;
-    case 8: {
-      // The original Gibson renderer receives an intentionally empty
-      // detector facade: no invented sightings or channel statistics.
-      static const DetectionEngine noReceiver;
-      Theme::drawGibson(lcd,now,top,bottom,noReceiver);break;
-    }
-    default:Theme::drawSynthwave(lcd,now,top,bottom,0.44f);break;
-  }
+  // The actual SquachWatch wrapper computes per-frame movement, and
+  // suppresses it during band 2. Calling individual scenes bypassed this.
+  static const DetectionEngine noReceiver;
+  const Settings::Background bg = static_cast<Settings::Background>(
+      backgroundLevel==9 ? 10 : backgroundLevel); // Synthwave is 10; 9=retired tunnel.
+  Settings::previewBackground(bg); // RAM-only, SquachEmit persists bg separately.
+  Theme::setBackgroundFloor(bottom);
+  Theme::drawActiveBackground(lcd,frameNow(),top,bottom,noReceiver,advanceScene);
+  Theme::clearBackgroundFloor();
 }
 
 #endif
@@ -493,6 +485,8 @@ void renderBufferedHome(const char* active,uint32_t remaining,bool suite){
   if(!bandFrameReady)return;
   const int w=panel.width(),h=panel.height(),half=h/2;
   const uint32_t frameMs=millis();
+  const uint32_t begunUs=micros();
+  uint32_t drawUs=0,pushUs=0;
   logicalFrameMs=frameMs;
 #if defined(SQE_ORIGINAL_SQUACHY)
   DrawBand::setEnabled(true);
@@ -506,17 +500,35 @@ void renderBufferedHome(const char* active,uint32_t remaining,bool suite){
     paint=&halfFrame;
     bandFrameActive=true;
     halfFrame.setViewport(0,-bandFrameTop,w,h,true);
+    const uint32_t drawStart=micros();
     if(portraitMode)portraitPage(active,remaining,suite);
     else homeScreen(active,remaining,suite);
+    drawUs+=micros()-drawStart;
     paint=&panel;
     bandFrameActive=false;
     halfFrame.resetViewport();
+    const uint32_t pushStart=micros();
     halfFrame.pushSprite(0,bandFrameTop);
+    pushUs+=micros()-pushStart;
   }
 #if defined(SQE_ORIGINAL_SQUACHY)
   DrawBand::setEnabled(false);
 #endif
   lastSceneFrame=frameMs;
+  // Report real observed performance once per five seconds, not once
+  // per frame: distinguish CPU render bottleneck from SPI transfer.
+  static uint32_t lastReportMs=0, frames=0, sumDrawUs=0, sumPushUs=0;
+  ++frames;
+  sumDrawUs+=drawUs;
+  sumPushUs+=pushUs;
+  if(frameMs-lastReportMs>=5000u){
+    const uint32_t period=lastReportMs?frameMs-lastReportMs:5000u;
+    Serial.printf("CYD32,FRAME,PERF,fps=%lu,draw_us=%lu,push_us=%lu,frame_us=%lu,heap=%lu\n",
+      (unsigned long)((frames*1000UL)/period),
+      (unsigned long)(sumDrawUs/frames),(unsigned long)(sumPushUs/frames),
+      (unsigned long)(micros()-begunUs),(unsigned long)ESP.getFreeHeap());
+    lastReportMs=frameMs;frames=0;sumDrawUs=0;sumPushUs=0;
+  }
 }
 void homeScreen(const char* active,uint32_t remaining,bool suite){
   const bool emitting=active&&*active;
@@ -1831,7 +1843,10 @@ Cyd32UiAction cyd32UiTick(const char* active,uint32_t remaining,bool suite){
   // bands first; only completed bands are submitted to the LCD.
   // If memory pressure prevents band allocation, retain R12's static
   // no-flicker fallback instead of direct-to-panel erase/redraw.
-  const uint32_t frameCadence=animationLevel==0?200u:animationLevel==1?130u:95u;
+  // SquachWatch's original scene engine aims at a ~50ms logical frame;
+  // the R14.2 130ms NORMAL throttle alone limited visible smoothness.
+  // Actual throughput depends on paint and SPI time (logged below).
+  const uint32_t frameCadence=animationLevel==0?110u:animationLevel==1?65u:50u;
   if(calibrated&&screen==Screen::Home&&bandFrameReady&&
      now-lastSceneFrame>=frameCadence&&colorBarsUntil==0){
     renderBufferedHome(active,remaining,suite);
