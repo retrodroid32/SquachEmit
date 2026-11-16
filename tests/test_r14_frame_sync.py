@@ -26,7 +26,8 @@ class OriginalArtBandSync(unittest.TestCase):
 
     def test_second_band_does_not_advance_character(self):
         s = self.ui
-        renderer = s[s.index("void renderBufferedHome("):s.index("void homeScreen(")]
+        start = s.index("void renderBufferedHome(")
+        renderer = s[start:s.index("void homeScreen(", start)]
         self.assertIn("advanceScene=(pass==0);", renderer)
         self.assertIn("DrawBand::setEnabled(true);", renderer)
         self.assertIn("DrawBand::set(bandFrameTop,bandFrameTop+half);", renderer)
