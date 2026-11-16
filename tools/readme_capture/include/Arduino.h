@@ -5,6 +5,7 @@
 #include <cstdlib>
 inline uint32_t mock_time_ms = 1000;
 inline uint32_t millis(){ return mock_time_ms; }
+inline uint32_t micros(){ return mock_time_ms*1000u; }
 inline long random(long lower,long upper){
  if(upper<=lower)return lower;
  return lower+std::rand()%(upper-lower);
