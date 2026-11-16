@@ -8,6 +8,7 @@
 #include <squachy.h>
 #include <theme.h>
 #include <detection.h>
+#include <draw_band.h>
 #endif
 #include "squachwatch_synthwave_exact.h"
 #include "squachwatch_fireflies_exact.h"
@@ -49,6 +50,10 @@ TFT_eSprite squachSprite(&panel);
 bool squachSpriteReady=false,bandFrameReady=false,bandFrameActive=false;
 int bandFrameTop=0;
 bool advanceScene=true;
+// Both LCD bands must sample the same animation clock; millis() in each
+// rendering pass produces a different scene/character frame at the seam.
+uint32_t logicalFrameMs=0;
+uint32_t frameNow(){return bandFrameActive?logicalFrameMs:millis();}
 uint32_t lastSquachFrame=0, lastSceneFrame=0, petUntil=0;
 Preferences prefs;
 Screen screen=Screen::Home;
@@ -192,7 +197,7 @@ void wedge(int x1,int y1,int x2,int y2,int r,uint16_t col){
 // These are the original upstream draw functions, not R10 lookalikes.
 // SquachWatch's Theme.cpp is compiled as a shared GPL module on CYD32.
 void drawOriginalScene(int top,int bottom){
-  const uint32_t now=millis();
+  const uint32_t now=frameNow();
   switch(backgroundLevel){
     case 0: Theme::drawDigitalRain(lcd,now,top,bottom,advanceScene);break;
     case 1: Theme::drawStarfield(lcd,now,top,bottom);break;
@@ -364,7 +369,15 @@ void drawSquachyFrame(bool emitting,bool suite,uint32_t now){
   lastSquachFrame=now;
 }
 void bigSquachy(bool emitting,bool suite){
-  if(squachSpriteReady)drawSquachyFrame(emitting,suite,millis());
+#if defined(SQE_ORIGINAL_SQUACHY)
+  // Original Squachy draws directly into the current band. It does NOT
+  // require the optional scratch sprite allocated for custom outfits.
+  if(outfitLevel!=1&&outfitLevel!=2){
+    drawSquachyFrame(emitting,suite,frameNow());
+    return;
+  }
+#endif
+  if(squachSpriteReady)drawSquachyFrame(emitting,suite,frameNow());
   else oldSquachy(emitting,suite);
 }
 // Right-side status is ONE label on ONE baseline.  During an active test,
@@ -480,9 +493,16 @@ void renderBufferedHome(const char* active,uint32_t remaining,bool suite){
   if(!bandFrameReady)return;
   const int w=panel.width(),h=panel.height(),half=h/2;
   const uint32_t frameMs=millis();
+  logicalFrameMs=frameMs;
+#if defined(SQE_ORIGINAL_SQUACHY)
+  DrawBand::setEnabled(true);
+#endif
   for(int pass=0;pass<2;++pass){
     bandFrameTop=pass*half;
     advanceScene=(pass==0);
+#if defined(SQE_ORIGINAL_SQUACHY)
+    DrawBand::set(bandFrameTop,bandFrameTop+half);
+#endif
     paint=&halfFrame;
     bandFrameActive=true;
     halfFrame.setViewport(0,-bandFrameTop,w,h,true);
@@ -493,6 +513,9 @@ void renderBufferedHome(const char* active,uint32_t remaining,bool suite){
     halfFrame.resetViewport();
     halfFrame.pushSprite(0,bandFrameTop);
   }
+#if defined(SQE_ORIGINAL_SQUACHY)
+  DrawBand::setEnabled(false);
+#endif
   lastSceneFrame=frameMs;
 }
 void homeScreen(const char* active,uint32_t remaining,bool suite){
@@ -1327,17 +1350,19 @@ void portraitPage(const char* active,uint32_t remaining,bool suite){
       for(int x=0;x<240;x+=16)lcd.drawFastVLine(x,60,156,kPurple);
       for(int y=65;y<215;y+=16)lcd.drawFastHLine(0,y,240,kCyan);
     }
+#endif
 #if defined(SQE_ORIGINAL_SQUACHY)
+    // Must be outside the alternative-background #else above: otherwise
+    // original artwork is never drawn on the 240x320 portrait path.
     if(outfitLevel!=1&&outfitLevel!=2){
       Squachy::setOutfitPreview(outfitLevel==0?0:(int8_t)(outfitLevel-2));
       Squachy::holdBubble(true);
-      Squachy::tick(lcd,120,68,138,millis(),advanceScene,0.3f,false,0,100);
+      Squachy::tick(lcd,120,68,138,frameNow(),advanceScene,0.3f,false,0,100);
     }else
 #endif
-#endif
     if(squachSpriteReady){
-      SquachyPort::render(squachSprite,millis(),active&&*active,suite,
-                          (int32_t)(petUntil-millis())>0,outfitLevel);
+      SquachyPort::render(squachSprite,frameNow(),active&&*active,suite,
+                          (int32_t)(petUntil-frameNow())>0,outfitLevel);
       if(bandFrameActive)
         squachSprite.pushToSprite(&halfFrame,64,75,0xF81E);
       else squachSprite.pushSprite(64,75,0xF81E);
