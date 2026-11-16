@@ -2,7 +2,7 @@
   "schema": 1,
   "scenario_count": 172,
   "firmware_sources": {
-    "src": "b2f3a72a094d2e1294dcdcef21e9ff7e9d606893",
+    "src": "fe8856c2e40c4002d18cb80ed663ae6b216fa4c0",
     "include": "8253b90b87623b164881b6a20663d16bcd05a85b",
     "lib": "0f68b608bf8030719f523d78aaebf119ad0aab5e",
     "SquachEmit.ino": "90b4205813a2f7885bc1e12ce7431eebf7249f45",
@@ -10,17 +10,17 @@
   },
   "builds": {
     "cyd32-st7798": {
-      "title": "SquachEmit v1.1.0 CYD 3.2 R14.1 LAB — One Speech Bubble Fix (172 Cases)",
+      "title": "SquachEmit v1.1.0 CYD 3.2 R14.2 LAB — Synchronized Two-Band Squachy + Original Portrait (172 Cases)",
       "version": "v1.1.0 MAINLINE · 172 cases",
-      "summary": "R14.1 LAB CYD 3.2 for 172 synthetic signals. Prevents the original SquachWatch mascot from drawing a second dialogue bubble behind SquachEmit's top message box, using SquachWatch's built-in holdBubble control in landscape and portrait. Preserves original Squachy poses, costume rendering, ten background renderers and two-pass 8-bit offscreen animation. Four-part SHA-256 flashing preflight and physical CYD 3.2 touch, redraw and memory checks required. LAB only; no merge or production release.",
+      "summary": "R14.2 LAB CYD 3.2 for 172 synthetic signals. Repairs R14.1 two-half frame time mismatch: background and Squachy sample the same logical millisecond timestamp across both ST7798 band pushes, original DrawBand clipping is coordinated, and original Squachy is restored in portrait (rather than fallback sprite). Keeps the single speech bubble, ten original SquachWatch backgrounds, 19 costumes plus custom outfits, and bounded RUN/STOP/SUITE. SHA-256 flashing preflight and physical flicker/seam tests required. No merge or production release.",
       "highlights": [
-        "Fixes duplicate SquachWatch dialogue bubble under SquachEmit's top text box.",
-        "Squachy::holdBubble(true) suppresses only mascot dialogue, not character animation or costumes.",
-        "Applies to Home in landscape and portrait, and is initialized before first draw.",
-        "Retains original SquachWatch character/pose engine and ten background renderers.",
-        "Retains 8-bit two-pass buffered animations and original RUN/STOP/SUITE controls.",
-        "172 controlled synthetic signal cases; physical CYD 3.2 ST7798 acceptance still required.",
-        "LAB-only build with four-part SHA-256 preflight; no production release or merge."
+        "R14.2: one animation timestamp for top/bottom LCD bands (landscape and portrait).",
+        "Original Squachy pose/outfit renderer now correctly runs in portrait, not hidden under the fallback preprocessor branch.",
+        "Original DrawBand clipping follows each half-frame and resets after LCD push.",
+        "Original Squachy no longer depends on allocation of the custom costume scratch sprite in landscape.",
+        "Retains R14.1 single speech bubble suppression and all ten SquachWatch background engines.",
+        "172 time-limited synthetic RF cases; no transmit on boot.",
+        "LAB only: independent hardware seam/flicker validation still required; do not merge or publish production firmware."
       ]
     },
     "c5-waveshare-28": {
