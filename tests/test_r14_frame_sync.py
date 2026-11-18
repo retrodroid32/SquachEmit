@@ -30,7 +30,7 @@ class OriginalArtBandSync(unittest.TestCase):
         renderer = s[start:s.index("void homeScreen(", start)]
         self.assertIn("advanceScene=(pass==0);", renderer)
         self.assertIn("DrawBand::setEnabled(true);", renderer)
-        self.assertIn("DrawBand::set(bandFrameTop,bandFrameTop+half);", renderer)
+        self.assertIn("DrawBand::set(bandFrameTop,bandFrameTop+bandH);", renderer)
         self.assertIn("DrawBand::setEnabled(false);", renderer)
 
     def test_original_squachy_is_not_gated_by_custom_sprite(self):
