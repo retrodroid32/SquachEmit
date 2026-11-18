@@ -4,6 +4,7 @@
 #include "theme.h"
 #include "button_font_metrics.h"
 #include "draw_band.h"
+#include "sqemit_scene_clock.h"
 #include "frame_prof.h"
 #include "caustic_tile.h"
 #include "lil_guy.h"
@@ -2074,9 +2075,9 @@ void drawStarfield(TFT_eSPI& t, uint32_t now, int yStart, int yEnd) {
     // that blocked) cannot fling the tunnel forward on the next frame.
     static uint32_t tunLast  = 0;
     static float    tunPhase = 0.0f, tunSpin = 0.0f;
-    uint32_t dt = (tunLast && now > tunLast) ? (now - tunLast) : 16u;
-    if (dt > 100u) dt = 100u;
-    tunLast = now;
+    // Two LCD bands draw with one logical timestamp. Never step the tunnel
+    // twice just because the original function is called for each band.
+    const uint32_t dt = SqEmitSceneClock::elapsedOnce(now, tunLast);
     // warp rests at 1.0 and peaks near 7.0, so this is 1x at rest and
     // about 3.7x flat out -- the tube pulls, without outrunning the stars.
     const float rush = 0.55f + warp * 0.45f;
@@ -8160,10 +8161,12 @@ void drawGibson(TFT_eSPI& t, uint32_t now, int yStart, int yEnd,
     // so one stalled frame does not teleport the camera down the corridor.
     static uint32_t lastMs = 0;
     static float    flyZ   = 0.0f;
-    uint32_t dt = (lastMs && now > lastMs) ? (now - lastMs) : 16u;
-    if (dt > 100u) dt = 100u;
-    lastMs = now;
-    flyZ = fmodf(flyZ + (float)dt * GIB_SPEED, (float)GIB_SPAN);
+    // SquachEmit paints each logical frame in TWO bands. R14.4 used a
+    // fallback 16ms step on band 2 even though now == lastMs; this moved
+    // the virtual camera between the top and bottom half of THE GIBSON.
+    // A repeated timestamp MUST produce the identical flyZ projection.
+    const uint32_t dt = SqEmitSceneClock::elapsedOnce(now, lastMs);
+    if (dt) flyZ = fmodf(flyZ + (float)dt * GIB_SPEED, (float)GIB_SPAN);
 
     auto depthOf = [&](uint8_t i) {
         // Recycling at the reference depth made towers pop out of existence
