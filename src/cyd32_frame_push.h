@@ -100,6 +100,7 @@ inline int frameSpans(const bool* changed, int32_t h, int32_t align, RowSpan* ou
 // Builds the lookup table. Once, in setup(), any time after the display is
 // up. Returns false on a board this is not built for, and push() then
 // declines every frame and the ordinary push carries on.
+#if SQE_CYD32_FRAME_PUSH
 bool begin();
 
 // True once begin() has succeeded: this build can do it at all.
@@ -138,5 +139,20 @@ uint32_t wireUs();
 // 64-byte bursts -- and the caller must then push it the ordinary way. Never
 // partially draws: it either does the whole thing or touches nothing.
 bool push(TFT_eSPI& tft, const uint8_t* src, int32_t w, int32_t h, int32_t x, int32_t y);
+#else
+// Native host fixtures intentionally compile only cyd32_ui.cpp. On those
+// non-ESP32 builds the FramePush engine is absent, and these inline stubs
+// keep existing touchscreen/layout tests linkable without a mock SPI port.
+inline bool begin() { return false; }
+inline bool available() { return false; }
+inline void setEnabled(bool) {}
+inline bool enabled() { return false; }
+inline void invalidate() {}
+inline void newFrame() {}
+inline int32_t lastRows() { return 0; }
+inline uint32_t hashUs() { return 0; }
+inline uint32_t wireUs() { return 0; }
+inline bool push(TFT_eSPI&, const uint8_t*, int32_t, int32_t, int32_t, int32_t) { return false; }
+#endif
 
 }  // namespace Cyd32FramePush
