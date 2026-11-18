@@ -15,6 +15,10 @@ void cyd32UiResetCalibration();
 void cyd32UiSetInversion(bool enabled);
 bool cyd32UiInversion();
 void cyd32UiColorBars();
+// A/B comparison of SquachWatch overlapped row transfers vs TFT_eSPI.
+// PUSH ON (LAB default), PUSH OFF (immediate safe fallback), PUSH STATUS.
+void cyd32UiSetFramePush(bool enabled);
+void cyd32UiPrintFramePushStatus();
 
 // Show/clear last radio startup stage on the CYD 3.2 home screen.
 void cyd32UiSetRadioError(const char* stage);
