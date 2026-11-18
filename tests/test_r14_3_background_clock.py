@@ -34,7 +34,7 @@ class SceneTimingGuards(unittest.TestCase):
         self.assertIn("logicalFrameMs=frameMs;",self.ui)
 
     def test_cadence_and_perf_diagnostics(self):
-        self.assertIn("frameCadence=animationLevel==0?110u:animationLevel==1?65u:50u;",self.ui)
+        self.assertIn("frameCadence=animationLevel==0?100u:animationLevel==1?33u:25u;",self.ui)
         self.assertNotIn("frameCadence=animationLevel==0?200u:animationLevel==1?130u:95u;",self.ui)
         self.assertIn("CYD32,FRAME,PERF,",self.ui)
         self.assertIn("sumDrawUs+=drawUs;",self.ui)
