@@ -47,7 +47,7 @@ static bool     s_valid   = false;
 static int32_t  s_validW  = 0, s_validH = 0;
 static uint32_t s_frameNo = 0;
 static int32_t  s_lastRows = 0;
-#if defined(CYD35)
+#if defined(CYD35) || defined(SQE_CYD32)
 static uint32_t s_hashUs = 0, s_wireUs = 0;
 #define SQW_PUSH_CLOCK(v) const uint32_t v = micros()
 #define SQW_PUSH_CHARGE(acc, v) acc += micros() - (v)
@@ -71,7 +71,7 @@ bool available() { return s_ready; }
 void setEnabled(bool on) { s_enabled = on; }
 bool enabled() { return s_ready && s_enabled; }
 void invalidate() { s_valid = false; }
-#if defined(CYD35)
+#if defined(CYD35) || defined(SQE_CYD32)
 void newFrame() { s_lastRows = 0; s_hashUs = 0; s_wireUs = 0; }
 uint32_t hashUs() { return s_hashUs; }
 uint32_t wireUs() { return s_wireUs; }
