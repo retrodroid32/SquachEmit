@@ -498,6 +498,8 @@ static void help() {
   Serial.println("CALTOUCH             reset touchscreen fit, then tap to calibrate");
   Serial.println("COLORS               show idle-only RED/GREEN/BLUE/WHITE/BLACK test");
   Serial.println("INVERT ON|OFF        save absolute panel inversion state");
+  Serial.println("PUSH ON|OFF          optimized FramePush vs stock TFT_eSPI (A/B, reboot resets)");
+  Serial.println("PUSH STATUS          report push mode, rows, hash/wire timings and fallback count");
 #endif
 }
 
