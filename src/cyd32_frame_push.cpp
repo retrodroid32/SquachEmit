@@ -178,19 +178,6 @@ bool push(TFT_eSPI& tft, const uint8_t* src, int32_t w, int32_t h, int32_t x, in
     return true;
 }
 
-#else  // every other board, and the emulator: built out, not switched off
-
-bool begin() { return false; }
-bool available() { return false; }
-void setEnabled(bool) {}
-bool enabled() { return false; }
-void invalidate() {}
-void newFrame() {}
-int32_t lastRows() { return 0; }
-uint32_t hashUs() { return 0; }
-uint32_t wireUs() { return 0; }
-bool push(TFT_eSPI&, const uint8_t*, int32_t, int32_t, int32_t, int32_t) { return false; }
-
 #endif
 
 }  // namespace Cyd32FramePush
