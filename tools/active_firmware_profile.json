@@ -4,23 +4,23 @@
   "firmware_sources": {
     "src": "c6b27352c09b9e2684d7a2573230c2d4378b888c",
     "include": "8253b90b87623b164881b6a20663d16bcd05a85b",
-    "lib": "0f68b608bf8030719f523d78aaebf119ad0aab5e",
+    "lib": "c88135d6510b738fe2c208290c498f9e8b639681",
     "SquachEmit.ino": "90b4205813a2f7885bc1e12ce7431eebf7249f45",
     "platformio.ini": "c3ff3725248b4c67d60da6903982515031c501f6"
   },
   "builds": {
     "cyd32-st7798": {
-      "title": "SquachEmit v1.1.0 CYD 3.2 R14.4 LAB — Native FastSprite, 30 FPS Target (172 Cases)",
+      "title": "SquachEmit v1.1.0 CYD 3.2 R14.5 LAB — Gibson + Starfield Band Sync (172 Cases)",
       "version": "v1.1.0 MAINLINE · 172 cases",
-      "summary": "R14.4 LAB CYD 3.2 for 172 synthetic test cases. Ports SquachWatch's hardware-proven 8-bit FastSprite line, pixel, vertical-line and text optimizations to SquachEmit's two-band renderer; matches the native 33 ms NORMAL target. Keeps 40 MHz display SPI, shared animation clock, second-band stepping freeze, original art, rotation and single speech bubble. Actual FPS remains hardware-limited and reported in serial performance diagnostics. SHA-256 four-part flash preflight and physical ST7798 graphics/RF validation required. LAB only; no production release.",
+      "summary": "R14.5 LAB CYD 3.2 for 172 synthetic cases. Fixes city-camera mismatch: Gibson moved 16 ms again on the second 8-bit display band despite a shared frame timestamp. Starfield tunnel had the same issue. Both now use repeat-safe per-frame elapsed time, preserving motion only once per displayed frame. Keeps R14.4 FastSprite and 33 ms Normal frame target, 40 MHz display clock, original character/outfits, one bubble and portrait. SHA-256 four-part flash preflight; physical ST7798 seam, FPS, rotation, memory and RF testing required. LAB only; no production release.",
       "highlights": [
-        "Original SquachWatch FastSprite 8-bit rendering acceleration used for CYD 3.2 frame bands.",
-        "NORMAL 33ms frame pacing target now matches SquachWatch; HIGH 25ms, LOW 100ms.",
-        "Physical ST7798 SPI remains at proven 40 MHz; no overclock or radio changes.",
-        "Retains R14.3 synchronized background time steps, R14.2 consistent animation timestamp and portrait restoration.",
-        "Cyd32FastSprite includes upstream setWindow framebuffer bounds guard and library fallback paths.",
-        "CYD32,FRAME,PERF serial reports actual FPS, draw and push microseconds, and free heap.",
-        "LAB-only 172-case build requires cold boot, screen seam, flicker, rotation, memory, RF and SHA-256 validation."
+        "Gibson city camera now advances once per logical two-band frame, not twice; fixes photo-reported seam mismatch.",
+        "Starfield tunnel rotation/scroll uses the same repeat-safe timestamp guard.",
+        "Native C++ regression exercises matching band timestamps, 33 ms motion, stalled frame clamp and millis wraparound.",
+        "Retains R14.4 optimized FastSprite and 33 ms Normal pacing without increasing display SPI above 40 MHz.",
+        "Retains original SquachWatch artwork, 19 costumes plus 2 custom outfits, portrait, and single speech bubble.",
+        "Actual FPS, drawing time, push time and free heap remain available as CYD32,FRAME,PERF lines.",
+        "LAB-only 172-case build: verify backgrounds, motion at screen seam, touch, rotation, RUN/STOP/SUITE and SHA-256."
       ]
     },
     "c5-waveshare-28": {
