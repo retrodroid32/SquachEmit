@@ -5,6 +5,7 @@
 #include "scenario_display.h"
 #include "cyd32_squachy_port.h"
 #include "cyd32_fast_sprite.h"
+#include "cyd32_frame_push.h"
 #if defined(SQE_ORIGINAL_SQUACHY)
 #include <squachy.h>
 #include <theme.h>
@@ -55,6 +56,12 @@ TFT_eSprite squachSprite(&panel);
 bool squachSpriteReady=false,bandFrameReady=false,bandFrameActive=false;
 // Use one 8-bit full-frame sprite when RAM allows; retain HALF8 fallback.
 uint8_t sceneFrameBands=2;
+// A/B switch: optimized rows over overlapped SPI by default. PUSH OFF
+// restores TFT_eSPI::pushSprite immediately if a board behaves differently.
+bool fastPushDesired=true;
+uint32_t fastPushFallbacks=0;
+uint32_t fastPushLastRows=0,fastPushLastHashUs=0,fastPushLastWireUs=0;
+bool fastPushLastUsed=false;
 int bandFrameTop=0;
 bool advanceScene=true;
 // Both LCD bands must sample the same animation clock; millis() in each
@@ -495,6 +502,7 @@ void renderBufferedHome(const char* active,uint32_t remaining,bool suite){
   const uint32_t begunUs=micros();
   uint32_t drawUs=0,pushUs=0;
   logicalFrameMs=frameMs;
+  Cyd32FramePush::newFrame();
 #if defined(SQE_ORIGINAL_SQUACHY)
   DrawBand::setEnabled(true);
 #endif
@@ -515,26 +523,56 @@ void renderBufferedHome(const char* active,uint32_t remaining,bool suite){
     bandFrameActive=false;
     halfFrame.resetViewport();
     const uint32_t pushStart=micros();
-    halfFrame.pushSprite(0,bandFrameTop);
+    // Fast transfer is limited to the proven FULL8 one-pass mode.
+    // In HALF8, keep R14.6's normal push and explicit cache invalidation.
+    const bool useFast=(bands==1)&&fastPushDesired&&Cyd32FramePush::enabled();
+    if(useFast){
+      if(!Cyd32FramePush::push(panel,halfFrame.buf(),w,bandH,0,bandFrameTop)){
+        ++fastPushFallbacks;
+        fastPushDesired=false;
+        Cyd32FramePush::setEnabled(false);
+        Cyd32FramePush::invalidate();
+        halfFrame.pushSprite(0,bandFrameTop);
+        Serial.println("CYD32,PUSH,FALLBACK,INVALID_FRAME_OR_DRIVER");
+        fastPushLastUsed=false;
+      }else fastPushLastUsed=true;
+    }else{
+      Cyd32FramePush::invalidate();
+      halfFrame.pushSprite(0,bandFrameTop);
+      fastPushLastUsed=false;
+    }
     pushUs+=micros()-pushStart;
   }
 #if defined(SQE_ORIGINAL_SQUACHY)
   DrawBand::setEnabled(false);
 #endif
   lastSceneFrame=frameMs;
+  fastPushLastRows=(uint32_t)Cyd32FramePush::lastRows();
+  fastPushLastHashUs=Cyd32FramePush::hashUs();
+  fastPushLastWireUs=Cyd32FramePush::wireUs();
   // Report real observed performance once per five seconds, not once
   // per frame: distinguish CPU render bottleneck from SPI transfer.
-  static uint32_t lastReportMs=0, frames=0, sumDrawUs=0, sumPushUs=0;
+  static uint32_t lastReportMs=0,frames=0,sumDrawUs=0,sumPushUs=0;
+  static uint32_t sumRows=0,sumHashUs=0,sumWireUs=0;
   ++frames;
   sumDrawUs+=drawUs;
   sumPushUs+=pushUs;
+  sumRows+=fastPushLastRows;
+  sumHashUs+=fastPushLastHashUs;
+  sumWireUs+=fastPushLastWireUs;
   if(frameMs-lastReportMs>=5000u){
     const uint32_t period=lastReportMs?frameMs-lastReportMs:5000u;
-    Serial.printf("CYD32,FRAME,PERF,fps=%lu,draw_us=%lu,push_us=%lu,frame_us=%lu,heap=%lu\n",
+    // Keep original fields intact for serial tools. Extras support PUSH
+    // ON/OFF side-by-side comparisons on the exact same physical panel.
+    Serial.printf("CYD32,FRAME,PERF,fps=%lu,draw_us=%lu,push_us=%lu,frame_us=%lu,heap=%lu,push_mode=%s,rows=%lu,hash_us=%lu,wire_us=%lu\n",
       (unsigned long)((frames*1000UL)/period),
       (unsigned long)(sumDrawUs/frames),(unsigned long)(sumPushUs/frames),
-      (unsigned long)(micros()-begunUs),(unsigned long)ESP.getFreeHeap());
+      (unsigned long)(micros()-begunUs),(unsigned long)ESP.getFreeHeap(),
+      fastPushLastUsed?"FAST":"STANDARD",
+      (unsigned long)(sumRows/frames),(unsigned long)(sumHashUs/frames),
+      (unsigned long)(sumWireUs/frames));
     lastReportMs=frameMs;frames=0;sumDrawUs=0;sumPushUs=0;
+    sumRows=0;sumHashUs=0;sumWireUs=0;
   }
 }
 // Render the entire RGB332 scene ONCE when internal RAM permits. A
@@ -542,6 +580,8 @@ void renderBufferedHome(const char* active,uint32_t remaining,bool suite){
 // fall back to the previous two 38.4KB passes on constrained devices.
 void allocateSceneFrame(){
   paint=&panel;bandFrameActive=false;
+  // A new buffer, panel rotation or direct painting invalidates row hashes.
+  Cyd32FramePush::invalidate();
   if(bandFrameReady){halfFrame.deleteSprite();bandFrameReady=false;}
   halfFrame.setColorDepth(8);
   const int w=panel.width(),h=panel.height();
@@ -1737,6 +1777,9 @@ void cyd32UiBegin(){
   }
   lcd.invertDisplay(panelInverted);
   lcd.fillScreen(kBg);
+  // Ported SquachWatch fast SPI push; safe disable via serial PUSH OFF.
+  if(Cyd32FramePush::begin())Cyd32FramePush::setEnabled(fastPushDesired);
+  else fastPushDesired=false;
   // Allocate the animation band FIRST, before the mascot's separate
   // 16-bit scratch sprite, to retain one large contiguous block.
   allocateSceneFrame();
@@ -1771,7 +1814,7 @@ void cyd32UiSetInversion(bool enabled){
   Serial.printf("CYD32,PANEL,BGR,INVERT_%s\n",enabled?"ON":"OFF");
 }
 bool cyd32UiInversion(){return panelInverted;}
-void cyd32UiColorBars(){if(ready)rgbBars();}
+void cyd32UiColorBars(){if(ready){Cyd32FramePush::invalidate();rgbBars();}}
 void cyd32UiResetCalibration(){
   if(prefs.begin("sqemit32",false)){
     prefs.remove("touchland");
@@ -1809,6 +1852,10 @@ Cyd32UiAction cyd32UiTick(const char* active,uint32_t remaining,bool suite){
     redraw=true;
   }
   if(redraw){
+    // Non-HOME screens and calibration draw directly on the TFT, outside
+    // FramePush's hash ledger. Force a full refresh on return to HOME.
+    if(!(calibrated&&screen==Screen::Home&&bandFrameReady))
+      Cyd32FramePush::invalidate();
     if(!calibrated)calibrationScreen();
     else if(screen==Screen::Home&&bandFrameReady)
       renderBufferedHome(active,remaining,suite);
@@ -1838,14 +1885,21 @@ Cyd32UiAction cyd32UiTick(const char* active,uint32_t remaining,bool suite){
     redraw=false;
   }else if(calibrated&&screen==Screen::Home&&active&&*active){
     const uint32_t count=(remaining+999)/1000;
-    if(count!=lastCount){countdownOnly(count);lastCount=count;}
+    if(count!=lastCount){
+      Cyd32FramePush::invalidate();
+      countdownOnly(count);lastCount=count;
+    }
   }
-  if(calibrated&&screen==Screen::Diagnostics&&now-lastDiagAt>=1000u){diagValues();lastDiagAt=now;}
+  if(calibrated&&screen==Screen::Diagnostics&&now-lastDiagAt>=1000u){
+    Cyd32FramePush::invalidate();diagValues();lastDiagAt=now;
+  }
   if(calibrated&&screen==Screen::Home&&now-lastBubbleAt>6500u){
     if(portraitMode){
       // No portrait full-screen flash simply to rotate a speech bubble.
       // The portrait bubble is redrawn only when page/TX state changes.
-    }else speechBubble(active,suite);
+    }else{
+      Cyd32FramePush::invalidate();speechBubble(active,suite);
+    }
     lastBubbleAt=now;
   }
   if(calibrated&&portraitMode&&screen==Screen::Home&&active&&*active){
@@ -1853,6 +1907,7 @@ Cyd32UiAction cyd32UiTick(const char* active,uint32_t remaining,bool suite){
     if(count!=portraitLastCount){
       // Update ONLY the countdown region; do not repaint background,
       // mascot, header, or portrait buttons every second.
+      Cyd32FramePush::invalidate();
       lcd.fillRect(8,265,223,20,kBg);
       char left[28];snprintf(left,sizeof(left),"%lus LEFT",(unsigned long)count);
       label(10,267,left,kGreen);
