@@ -574,6 +574,9 @@ static void command(String cmd) {
   if (cmd.equalsIgnoreCase("LIST")) { listCases(); return; }
   if (cmd.equalsIgnoreCase("STOP")) { cancelAll(); return; }
 #if defined(SQE_CYD32)
+  if (cmd.equalsIgnoreCase("PUSH ON")) { cyd32UiSetFramePush(true); return; }
+  if (cmd.equalsIgnoreCase("PUSH OFF")) { cyd32UiSetFramePush(false); return; }
+  if (cmd.equalsIgnoreCase("PUSH STATUS")) { cyd32UiPrintFramePushStatus(); return; }
   if (cmd.equalsIgnoreCase("CALTOUCH")) { cyd32UiResetCalibration(); return; }
   if (cmd.equalsIgnoreCase("INVERT ON")) { cyd32UiSetInversion(true); return; }
   if (cmd.equalsIgnoreCase("INVERT OFF")) { cyd32UiSetInversion(false); return; }
