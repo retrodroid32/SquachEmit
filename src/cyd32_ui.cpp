@@ -1815,6 +1815,28 @@ void cyd32UiSetInversion(bool enabled){
 }
 bool cyd32UiInversion(){return panelInverted;}
 void cyd32UiColorBars(){if(ready){Cyd32FramePush::invalidate();rgbBars();}}
+// Serial-only A/B for the exact same screen and ST7798 clock. These
+// toggles are deliberately not persisted so a reboot restores the default.
+void cyd32UiPrintFramePushStatus(){
+  Serial.printf("CYD32,PUSH,STATUS,requested=%u,available=%u,active=%u,frame=%s,last_mode=%s,rows=%lu,hash_us=%lu,wire_us=%lu,fallbacks=%lu\\n",
+    fastPushDesired?1u:0u,Cyd32FramePush::available()?1u:0u,
+    (sceneFrameBands==1&&fastPushDesired&&Cyd32FramePush::enabled())?1u:0u,
+    bandFrameReady?(sceneFrameBands==1?"FULL8":"HALF8"):"STATIC",
+    fastPushLastUsed?"FAST":"STANDARD",
+    (unsigned long)fastPushLastRows,(unsigned long)fastPushLastHashUs,
+    (unsigned long)fastPushLastWireUs,(unsigned long)fastPushFallbacks);
+}
+void cyd32UiSetFramePush(bool enabled){
+  fastPushDesired=enabled&&Cyd32FramePush::available();
+  Cyd32FramePush::setEnabled(fastPushDesired);
+  // A/B transitions must never use stale row hashes after ordinary
+  // TFT_eSPI pushes, especially when switching mid-animation.
+  Cyd32FramePush::invalidate();
+  fastPushLastUsed=false;
+  fastPushLastRows=0;fastPushLastHashUs=0;fastPushLastWireUs=0;
+  Serial.printf("CYD32,PUSH,%s\\n",fastPushDesired?"ON":"OFF");
+  cyd32UiPrintFramePushStatus();
+}
 void cyd32UiResetCalibration(){
   if(prefs.begin("sqemit32",false)){
     prefs.remove("touchland");
