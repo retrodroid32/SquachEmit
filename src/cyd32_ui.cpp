@@ -4,6 +4,7 @@
 #include "scenario_library.h"
 #include "scenario_display.h"
 #include "cyd32_squachy_port.h"
+#include "cyd32_fast_sprite.h"
 #if defined(SQE_ORIGINAL_SQUACHY)
 #include <squachy.h>
 #include <theme.h>
@@ -46,7 +47,10 @@ constexpr size_t kPageRows=4;
 TFT_eSPI panel;
 TFT_eSPI* paint=&panel;
 #define lcd (*paint)
-TFT_eSprite halfFrame(&panel);
+// SquachWatch FastSprite replaces expensive drawPixel / drawLine /
+// drawFastVLine / GLCD drawChar calls with direct 8-bit buffer writes.
+// Its original viewport + setWindow safety clipping is preserved on CYD32.
+FastSprite halfFrame(&panel);
 TFT_eSprite squachSprite(&panel);
 bool squachSpriteReady=false,bandFrameReady=false,bandFrameActive=false;
 int bandFrameTop=0;
@@ -1846,7 +1850,9 @@ Cyd32UiAction cyd32UiTick(const char* active,uint32_t remaining,bool suite){
   // SquachWatch's original scene engine aims at a ~50ms logical frame;
   // the R14.2 130ms NORMAL throttle alone limited visible smoothness.
   // Actual throughput depends on paint and SPI time (logged below).
-  const uint32_t frameCadence=animationLevel==0?110u:animationLevel==1?65u:50u;
+  // Match SquachWatch's 33 ms visual pacing in NORMAL mode.
+  // Faster rendering is opportunistic: a two-band draw/push may take longer.
+  const uint32_t frameCadence=animationLevel==0?100u:animationLevel==1?33u:25u;
   if(calibrated&&screen==Screen::Home&&bandFrameReady&&
      now-lastSceneFrame>=frameCadence&&colorBarsUntil==0){
     renderBufferedHome(active,remaining,suite);
