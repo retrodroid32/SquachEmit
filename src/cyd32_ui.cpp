@@ -53,6 +53,8 @@ TFT_eSPI* paint=&panel;
 FastSprite halfFrame(&panel);
 TFT_eSprite squachSprite(&panel);
 bool squachSpriteReady=false,bandFrameReady=false,bandFrameActive=false;
+// Use one 8-bit full-frame sprite when RAM allows; retain HALF8 fallback.
+uint8_t sceneFrameBands=2;
 int bandFrameTop=0;
 bool advanceScene=true;
 // Both LCD bands must sample the same animation clock; millis() in each
@@ -487,7 +489,8 @@ void homeScreen(const char* active,uint32_t remaining,bool suite);
 // only a finished sprite per band, not erase/redraw primitives.
 void renderBufferedHome(const char* active,uint32_t remaining,bool suite){
   if(!bandFrameReady)return;
-  const int w=panel.width(),h=panel.height(),half=h/2;
+  const int w=panel.width(),h=panel.height();
+  const int bands=sceneFrameBands,bandH=h/bands;
   const uint32_t frameMs=millis();
   const uint32_t begunUs=micros();
   uint32_t drawUs=0,pushUs=0;
@@ -495,11 +498,11 @@ void renderBufferedHome(const char* active,uint32_t remaining,bool suite){
 #if defined(SQE_ORIGINAL_SQUACHY)
   DrawBand::setEnabled(true);
 #endif
-  for(int pass=0;pass<2;++pass){
-    bandFrameTop=pass*half;
+  for(int pass=0;pass<bands;++pass){
+    bandFrameTop=pass*bandH;
     advanceScene=(pass==0);
 #if defined(SQE_ORIGINAL_SQUACHY)
-    DrawBand::set(bandFrameTop,bandFrameTop+half);
+    DrawBand::set(bandFrameTop,bandFrameTop+bandH);
 #endif
     paint=&halfFrame;
     bandFrameActive=true;
@@ -533,6 +536,33 @@ void renderBufferedHome(const char* active,uint32_t remaining,bool suite){
       (unsigned long)(micros()-begunUs),(unsigned long)ESP.getFreeHeap());
     lastReportMs=frameMs;frames=0;sumDrawUs=0;sumPushUs=0;
   }
+}
+// Render the entire RGB332 scene ONCE when internal RAM permits. A
+// 320x240 buffer is 76,800 bytes. Reserve heap for RF and costumes;
+// fall back to the previous two 38.4KB passes on constrained devices.
+void allocateSceneFrame(){
+  paint=&panel;bandFrameActive=false;
+  if(bandFrameReady){halfFrame.deleteSprite();bandFrameReady=false;}
+  halfFrame.setColorDepth(8);
+  const int w=panel.width(),h=panel.height();
+  sceneFrameBands=2;
+  const bool fullCreated=halfFrame.createSprite(w,h)!=nullptr;
+  const uint32_t afterFull=ESP.getFreeHeap();
+  const uint32_t largestFull=ESP.getMaxAllocHeap();
+  const bool fullSafe=fullCreated &&
+      afterFull>=64u*1024u && largestFull>=24u*1024u;
+  if(fullSafe){
+    bandFrameReady=true;
+    sceneFrameBands=1;
+  }else{
+    if(fullCreated)halfFrame.deleteSprite();
+    bandFrameReady=halfFrame.createSprite(w,h/2)!=nullptr;
+  }
+  Serial.printf("CYD32,FRAME,%s,%dx%d,bands=%u,heap=%lu,largest=%lu,fullCandidate=%u,fullFree=%lu,fullLargest=%lu\n",
+    bandFrameReady?(sceneFrameBands==1?"FULL8":"HALF8"):"STATIC_FALLBACK",
+    w,h/sceneFrameBands,(unsigned)sceneFrameBands,
+    (unsigned long)ESP.getFreeHeap(),(unsigned long)ESP.getMaxAllocHeap(),
+    (unsigned)fullCreated,(unsigned long)afterFull,(unsigned long)largestFull);
 }
 void homeScreen(const char* active,uint32_t remaining,bool suite){
   const bool emitting=active&&*active;
@@ -680,14 +710,11 @@ void rotateCurrentScreen(){
   // Recreate during an explicit user rotate only (never per animation
   // frame); if memory is fragmented, fall back to static rather than
   // drawing erase/redraw directly on the ST7798.
-  if(bandFrameReady){halfFrame.deleteSprite();bandFrameReady=false;}
-  halfFrame.setColorDepth(8);
-  bandFrameReady=(halfFrame.createSprite(panel.width(),panel.height()/2)!=nullptr);
-  Serial.printf("CYD32,FRAME,ROTATED_%s,%dx%d,heap=%lu,largest=%lu\n",
-    bandFrameReady?"HALF8":"STATIC_FALLBACK",
-    panel.width(),panel.height()/2,
-    (unsigned long)ESP.getFreeHeap(),
-    (unsigned long)ESP.getMaxAllocHeap());
+  allocateSceneFrame();
+  Serial.printf("CYD32,FRAME,ROTATED_%s,%dx%d,bands=%u,heap=%lu,largest=%lu\n",
+    bandFrameReady?(sceneFrameBands==1?"FULL8":"HALF8"):"STATIC_FALLBACK",
+    panel.width(),panel.height()/sceneFrameBands,(unsigned)sceneFrameBands,
+    (unsigned long)ESP.getFreeHeap(),(unsigned long)ESP.getMaxAllocHeap());
   if(makePortrait){
     if(!portraitCalibrated&&prefs.begin("sqemit32",true)){
       portraitCalibrated=prefs.getBytesLength("touchport")==sizeof(portraitTouchData) &&
@@ -1712,13 +1739,7 @@ void cyd32UiBegin(){
   lcd.fillScreen(kBg);
   // Allocate the animation band FIRST, before the mascot's separate
   // 16-bit scratch sprite, to retain one large contiguous block.
-  halfFrame.setColorDepth(8);
-  bandFrameReady=(halfFrame.createSprite(panel.width(),panel.height()/2)!=nullptr);
-  Serial.printf("CYD32,FRAME,%s,%dx%d,heap=%lu,largest=%lu\n",
-    bandFrameReady?"HALF8":"STATIC_FALLBACK",
-    panel.width(),panel.height()/2,
-    (unsigned long)ESP.getFreeHeap(),
-    (unsigned long)ESP.getMaxAllocHeap());
+  allocateSceneFrame();
   // Match SquachWatch's RGB332 draw buffers: ~12KB mascot instead of
   // a 24KB RGB565 sprite, preserving heap for RF and the half-screen band.
   squachSprite.setColorDepth(8);
