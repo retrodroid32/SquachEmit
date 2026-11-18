@@ -2,25 +2,25 @@
   "schema": 1,
   "scenario_count": 172,
   "firmware_sources": {
-    "src": "0d02d4581082e36a02071fab9acee376f9223e56",
-    "include": "8253b90b87623b164881b6a20663d16bcd05a85b",
+    "src": "c9a8825bdfe9519c3644ad6b3db7bdb997fc31cd",
+    "include": "c566d7f55f808e5e251c75e373d8e47fe1774174",
     "lib": "c88135d6510b738fe2c208290c498f9e8b639681",
     "SquachEmit.ino": "90b4205813a2f7885bc1e12ce7431eebf7249f45",
     "platformio.ini": "c3ff3725248b4c67d60da6903982515031c501f6"
   },
   "builds": {
     "cyd32-st7798": {
-      "title": "SquachEmit v1.1.0 CYD 3.2 R14.6 LAB — Full-Frame Renderer, Low-Memory Fallback (172 Cases)",
+      "title": "SquachEmit v1.1.0 CYD 3.2 R14.7 LAB — Overlapped FramePush A/B (172 Cases)",
       "version": "v1.1.0 MAINLINE · 172 cases",
-      "summary": "R14.6 LAB CYD 3.2 for 172 synthetic cases. Tries a single 76,800-byte RGB332 320x240 framebuffer to draw all characters and backgrounds once before one LCD transfer, eliminating two-band state divergence when RAM permits. If not safe, retains the original HALF8 two-band renderer. Serial reports FULL8 or HALF8 and heap metrics, making hardware availability measurable. Retains R14.5 scene clock, R14.4 FastSprite, 40 MHz display, original art and portrait. SHA-256 four-part flash preflight plus ST7798/RF validation required. LAB only; no production release.",
+      "summary": "R14.7 LAB CYD 3.2 with 172 synthetic cases. Preserves hardware-proven R14.6 FULL8 renderer; ports SquachWatch row-hash and overlapped RGB332→SPI transfer for unchanged-row skipping. Serial PUSH ON (LAB default), PUSH OFF (TFT_eSPI fallback), PUSH STATUS switch modes without reflashing. CYD32,FRAME,PERF reports FPS, draw/push, rows and hash/wire times for same-board A/B comparison. Uses standard 40MHz SPI; no RF changes. SHA-256 four-part flash preflight and physical ST7798, touch, memory, RF validation mandatory. LAB-only; no production release.",
       "highlights": [
-        "FULL8 renderer paints entire original SquachWatch scene and mascot once per logical frame before one push to ST7798.",
-        "Requests one 320x240 RGB332 sprite with heap safety reserves; falls back to HALF8 when internal RAM cannot safely support it.",
-        "Boot/rotate CYD32,FRAME logs actual FULL8/HALF8 selection and candidate free/largest heap metrics.",
-        "Keeps R14.5 Gibson/Starfield clock fix and R14.4 optimized FastSprite at standard 40 MHz SPI.",
-        "Animation target still 33 ms Normal; actual FPS measured in CYD32,FRAME,PERF lines.",
-        "Retains single speech bubble, all original backgrounds, original outfits and portrait rotation.",
-        "LAB only; SHA-256 four-part flash preflight, cold boot, graphics seam, touch, memory and bounded RF tests required."
+        "Optimized FramePush port uses original SquachWatch 32-pixel SPI FIFO bursts, RGB332 color lookup and changed-row hashing.",
+        "Only enabled on CYD 3.2 FULL8 path; HALF8 and any failed optimized push use the proven TFT_eSPI pushSprite.",
+        "PUSH ON / PUSH OFF / PUSH STATUS commands enable immediate same-board A/B measurements over USB serial.",
+        "Every 64th optimized frame refreshes fully; any direct panel writes, rotation or fallback invalidate cached row hashes.",
+        "CYD32,FRAME,PERF now includes push_mode, mean transmitted rows, hash_us and wire_us alongside original FPS/draw/push/heap.",
+        "Preserves 40MHz SPI, original SquachWatch animated backgrounds/Squachy costumes, one speech bubble, 172 bounded test cases.",
+        "LAB test candidate: verify no corruption, cold boot, rotation, color/row accuracy, actual speed, touch, RF and SHA-256 preflight."
       ]
     },
     "c5-waveshare-28": {
