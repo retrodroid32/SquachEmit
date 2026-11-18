@@ -2,7 +2,7 @@
   "schema": 1,
   "scenario_count": 172,
   "firmware_sources": {
-    "src": "a6f1d8e5ec40d8538c694f1dcff38a59c8a4b308",
+    "src": "c6b27352c09b9e2684d7a2573230c2d4378b888c",
     "include": "8253b90b87623b164881b6a20663d16bcd05a85b",
     "lib": "0f68b608bf8030719f523d78aaebf119ad0aab5e",
     "SquachEmit.ino": "90b4205813a2f7885bc1e12ce7431eebf7249f45",
@@ -10,17 +10,17 @@
   },
   "builds": {
     "cyd32-st7798": {
-      "title": "SquachEmit v1.1.0 CYD 3.2 R14.3 LAB — Smooth SquachWatch Backgrounds + Top/Bottom Frame Sync (172 Cases)",
+      "title": "SquachEmit CYD 3.2 R14.4 LAB — Native FastSprite + Smooth 30FPS Target (172 Cases)",
       "version": "v1.1.0 MAINLINE · 172 cases",
-      "summary": "R14.3 LAB CYD 3.2 (172 synthetic cases). Original SquachWatch background stepper now advances only on the first LCD band and freezes movement on the second, with a shared timestamp. NORMAL cadence target improves from 130 to 65 ms; real frame rate and render/SPI timings are logged. Retains original art, costumes, portrait and one speech box. SHA-256 four-part flash preflight and ST7798 seam, memory and RF hardware validation required. LAB-only, no production release.",
+      "summary": "R14.4 LAB CYD 3.2 for 172 synthetic test cases. Ports SquachWatch's hardware-proven 8-bit FastSprite line, pixel, vertical-line and text optimizations to SquachEmit's two-band renderer; matches the native 33 ms NORMAL target. Keeps 40 MHz display SPI, shared animation clock, second-band stepping freeze, original art, rotation and single speech bubble. Actual FPS remains hardware-limited and reported in serial performance diagnostics. SHA-256 four-part flash preflight and physical ST7798 graphics/RF validation required. LAB only; no production release.",
       "highlights": [
-        "R14.3: original SquachWatch background animation clock now controls both 8-bit LCD halves, including its second-band freeze.",
-        "Source Scene selection uses SquachWatch's true Background enum; Synthwave=10, retired tunnel=9.",
-        "Target NORMAL refresh 65 ms versus R14.2 130 ms; measured FPS may be lower on physical ST7798.",
-        "Five-second serial CYD32,FRAME,PERF diagnostics report FPS, drawing time, push time and free heap.",
-        "Carries R14.2 original portrait Squachy and frame timestamp coordination.",
-        "Retains ten original backgrounds, original costumes and R14.1 duplicate-bubble suppression.",
-        "LAB only. Verify on CYD 3.2 and do not merge or create production releases/tags."
+        "Original SquachWatch FastSprite 8-bit rendering acceleration used for CYD 3.2 frame bands.",
+        "NORMAL 33ms frame pacing target now matches SquachWatch; HIGH 25ms, LOW 100ms.",
+        "Physical ST7798 SPI remains at proven 40 MHz; no overclock or radio changes.",
+        "Retains R14.3 synchronized background time steps, R14.2 consistent animation timestamp and portrait restoration.",
+        "Cyd32FastSprite includes upstream setWindow framebuffer bounds guard and library fallback paths.",
+        "CYD32,FRAME,PERF serial reports actual FPS, draw and push microseconds, and free heap.",
+        "LAB-only 172-case build requires cold boot, screen seam, flicker, rotation, memory, RF and SHA-256 validation."
       ]
     },
     "c5-waveshare-28": {
