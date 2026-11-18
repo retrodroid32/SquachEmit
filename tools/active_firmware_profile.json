@@ -10,7 +10,7 @@
   },
   "builds": {
     "cyd32-st7798": {
-      "title": "SquachEmit CYD 3.2 R14.4 LAB — Native FastSprite + Smooth 30FPS Target (172 Cases)",
+      "title": "SquachEmit v1.1.0 CYD 3.2 R14.4 LAB — Native FastSprite, 30 FPS Target (172 Cases)",
       "version": "v1.1.0 MAINLINE · 172 cases",
       "summary": "R14.4 LAB CYD 3.2 for 172 synthetic test cases. Ports SquachWatch's hardware-proven 8-bit FastSprite line, pixel, vertical-line and text optimizations to SquachEmit's two-band renderer; matches the native 33 ms NORMAL target. Keeps 40 MHz display SPI, shared animation clock, second-band stepping freeze, original art, rotation and single speech bubble. Actual FPS remains hardware-limited and reported in serial performance diagnostics. SHA-256 four-part flash preflight and physical ST7798 graphics/RF validation required. LAB only; no production release.",
       "highlights": [
