@@ -2,7 +2,7 @@
   "schema": 1,
   "scenario_count": 172,
   "firmware_sources": {
-    "src": "c6b27352c09b9e2684d7a2573230c2d4378b888c",
+    "src": "0d02d4581082e36a02071fab9acee376f9223e56",
     "include": "8253b90b87623b164881b6a20663d16bcd05a85b",
     "lib": "c88135d6510b738fe2c208290c498f9e8b639681",
     "SquachEmit.ino": "90b4205813a2f7885bc1e12ce7431eebf7249f45",
@@ -10,17 +10,17 @@
   },
   "builds": {
     "cyd32-st7798": {
-      "title": "SquachEmit v1.1.0 CYD 3.2 R14.5 LAB — Gibson + Starfield Band Sync (172 Cases)",
+      "title": "SquachEmit v1.1.0 CYD 3.2 R14.6 LAB — Full-Frame Renderer, Low-Memory Fallback (172 Cases)",
       "version": "v1.1.0 MAINLINE · 172 cases",
-      "summary": "R14.5 LAB CYD 3.2 for 172 synthetic cases. Fixes city-camera mismatch: Gibson moved 16 ms again on the second 8-bit display band despite a shared frame timestamp. Starfield tunnel had the same issue. Both now use repeat-safe per-frame elapsed time, preserving motion only once per displayed frame. Keeps R14.4 FastSprite and 33 ms Normal frame target, 40 MHz display clock, original character/outfits, one bubble and portrait. SHA-256 four-part flash preflight; physical ST7798 seam, FPS, rotation, memory and RF testing required. LAB only; no production release.",
+      "summary": "R14.6 LAB CYD 3.2 for 172 synthetic cases. Tries a single 76,800-byte RGB332 320x240 framebuffer to draw all characters and backgrounds once before one LCD transfer, eliminating two-band state divergence when RAM permits. If not safe, retains the original HALF8 two-band renderer. Serial reports FULL8 or HALF8 and heap metrics, making hardware availability measurable. Retains R14.5 scene clock, R14.4 FastSprite, 40 MHz display, original art and portrait. SHA-256 four-part flash preflight plus ST7798/RF validation required. LAB only; no production release.",
       "highlights": [
-        "Gibson city camera now advances once per logical two-band frame, not twice; fixes photo-reported seam mismatch.",
-        "Starfield tunnel rotation/scroll uses the same repeat-safe timestamp guard.",
-        "Native C++ regression exercises matching band timestamps, 33 ms motion, stalled frame clamp and millis wraparound.",
-        "Retains R14.4 optimized FastSprite and 33 ms Normal pacing without increasing display SPI above 40 MHz.",
-        "Retains original SquachWatch artwork, 19 costumes plus 2 custom outfits, portrait, and single speech bubble.",
-        "Actual FPS, drawing time, push time and free heap remain available as CYD32,FRAME,PERF lines.",
-        "LAB-only 172-case build: verify backgrounds, motion at screen seam, touch, rotation, RUN/STOP/SUITE and SHA-256."
+        "FULL8 renderer paints entire original SquachWatch scene and mascot once per logical frame before one push to ST7798.",
+        "Requests one 320x240 RGB332 sprite with heap safety reserves; falls back to HALF8 when internal RAM cannot safely support it.",
+        "Boot/rotate CYD32,FRAME logs actual FULL8/HALF8 selection and candidate free/largest heap metrics.",
+        "Keeps R14.5 Gibson/Starfield clock fix and R14.4 optimized FastSprite at standard 40 MHz SPI.",
+        "Animation target still 33 ms Normal; actual FPS measured in CYD32,FRAME,PERF lines.",
+        "Retains single speech bubble, all original backgrounds, original outfits and portrait rotation.",
+        "LAB only; SHA-256 four-part flash preflight, cold boot, graphics seam, touch, memory and bounded RF tests required."
       ]
     },
     "c5-waveshare-28": {
