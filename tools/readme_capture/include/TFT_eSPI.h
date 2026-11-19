@@ -12,6 +12,7 @@ namespace MockDisplay {
   // Direct TFT rect writes into the portrait countdown region are a
   // regression: FULL8/HALF8 must render those pixels only in the sprite.
   inline unsigned directPortraitCountdownWrites=0;
+  inline unsigned calibrateTouchCalls=0;
   inline uint16_t x=0,y=0;
   // Test-only XPT2046 samples when TFT_eSPI rejects a bezel touch.
   inline uint16_t rawX=0,rawY=0,rawZ=0;
@@ -38,7 +39,10 @@ public:
  }
  void invertDisplay(bool){} // physical panel inversion not applied to RGB buffer
  void setTouch(uint16_t*){}
- void calibrateTouch(uint16_t*,uint16_t,uint16_t,uint8_t){}
+ void calibrateTouch(uint16_t* data,uint16_t,uint16_t,uint8_t){
+  ++MockDisplay::calibrateTouchCalls;
+  if(data){data[0]=200;data[1]=3600;data[2]=180;data[3]=3700;data[4]=0;}
+ }
  bool getTouch(uint16_t* xx,uint16_t* yy,uint16_t){
   if(MockDisplay::touch){*xx=MockDisplay::x;*yy=MockDisplay::y;return true;}
   return false;
