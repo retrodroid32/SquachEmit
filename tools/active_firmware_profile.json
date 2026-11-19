@@ -2,7 +2,7 @@
   "schema": 1,
   "scenario_count": 172,
   "firmware_sources": {
-    "src": "8bcbb6c4ce812939f6c27db7c47f3f1a76d08172",
+    "src": "ba1b6de5750bd16c9301d7171f865141b1ee2061",
     "include": "c566d7f55f808e5e251c75e373d8e47fe1774174",
     "lib": "c88135d6510b738fe2c208290c498f9e8b639681",
     "SquachEmit.ino": "90b4205813a2f7885bc1e12ce7431eebf7249f45",
@@ -10,17 +10,17 @@
   },
   "builds": {
     "cyd32-st7798": {
-      "title": "SquachEmit v1.1.0 CYD 3.2 R14.8 LAB — RF-Safe Portrait Rotation & FastPush (172 Cases)",
+      "title": "SquachEmit v1.1.0 CYD 3.2 R14.9 LAB — Portrait Menu & Stable TX Countdown",
       "version": "v1.1.0 MAINLINE · 172 cases",
-      "summary": "R14.8 LAB CYD 3.2 retains R14.7 FULL8/FAST at 40 MHz SPI and 172 bounded RF cases. First portrait touch calibration could block TX timeout or STOP. Now the board checks saved portrait calibration before rotating, defers new calibration during active RF/suite/playlist, and permits previously calibrated rotation during TX. Serial CALTOUCH and COLORS require idle RF. Native C++ tests cover active/suite deferral, idle setup, portrait roundtrip and active calibrated rotation. Four-part SHA-256 flashing and physical touch, STOP, radio timeout and screen validation required. LAB only.",
+      "summary": "R14.9 LAB CYD 3.2 fixes portrait MENU touch, stray HOME caption and TX countdown flicker from competing direct LCD and FULL8 sprite writes. Enlarges the menu target, allows menus during RF while keeping STOP on every portrait page, removes HOME caption and lets the framebuffer own the countdown. Retains proven FULL8/FAST FramePush, 40MHz SPI, SquachWatch artwork, R14.8 RF-safe calibration, and all 172 synthetic cases. Native pixel/touch/STOP tests added. Four-part SHA-256 flashing and physical verification required. LAB only.",
       "highlights": [
-        "Preserves user-validated FULL8 optimized FramePush display path and PUSH ON/OFF/STATUS diagnostics.",
-        "Avoids blocking first-time portrait touch calibration while RF is active, or during a suite/favorites playlist; logs a clear deferred-rotation event.",
-        "Previously calibrated portrait rotation remains permitted during an active radio test; return to landscape preserves selected profile and controls.",
-        "Serial CALTOUCH and COLORS commands require fully idle TX, suite and playlist state, maintaining accessible STOP.",
-        "Native C++ host scenarios cover active TX, suite, first calibration, portrait/landscape roundtrip and cached calibration reuse.",
-        "Retains original animated backgrounds, Squachy outfits, single speech bubble, standard 40MHz SPI and all 172 bounded RF cases.",
-        "LAB only; first-run physical portrait, touch, RF timeout, STOP, heat/heap and SHA-256 preflight validation still required."
+        "Larger portrait menu button/tap target, accessible even during bounded RF tests.",
+        "STOP footer stays active on every portrait page during TX/suite/playlist.",
+        "HOME caption removed from portrait Home without changing other titles.",
+        "FULL8/HALF8 framebuffer exclusively owns countdown; no redundant direct LCD writes.",
+        "Native pixel tests verify menu, HOME absence, active menu STOP and countdown ownership.",
+        "Preserves R14.8 calibration safety, landscape UI, 40MHz FAST display, costumes and 172 cases.",
+        "LAB only; four-part SHA-256 preflight, physical portrait, timed RF STOP and heap tests required."
       ]
     },
     "c5-waveshare-28": {
