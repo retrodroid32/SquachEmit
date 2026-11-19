@@ -580,6 +580,16 @@ static void command(String cmd) {
   if (cmd.equalsIgnoreCase("PUSH ON")) { cyd32UiSetFramePush(true); return; }
   if (cmd.equalsIgnoreCase("PUSH OFF")) { cyd32UiSetFramePush(false); return; }
   if (cmd.equalsIgnoreCase("PUSH STATUS")) { cyd32UiPrintFramePushStatus(); return; }
+  if (cmd.equalsIgnoreCase("TOUCH STATUS")) { cyd32UiPrintTouchStatus(); return; }
+  if (cmd.equalsIgnoreCase("TOUCH TRACE ON")) { cyd32UiSetTouchTrace(true); return; }
+  if (cmd.equalsIgnoreCase("TOUCH TRACE OFF")) { cyd32UiSetTouchTrace(false); return; }
+  if (cmd.equalsIgnoreCase("CALTOUCH PORTRAIT")) {
+    if(g_active||g_suite||g_playlist){
+      Serial.println("ERROR,CALTOUCH_REQUIRES_IDLE");
+      return;
+    }
+    cyd32UiCalibratePortraitTouch(); return;
+  }
   // Touch recalibration removes the only local STOP control until the
   // blocking calibration completes. NEVER start it with RF/suite/playlist
   // active, including the off-air gap between suite/playlist cases.
