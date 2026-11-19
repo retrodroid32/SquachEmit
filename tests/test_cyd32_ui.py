@@ -93,8 +93,12 @@ class Cyd32UiGuards(unittest.TestCase):
         self.assertNotIn("now-lastSceneFrame>=350u",self.s,
             "Physical LCD must not erase a scene every 350ms")
         self.assertIn("SquachWatchScenes::drawDigitalRain",self.s)
+        # Only STATIC_FALLBACK may write portrait countdown pixels straight
+        # onto the panel. FULL8/HALF8 already paints the status in the frame.
         self.assertIn("if(count!=portraitLastCount)",self.s)
-        self.assertIn("lcd.fillRect(8,265,223,20,kBg)",self.s)
+        self.assertIn("active&&*active&&!bandFrameReady",self.s)
+        self.assertIn("lcd.fillRect(10,265,225,19,kBg)",self.s)
+        self.assertNotIn("lcd.fillRect(8,265,223,20,kBg)",self.s)
         self.assertIn("animationLevel==0?200u:animationLevel==1?120u:80u",self.s)
         self.assertNotIn("label(hx,148,heading",self.s)
 if __name__=="__main__":
