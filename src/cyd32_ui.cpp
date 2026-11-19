@@ -1378,9 +1378,11 @@ void portraitRow(int y,const char* head,const char* sub){
 void portraitPage(const char* active,uint32_t remaining,bool suite){
   // Every page shares the same logical Screen and selection in both rotations.
   lcd.fillScreen(kBg);
-  lcd.fillRect(0,0,240,26,kPurple);
-  lcd.fillRoundRect(5,3,31,20,3,kWhite);
-  for(int y=7;y<20;y+=5)lcd.drawFastHLine(12,y,17,kInk);
+  lcd.fillRect(0,0,240,31,kPurple);
+  // Match a generous 65x42 touch target. The previous 31x20 menu
+  // button was too small for the resistive panel in portrait mode.
+  lcd.fillRoundRect(5,3,46,27,3,kWhite);
+  for(int y=10;y<=22;y+=6)lcd.drawFastHLine(16,y,23,kInk);
   label(81,9,"SQUACHEMIT",kWhite);
   const uint16_t tx=active&&*active?kGreen:kYellow;
   lcd.drawLine(215,14,221,4,tx);lcd.drawLine(221,4,227,14,tx);
@@ -1394,7 +1396,9 @@ void portraitPage(const char* active,uint32_t remaining,bool suite){
     screen==Screen::Diagnostics?"HEALTH":screen==Screen::OtaInfo?"OTA":
     screen==Screen::Activity?"TX ACTIVITY":screen==Screen::Evidence?"EVIDENCE":
     screen==Screen::Help?"HELP":screen==Screen::Identity?"IDENTITY":"RECOVERY";
-  label(12,37,name,kVaporPink,2);
+  // HOME is already evident from the main scene; printing "HOME" here
+  // was an unexplained extra line above the SquachWatch background.
+  if(screen!=Screen::Home)label(12,37,name,kVaporPink,2);
   if(screen==Screen::QuickFilter){
     char filterInfo[28];
     snprintf(filterInfo,sizeof(filterInfo),"%c >",
@@ -1588,15 +1592,25 @@ void portraitPage(const char* active,uint32_t remaining,bool suite){
     label(10,267,left,kGreen);
   }else label(10,267,"ROTATE: TOP-RIGHT",kMuted);
   button(3,287,74,30,screen==Screen::Home?"TESTS":"BACK");
-  button(83,287,74,30,screen==Screen::Home?(active||suite?"STOP":"RUN"):"PREV");
+  // Permit menu navigation during bounded TX without hiding STOP.
+  // Every portrait page keeps its emergency center STOP button.
+  const bool radioBusy=(active&&*active)||suite||playlistRunning;
+  button(83,287,74,30,radioBusy?"STOP":screen==Screen::Home?"RUN":"PREV");
   button(163,287,74,30,screen==Screen::Home?"SUITE":"NEXT");
 }
 Cyd32UiAction portraitTap(int x,int y,bool active,bool suite){
-  if(y<27){
-    if(x<45){screen=Screen::MainMenu;menuPage=0;redraw=true;}
-    else if(x>=195){rotateCurrentScreen();}
+  // Physical 3.2" resistive touch benefits from a larger menu target.
+  // Keep top-right rotation separate from the Quick Filter's y>=29
+  // control and don't intercept its text row.
+  if(y<42&&x<65){
+    screen=Screen::MainMenu;menuPage=0;redraw=true;
     return Cyd32UiAction::None;
   }
+  if(y<30&&x>=190){
+    rotateCurrentScreen();
+    return Cyd32UiAction::None;
+  }
+  if(y<27)return Cyd32UiAction::None;
   if(screen==Screen::Home){
     // 240px portrait uses the same SquachWatch edge gesture (10%).
     if(y>=60&&y<215&&(x<24||x>=216)){
@@ -1620,6 +1634,10 @@ Cyd32UiAction portraitTap(int x,int y,bool active,bool suite){
     return Cyd32UiAction::PlaylistStart;
   }
   if(y>=287){
+    // A transmitting device must have accessible STOP even when
+    // looking at portrait menus, categories, or settings.
+    if(x>=80&&x<160&&(active||suite||playlistRunning))
+      return Cyd32UiAction::Stop;
     if(x<80){
       // BACK has the same destination as the corresponding landscape page.
       if(screen==Screen::MainMenu||screen==Screen::Backgrounds||
@@ -1871,9 +1889,10 @@ Cyd32UiAction cyd32UiTick(const char* active,uint32_t remaining,bool suite){
     }
   }
   const char* name=active?active:"";
-  // A serial-initiated RUN or SUITE must not leave a hidden STOP button
-  // behind the duration editor.
-  if(((active&&*active)||suite)&&screen!=Screen::Home){
+  // Landscape keeps the established auto-return-to-HOME during TX.
+  // Portrait has an always-visible STOP footer, so don't force users out
+  // of the menu every tick: that made the menu appear unresponsive.
+  if(((active&&*active)||suite)&&screen!=Screen::Home&&!portraitMode){
     screen=Screen::Home;
     redraw=true;
   }
@@ -1916,7 +1935,11 @@ Cyd32UiAction cyd32UiTick(const char* active,uint32_t remaining,bool suite){
     lastCount=(active&&*active)?((remaining+999)/1000):UINT32_MAX;
     portraitLastCount=(active&&*active)?((remaining+999)/1000):UINT32_MAX;
     redraw=false;
-  }else if(calibrated&&screen==Screen::Home&&active&&*active){
+  }else if(calibrated&&screen==Screen::Home&&active&&*active&&
+           !bandFrameReady&&!portraitMode){
+    // STATIC_FALLBACK only. Buffered FULL8/HALF8 renders countdown
+    // text together with the scene; an additional direct TFT countdown
+    // scribbles over that frame and causes portrait/landscape flicker.
     const uint32_t count=(remaining+999)/1000;
     if(count!=lastCount){
       Cyd32FramePush::invalidate();
@@ -1935,15 +1958,18 @@ Cyd32UiAction cyd32UiTick(const char* active,uint32_t remaining,bool suite){
     }
     lastBubbleAt=now;
   }
-  if(calibrated&&portraitMode&&screen==Screen::Home&&active&&*active){
+  if(calibrated&&portraitMode&&screen==Screen::Home&&
+     active&&*active&&!bandFrameReady){
+    // No sprite available: update only the portrait TX text, in exactly
+    // the same position/font as portraitPage(). When FULL8/HALF8 is
+    // available portraitPage() owns every animation and countdown pixel.
     const uint32_t count=(remaining+999)/1000;
     if(count!=portraitLastCount){
-      // Update ONLY the countdown region; do not repaint background,
-      // mascot, header, or portrait buttons every second.
       Cyd32FramePush::invalidate();
-      lcd.fillRect(8,265,223,20,kBg);
-      char left[28];snprintf(left,sizeof(left),"%lus LEFT",(unsigned long)count);
-      label(10,267,left,kGreen);
+      lcd.fillRect(10,265,225,19,kBg);
+      char status[42];
+      snprintf(status,sizeof(status),"TX %lus LEFT",(unsigned long)count);
+      fit(12,267,status,216,kGreen);
       portraitLastCount=count;
     }
   }
