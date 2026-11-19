@@ -28,8 +28,15 @@ public:
   if(std::strcmp(name,"touchport")==0&&!mock_portrait_touch_saved)return 0;
   return 10;
  } // simulated previously calibrated touch unless intentionally absent
- size_t getBytes(const char*,void* output,size_t length){
-   std::memset(output,0,length);return length;
+ size_t getBytes(const char* name,void* output,size_t length){
+   // Realistic stored portrait coefficients allow the native edge-rescue
+   // test to exercise TFT_eSPI's unsigned outside-panel rejection path.
+   std::memset(output,0,length);
+   if(std::strcmp(name,"touchport")==0&&length==10){
+     const uint16_t cal[5]={200,3600,180,3700,0};
+     std::memcpy(output,cal,sizeof(cal));
+   }
+   return length;
  }
  size_t putBytes(const char* name,const void*,size_t length){
   if(std::strcmp(name,"touchport")==0)mock_portrait_touch_saved=true;
