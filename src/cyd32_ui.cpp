@@ -1441,7 +1441,7 @@ void portraitPage(const char* active,uint32_t remaining,bool suite){
   // HOME is already evident from the main scene; printing "HOME" here
   // was an unexplained extra line above the SquachWatch background.
   if(screen!=Screen::Home)label(12,37,name,kVaporPink,2);
-  else label(12,42,"HOLD SCREEN 5s: CAL TOUCH",kMuted);
+  else label(78,42,"HOLD SCREEN 5s: CAL TOUCH",kMuted);
   if(screen==Screen::QuickFilter){
     char filterInfo[28];
     snprintf(filterInfo,sizeof(filterInfo),"%c >",
