@@ -1704,7 +1704,7 @@ void portraitPage(const char* active,uint32_t remaining,bool suite){
 // samples, with signed calibration math and a narrow physical corner gate.
 // All other control taps still require normal validated getTouch().
 bool recoverPortraitMenuTouch(uint16_t& x,uint16_t& y){
-  if(!portraitMode||!portraitCalibrated||
+  if(portraitFitLoaded||!portraitMode||!portraitCalibrated||
      portraitTouchData[1]<200||portraitTouchData[3]<200||
      (portraitTouchData[4]&~7u))return false;
   if(lcd.getTouchRawZ()<230)return false;
@@ -2008,37 +2008,28 @@ void cyd32UiSetTouchTrace(bool enabled){
   Serial.printf("CYD32,TOUCH,TRACE,%s\n",enabled?"ON":"OFF");
 }
 void cyd32UiPrintTouchStatus(){
-  Serial.printf("CYD32,TOUCH,STATUS,orientation=%s,portrait_saved=%u,landscape_saved=%u,trace=%u,rescues=%lu,cal=%u:%u:%u:%u:%u\n",
+  Serial.printf("CYD32,TOUCH,STATUS,orientation=%s,portrait_saved=%u,landscape_saved=%u,trace=%u,rescues=%lu,cal=%u:%u:%u:%u:%u,affine5=%u\n",
     portraitMode?"PORTRAIT":"LANDSCAPE",portraitCalibrated?1u:0u,
     calibrated?1u:0u,portraitTouchTrace?1u:0u,
     (unsigned long)portraitMenuRawRescues,
     (unsigned)portraitTouchData[0],(unsigned)portraitTouchData[1],
     (unsigned)portraitTouchData[2],(unsigned)portraitTouchData[3],
-    (unsigned)portraitTouchData[4]);
+    (unsigned)portraitTouchData[4],portraitFitLoaded?1u:0u);
 }
 void cyd32UiCalibratePortraitTouch(){
   if(!ready||!calibrated||!portraitMode){
     Serial.println("ERROR,CALTOUCH_PORTRAIT_REQUIRES_PORTRAIT");
     return;
   }
-  // Called only by idle-gated serial command. No NVS wipe, no rotation
-  // and no animation while TFT_eSPI's blocking 4-corner wizard runs.
-  paint=&panel;bandFrameActive=false;
-  Cyd32FramePush::invalidate();
-  panel.fillScreen(kBg);
-  label(5,16,"PORTRAIT TOUCH CAL",kCyan,2);
+  // The original four-corner TFT_eSPI wizard can consume the same finger
+  // at two adjacent targets and save a broken calibration. Use the exact
+  // SquachWatch five-target held-sample + release + proof-dot workflow.
   Serial.println("CYD32,TOUCH,PORTRAIT_CAL_START");
-  panel.calibrateTouch(portraitTouchData,kWhite,kBg,15);
-  panel.setTouch(portraitTouchData);
-  portraitCalibrated=true;
-  if(prefs.begin("sqemit32",false)){
-    if(prefs.putBytes("touchport",portraitTouchData,sizeof(portraitTouchData))!=sizeof(portraitTouchData))
-      Serial.println("WARN,CYD32_PORTRAIT_TOUCH_SAVE");
-    prefs.end();
-  }
-  wasPressed=true;lastPress=millis();redraw=true;
+  const bool ok=runPortraitFivePointWizard();
+  Serial.println(ok?"CYD32,TOUCH,PORTRAIT_CAL_DONE":
+                    "CYD32,TOUCH,PORTRAIT_CAL_FAILED_OLD_FIT_PRESERVED");
   portraitRawHoldStarted=0;
-  Serial.println("CYD32,TOUCH,PORTRAIT_CAL_DONE");
+  if(!ok)redraw=true;
   cyd32UiPrintTouchStatus();
 }
 void cyd32UiResetCalibration(){
@@ -2181,11 +2172,28 @@ Cyd32UiAction cyd32UiTick(const char* active,uint32_t remaining,bool suite){
     return Cyd32UiAction::None;
   }
   uint16_t x=0,y=0;
-  // A real finger at the ST7798 portrait bezel can produce less pressure
-  // than in the middle of the screen. Keep landscape's proven threshold.
-  bool pressed=lcd.getTouch(&x,&y,portraitMode?260:450);
-  // Recover only the hamburger press if TFT_eSPI rejected the outer edge.
-  if(portraitMode&&!pressed)pressed=recoverPortraitMenuTouch(x,y);
+  bool pressed=false;
+  if(portraitMode&&portraitFitLoaded){
+    // Match SquachWatch CYD32 precisely: use pressure-gated raw ADC
+    // values + a saved affine mapping, rather than TFT_eSPI's rotating
+    // min/span mapping (which silently drops bezel coordinates).
+    int16_t a=0,b=0;
+    if(readPortraitRaw(a,b)){
+      float sx=0,sy=0;
+      TouchFit::toScreen(portraitFit,a,b,0,sx,sy);
+      // Same bounded extrapolation and edge clipping as SquachWatch.
+      const int32_t px=(int32_t)sx,py=(int32_t)sy;
+      if(isfinite(sx)&&isfinite(sy)&&px>-240&&px<480&&py>-320&&py<640){
+        x=(uint16_t)(px<0?0:px>=240?239:px);
+        y=(uint16_t)(py<0?0:py>=320?319:py);
+        pressed=true;
+      }
+    }
+  }else{
+    // Preserve the physically validated landscape touch mapping.
+    pressed=lcd.getTouch(&x,&y,450);
+    if(portraitMode&&!pressed)pressed=recoverPortraitMenuTouch(x,y);
+  }
   // Universal on-device recovery when the saved calibration maps ALL taps
   // incorrectly. This uses raw pressure only (no calibrated x/y) and is
   // restricted to fully idle RF. Holding an empty scene area is safest.
