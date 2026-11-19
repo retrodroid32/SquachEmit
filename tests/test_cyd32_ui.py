@@ -62,8 +62,8 @@ class Cyd32UiGuards(unittest.TestCase):
         for name in ('Screen::MainMenu','Screen::Outfits','Screen::OtaInfo',
                      'mainMenuScreen()', 'outfitScreen()', 'otaInfoScreen()',
                      '"HEALTH / DIAGNOSTICS"', '"SETTINGS"',
-                     '"BLACK HOODIE"', '"touchport"', 'portraitTouchData',
-                     'lcd.setTouch(portraitTouchData)', 'loadCal();',
+                     '"BLACK HOODIE"', '"sqemitfit"', 'portraitFitLoaded',
+                     'TouchFit::toScreen(portraitFit', 'loadCal();',
                      '"outfit"', 'outfitLevel'):
             self.assertIn(name, self.s)
         port=(ROOT/"src"/"cyd32_squachy_port.cpp").read_text()
