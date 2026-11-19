@@ -980,9 +980,10 @@ void recoveryScreen(){
   snprintf(msg,sizeof(msg),"RESET REASON CODE: %u",resetReasonCode);
   label(12,68,msg,kCyan,2);
   label(12,105,"NO RF TRANSMISSION ON BOOT",kGreen);
-  label(12,136,"IF TOUCH FAILS, USE CALTOUCH",kWhite);
-  label(12,165,"VERIFY BOARD BEFORE FLASHING",kYellow);
-  label(12,192,"This page does not erase settings",kMuted);
+  label(12,133,"BAD PORTRAIT TOUCH?",kWhite);
+  lcd.fillRoundRect(11,153,298,39,4,kPurple);
+  label(24,164,"CAL PORTRAIT TOUCH",kWhite,2);
+  label(12,198,"IDLE ONLY / FOUR CORNERS",kMuted);
   footer("BACK","HELP","HOME");
 }
 
@@ -1341,6 +1342,10 @@ Cyd32UiAction touchIdentity(int x,int y){
   return Cyd32UiAction::None;
 }
 Cyd32UiAction touchRecovery(int x,int y){
+  if(y>=150&&y<194){
+    calibratePortraitFromDevice();
+    return Cyd32UiAction::None;
+  }
   if(y>=kFooterY){
     if(x<108)screen=Screen::Identity;
     else if(x<213)screen=Screen::Help;
@@ -1591,11 +1596,11 @@ void portraitPage(const char* active,uint32_t remaining,bool suite){
       if(i==2)sub=identityCase[0]?identityCase:"NONE";
       if(i==3)sub="ACTUAL TX RECORD";
     }else if(screen==Screen::Recovery){
-      static const char* labels[]={"RESET REASON","RF ON BOOT","TOUCH RECOVERY","FIRMWARE"};
+      static const char* labels[]={"RESET REASON","RF ON BOOT","CAL PORTRAIT TOUCH","FIRMWARE"};
       head=labels[i];
       if(i==0){snprintf(value,sizeof(value),"%u",resetReasonCode);sub=value;}
       if(i==1)sub="TRANSMISSION DISABLED";
-      if(i==2)sub="SERIAL CALTOUCH";
+      if(i==2)sub="TAP TO RE-RUN 4 CORNERS";
       if(i==3)sub="USE LAB USB FLASHER";
     }else if(screen==Screen::OtaInfo){
       static const char* labels[]={"OTA STATUS","PARTITION","SAFE UPDATE SLOT","INSTALL METHOD"};
@@ -1782,6 +1787,8 @@ Cyd32UiAction portraitTap(int x,int y,bool active,bool suite){
   }else if(screen==Screen::Duration){
     setDuration(i==0?3:i==1?10:i==2?30:(durationSeconds<30?durationSeconds+1:30));
     redraw=true;
+  }else if(screen==Screen::Recovery){
+    if(i==2)calibratePortraitFromDevice();
   }else if(screen==Screen::Details){
     if(i==2)toggleFavorite();
     if(i==3){screen=Screen::Duration;redraw=true;}
