@@ -2,25 +2,25 @@
   "schema": 1,
   "scenario_count": 172,
   "firmware_sources": {
-    "src": "ba1b6de5750bd16c9301d7171f865141b1ee2061",
-    "include": "c566d7f55f808e5e251c75e373d8e47fe1774174",
+    "src": "99be91405265d8f33c201dfb91cfa8c85240e872",
+    "include": "5342a45d8d044951d191c296ea9da442dd89e0da",
     "lib": "c88135d6510b738fe2c208290c498f9e8b639681",
     "SquachEmit.ino": "90b4205813a2f7885bc1e12ce7431eebf7249f45",
     "platformio.ini": "c3ff3725248b4c67d60da6903982515031c501f6"
   },
   "builds": {
     "cyd32-st7798": {
-      "title": "SquachEmit v1.1.0 CYD 3.2 R14.9 LAB — Portrait Menu & Stable TX Countdown (172 Cases)",
+      "title": "SquachEmit v1.1.0 CYD 3.2 R14.10 LAB — Portrait Hamburger Touch Rescue (172 Cases)",
       "version": "v1.1.0 MAINLINE · 172 cases",
-      "summary": "R14.9 LAB CYD 3.2 fixes portrait MENU touch, stray HOME caption and TX countdown flicker from competing direct LCD and FULL8 sprite writes. Enlarges the menu target, allows menus during RF while keeping STOP on every portrait page, removes HOME caption and lets the framebuffer own the countdown. Retains proven FULL8/FAST FramePush, 40MHz SPI, SquachWatch artwork, R14.8 RF-safe calibration, and all 172 synthetic cases. Native pixel/touch/STOP tests added. Four-part SHA-256 flashing and physical verification required. LAB only.",
+      "summary": "R14.10 LAB CYD 3.2 addresses unresponsive portrait hamburger taps. TFT_eSPI can reject low-pressure or outside-edge touches before menu hit testing. Portrait now uses a lower pressure threshold and rescues only stable raw samples mapped to the top-left menu, with bounded bezel overscan. TOUCH STATUS, TOUCH TRACE ON/OFF and idle-only CALTOUCH PORTRAIT diagnose and correct saved calibration. Preserves R14.9 countdown/HOME fixes, R14.8 RF safety, R14.7 FULL8/FAST, 40MHz SPI and all 172 cases. Four-part SHA-256 preflight and physical hardware verification required. LAB only.",
       "highlights": [
-        "Larger portrait menu button/tap target, accessible even during bounded RF tests.",
-        "STOP footer stays active on every portrait page during TX/suite/playlist.",
-        "HOME caption removed from portrait Home without changing other titles.",
-        "FULL8/HALF8 framebuffer exclusively owns countdown; no redundant direct LCD writes.",
-        "Native pixel tests verify menu, HOME absence, active menu STOP and countdown ownership.",
-        "Preserves R14.8 calibration safety, landscape UI, 40MHz FAST display, costumes and 172 cases.",
-        "LAB only; four-part SHA-256 preflight, physical portrait, timed RF STOP and heap tests required."
+        "Portrait touch uses a lower pressure threshold; stable bezel taps can open the top-left menu.",
+        "Raw rescue checks two stable XPT2046 samples, validated calibration and only top-left coordinates.",
+        "TOUCH TRACE ON/OFF reports calibrated coordinates, raw ADC and pressure for actual touch diagnosis.",
+        "TOUCH STATUS reports portrait calibration values and edge-rescue count.",
+        "CALTOUCH PORTRAIT reruns four-corner wizard only in portrait while RF/suite/playlist is idle.",
+        "Preserves R14.9 countdown/title, R14.8 RF safety, R14.7 FULL8/FAST, original art and 172 cases.",
+        "LAB only; SHA-256 preflight, physical hamburger, rotation, STOP and heap tests required."
       ]
     },
     "c5-waveshare-28": {
