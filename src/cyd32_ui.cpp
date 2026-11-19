@@ -97,6 +97,8 @@ size_t filterPage=0;
 uint8_t helpPage=0,menuPage=0,outfitLevel=0,backgroundLevel=0,backgroundPage=0,outfitPage=0;
 bool onAirIndicator=false;
 bool portraitCalibrated=false,portraitMode=false;
+bool portraitTouchTrace=false;
+uint32_t lastPortraitTouchTraceAt=0,portraitMenuRawRescues=0;
 uint16_t portraitTouchData[5]={0};
 uint32_t lastBubbleAt=0;
 uint8_t durationSeconds=12; // 3..30s, saved independently of touch calibration
@@ -1598,12 +1600,46 @@ void portraitPage(const char* active,uint32_t remaining,bool suite){
   button(83,287,74,30,radioBusy?"STOP":screen==Screen::Home?"RUN":"PREV");
   button(163,287,74,30,screen==Screen::Home?"SUITE":"NEXT");
 }
+// TFT_eSPI getTouch() rejects a calibrated coordinate that falls outside
+// the panel. A bezel-edge touch can also have pressure below the 450
+// landscape threshold. Recover ONLY the portrait menu from two stable raw
+// samples, with signed calibration math and a narrow physical corner gate.
+// All other control taps still require normal validated getTouch().
+bool recoverPortraitMenuTouch(uint16_t& x,uint16_t& y){
+  if(!portraitMode||!portraitCalibrated||
+     portraitTouchData[1]<200||portraitTouchData[3]<200||
+     (portraitTouchData[4]&~7u))return false;
+  if(lcd.getTouchRawZ()<230)return false;
+  uint16_t rx=0,ry=0,rx2=0,ry2=0;
+  lcd.getTouchRaw(&rx,&ry);
+  lcd.getTouchRaw(&rx2,&ry2);
+  const int32_t dx=(int32_t)rx-(int32_t)rx2;
+  const int32_t dy=(int32_t)ry-(int32_t)ry2;
+  if(dx>65||dx< -65||dy>65||dy< -65)return false;
+  const uint16_t flags=portraitTouchData[4];
+  const int32_t u=(flags&1u)?(int32_t)ry:(int32_t)rx;
+  const int32_t v=(flags&1u)?(int32_t)rx:(int32_t)ry;
+  int32_t px=(u-(int32_t)portraitTouchData[0])*240/(int32_t)portraitTouchData[1];
+  int32_t py=(v-(int32_t)portraitTouchData[2])*320/(int32_t)portraitTouchData[3];
+  if(flags&2u)px=240-px;
+  if(flags&4u)py=320-py;
+  // Accept only the top-left header and at most 20px of bezel overscan.
+  if(px< -20||px>=90||py< -20||py>=70)return false;
+  x=(uint16_t)(px<0?0:px);
+  y=(uint16_t)(py<0?0:py);
+  ++portraitMenuRawRescues;
+  Serial.printf("CYD32,TOUCH,MENU_EDGE_RECOVERED,x=%u,y=%u,raw=%u:%u,z_threshold=230,count=%lu\n",
+     (unsigned)x,(unsigned)y,(unsigned)rx,(unsigned)ry,
+     (unsigned long)portraitMenuRawRescues);
+  return true;
+}
 Cyd32UiAction portraitTap(int x,int y,bool active,bool suite){
   // Physical 3.2" resistive touch benefits from a larger menu target.
   // Keep top-right rotation separate from the Quick Filter's y>=29
   // control and don't intercept its text row.
-  if(y<42&&x<65){
+  if(y<70&&x<90){
     screen=Screen::MainMenu;menuPage=0;redraw=true;
+    if(portraitTouchTrace)Serial.printf("CYD32,TOUCH,MENU_OPEN,x=%d,y=%d\n",x,y);
     return Cyd32UiAction::None;
   }
   if(y<30&&x>=190){
@@ -1866,6 +1902,44 @@ void cyd32UiSetFramePush(bool enabled){
   Serial.printf("CYD32,PUSH,%s\n",fastPushDesired?"ON":"OFF");
   cyd32UiPrintFramePushStatus();
 }
+void cyd32UiSetTouchTrace(bool enabled){
+  portraitTouchTrace=enabled;
+  lastPortraitTouchTraceAt=0;
+  Serial.printf("CYD32,TOUCH,TRACE,%s\n",enabled?"ON":"OFF");
+}
+void cyd32UiPrintTouchStatus(){
+  Serial.printf("CYD32,TOUCH,STATUS,orientation=%s,portrait_saved=%u,landscape_saved=%u,trace=%u,rescues=%lu,cal=%u:%u:%u:%u:%u\n",
+    portraitMode?"PORTRAIT":"LANDSCAPE",portraitCalibrated?1u:0u,
+    calibrated?1u:0u,portraitTouchTrace?1u:0u,
+    (unsigned long)portraitMenuRawRescues,
+    (unsigned)portraitTouchData[0],(unsigned)portraitTouchData[1],
+    (unsigned)portraitTouchData[2],(unsigned)portraitTouchData[3],
+    (unsigned)portraitTouchData[4]);
+}
+void cyd32UiCalibratePortraitTouch(){
+  if(!ready||!calibrated||!portraitMode){
+    Serial.println("ERROR,CALTOUCH_PORTRAIT_REQUIRES_PORTRAIT");
+    return;
+  }
+  // Called only by idle-gated serial command. No NVS wipe, no rotation
+  // and no animation while TFT_eSPI's blocking 4-corner wizard runs.
+  paint=&panel;bandFrameActive=false;
+  Cyd32FramePush::invalidate();
+  panel.fillScreen(kBg);
+  label(5,16,"PORTRAIT TOUCH CAL",kCyan,2);
+  Serial.println("CYD32,TOUCH,PORTRAIT_CAL_START");
+  panel.calibrateTouch(portraitTouchData,kWhite,kBg,15);
+  panel.setTouch(portraitTouchData);
+  portraitCalibrated=true;
+  if(prefs.begin("sqemit32",false)){
+    if(prefs.putBytes("touchport",portraitTouchData,sizeof(portraitTouchData))!=sizeof(portraitTouchData))
+      Serial.println("WARN,CYD32_PORTRAIT_TOUCH_SAVE");
+    prefs.end();
+  }
+  wasPressed=true;lastPress=millis();redraw=true;
+  Serial.println("CYD32,TOUCH,PORTRAIT_CAL_DONE");
+  cyd32UiPrintTouchStatus();
+}
 void cyd32UiResetCalibration(){
   if(prefs.begin("sqemit32",false)){
     prefs.remove("touchland");
@@ -2006,7 +2080,24 @@ Cyd32UiAction cyd32UiTick(const char* active,uint32_t remaining,bool suite){
     return Cyd32UiAction::None;
   }
   uint16_t x=0,y=0;
-  bool pressed=lcd.getTouch(&x,&y,450);
+  // A real finger at the ST7798 portrait bezel can produce less pressure
+  // than in the middle of the screen. Keep landscape's proven threshold.
+  bool pressed=lcd.getTouch(&x,&y,portraitMode?260:450);
+  // Recover only the hamburger press if TFT_eSPI rejected the outer edge
+  // as out of bounds or below its ordinary threshold.
+  if(portraitMode&&!pressed)pressed=recoverPortraitMenuTouch(x,y);
+  if(portraitTouchTrace&&now-lastPortraitTouchTraceAt>=180u){
+    const uint16_t z=panel.getTouchRawZ();
+    if(pressed||z>=160){
+      uint16_t rx=0,ry=0;
+      panel.getTouchRaw(&rx,&ry);
+      Serial.printf("CYD32,TOUCH,TRACE,rot=%s,accepted=%u,x=%u,y=%u,raw=%u:%u,z=%u,menu=%u\n",
+         portraitMode?"PORTRAIT":"LANDSCAPE",pressed?1u:0u,
+         (unsigned)x,(unsigned)y,(unsigned)rx,(unsigned)ry,
+         (unsigned)z,(pressed&&portraitMode&&x<90&&y<70)?1u:0u);
+      lastPortraitTouchTraceAt=now;
+    }
+  }
   if(remoteDown){
     if(now-remoteAt>4000u)remoteDown=false;
     else {x=remoteX;y=remoteY;pressed=true;}
