@@ -9,6 +9,9 @@ namespace MockDisplay {
   class TFTMarker;
   inline bool touch=false;
   inline unsigned completedBandPushes=0;
+  // Direct TFT rect writes into the portrait countdown region are a
+  // regression: FULL8/HALF8 must render those pixels only in the sprite.
+  inline unsigned directPortraitCountdownWrites=0;
   inline uint16_t x=0,y=0;
 }
 class TFT_eSPI;
@@ -61,6 +64,8 @@ public:
  void setViewport(int x,int y,int,int,bool){viewportX=x;viewportY=y;}
  void resetViewport(){viewportX=0;viewportY=0;}
  void fillRect(int x,int y,int ww,int hh,uint16_t c){
+  if(this==MockDisplay::screen && x<240 && x+ww>8 && y<285 && y+hh>265)
+    ++MockDisplay::directPortraitCountdownWrites;
   x+=viewportX;y+=viewportY;
   int x0=std::max(0,x),y0=std::max(0,y);
   int x1=std::min(w,x+ww),y1=std::min(h,y+hh);
