@@ -740,6 +740,22 @@ void portraitScreen(const char* active,uint32_t remaining,bool suite){
 bool loadCal();
 void rotateCurrentScreen(){
   const bool makePortrait=!portraitMode;
+  // First-time portrait touch calibration is blocking. Performing it while
+  // an RF case/suite/playlist is on-air can delay the radio timeout and STOP.
+  // Look up a previously saved calibration BEFORE changing panel rotation.
+  if(makePortrait&&!portraitCalibrated){
+    if(prefs.begin("sqemit32",true)){
+      portraitCalibrated=prefs.getBytesLength("touchport")==sizeof(portraitTouchData) &&
+          prefs.getBytes("touchport",portraitTouchData,sizeof(portraitTouchData))==
+          sizeof(portraitTouchData);
+      prefs.end();
+    }
+    if(!portraitCalibrated &&
+        (onAirIndicator||previousSuite||playlistRunning||txDriverActive)){
+      Serial.println("CYD32,ROTATE,DEFER_TOUCH_CAL_RF_ACTIVE");
+      return;
+    }
+  }
   // Preserve the logical screen, selected case and list page.
   // Finish any offscreen pass before touching the panel or the sprite.
   paint=&panel;bandFrameActive=false;
@@ -756,11 +772,6 @@ void rotateCurrentScreen(){
     panel.width(),panel.height()/sceneFrameBands,(unsigned)sceneFrameBands,
     (unsigned long)ESP.getFreeHeap(),(unsigned long)ESP.getMaxAllocHeap());
   if(makePortrait){
-    if(!portraitCalibrated&&prefs.begin("sqemit32",true)){
-      portraitCalibrated=prefs.getBytesLength("touchport")==sizeof(portraitTouchData) &&
-        prefs.getBytes("touchport",portraitTouchData,sizeof(portraitTouchData))==sizeof(portraitTouchData);
-      prefs.end();
-    }
     if(!portraitCalibrated){
       label(8,15,"PORTRAIT TOUCH CAL",kCyan,2);
       lcd.calibrateTouch(portraitTouchData,kWhite,kBg,15);
