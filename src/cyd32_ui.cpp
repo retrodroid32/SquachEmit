@@ -743,6 +743,14 @@ void portraitScreen(const char* active,uint32_t remaining,bool suite){
   label(15,264,"TOUCH CONTROLS ENABLED",kGreen);
 }
 bool loadCal();
+// A stored blob with the expected length is not necessarily a usable fit.
+// Reject erased/corrupt 10-byte records rather than leaving portrait touch
+// completely unusable until somebody connects a serial console.
+bool plausiblePortraitTouchFit(const uint16_t d[5]){
+  return d[0]<4096u&&d[2]<4096u&&
+    d[1]>=300u&&d[1]<=4095u&&d[3]>=300u&&d[3]<=4095u&&
+    (d[4]&~7u)==0u;
+}
 void rotateCurrentScreen(){
   const bool makePortrait=!portraitMode;
   // First-time portrait touch calibration is blocking. Performing it while
@@ -755,6 +763,10 @@ void rotateCurrentScreen(){
           prefs.getBytes("touchport",portraitTouchData,sizeof(portraitTouchData))==
           sizeof(portraitTouchData);
       prefs.end();
+      if(portraitCalibrated&&!plausiblePortraitTouchFit(portraitTouchData)){
+        portraitCalibrated=false;
+        Serial.println("CYD32,TOUCH,PORTRAIT_CAL_INVALID_SAVED");
+      }
     }
     if((!portraitCalibrated||forcePortraitCalibration) &&
         (onAirIndicator||previousSuite||playlistRunning||txDriverActive)){
