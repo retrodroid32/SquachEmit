@@ -34,6 +34,7 @@ static void touch(unsigned x,unsigned y,const char* id=nullptr,bool suite=false)
 }
 int main(int argc,char** argv){
   const bool useSuite=(argc>1&&std::strcmp(argv[1],"suite")==0);
+  mock_portrait_touch_saved=false; // fresh NVS: first portrait needs wizard
   cyd32UiBegin();tick();
   auto* screen=MockDisplay::screen;
   assert(screen && screen->width()==320 && screen->height()==240);
@@ -47,6 +48,7 @@ int main(int argc,char** argv){
   // Finish RF, complete normal first-time portrait touch setup.
   tick();
   touch(300,8);
+  assert(mock_portrait_touch_saved); // idle first calibration saved to NVS
   assert(screen->width()==240 && screen->height()==320);
   // Return while a case is active: no touch wizard is needed when cached.
   tick("BLE-AIRTAG");
@@ -76,7 +78,9 @@ class RfSafePortraitTests(unittest.TestCase):
             for mode in ("active","suite"):
                 with self.subTest(mode=mode):
                     completed=subprocess.run([str(exe),mode],text=True,
-                                              capture_output=True,check=True)
+                                              capture_output=True)
+                    self.assertEqual(completed.returncode,0,
+                        f"{mode} failed: {completed.stderr[-2500:]}")
                     self.assertIn("CYD32,ROTATE,DEFER_TOUCH_CAL_RF_ACTIVE",
                                   completed.stderr)
                     self.assertIn("CYD32,ROTATE,PORTRAIT",completed.stderr)
