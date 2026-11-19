@@ -59,8 +59,11 @@ int main(){
   // Strong stable raw header press should recover and open MENU again.
   raw(450,280,350);
   cyd32UiStreamState(nullptr,0,false,true);
-  // The serial-only recalibration should not erase the background profile.
+  // Retrain via five separately held targets and a proof dot.
+  MockDisplay::autoWizard=true;
+  MockDisplay::wizardEpoch=mock_time_ms;
   cyd32UiCalibratePortraitTouch();
+  MockDisplay::autoWizard=false;
   assert(MockDisplay::screen->width()==240);
   cyd32UiSetTouchTrace(false);
   cyd32UiPrintTouchStatus();
@@ -82,7 +85,8 @@ class PortraitHamburgerTests(unittest.TestCase):
                 str(ROOT/"src/scenarios.cpp"),"-o",str(exe)],check=True)
             done=subprocess.run([str(exe)],capture_output=True,text=True)
             self.assertEqual(done.returncode,0,done.stderr[-2800:])
-            self.assertEqual(done.stderr.count("CYD32,TOUCH,MENU_EDGE_RECOVERED"),2)
+            self.assertEqual(done.stderr.count("CYD32,TOUCH,MENU_EDGE_RECOVERED"),0)
+            self.assertIn("CYD32,TOUCH,5_POINT_VERIFIED_SAVED",done.stderr)
             self.assertEqual(done.stderr.count("UI STATE 1 MENU"),2)
             self.assertEqual(done.stderr.count("UI STATE 1 HOME"),3)
             self.assertIn("CYD32,TOUCH,PORTRAIT_CAL_DONE",done.stderr)
@@ -93,7 +97,8 @@ class PortraitHamburgerTests(unittest.TestCase):
         ui=(ROOT/"src/cyd32_ui.cpp").read_text()
         main=(ROOT/"src/main.cpp").read_text()
         self.assertIn("recoverPortraitMenuTouch(x,y)",ui)
-        self.assertIn("portraitMode?260:450",ui)
+        self.assertIn("readPortraitRaw(a,b)",ui)
+        self.assertIn("TouchFit::toScreen(portraitFit,a,b,0,sx,sy)",ui)
         self.assertIn("portraitTouchData[1]<200",ui)
         self.assertIn("if(px< -20||px>=90||py< -20||py>=70)return false;",ui)
         self.assertIn("if(y<70&&x<90)",ui)
