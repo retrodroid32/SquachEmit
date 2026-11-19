@@ -105,6 +105,7 @@ bool portraitFitLoaded=false;
 // Device-side portrait touch recovery independent of stored touch fit.
 bool forcePortraitCalibration=false;
 uint32_t portraitRawHoldStarted=0;
+bool portraitCalibrationPending=false;
 bool portraitTouchTrace=false;
 uint32_t lastPortraitTouchTraceAt=0,portraitMenuRawRescues=0;
 uint16_t portraitTouchData[5]={0};
@@ -2199,18 +2200,25 @@ Cyd32UiAction cyd32UiTick(const char* active,uint32_t remaining,bool suite){
     pressed=lcd.getTouch(&x,&y,450);
     if(portraitMode&&!pressed)pressed=recoverPortraitMenuTouch(x,y);
   }
-  // Universal on-device recovery when the saved calibration maps ALL taps
-  // incorrectly. This uses raw pressure only (no calibrated x/y) and is
-  // restricted to fully idle RF. Holding an empty scene area is safest.
-  // The TFT_eSPI wizard waits for the held finger to be released before
-  // displaying its four calibration crosshairs.
-  if(portraitMode&&!remoteDown&&!onAirIndicator&&!previousSuite&&
-      !playlistRunning&&!txDriverActive&&panel.getTouchRawZ()>=230){
+  // Raw-hold recovery never trusts an incorrect calibrated x/y. Crucial:
+  // wait for the initiating finger to LIFT before starting any wizard,
+  // otherwise the old press may be consumed as a target (original bug).
+  const bool rfBusy=onAirIndicator||previousSuite||playlistRunning||txDriverActive;
+  if(portraitCalibrationPending){
+    if(rfBusy||!portraitMode){portraitCalibrationPending=false;return Cyd32UiAction::None;}
+    if(panel.getTouchRawZ()<230){
+      portraitCalibrationPending=false;
+      Serial.println("CYD32,TOUCH,RAW_HOLD_RELEASED_BEGIN_5_POINT");
+      cyd32UiCalibratePortraitTouch();
+    }
+    return Cyd32UiAction::None;
+  }
+  if(portraitMode&&!remoteDown&&!rfBusy&&panel.getTouchRawZ()>=230){
     if(!portraitRawHoldStarted)portraitRawHoldStarted=now?now:1u;
     else if(now-portraitRawHoldStarted>=5000u){
       portraitRawHoldStarted=0;
-      Serial.println("CYD32,TOUCH,RAW_HOLD_CAL;RELEASE_AND_FOLLOW_CROSSHAIRS");
-      cyd32UiCalibratePortraitTouch();
+      portraitCalibrationPending=true;
+      Serial.println("CYD32,TOUCH,RAW_HOLD_CAL;RELEASE_TO_START_5_POINT");
       return Cyd32UiAction::None;
     }
   }else portraitRawHoldStarted=0;
