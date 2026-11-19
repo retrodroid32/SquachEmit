@@ -113,7 +113,7 @@ class PortraitR149Tests(unittest.TestCase):
     def test_pixel_ownership_and_rf_stop_guards(self):
         src=(ROOT/"src/cyd32_ui.cpp").read_text()
         self.assertIn('if(screen!=Screen::Home)label(12,37,name,kVaporPink,2);',src)
-        self.assertIn('if(y<42&&x<65)',src)
+        self.assertIn('if(y<70&&x<90)',src)
         self.assertIn('if(y>=287)',src)
         self.assertIn('return Cyd32UiAction::Stop;',src)
         self.assertIn('!bandFrameReady&&!portraitMode',src)
