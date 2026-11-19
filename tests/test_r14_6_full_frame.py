@@ -43,7 +43,7 @@ class FullSceneFramebufferTest(unittest.TestCase):
 
     def test_init_and_rotation_reuse_exact_allocator(self):
         c=self.code
-        rotate=c[c.index("void rotateCurrentScreen(){"):c.index("bool loadCal()",c.index("void rotateCurrentScreen(){"))] if False else c[c.index("void rotateCurrentScreen(){"):c.index("if(makePortrait){",c.index("void rotateCurrentScreen(){"))]
+        rotate=c[c.index("void rotateCurrentScreen(){"):c.index("// On-device calibration escape:",c.index("void rotateCurrentScreen(){"))]
         self.assertIn("allocateSceneFrame();",rotate)
         self.assertIn("ROTATED_%s",rotate)
         boot=c[c.index("  // Allocate the animation band FIRST"):]
