@@ -2,8 +2,8 @@
   "schema": 1,
   "scenario_count": 172,
   "firmware_sources": {
-    "src": "93238682b47c8886d89f3d6975d60cd3bceb4069",
-    "include": "34907bfd953c5fb3274da963048c2c24799275c6",
+    "src": "55515a9e5390832309d705c48f85a0c94f649b14",
+    "include": "85b54b8de849aeaa51b2a9894b8b4316044cbfbf",
     "lib": "c88135d6510b738fe2c208290c498f9e8b639681",
     "SquachEmit.ino": "90b4205813a2f7885bc1e12ce7431eebf7249f45",
     "platformio.ini": "c3ff3725248b4c67d60da6903982515031c501f6"
@@ -12,7 +12,7 @@
     "cyd32-st7798": {
       "title": "SquachEmit v1.1.0 CYD 3.2 R14.12 LAB — SquachWatch Verified 5-Point Touch Calibration (172 Cases)",
       "version": "v1.1.0 MAINLINE · 172 cases",
-      "summary": "R14.12 LAB CYD3.2 replaces TFT_eSPI's premature four-corner portrait calibration with SquachWatch's five inset targets, deliberate hold/release per target, independent verification dot, affine touch fit and validated NVS storage. The old wizard could mistake a lingering third press for the fourth target and return early. Portrait taps now use the same pressure-gated raw XPT2046 affine mapping as SquachWatch. Keep existing landscape calibration, no RF while calibrating, FULL8/FAST, 40MHz SPI, Squachy art and all 172 cases. Physical verification required; LAB only.",
+      "summary": "R14.12 LAB CYD3.2 replaces the TFT_eSPI four-corner portrait wizard with SquachWatch's five inset targets. Each target requires a steady hold and release, then an independent proof dot verifies the affine fit before SHA-256-checked NVS persistence. The old wizard could consume a lingering third press as the fourth. Portrait touch uses shared-bus raw XPT2046 affine mapping, not old TFT_eSPI values. Landscape touch stays unchanged, RF remains idle during calibration. Preserves FULL8/FAST, artwork and all 172 cases. SHA-256 flashing and physical verification required. LAB only.",
       "highlights": [
         "Replaces premature TFT_eSPI four-corner portrait wizard with SquachWatch five inset targets and proof dot.",
         "Each target requires stable held touch plus explicit release, preventing previous finger from filling the next target.",
