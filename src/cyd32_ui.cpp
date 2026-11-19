@@ -6,6 +6,8 @@
 #include "cyd32_squachy_port.h"
 #include "cyd32_fast_sprite.h"
 #include "cyd32_frame_push.h"
+#include "sqe_touch_fit.h"
+#include "sqe_touch_wizard.h"
 #if defined(SQE_ORIGINAL_SQUACHY)
 #include <squachy.h>
 #include <theme.h>
@@ -97,6 +99,9 @@ size_t filterPage=0;
 uint8_t helpPage=0,menuPage=0,outfitLevel=0,backgroundLevel=0,backgroundPage=0,outfitPage=0;
 bool onAirIndicator=false;
 bool portraitCalibrated=false,portraitMode=false;
+// SquachWatch five-target affine fit, stored separately from old TFT_eSPI blob.
+TouchFit::Fit portraitFit{};
+bool portraitFitLoaded=false;
 // Device-side portrait touch recovery independent of stored touch fit.
 bool forcePortraitCalibration=false;
 uint32_t portraitRawHoldStarted=0;
@@ -743,6 +748,63 @@ void portraitScreen(const char* active,uint32_t remaining,bool suite){
   label(15,264,"TOUCH CONTROLS ENABLED",kGreen);
 }
 bool loadCal();
+// Same XPT2046 shared-SPI pressure-gated raw reader as SquachWatch CYD32.
+// Both calibration and normal portrait taps must use this exact reader.
+bool readPortraitRaw(int16_t& a,int16_t& b){
+  if(panel.getTouchRawZ()<350)return false;
+  uint16_t rx=0,ry=0;
+  panel.getTouchRaw(&rx,&ry);
+  a=(int16_t)rx; b=(int16_t)ry;
+  return true;
+}
+bool portraitFitPlausible(const TouchFit::Fit& fit){
+  if(fit.w0!=240||fit.h0!=320)return false;
+  const float v[6]={fit.xa,fit.xb,fit.xc,fit.ya,fit.yb,fit.yc};
+  for(float x:v)if(!isfinite(x))return false;
+  float a=0,b=0;
+  return TouchFit::toRaw(fit,120,160,a,b) && isfinite(a)&&isfinite(b);
+}
+bool loadPortraitFit(){
+  TouchFit::Fit f{};
+  bool found=false;
+  if(prefs.begin("sqemitfit",true)){
+    found=prefs.getUChar("v",0)==1u&&
+      prefs.getBytesLength("fit")==sizeof(f)&&
+      prefs.getBytes("fit",&f,sizeof(f))==sizeof(f);
+    prefs.end();
+  }
+  if(found&&portraitFitPlausible(f)){portraitFit=f;return true;}
+  if(found)Serial.println("CYD32,TOUCH,INVALID_AFFINE_FIT");
+  return false;
+}
+bool runPortraitFivePointWizard(){
+  paint=&panel;bandFrameActive=false;
+  Cyd32FramePush::invalidate();
+  Serial.println("CYD32,TOUCH,5_POINT_START;RELEASE_AND_FOLLOW_TARGETS");
+  TouchFit::Fit proposed{};
+  const auto result=SqeTouchWizard::runInteractive(panel,readPortraitRaw,0,
+      nullptr,800,kBg,kWhite,kCyan,proposed);
+  if(result!=SqeTouchWizard::Outcome::SAVED||!portraitFitPlausible(proposed)){
+    Serial.printf("CYD32,TOUCH,5_POINT_NOT_SAVED,result=%u\n",(unsigned)result);
+    wasPressed=true;lastPress=millis();redraw=true;
+    return false;
+  }
+  if(!prefs.begin("sqemitfit",false)){
+    Serial.println("ERROR,CYD32_TOUCH_NVS_OPEN");
+    return false;
+  }
+  const bool saved=prefs.putBytes("fit",&proposed,sizeof(proposed))==sizeof(proposed)&&
+      prefs.putUChar("v",1)==1;
+  prefs.end();
+  if(!saved){Serial.println("ERROR,CYD32_TOUCH_NVS_SAVE");return false;}
+  portraitFit=proposed;
+  portraitFitLoaded=true;
+  portraitCalibrated=true;
+  portraitRawHoldStarted=0;
+  wasPressed=true;lastPress=millis();redraw=true;
+  Serial.println("CYD32,TOUCH,5_POINT_VERIFIED_SAVED");
+  return true;
+}
 // A stored blob with the expected length is not necessarily a usable fit.
 // Reject erased/corrupt 10-byte records rather than leaving portrait touch
 // completely unusable until somebody connects a serial console.
@@ -753,23 +815,14 @@ bool plausiblePortraitTouchFit(const uint16_t d[5]){
 }
 void rotateCurrentScreen(){
   const bool makePortrait=!portraitMode;
-  // First-time portrait touch calibration is blocking. Performing it while
-  // an RF case/suite/playlist is on-air can delay the radio timeout and STOP.
-  // Look up a previously saved calibration BEFORE changing panel rotation.
-  if(makePortrait&&(!portraitCalibrated||forcePortraitCalibration)){
-    // User-requested calibration from landscape must bypass the saved fit.
-    if(!forcePortraitCalibration&&prefs.begin("sqemit32",true)){
-      portraitCalibrated=prefs.getBytesLength("touchport")==sizeof(portraitTouchData) &&
-          prefs.getBytes("touchport",portraitTouchData,sizeof(portraitTouchData))==
-          sizeof(portraitTouchData);
-      prefs.end();
-      if(portraitCalibrated&&!plausiblePortraitTouchFit(portraitTouchData)){
-        portraitCalibrated=false;
-        Serial.println("CYD32,TOUCH,PORTRAIT_CAL_INVALID_SAVED");
-      }
-    }
-    if((!portraitCalibrated||forcePortraitCalibration) &&
-        (onAirIndicator||previousSuite||playlistRunning||txDriverActive)){
+  // R14.12 uses SquachWatch's five inset targets and verification, not
+  // TFT_eSPI's corner routine (which may consume the previous press).
+  // Do not trust the old 10-byte touchport blob in this code path.
+  if(makePortrait){
+    portraitFitLoaded=loadPortraitFit();
+    portraitCalibrated=portraitFitLoaded;
+    if((!portraitFitLoaded||forcePortraitCalibration)&&
+       (onAirIndicator||previousSuite||playlistRunning||txDriverActive)){
       forcePortraitCalibration=false;
       Serial.println("CYD32,ROTATE,DEFER_TOUCH_CAL_RF_ACTIVE");
       return;
@@ -791,18 +844,22 @@ void rotateCurrentScreen(){
     panel.width(),panel.height()/sceneFrameBands,(unsigned)sceneFrameBands,
     (unsigned long)ESP.getFreeHeap(),(unsigned long)ESP.getMaxAllocHeap());
   if(makePortrait){
-    if(!portraitCalibrated||forcePortraitCalibration){
-      label(8,15,"PORTRAIT TOUCH CAL",kCyan,2);
-      Serial.println("CYD32,TOUCH,PORTRAIT_CAL_START");
-      lcd.calibrateTouch(portraitTouchData,kWhite,kBg,15);
-      portraitCalibrated=true;
-      if(prefs.begin("sqemit32",false)){
-        prefs.putBytes("touchport",portraitTouchData,sizeof(portraitTouchData));
-        prefs.end();
+    if(!portraitFitLoaded||forcePortraitCalibration){
+      const bool ok=runPortraitFivePointWizard();
+      forcePortraitCalibration=false;
+      if(!ok){
+        // Do not strand the user on an unusable portrait screen. Restore
+        // the verified landscape calibration without overwriting any fit.
+        panel.setRotation(1);
+        panel.invertDisplay(panelInverted);
+        if(calibrated)loadCal();
+        allocateSceneFrame();
+        Cyd32FramePush::invalidate();
+        Serial.println("CYD32,ROTATE,PORTRAIT_CAL_FAILED_RETURN_LANDSCAPE");
+        wasPressed=true;lastPress=millis();redraw=true;
+        return;
       }
     }
-    lcd.setTouch(portraitTouchData);
-    forcePortraitCalibration=false;
   }else if(calibrated)loadCal();
   portraitMode=makePortrait;
   portraitLastCount=UINT32_MAX;lastCount=UINT32_MAX;
