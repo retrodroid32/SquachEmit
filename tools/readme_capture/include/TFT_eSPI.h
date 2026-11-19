@@ -13,6 +13,9 @@ namespace MockDisplay {
   // regression: FULL8/HALF8 must render those pixels only in the sprite.
   inline unsigned directPortraitCountdownWrites=0;
   inline uint16_t x=0,y=0;
+  // Test-only XPT2046 samples when TFT_eSPI rejects a bezel touch.
+  inline uint16_t rawX=0,rawY=0,rawZ=0;
+  inline bool rawActive=false;
 }
 class TFT_eSPI;
 namespace MockDisplay { inline TFT_eSPI* screen=nullptr; }
@@ -40,7 +43,11 @@ public:
   if(MockDisplay::touch){*xx=MockDisplay::x;*yy=MockDisplay::y;return true;}
   return false;
  }
- bool getTouchRaw(uint16_t* xx,uint16_t* yy){return getTouch(xx,yy,0);}
+ bool getTouchRaw(uint16_t* xx,uint16_t* yy){
+  if(MockDisplay::rawActive){*xx=MockDisplay::rawX;*yy=MockDisplay::rawY;return true;}
+  return getTouch(xx,yy,0);
+ }
+ uint16_t getTouchRawZ(){return MockDisplay::rawActive?MockDisplay::rawZ:0;}
  static uint16_t color565(int r,int g,int b){
   return (uint16_t)(((r>>3)<<11)|((g>>2)<<5)|(b>>3));
  }
