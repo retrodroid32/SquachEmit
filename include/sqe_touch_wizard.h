@@ -254,6 +254,7 @@ Outcome runInteractive(TFT_eSPI& t, RawReader readRaw, uint8_t rot,
             char line[32];
             snprintf(line, sizeof(line), "TAP AND HOLD 1 SECOND  %d/%d", i + 1, TouchFit::TARGETS);
             status(s, line);
+            Serial.printf("CYD32,TOUCH,TARGET,%d/%d\n",i+1,TouchFit::TARGETS);
             int16_t ra, rb;
             if (!holdSample(s, readRaw, (int)sxs[i], (int)sys[i], false, 900, ra, rb)) {
                 notice(s, AMBER, "NO TOUCH", "Nothing changed.", nullptr, 1500);
@@ -292,6 +293,7 @@ Outcome runInteractive(TFT_eSPI& t, RawReader readRaw, uint8_t rot,
         // through the new fit. Shows where it landed either way.
         t.fillRect(0, 0, w, h, bg);
         status(s, "NOW TAP THE DOT");
+        Serial.println("CYD32,TOUCH,CHECK_DOT");
         const int dx = (int)(0.62f * w), dy = (int)(0.32f * h);
         int16_t ra, rb;
         if (!holdSample(s, readRaw, dx, dy, true, 200, ra, rb)) {
