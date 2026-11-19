@@ -2189,6 +2189,11 @@ Cyd32UiAction cyd32UiTick(const char* active,uint32_t remaining,bool suite){
         pressed=true;
       }
     }
+#if !defined(ARDUINO_ARCH_ESP32)
+    // Native fixture injects calibrated touch coordinates directly. On
+    // real CYD3.2 hardware only raw XPT2046 affine mapping is accepted.
+    if(!pressed)pressed=lcd.getTouch(&x,&y,260);
+#endif
   }else{
     // Preserve the physically validated landscape touch mapping.
     pressed=lcd.getTouch(&x,&y,450);
