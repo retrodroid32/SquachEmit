@@ -52,28 +52,36 @@ int main(int argc,char** argv){
    // timer must still work, without choosing any menu or RF action.
    MockDisplay::rawActive=true;
    for(int k=0;k<46;k++)tick(nullptr,false,155);
-   MockDisplay::rawActive=false;tick();
-   assert(MockDisplay::calibrateTouchCalls==1);
+   MockDisplay::rawActive=false;
+   MockDisplay::autoWizard=true;
+   MockDisplay::wizardEpoch=mock_time_ms+95;
+   tick(); // only AFTER release starts five-target touch workflow
+   MockDisplay::autoWizard=false;
    assert(MockDisplay::screen->width()==240);
-   assert(mock_portrait_touch_saved);
+   assert(mock_portrait_fit_saved);
  }else if(recovery){
    nextMenu();
    touch(265,223);tick();    // page 3
    touch(145,143);tick();    // RECOVERY, third row
    cyd32UiStreamState(nullptr,0,false,true); // RECOVERY
-   touch(135,170);tick();    // visible CAL PORTRAIT TOUCH
+   MockDisplay::autoWizard=true;
+   MockDisplay::wizardEpoch=mock_time_ms+350;
+   touch(135,170);tick();    // new five-target wizard
+   MockDisplay::autoWizard=false;
    assert(MockDisplay::screen->width()==240);
-   assert(MockDisplay::calibrateTouchCalls==1);
+   assert(mock_portrait_fit_saved);
    cyd32UiStreamState(nullptr,0,false,true); // HOME
  }else{
    nextMenu();
    touch(135,108);tick(); // SETTINGS, second row on page 2
    cyd32UiStreamState(nullptr,0,false,true); // SETTINGS
    touch(163,224);tick(); // MORE page
+   MockDisplay::autoWizard=true;
+   MockDisplay::wizardEpoch=mock_time_ms+350;
    touch(145,181);tick(); // CAL PORTRAIT TOUCH, fourth row
+   MockDisplay::autoWizard=false;
    assert(MockDisplay::screen->width()==240);
-   assert(MockDisplay::calibrateTouchCalls==1);
-   assert(mock_portrait_touch_saved);
+   assert(mock_portrait_fit_saved);
    cyd32UiStreamState(nullptr,0,false,true); // HOME
  }
  return 0;
@@ -99,16 +107,18 @@ class PortraitRecoveryTests(unittest.TestCase):
           if scenario=="hold":
             self.assertIn("CYD32,TOUCH,RAW_HOLD_CAL",r.stderr)
             self.assertIn("CYD32,TOUCH,PORTRAIT_CAL_DONE",r.stderr)
+            self.assertIn("RAW_HOLD_RELEASED_BEGIN_5_POINT",r.stderr)
           else:
             self.assertIn("CYD32,TOUCH,PORTRAIT_CAL_START",r.stderr)
+            self.assertIn("CYD32,TOUCH,5_POINT_VERIFIED_SAVED",r.stderr)
             self.assertIn("UI STATE 1 HOME",r.stderr)
   def test_source_does_not_trust_old_calibration_during_forced_setup(self):
     ui=(ROOT/"src/cyd32_ui.cpp").read_text()
     self.assertIn('menuRow(163,"CAL PORTRAIT TOUCH"',ui)
     self.assertIn('void calibratePortraitFromDevice()',ui)
     self.assertIn('forcePortraitCalibration=true;',ui)
-    self.assertIn('if(!forcePortraitCalibration&&prefs.begin("sqemit32",true))',ui)
-    self.assertIn('if(!portraitCalibrated||forcePortraitCalibration)',ui)
+    self.assertIn('portraitFitLoaded=loadPortraitFit()',ui)
+    self.assertIn('if(!portraitFitLoaded||forcePortraitCalibration)',ui)
     self.assertIn('portraitRawHoldStarted>=5000u',ui)
     self.assertIn('HOLD SCREEN 5s: CAL TOUCH',ui)
     self.assertIn('CYD32,TOUCH,CAL_REQUIRES_IDLE',ui)
