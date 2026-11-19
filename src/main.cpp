@@ -577,11 +577,20 @@ static void command(String cmd) {
   if (cmd.equalsIgnoreCase("PUSH ON")) { cyd32UiSetFramePush(true); return; }
   if (cmd.equalsIgnoreCase("PUSH OFF")) { cyd32UiSetFramePush(false); return; }
   if (cmd.equalsIgnoreCase("PUSH STATUS")) { cyd32UiPrintFramePushStatus(); return; }
-  if (cmd.equalsIgnoreCase("CALTOUCH")) { cyd32UiResetCalibration(); return; }
+  // Touch recalibration removes the only local STOP control until the
+  // blocking calibration completes. NEVER start it with RF/suite/playlist
+  // active, including the off-air gap between suite/playlist cases.
+  if (cmd.equalsIgnoreCase("CALTOUCH")) {
+    if (g_active || g_suite || g_playlist) {
+      Serial.println("ERROR,CALTOUCH_REQUIRES_IDLE");
+      return;
+    }
+    cyd32UiResetCalibration(); return;
+  }
   if (cmd.equalsIgnoreCase("INVERT ON")) { cyd32UiSetInversion(true); return; }
   if (cmd.equalsIgnoreCase("INVERT OFF")) { cyd32UiSetInversion(false); return; }
   if (cmd.equalsIgnoreCase("COLORS")) {
-    if (g_active || g_suite) {Serial.println("ERROR,COLORS_REQUIRES_IDLE");return;}
+    if (g_active || g_suite || g_playlist) {Serial.println("ERROR,COLORS_REQUIRES_IDLE");return;}
     cyd32UiColorBars();return;
   }
 #endif
