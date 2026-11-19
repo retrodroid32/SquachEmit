@@ -13,6 +13,8 @@ namespace SqeTouchWizard {
 using RawReader = bool (*)(int16_t&,int16_t&);
 enum class Outcome : uint8_t { SAVED, SKIPPED, NO_TOUCH, FAILED };
 static float s_density=1.0f;
+// SquachWatch touch-calibration status colours.
+static constexpr uint16_t GREEN=0x07E0, AMBER=0xFD20, RED=0xF800;
 inline void setDensityScale(float scale){s_density=scale>0.5f?scale:1.0f;}
 // ---- The interactive flow ----
 
