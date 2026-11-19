@@ -2,25 +2,25 @@
   "schema": 1,
   "scenario_count": 172,
   "firmware_sources": {
-    "src": "e2f9f9d25de9e07250577ce73d8ebbdeb328d379",
-    "include": "5342a45d8d044951d191c296ea9da442dd89e0da",
+    "src": "93238682b47c8886d89f3d6975d60cd3bceb4069",
+    "include": "34907bfd953c5fb3274da963048c2c24799275c6",
     "lib": "c88135d6510b738fe2c208290c498f9e8b639681",
     "SquachEmit.ino": "90b4205813a2f7885bc1e12ce7431eebf7249f45",
     "platformio.ini": "c3ff3725248b4c67d60da6903982515031c501f6"
   },
   "builds": {
     "cyd32-st7798": {
-      "title": "SquachEmit v1.1.0 CYD 3.2 R14.11 LAB — On-Device Portrait Touch Calibration (172 Cases)",
+      "title": "SquachEmit v1.1.0 CYD 3.2 R14.12 LAB — SquachWatch Verified 5-Point Touch Calibration (172 Cases)",
       "version": "v1.1.0 MAINLINE · 172 cases",
-      "summary": "R14.11 LAB adds physical portrait calibration without serial. Landscape SETTINGS > MORE and RECOVERY offer CAL PORTRAIT TOUCH, forcing the four-corner wizard even when old NVS calibration exists. In portrait, hold an idle screen for 5 seconds to start calibration using raw pressure, independent of incorrect x/y. Rejects corrupt saved touch fits. RF STOP safeguards remain. Retains R14.10 edge rescue, R14.9 countdown fix, R14.7 FULL8/FAST, Squachy art and 172 cases. Four-part SHA-256 flashing and hardware verification required. LAB only.",
+      "summary": "R14.12 LAB CYD3.2 replaces TFT_eSPI's premature four-corner portrait calibration with SquachWatch's five inset targets, deliberate hold/release per target, independent verification dot, affine touch fit and validated NVS storage. The old wizard could mistake a lingering third press for the fourth target and return early. Portrait taps now use the same pressure-gated raw XPT2046 affine mapping as SquachWatch. Keep existing landscape calibration, no RF while calibrating, FULL8/FAST, 40MHz SPI, Squachy art and all 172 cases. Physical verification required; LAB only.",
       "highlights": [
-        "Landscape SETTINGS > MORE > CAL PORTRAIT TOUCH bypasses inaccurate saved mapping.",
-        "RECOVERY provides visible on-device portrait calibration in landscape and portrait.",
-        "Five-second idle portrait screen hold runs raw-pressure calibration without mapped touch.",
-        "Portrait Home shows HOLD SCREEN 5s: CAL TOUCH; four-corner wizard uses portrait rotation.",
-        "Rejects malformed saved portrait touch fits without wiping settings.",
-        "Retains R14.10 diagnostics, R14.9 countdown, R14.8 RF safeguards and R14.7 FULL8/FAST.",
-        "LAB only; SHA-256 and actual portrait calibration, rotation and RF STOP tests required."
+        "Replaces premature TFT_eSPI four-corner portrait wizard with SquachWatch five inset targets and proof dot.",
+        "Each target requires stable held touch plus explicit release, preventing previous finger from filling the next target.",
+        "Uses SquachWatch affine fitting and raw XPT2046 mapping on portrait, independent of old TFT_eSPI blobs.",
+        "Stores only verified touch-fit coefficients in new SquachEmit NVS namespace; rejects malformed fit.",
+        "On-device Settings > MORE > CAL PORTRAIT TOUCH, Recovery and 5s hold still initiate calibration.",
+        "Preserves legacy landscape, R14.7 FULL8/FAST, animations/outfits and all 172 bounded cases.",
+        "LAB only; physical target 1–5, dot verification, portrait menu and timed STOP must be tested."
       ]
     },
     "c5-waveshare-28": {
