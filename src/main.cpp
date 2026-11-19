@@ -495,7 +495,10 @@ static void help() {
 #endif
 #if defined(SQE_CYD32)
   Serial.println("Tap TX TIME on the home screen to set 3..30s for RUN and SUITE.");
-  Serial.println("CALTOUCH             reset touchscreen fit, then tap to calibrate");
+  Serial.println("CALTOUCH             reset landscape touchscreen fit (idle only)");
+  Serial.println("CALTOUCH PORTRAIT    rerun portrait 4-corner touch wizard (portrait+idle)");
+  Serial.println("TOUCH STATUS         report saved portrait calibration and edge-rescue count");
+  Serial.println("TOUCH TRACE ON|OFF   log physical touch pressure and coordinates (115200)");
   Serial.println("COLORS               show idle-only RED/GREEN/BLUE/WHITE/BLACK test");
   Serial.println("INVERT ON|OFF        save absolute panel inversion state");
   Serial.println("PUSH ON|OFF          optimized FramePush vs stock TFT_eSPI (A/B, reboot resets)");
