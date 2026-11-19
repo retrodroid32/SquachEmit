@@ -10,7 +10,7 @@
   },
   "builds": {
     "cyd32-st7798": {
-      "title": "SquachEmit v1.1.0 CYD 3.2 R14.9 LAB — Portrait Menu & Stable TX Countdown",
+      "title": "SquachEmit v1.1.0 CYD 3.2 R14.9 LAB — Portrait Menu & Stable TX Countdown (172 Cases)",
       "version": "v1.1.0 MAINLINE · 172 cases",
       "summary": "R14.9 LAB CYD 3.2 fixes portrait MENU touch, stray HOME caption and TX countdown flicker from competing direct LCD and FULL8 sprite writes. Enlarges the menu target, allows menus during RF while keeping STOP on every portrait page, removes HOME caption and lets the framebuffer own the countdown. Retains proven FULL8/FAST FramePush, 40MHz SPI, SquachWatch artwork, R14.8 RF-safe calibration, and all 172 synthetic cases. Native pixel/touch/STOP tests added. Four-part SHA-256 flashing and physical verification required. LAB only.",
       "highlights": [
