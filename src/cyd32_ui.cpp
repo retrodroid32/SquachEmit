@@ -97,6 +97,9 @@ size_t filterPage=0;
 uint8_t helpPage=0,menuPage=0,outfitLevel=0,backgroundLevel=0,backgroundPage=0,outfitPage=0;
 bool onAirIndicator=false;
 bool portraitCalibrated=false,portraitMode=false;
+// Device-side portrait touch recovery independent of stored touch fit.
+bool forcePortraitCalibration=false;
+uint32_t portraitRawHoldStarted=0;
 bool portraitTouchTrace=false;
 uint32_t lastPortraitTouchTraceAt=0,portraitMenuRawRescues=0;
 uint16_t portraitTouchData[5]={0};
@@ -745,15 +748,17 @@ void rotateCurrentScreen(){
   // First-time portrait touch calibration is blocking. Performing it while
   // an RF case/suite/playlist is on-air can delay the radio timeout and STOP.
   // Look up a previously saved calibration BEFORE changing panel rotation.
-  if(makePortrait&&!portraitCalibrated){
-    if(prefs.begin("sqemit32",true)){
+  if(makePortrait&&(!portraitCalibrated||forcePortraitCalibration)){
+    // User-requested calibration from landscape must bypass the saved fit.
+    if(!forcePortraitCalibration&&prefs.begin("sqemit32",true)){
       portraitCalibrated=prefs.getBytesLength("touchport")==sizeof(portraitTouchData) &&
           prefs.getBytes("touchport",portraitTouchData,sizeof(portraitTouchData))==
           sizeof(portraitTouchData);
       prefs.end();
     }
-    if(!portraitCalibrated &&
+    if((!portraitCalibrated||forcePortraitCalibration) &&
         (onAirIndicator||previousSuite||playlistRunning||txDriverActive)){
+      forcePortraitCalibration=false;
       Serial.println("CYD32,ROTATE,DEFER_TOUCH_CAL_RF_ACTIVE");
       return;
     }
@@ -774,8 +779,9 @@ void rotateCurrentScreen(){
     panel.width(),panel.height()/sceneFrameBands,(unsigned)sceneFrameBands,
     (unsigned long)ESP.getFreeHeap(),(unsigned long)ESP.getMaxAllocHeap());
   if(makePortrait){
-    if(!portraitCalibrated){
+    if(!portraitCalibrated||forcePortraitCalibration){
       label(8,15,"PORTRAIT TOUCH CAL",kCyan,2);
+      Serial.println("CYD32,TOUCH,PORTRAIT_CAL_START");
       lcd.calibrateTouch(portraitTouchData,kWhite,kBg,15);
       portraitCalibrated=true;
       if(prefs.begin("sqemit32",false)){
@@ -784,6 +790,7 @@ void rotateCurrentScreen(){
       }
     }
     lcd.setTouch(portraitTouchData);
+    forcePortraitCalibration=false;
   }else if(calibrated)loadCal();
   portraitMode=makePortrait;
   portraitLastCount=UINT32_MAX;lastCount=UINT32_MAX;
@@ -793,6 +800,22 @@ void rotateCurrentScreen(){
   }
   Serial.printf("CYD32,ROTATE,%s,%dx%d\n",
     portraitMode?"PORTRAIT":"LANDSCAPE",lcd.width(),lcd.height());
+}
+// On-device calibration escape: working landscape Settings -> MORE.
+void calibratePortraitFromDevice(){
+  if(onAirIndicator||previousSuite||playlistRunning||txDriverActive){
+    Serial.println("CYD32,TOUCH,CAL_REQUIRES_IDLE");
+    return;
+  }
+  if(portraitMode){
+    cyd32UiCalibratePortraitTouch();
+  }else{
+    forcePortraitCalibration=true;
+    rotateCurrentScreen();
+    if(portraitMode){
+      screen=Screen::Home;settingsMore=false;redraw=true;
+    }
+  }
 }
 Cyd32UiAction touchPortrait(int x,int y,bool active,bool suite){
   if(y<278)return Cyd32UiAction::None;
@@ -816,7 +839,7 @@ void settingsScreen(){
     menuRow(46,line,"TAP TO CYCLE COLORS");
     menuRow(85,fontMode?"TEXT SIZE: STANDARD":"TEXT SIZE: COMPACT","TAP TO CHANGE LIST TYPE");
     menuRow(124,"SYNTHETIC IDENTITY","SEE LAST ACTUALLY TRANSMITTED MAC");
-    menuRow(163,"PORTRAIT MODE / LAB","EXPERIMENTAL - RETURN TO LANDSCAPE");
+    menuRow(163,"CAL PORTRAIT TOUCH","ROTATE + 4-CORNER TOUCH SETUP");
     footer("BACK","< PREV","HELP");return;
   }
   char line[50];
@@ -1287,7 +1310,7 @@ Cyd32UiAction touchSettings(int x,int y){
       if(row==0){themeLevel=(themeLevel+1)%3;applyTheme();persistUiSettings();}
       else if(row==1){fontMode=(fontMode+1)%2;persistUiSettings();}
       else if(row==2)screen=Screen::Identity;
-      else if(row==3){rotateCurrentScreen();}
+      else if(row==3){calibratePortraitFromDevice();}
       redraw=true;return Cyd32UiAction::None;
     }
     if(row==0){brightnessLevel=(brightnessLevel+1)%3;applyBrightness();persistUiSettings();}
@@ -1401,6 +1424,7 @@ void portraitPage(const char* active,uint32_t remaining,bool suite){
   // HOME is already evident from the main scene; printing "HOME" here
   // was an unexplained extra line above the SquachWatch background.
   if(screen!=Screen::Home)label(12,37,name,kVaporPink,2);
+  else label(12,42,"HOLD SCREEN 5s: CAL TOUCH",kMuted);
   if(screen==Screen::QuickFilter){
     char filterInfo[28];
     snprintf(filterInfo,sizeof(filterInfo),"%c >",
@@ -1509,7 +1533,7 @@ void portraitPage(const char* active,uint32_t remaining,bool suite){
       if(n<10){head=kBackgroundNames[n];sub=n==backgroundLevel?"ACTIVE":"SELECT BACKGROUND";}
     }else if(screen==Screen::Settings){
       static const char* basics[]={"BACKLIGHT","ANIMATION","IDLE DIM","INVERSION"};
-      static const char* more[]={"THEME","FONT SIZE","IDENTITY","LANDSCAPE"};
+      static const char* more[]={"THEME","FONT SIZE","IDENTITY","CAL PORTRAIT TOUCH"};
       head=settingsMore?more[i]:basics[i];
       if(!settingsMore){
         const char* br[]={"DIM","NORMAL","BRIGHT"};
@@ -1520,7 +1544,7 @@ void portraitPage(const char* active,uint32_t remaining,bool suite){
       }else{
         static const char* theme[]={"VAPOR","OCEAN","SUNSET"};
         sub=i==0?theme[themeLevel]:i==1?(fontMode?"STANDARD":"COMPACT"):
-            i==2?"LAST TX MAC":"TAP TO RETURN";
+            i==2?"LAST TX MAC":"4-CORNER TOUCH SETUP";
       }
     }else if(screen==Screen::Home){
       const Scenario* current=selected<kScenarioCount?&kScenarios[selected]:nullptr;
@@ -1745,7 +1769,7 @@ Cyd32UiAction portraitTap(int x,int y,bool active,bool suite){
   else if(screen==Screen::QuickFilter)return touchQuickFilter(150,68+i*34);
   else if(screen==Screen::Settings){
     if(settingsMore&&i==3){
-      rotateCurrentScreen();
+      calibratePortraitFromDevice();
     }else return touchSettings(150,50+i*39);
   }else if(screen==Screen::Outfits){
     const int n=outfitPage*4+i;
@@ -1937,6 +1961,7 @@ void cyd32UiCalibratePortraitTouch(){
     prefs.end();
   }
   wasPressed=true;lastPress=millis();redraw=true;
+  portraitRawHoldStarted=0;
   Serial.println("CYD32,TOUCH,PORTRAIT_CAL_DONE");
   cyd32UiPrintTouchStatus();
 }
@@ -2083,9 +2108,23 @@ Cyd32UiAction cyd32UiTick(const char* active,uint32_t remaining,bool suite){
   // A real finger at the ST7798 portrait bezel can produce less pressure
   // than in the middle of the screen. Keep landscape's proven threshold.
   bool pressed=lcd.getTouch(&x,&y,portraitMode?260:450);
-  // Recover only the hamburger press if TFT_eSPI rejected the outer edge
-  // as out of bounds or below its ordinary threshold.
+  // Recover only the hamburger press if TFT_eSPI rejected the outer edge.
   if(portraitMode&&!pressed)pressed=recoverPortraitMenuTouch(x,y);
+  // Universal on-device recovery when the saved calibration maps ALL taps
+  // incorrectly. This uses raw pressure only (no calibrated x/y) and is
+  // restricted to fully idle RF. Holding an empty scene area is safest.
+  // The TFT_eSPI wizard waits for the held finger to be released before
+  // displaying its four calibration crosshairs.
+  if(portraitMode&&!remoteDown&&!onAirIndicator&&!previousSuite&&
+      !playlistRunning&&!txDriverActive&&panel.getTouchRawZ()>=230){
+    if(!portraitRawHoldStarted)portraitRawHoldStarted=now?now:1u;
+    else if(now-portraitRawHoldStarted>=5000u){
+      portraitRawHoldStarted=0;
+      Serial.println("CYD32,TOUCH,RAW_HOLD_CAL;RELEASE_AND_FOLLOW_CROSSHAIRS");
+      cyd32UiCalibratePortraitTouch();
+      return Cyd32UiAction::None;
+    }
+  }else portraitRawHoldStarted=0;
   if(portraitTouchTrace&&now-lastPortraitTouchTraceAt>=180u){
     const uint16_t z=panel.getTouchRawZ();
     if(pressed||z>=160){
