@@ -1,5 +1,6 @@
 #pragma once
 #include <algorithm>
+#include "Arduino.h"
 #include <cmath>
 #include <cstdint>
 #include <vector>
@@ -17,6 +18,32 @@ namespace MockDisplay {
   // Test-only XPT2046 samples when TFT_eSPI rejects a bezel touch.
   inline uint16_t rawX=0,rawY=0,rawZ=0;
   inline bool rawActive=false;
+  // Timed physical-finger simulation for SquachWatch's five held targets.
+  // Intro touch, five inset targets, and independent proof dot. The gaps
+  // matter: unlike TFT_eSPI the wizard must see a distinct release.
+  inline bool autoWizard=false;
+  inline uint32_t wizardEpoch=0;
+  inline bool wizardSample(uint16_t& ax,uint16_t& by){
+    if(!autoWizard||mock_time_ms<wizardEpoch)return false;
+    const uint32_t t=mock_time_ms-wizardEpoch;
+    if(t>=100&&t<350){ax=2000;by=2000;return true;}
+    static constexpr float fx[5]={0.15f,0.85f,0.85f,0.15f,0.5f};
+    static constexpr float fy[5]={0.15f,0.15f,0.85f,0.85f,0.5f};
+    for(int i=0;i<5;i++){
+      const uint32_t start=1000u+(uint32_t)i*2200u;
+      if(t>=start&&t<start+1400u){
+        ax=(uint16_t)(200.f+fx[i]*3600.f);
+        by=(uint16_t)(180.f+fy[i]*3700.f);
+        return true;
+      }
+    }
+    if(t>=12000&&t<12500){
+      ax=(uint16_t)(200.f+0.62f*3600.f);
+      by=(uint16_t)(180.f+0.32f*3700.f);
+      return true;
+    }
+    return false;
+  }
 }
 class TFT_eSPI;
 namespace MockDisplay { inline TFT_eSPI* screen=nullptr; }
@@ -49,9 +76,15 @@ public:
  }
  bool getTouchRaw(uint16_t* xx,uint16_t* yy){
   if(MockDisplay::rawActive){*xx=MockDisplay::rawX;*yy=MockDisplay::rawY;return true;}
+  uint16_t a=0,b=0;
+  if(MockDisplay::wizardSample(a,b)){*xx=a;*yy=b;return true;}
   return getTouch(xx,yy,0);
  }
- uint16_t getTouchRawZ(){return MockDisplay::rawActive?MockDisplay::rawZ:0;}
+ uint16_t getTouchRawZ(){
+   if(MockDisplay::rawActive)return MockDisplay::rawZ;
+   uint16_t a=0,b=0;
+   return MockDisplay::wizardSample(a,b)?600:0;
+ }
  static uint16_t color565(int r,int g,int b){
   return (uint16_t)(((r>>3)<<11)|((g>>2)<<5)|(b>>3));
  }
