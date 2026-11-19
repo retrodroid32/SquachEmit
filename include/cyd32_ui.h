@@ -12,6 +12,11 @@ const Scenario* cyd32UiSelection();
 // User-selected 3..30 second duration, persisted in CYD32 NVS.
 uint32_t cyd32UiDurationMs();
 void cyd32UiResetCalibration();
+// Portrait-only touch recalibration (call from the idle-gated serial handler).
+void cyd32UiCalibratePortraitTouch();
+// Hardware diagnostics for edge pressure and calibrated touch coordinates.
+void cyd32UiSetTouchTrace(bool enabled);
+void cyd32UiPrintTouchStatus();
 void cyd32UiSetInversion(bool enabled);
 bool cyd32UiInversion();
 void cyd32UiColorBars();
