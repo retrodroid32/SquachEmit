@@ -12,7 +12,7 @@
     "cyd32-st7798": {
       "title": "SquachEmit v1.1.0 CYD 3.2 R14.8 LAB — RF-Safe Portrait Rotation & FastPush (172 Cases)",
       "version": "v1.1.0 MAINLINE · 172 cases",
-      "summary": "R14.8 LAB CYD 3.2 retains hardware-approved R14.7 FULL8 single-frame renderer plus optimized FramePush, standard 40MHz SPI and 172 controlled synthetic RF profiles. Prevents first-time portrait touchscreen calibration from blocking RF test STOP/timeout or suite/playlist, without preventing later calibrated rotation during RF. Serial CALTOUCH and COLORS reject active RF/suite/playlist. Native tests exercise active TX and suite rotation deferral, idle portrait calibration, rotation back and reused calibration during TX. Recheck physical display, 40MHz SPI/touch, timed radio stop and memory before merging. LAB only, no production release.",
+      "summary": "R14.8 LAB CYD 3.2 retains R14.7 FULL8/FAST at 40 MHz SPI and 172 bounded RF cases. First portrait touch calibration could block TX timeout or STOP. Now the board checks saved portrait calibration before rotating, defers new calibration during active RF/suite/playlist, and permits previously calibrated rotation during TX. Serial CALTOUCH and COLORS require idle RF. Native C++ tests cover active/suite deferral, idle setup, portrait roundtrip and active calibrated rotation. Four-part SHA-256 flashing and physical touch, STOP, radio timeout and screen validation required. LAB only.",
       "highlights": [
         "Preserves user-validated FULL8 optimized FramePush display path and PUSH ON/OFF/STATUS diagnostics.",
         "Avoids blocking first-time portrait touch calibration while RF is active, or during a suite/favorites playlist; logs a clear deferred-rotation event.",
