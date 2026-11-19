@@ -34,7 +34,8 @@ static void touch(unsigned x,unsigned y,const char* id=nullptr,bool suite=false)
 }
 int main(int argc,char** argv){
   const bool useSuite=(argc>1&&std::strcmp(argv[1],"suite")==0);
-  mock_portrait_touch_saved=false; // fresh NVS: first portrait needs wizard
+  mock_portrait_touch_saved=false;
+  mock_portrait_fit_saved=false; // no SquachWatch affine fit saved in NVS
   cyd32UiBegin();tick();
   auto* screen=MockDisplay::screen;
   assert(screen && screen->width()==320 && screen->height()==240);
@@ -45,10 +46,13 @@ int main(int argc,char** argv){
   // The rejected gesture must not damage the radio UI state.
   tick(useSuite?nullptr:"BLE-AIRTAG",useSuite);
   assert(screen->width()==320 && screen->height()==240);
-  // Finish RF, complete normal first-time portrait touch setup.
+  // Finish RF, now simulate FIVE separately held targets plus proof dot.
   tick();
+  MockDisplay::autoWizard=true;
+  MockDisplay::wizardEpoch=mock_time_ms+350;
   touch(300,8);
-  assert(mock_portrait_touch_saved); // idle first calibration saved to NVS
+  MockDisplay::autoWizard=false;
+  assert(mock_portrait_fit_saved); // new verified affine NVS saved
   assert(screen->width()==240 && screen->height()==320);
   // Return while a case is active: no touch wizard is needed when cached.
   tick("BLE-AIRTAG");
