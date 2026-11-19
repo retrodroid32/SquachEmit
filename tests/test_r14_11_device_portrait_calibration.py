@@ -109,7 +109,9 @@ class PortraitRecoveryTests(unittest.TestCase):
             self.assertIn("CYD32,TOUCH,PORTRAIT_CAL_DONE",r.stderr)
             self.assertIn("RAW_HOLD_RELEASED_BEGIN_5_POINT",r.stderr)
           else:
-            self.assertIn("CYD32,TOUCH,PORTRAIT_CAL_START",r.stderr)
+            self.assertIn("CYD32,TOUCH,5_POINT_START",r.stderr)
+            self.assertIn("CYD32,TOUCH,TARGET,5/5",r.stderr)
+            self.assertIn("CYD32,TOUCH,CHECK_DOT",r.stderr)
             self.assertIn("CYD32,TOUCH,5_POINT_VERIFIED_SAVED",r.stderr)
             self.assertIn("UI STATE 1 HOME",r.stderr)
   def test_source_does_not_trust_old_calibration_during_forced_setup(self):
