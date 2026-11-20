@@ -45,7 +45,7 @@ class R1414SpeechAndIcon(unittest.TestCase):
   bubble=ui[ui.index("void speechBubble(const char* active"):ui.index("void statusStrip(",ui.index("void speechBubble("))]
   self.assertIn('bubbleLine(speechLine(),primary,sizeof(primary),2,282);',bubble)
   self.assertIn('const int primaryW=lcd.textWidth(primary);',bubble)
-  self.assertIn('SqeBubbleLayout::bounds(primaryW,detailW,failed,scale)',bubble)
+  self.assertIn('SqeBubbleLayout::bounds(primaryW,detailW,hasDetail,scale)',bubble)
   self.assertIn('SqeBubbleLayout::centeredTextX(box,primaryW)',bubble)
   self.assertIn('SqeBubbleLayout::centeredTextX(box,detailW)',bubble)
   self.assertNotIn('fit(16,failed?25:35',bubble)
