@@ -1,0 +1,207 @@
+# SquachEmit R14.15 — Squachy speech catalog
+
+This is the exact phrase catalog compiled into the CYD 3.2 LAB firmware. The words are humor, NOT receiver evidence. The current library has **172 real cases in 10 device categories**. Default random mix per popup: 60% real selected category or operational state, 25% general activity/idle, 10% rare humor, 5% Easter eggs. Each line is chosen ONCE at popup appearance and keeps R14.13 five-second visibility and randomized gaps. Long phrases wrap on whole words into the existing centered bubble; no automatic ellipsis in the normal case. All output is static ASCII so it works with the panel font. Portrait screens retain their existing text; these dynamic phrases show in landscape Home only.
+
+**Ring messages are included but dormant.** There is no Ring category or Ring synthetic test among the 172 cases; the firmware will not present a false Ring scenario. The BLE/Wi-Fi/AirTag/Remote ID banks are occasional subtopics of their real parent device category. Failure-stage details remain displayed as the second line of Wi-Fi failure messages.
+
+## Idle / waiting (10)
+
+- `READY FOR A SIGNAL CHECK!`
+- `PICK A PROFILE. I WILL EMIT!`
+- `172 TESTS. ONE LITTLE SQUACH.`
+- `NO RF UNTIL YOU PRESS RUN.`
+- `LET US TEST THAT DETECTOR!`
+- `WAKE ME WHEN WE TRANSMIT!`
+- `JUST A SQUACH WITH A DREAM.`
+- `I SMELL RADIO WAVES!`
+- `IS THIS THING ON?`
+- `MY ANTENNA IS ITCHY.`
+
+## Active transmission (8)
+
+- `SENDING SYNTHETIC SIGNAL...`
+- `CHECK YOUR RECEIVER NOW!`
+- `TEST SIGNAL IS ON THE AIR!`
+- `PEW PEW! RADIO EDITION!`
+- `I'M NOT SAYING IT'S ALIENS...`
+- `BEHOLD! INVISIBLE NOISE!`
+- `SQUACHY GOES BRRRR!`
+- `SCIENCE! PROBABLY.`
+
+## Wi-Fi starting (5)
+
+- `STARTING WIFI TRANSMISSION`
+- `SUMMONING THE WIFI SPIRITS!`
+- `HOLD MY ANTENNA!`
+- `CONNECTING THE DOTS...`
+- `WIFI WIZARDRY IN PROGRESS!`
+
+## Wi-Fi startup failure (6)
+
+- `WIFI START FAILED`
+- `WELL, THAT WAS EMBARRASSING.`
+- `THE GREMLINS DID IT!`
+- `TASK FAILED SUCCESSFULLY!`
+- `HAVE YOU TRIED MORE MAGIC?`
+- `MY ANTENNA NEEDS THERAPY.`
+
+## Favorites playlist (5)
+
+- `FAVORITES PLAYLIST`
+- `DJ SQUACH IS IN THE HOUSE!`
+- `NOW SPINNING: RADIO WAVES!`
+- `THE HITS JUST KEEP COMING!`
+- `THIS MIX IS FIRE! (NOT RF)`
+
+## Test suite (6)
+
+- `TEST SUITE RUNNING`
+- `RELEASE THE TEST GOBLINS!`
+- `LET THE CHAOS BEGIN!`
+- `ONE TEST TO RULE THEM ALL!`
+- `I WAS BUILT FOR THIS. MAYBE.`
+- `THE SCIENCE IS SCIENCING!`
+
+## AXON (6)
+
+- `CAMERA READY? ACTION!`
+- `I DEMAND A BODYCAM!`
+- `SMILE! YOU'RE ON SQUACH CAM!`
+- `SQUACHY, TAKE ONE!`
+- `BODYCAM? I NEED A FURCAM!`
+- `ROLLING! BUT ONLY IN TEST MODE.`
+
+## DRONES / REMOTE ID (7)
+
+- `I BELIEVE I CAN WIFI!`
+- `I HAVE THE HIGH GROUND!`
+- `HOUSTON, WE HAVE A SQUACH!`
+- `FLYING WITHOUT LEAVING HOME!`
+- `MY PROPS ARE IMAGINARY!`
+- `SQUACH CONTROL TO MAJOR TOM.`
+- `ALTITUDE: EXTREMELY SQUACH.`
+
+## FLOCK (6)
+
+- `FLOCK AROUND AND FIND OUT!`
+- `WHO LET THE BIRDS OUT?`
+- `NO BIRDS WERE HARMED!`
+- `THE PENGUINS ARE UP TO SOMETHING!`
+- `I'M JUST HERE FOR THE BIRD SEED.`
+- `FLOCK YEAH! TEST MODE!`
+
+## GENERAL / CONTROLS (6)
+
+- `THIS ONE'S A CONTROL GROUP!`
+- `FALSE ALARM? THAT'S A PASS!`
+- `BORING SIGNAL. IMPORTANT TEST.`
+- `I'M PAID IN DEBUG LOGS.`
+- `NO SPOOFED MAGIC TODAY!`
+- `THE CONTROL GROUP HAS SPOKEN.`
+
+## HACKER DEVICES (6)
+
+- `FLIPPER? I HARDLY KNOW HER!`
+- `HACKERMAN HAS ENTERED THE CHAT!`
+- `MY HOODIE HAS ROOT ACCESS.`
+- `PINEAPPLE ON THE RADIO MENU?`
+- `THIS IS A LAB, NOT A HEIST!`
+- `SQUACH.EXE HAS STOPPED CARING.`
+
+## IBEACON (6)
+
+- `IBEACON, THEREFORE I AM.`
+- `BEACON OF HOPE? MORE LIKE BLE.`
+- `MY BEACON BRINGS ALL THE BARS.`
+- `YOU HAD ME AT ADVERTISING.`
+- `SMALL PACKET. BIG PERSONALITY.`
+- `I HAVE A MAJOR IDENTITY CRISIS.`
+
+## RAVEN (6)
+
+- `NEVERMORE... UNLESS IT'S A RETEST.`
+- `QUOTH THE RAVEN: BLE!`
+- `SQUACHY HEARD A RAVEN CALL!`
+- `CROAK? NO, THAT'S MY DEBUGGER.`
+- `BIRDS OF A FREQUENCY FLOCK.`
+- `EDGAR ALLAN RADIO WAVES!`
+
+## SERIAL MODULES (6)
+
+- `AT+SQUACH=1`
+- `MY BAUD RATE HAS FEELINGS.`
+- `SERIAL KILLER. OF BUGS!`
+- `HELLO FROM THE UART SIDE!`
+- `THE MODULE SAYS HELLO!`
+- `I SPEAK FLUENT AT COMMANDS.`
+
+## SMART GLASSES (6)
+
+- `RAY-BANS? I WEAR FUR SHADES.`
+- `LOOK, MA! HANDS-FREE RF!`
+- `SQUACHY HAS MAIN CHARACTER VISION.`
+- `I SEE WHAT YOU TRANSMITTED.`
+- `MY SHADES HAVE DEBUG MODE.`
+- `SMILE FOR MY IMAGINARY GLASSES!`
+
+## TRACKERS (6)
+
+- `BEEP BEEP! WHO'S THERE?`
+- `TRACK ME? CATCH ME FIRST!`
+- `SQUACHY KNOWS WHERE HE IS.`
+- `THIS ISN'T A TREASURE MAP.`
+- `I LOST MY OTHER ANTENNA!`
+- `DON'T TAG MY FUR, PLEASE.`
+
+## AirTag subset of Trackers (3)
+
+- `I'M NOT LOST. YOU ARE!`
+- `WHERE'S MY OTHER SOCK?`
+- `FOLLOW THE BEEP!`
+
+## BLE transport (3)
+
+- `LOW ENERGY. HIGH DRAMA.`
+- `BLUETOOTH AND CHILL?`
+- `BLE ME AWAY!`
+
+## Wi-Fi transport (3)
+
+- `BEACON AND EGGS, ANYONE?`
+- `SSID? MORE LIKE SOS!`
+- `THE WIFI IS STRONG WITH ME.`
+
+## Remote ID transport (3)
+
+- `IDENTITY CRISIS INCOMING!`
+- `HELLO! I AM A TEST DRONE!`
+- `MY ID IS COMPLICATED.`
+
+## Ring — dormant (no test cases) (3)
+
+- `DING DONG! IT'S SQUACH!`
+- `SPECIAL DELIVERY: RF!`
+- `YOUR DOORBELL KNOWS TOO MUCH.`
+
+## Rare sarcastic (5)
+
+- `I KNOW WHAT YOU DID LAST WIFI.`
+- `I PUT THE SQUACH IN SQUELCH.`
+- `MY OTHER ANTENNA IS A YAGI.`
+- `I CAN HEAR YOUR TOASTER.`
+- `THIS IS FINE. PROBABLY.`
+
+## Very rare Easter eggs (5)
+
+- `THE GOVERNMENT STOLE MY WIFI.`
+- `ERROR 404: COMMON SENSE.`
+- `I'M 90% FUR, 10% RF.`
+- `DON'T TELL THE FCC ABOUT ME!`
+- `SHHH... I'M DOING SCIENCE.`
+
+## Event-based extra lines
+
+- `AGAIN? SERIOUSLY?` — when the user taps RUN three times within approximately 45 seconds, next available active-TX popup.
+- `DID YOU FORGET ABOUT ME?` — after two idle minutes without a touchscreen press, on the next idle popup.
+
+Both are UI-only; neither changes timers, RF packets, START/STOP, or detection results. A tap resets the long-idle condition. Ring remains intentionally inactive.
