@@ -10,17 +10,17 @@
   },
   "builds": {
     "cyd32-st7798": {
-      "title": "SquachEmit v1.1.0 CYD 3.2 R14.16 LAB — 130 Squachy Quips Plus 2 Easter Eggs (172 Cases)",
+      "title": "SquachEmit v1.1.0 CYD 3.2 R14.17 LAB — Strict Idle/TX Speech Categories (172 Cases)",
       "version": "v1.1.0 MAINLINE · 172 cases",
-      "summary": "R14.16 LAB adds four user-requested Squachy quips exactly: Idle HERE WATCHY WATCHY!, Hacker HACK THE PLANET!, Transmitting SETTING PHASERS TO ANNOY!, and Test Suite SENDING EVERYTHING BUT THE KITCHEN SINK! Brings catalog to 130 fixed + 2 event-triggered lines across ten real device categories and activity states. Existing 60/25/10/5 mix, randomized pop timing, centered word wrapping, R14.12 five-point portrait calibration, R14.14 TX beacon, FULL8/FAST and 172 test cases stay unchanged. LAB only; four-part SHA-256 flash preflight and physical verification required.",
+      "summary": "R14.17 LAB fixes unrelated speech: off air displays only IDLE quips (including Wi-Fi start/fail and suite/playlist gaps); active transmission selects only the actual running scenario's device category (60%) or TRANSMITTING (40%). Dynamic selection is tied to active ID, not highlighted profile, and refreshes when running case changes. Other 132 catalog phrases are retained but rare/Easter, carrier-only, suite, Wi-Fi startup/failure and event-only jokes are inactive. Preserves verified R14.12 touch, R14.14 centered bubble, FULL8/FAST and 172 bounded RF cases; LAB only; physical CYD 3.2 validation required.",
       "highlights": [
-        "Adds idle phrase HERE WATCHY WATCHY! without removing earlier idle dialogue.",
-        "Adds hacker category phrase HACK THE PLANET!",
-        "Adds transmitting phrase SETTING PHASERS TO ANNOY!",
-        "Adds test suite phrase SENDING EVERYTHING BUT THE KITCHEN SINK! (corrected spelling).",
-        "130 fixed lines plus two event-triggered Easter eggs; all previous 126 lines preserved.",
-        "Preserves random popup timing, centered bubble wrapping, TX icon and five-point portrait calibration.",
-        "LAB-only; 172 bounded RF cases remain unchanged, four-part SHA-256 flashing and CYD 3.2 hardware checks required."
+        "OFF AIR: only the 11 IDLE phrases are eligible, including suite gaps and failed starts.",
+        "ON AIR: only the active file's real category (60%) or 9 TRANSMITTING phrases (40%) are eligible.",
+        "Never use highlighted but nontransmitting profile to choose speech.",
+        "Force a new eligible popup when active RF case changes without idle redraw.",
+        "Keep all 130 fixed and two event-only phrases in source; disable all unrelated banks.",
+        "Preserve 172 RF profiles, STOP, touch calibration, graphics, TX countdown and build safety.",
+        "LAB-only, SHA-256 preflight and CYD 3.2 physical test; no production merges or releases."
       ]
     },
     "c5-waveshare-28": {
