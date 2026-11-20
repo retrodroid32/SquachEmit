@@ -738,6 +738,7 @@ void loop() {
   switch(action) {
     case Cyd32UiAction::Run: {
       const Scenario* chosen = cyd32UiSelection();
+      if(chosen)cyd32UiNoteRunAction();
       if(chosen) {
         const bool ouiCase=isOuiOnly(chosen);
         Serial.printf("UI,RUN_TAP,%s,%s\n",chosen->id,
