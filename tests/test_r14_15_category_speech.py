@@ -35,12 +35,13 @@ int main(){
  for(size_t i=0;i<kScenarioCount;i++){
    assert((unsigned)deviceCategory(kScenarios[i])<kDeviceCategoryCount);
  }
- assert(bank(Topic::Idle).count==10);
- assert(bank(Topic::Transmitting).count==8);
+ assert(bank(Topic::Idle).count==11);
+ assert(bank(Topic::Transmitting).count==9);
  assert(bank(Topic::Starting).count==5);
  assert(bank(Topic::Failed).count==6);
  assert(bank(Topic::Playlist).count==5);
- assert(bank(Topic::Suite).count==6);
+ assert(bank(Topic::Suite).count==7);
+ assert(bank(Topic::Hacker).count==7);
  assert(bank(Topic::AirTag).count==3);
  assert(bank(Topic::Ble).count==3);
  assert(bank(Topic::Wifi).count==3);
@@ -94,7 +95,9 @@ ORIGINAL=[
 "I CAN HEAR YOUR TOASTER.","THIS IS FINE. PROBABLY.",
 "ERROR 404: COMMON SENSE.","I'M 90% FUR, 10% RF.",
 "DON'T TELL THE FCC ABOUT ME!","SHHH... I'M DOING SCIENCE.",
-"AGAIN? SERIOUSLY?","DID YOU FORGET ABOUT ME?"
+"AGAIN? SERIOUSLY?","DID YOU FORGET ABOUT ME?",
+"HERE WATCHY WATCHY!","HACK THE PLANET!",
+"SETTING PHASERS TO ANNOY!","SENDING EVERYTHING BUT THE KITCHEN SINK!"
 ]
 class CategoryBanterTests(unittest.TestCase):
  @unittest.skipUnless(shutil.which("g++") or shutil.which("clang++"),"C++ compiler required")
