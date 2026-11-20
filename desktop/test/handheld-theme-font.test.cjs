@@ -1,0 +1,3 @@
+'use strict';const test=require('node:test'),assert=require('node:assert/strict');const fs=require('node:fs'),path=require('node:path');const root=path.resolve(__dirname,'../..'),read=p=>fs.readFileSync(path.join(root,p),'utf8');
+test('display theme and list text mode are bounded and persisted',()=>{const s=read('src/cyd32_ui.cpp');assert.match(s,/prefs\.putUChar\("theme",themeLevel\)/);assert.match(s,/prefs\.putUChar\("font",fontMode\)/);assert.match(s,/themeLevel=\(themeLevel\+1\)%3/);assert.match(s,/fontMode=\(fontMode\+1\)%2/);});
+test('Windows palette derives from device state',()=>{assert.match(read('desktop/public/native-emitter.js'),/state\.device\?\.theme/);assert.match(read('desktop/public/controller.js'),/UI DEVICE 1/);});

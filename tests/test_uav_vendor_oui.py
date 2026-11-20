@@ -31,8 +31,10 @@ class ExtendedVendorOuiTests(unittest.TestCase):
   self.assertIn("SquachUavVendorLab::apply(s->id,out)",main)
   self.assertIn("isOuiOnly(s)",main)
   ui=(ROOT/"src/cyd32_ui.cpp").read_text()
-  self.assertIn('startsWith(s->id,"OUI-")',ui)
-  self.assertIn("VENDOR PREFIX / NO REMOTE ID",ui)
+  self.assertIn('scenarioDeviceName(*s,name,sizeof(name))',ui)
+  names=(ROOT/"include/scenario_display.h").read_text()
+  self.assertIn('sqeStarts(id,"OUI-")',names)
+  self.assertIn('NO REMOTE ID',names)
 
  def test_cpp_prefix_preserves_nibble_and_host_bits(self):
   cc=shutil.which("g++") or shutil.which("clang++")

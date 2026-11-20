@@ -1,0 +1,4 @@
+'use strict'; const test=require('node:test'),assert=require('node:assert/strict');const fs=require('node:fs'),path=require('node:path');const root=path.resolve(__dirname,'../..'),read=p=>fs.readFileSync(path.join(root,p),'utf8');
+test('portrait is opt-in via Settings and exits back to landscape',()=>{const s=read('src/cyd32_ui.cpp');assert.match(s,/Screen::Portrait/);assert.match(s,/lcd\.setRotation\(0\)/);assert.match(s,/lcd\.setRotation\(1\);screen=Screen::Home/);});
+test('portrait mode has an accessible physical STOP and remote touch bounds',()=>{const s=read('src/cyd32_ui.cpp');assert.match(s,/touchPortrait\(/);assert.match(s,/Cyd32UiAction::Stop/);assert.match(read('src/main.cpp'),/x<480 && y<480/);});
+test('Windows native renderer uses 240x320 viewport when device reports portrait',()=>{const s=read('desktop/public/native-emitter.js');assert.match(s,/state\.screen==='PORTRAIT'\?240:W/);assert.match(s,/state\.screen==='PORTRAIT'\?320:H/);});

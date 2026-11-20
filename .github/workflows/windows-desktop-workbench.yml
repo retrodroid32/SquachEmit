@@ -1,0 +1,65 @@
+name: SquachEmit Windows Desktop Workbench
+
+on:
+  push:
+    branches:
+      - feature/windows-desktop-control-center-20261112
+      - feature/windows-squachwatch-ui-compat-lab-20261114
+      - fix/windows-live-view-compat-and-controls-20261114
+      - feature/r8-unified-test-suite-v2-20261114
+      - feature/handheld-r8-diagnostics-details-20261114
+      - feature/handheld-r8-favorites-history-20261114
+      - feature/handheld-r8-favorite-playlist-presets-20261114
+      - feature/handheld-r8-settings-help-identity-recovery-20261114
+      - feature/handheld-r8-activity-receiver-evidence-20261114
+      - feature/handheld-r8-library-quick-filter-20261114
+      - feature/handheld-r8-theme-font-ui-20261114
+      - feature/handheld-r8-portrait-home-lab-20261114
+    paths:
+      - 'desktop/**'
+      - 'workbench/**'
+      - 'tests/cases.json'
+      - '.github/workflows/windows-desktop-workbench.yml'
+  pull_request:
+    branches:
+      - feature/detection-workbench-v1-20261111
+      - feature/windows-desktop-control-center-20261112
+    paths:
+      - 'desktop/**'
+      - 'workbench/**'
+      - 'tests/cases.json'
+      - '.github/workflows/windows-desktop-workbench.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  desktop-windows-x64:
+    runs-on: windows-latest
+    timeout-minutes: 45
+    steps:
+      - name: Checkout Windows Workbench source
+        uses: actions/checkout@v4
+      - name: Set up Node 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Validate local desktop contract and 172-case catalog
+        working-directory: desktop
+        run: npm test
+      - name: Install desktop build dependencies
+        working-directory: desktop
+        run: npm install --no-audit --no-fund
+      - name: Build NSIS installer and portable Windows x64 EXE
+        working-directory: desktop
+        env:
+          CSC_IDENTITY_AUTO_DISCOVERY: 'false'
+        run: npm run dist:win
+      - name: Upload Windows EXE files for hardware review
+        uses: actions/upload-artifact@v4
+        with:
+          name: SquachEmit-Workbench-R8_8-ExperimentalPortrait-Home-Windows-x64-LAB
+          path: desktop/dist/*.exe
+          retention-days: 14
+          if-no-files-found: error

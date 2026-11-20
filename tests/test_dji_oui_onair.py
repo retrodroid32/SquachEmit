@@ -39,8 +39,10 @@ class DjiOuiOnAirTests(unittest.TestCase):
         self.assertIn("WiFi.softAP(s->text",src)
         self.assertIn("beginWifiIdentity(s)",src)
         ui=(ROOT/"src/cyd32_ui.cpp").read_text()
-        self.assertIn('startsWith(s->id,"OUI-DJI-")',ui)
-        self.assertIn("NO REMOTE ID",ui)
+        self.assertIn('scenarioDeviceName(*s,name,sizeof(name))',ui)
+        names=(ROOT/"include/scenario_display.h").read_text()
+        self.assertIn('sqeStarts(id,"OUI-")',names)
+        self.assertIn('NO REMOTE ID',names)
 
     def test_cpp_fixed_prefixes_unique_suffix_and_non_oui_original(self):
         cxx=shutil.which("g++") or shutil.which("clang++")

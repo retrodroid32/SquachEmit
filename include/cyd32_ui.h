@@ -1,7 +1,8 @@
 #pragma once
 #include <stdint.h>
+#include <stddef.h>
 struct Scenario;
-enum class Cyd32UiAction : uint8_t { None, Run, Stop, Suite };
+enum class Cyd32UiAction : uint8_t { None, Run, Stop, Suite, PlaylistStart, PlaylistPause, PlaylistResume };
 // TFT_eSPI + on-board XPT2046, separate NVS touch calibration namespace.
 // Does not access SquachWatch's own settings, except flashing a shared PCB
 // will replace whichever application was installed.
@@ -11,12 +12,42 @@ const Scenario* cyd32UiSelection();
 // User-selected 3..30 second duration, persisted in CYD32 NVS.
 uint32_t cyd32UiDurationMs();
 void cyd32UiResetCalibration();
+// Portrait-only touch recalibration (call from the idle-gated serial handler).
+void cyd32UiCalibratePortraitTouch();
+// Hardware diagnostics for edge pressure and calibrated touch coordinates.
+void cyd32UiSetTouchTrace(bool enabled);
+void cyd32UiPrintTouchStatus();
 void cyd32UiSetInversion(bool enabled);
 bool cyd32UiInversion();
 void cyd32UiColorBars();
+// A/B comparison of SquachWatch overlapped row transfers vs TFT_eSPI.
+// PUSH ON (LAB default), PUSH OFF (immediate safe fallback), PUSH STATUS.
+void cyd32UiSetFramePush(bool enabled);
+void cyd32UiPrintFramePushStatus();
 
 // Show/clear last radio startup stage on the CYD 3.2 home screen.
 void cyd32UiSetRadioError(const char* stage);
 
 // Acknowledge a Wi-Fi RUN touch before the radio driver blocks.
 void cyd32UiSetRadioStarting(const char* scenarioId);
+// Humor-only event notification; never affects RF execution or test results.
+void cyd32UiNoteRunAction();
+
+// Stream the device's canonical UI *state*, never a TFT/GRAM screenshot.
+void cyd32UiStreamState(const char* activeId,uint32_t remainingMs,
+                        bool suiteRunning,bool force=false);
+// Inject mouse/pen state into the exact native touchscreen hit-testing path.
+bool cyd32UiRemoteTouch(uint16_t x,uint16_t y,const char* phase);
+void cyd32UiRecordResult(const char* id,const char* status,uint32_t atMs);
+
+// Attended favorites playlist: manual start, bounded cooldown, physical STOP.
+size_t cyd32UiFavoriteCount();
+const Scenario* cyd32UiFavoriteAt(size_t rank);
+void cyd32UiSetPlaylistState(bool running,bool paused,unsigned index,unsigned total);
+
+void cyd32UiSetPcControl(bool enabled);
+void cyd32UiSetResetReason(unsigned reason);
+void cyd32UiRecordIdentity(const char* id,const char* mac);
+
+void cyd32UiRecordTxEvent(const char* event,const char* status,uint32_t duration);
+void cyd32UiRecordReceiverEvidence(const char* id,const char* classification,int rssi,const char* quality);

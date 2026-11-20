@@ -64,7 +64,7 @@ int main(){
  assert(lcd->fillScreenCalls==editorClears);
  touchAt(267,226); // DONE
  idleTick();
- assert(lcd->fillScreenCalls==editorClears+1);
+ assert(lcd->fillScreenCalls==editorClears); // Home draws into bands, not directly to physical LCD
  // Preference persists over begin() and home screen reflects selected time.
  touchAt(145,189);
  idleTick();
@@ -81,7 +81,7 @@ int main(){
                             str(source),str(ROOT/"src/cyd32_ui.cpp"),
                             str(ROOT/"src/cyd32_squachy_port.cpp"),
                             str(ROOT/"src/scenarios.cpp"),"-o",str(binary)],
-                           check=True,capture_output=True,text=True)
+                           check=True,text=True)
             subprocess.run([str(binary)],check=True,capture_output=True,text=True)
     def test_selected_duration_used_by_run_and_suite(self):
         source=(ROOT/"src/main.cpp").read_text()

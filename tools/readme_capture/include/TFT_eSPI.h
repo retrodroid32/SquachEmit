@@ -1,5 +1,6 @@
 #pragma once
 #include <algorithm>
+#include "Arduino.h"
 #include <cmath>
 #include <cstdint>
 #include <vector>
@@ -8,7 +9,41 @@
 namespace MockDisplay {
   class TFTMarker;
   inline bool touch=false;
+  inline unsigned completedBandPushes=0;
+  // Direct TFT rect writes into the portrait countdown region are a
+  // regression: FULL8/HALF8 must render those pixels only in the sprite.
+  inline unsigned directPortraitCountdownWrites=0;
+  inline unsigned calibrateTouchCalls=0;
   inline uint16_t x=0,y=0;
+  // Test-only XPT2046 samples when TFT_eSPI rejects a bezel touch.
+  inline uint16_t rawX=0,rawY=0,rawZ=0;
+  inline bool rawActive=false;
+  // Timed physical-finger simulation for SquachWatch's five held targets.
+  // Intro touch, five inset targets, and independent proof dot. The gaps
+  // matter: unlike TFT_eSPI the wizard must see a distinct release.
+  inline bool autoWizard=false;
+  inline uint32_t wizardEpoch=0;
+  inline bool wizardSample(uint16_t& ax,uint16_t& by){
+    if(!autoWizard||mock_time_ms<wizardEpoch)return false;
+    const uint32_t t=mock_time_ms-wizardEpoch;
+    if(t>=100&&t<350){ax=2000;by=2000;return true;}
+    static constexpr float fx[5]={0.15f,0.85f,0.85f,0.15f,0.5f};
+    static constexpr float fy[5]={0.15f,0.15f,0.85f,0.85f,0.5f};
+    for(int i=0;i<5;i++){
+      const uint32_t start=1000u+(uint32_t)i*2200u;
+      if(t>=start&&t<start+1400u){
+        ax=(uint16_t)(200.f+fx[i]*3600.f);
+        by=(uint16_t)(180.f+fy[i]*3700.f);
+        return true;
+      }
+    }
+    if(t>=12000&&t<12500){
+      ax=(uint16_t)(200.f+0.62f*3600.f);
+      by=(uint16_t)(180.f+0.32f*3700.f);
+      return true;
+    }
+    return false;
+  }
 }
 class TFT_eSPI;
 namespace MockDisplay { inline TFT_eSPI* screen=nullptr; }
@@ -19,30 +54,63 @@ public:
  uint16_t fg=0xffff;
  unsigned fillScreenCalls=0; // test-only counter: detect visible full-screen clears
  int cx=0,cy=0,font=1,size=1;
+ int viewportX=0,viewportY=0;
  explicit TFT_eSPI(int width=320,int height=240,bool root=true)
  :w(width),h(height),pixel(size_t(width)*height,0){
    if(root)MockDisplay::screen=this;
  }
  void init(){}
- void setRotation(int){}
+ void setRotation(int value){
+   w=(value&1)?320:240;h=(value&1)?240:320;
+   pixel.assign(size_t(w)*h,0);
+ }
  void invertDisplay(bool){} // physical panel inversion not applied to RGB buffer
  void setTouch(uint16_t*){}
- void calibrateTouch(uint16_t*,uint16_t,uint16_t,uint8_t){}
+ void calibrateTouch(uint16_t* data,uint16_t,uint16_t,uint8_t){
+  ++MockDisplay::calibrateTouchCalls;
+  if(data){data[0]=200;data[1]=3600;data[2]=180;data[3]=3700;data[4]=0;}
+ }
  bool getTouch(uint16_t* xx,uint16_t* yy,uint16_t){
   if(MockDisplay::touch){*xx=MockDisplay::x;*yy=MockDisplay::y;return true;}
   return false;
  }
- bool getTouchRaw(uint16_t* xx,uint16_t* yy){return getTouch(xx,yy,0);}
+ bool getTouchRaw(uint16_t* xx,uint16_t* yy){
+  if(MockDisplay::rawActive){*xx=MockDisplay::rawX;*yy=MockDisplay::rawY;return true;}
+  uint16_t a=0,b=0;
+  if(MockDisplay::wizardSample(a,b)){*xx=a;*yy=b;return true;}
+  return getTouch(xx,yy,0);
+ }
+ uint16_t getTouchRawZ(){
+   if(MockDisplay::rawActive)return MockDisplay::rawZ;
+   uint16_t a=0,b=0;
+   return MockDisplay::wizardSample(a,b)?600:0;
+ }
  static uint16_t color565(int r,int g,int b){
   return (uint16_t)(((r>>3)<<11)|((g>>2)<<5)|(b>>3));
  }
  int width() const{return w;}
  int height() const{return h;}
+ // Return the actual drawn RGB565 raster to mirror regression tests.
+ void readRect(int x,int y,int ww,int hh,uint16_t* out) const{
+  if(!out||ww<0||hh<0)return;
+  for(int yy=0;yy<hh;yy++)
+   for(int xx=0;xx<ww;xx++){
+    const int sx=x+xx,sy=y+yy;
+    out[size_t(yy)*ww+xx]=(sx>=0&&sy>=0&&sx<w&&sy<h)?
+      pixel[size_t(sy)*w+sx]:0;
+   }
+ }
  void drawPixel(int x,int y,uint16_t c){
+  x+=viewportX;y+=viewportY;
   if(x>=0&&x<w&&y>=0&&y<h)pixel[size_t(y)*w+x]=c;
  }
  void fillScreen(uint16_t c){++fillScreenCalls;std::fill(pixel.begin(),pixel.end(),c);}
+ void setViewport(int x,int y,int,int,bool){viewportX=x;viewportY=y;}
+ void resetViewport(){viewportX=0;viewportY=0;}
  void fillRect(int x,int y,int ww,int hh,uint16_t c){
+  if(this==MockDisplay::screen && x<240 && x+ww>8 && y<285 && y+hh>265)
+    ++MockDisplay::directPortraitCountdownWrites;
+  x+=viewportX;y+=viewportY;
   int x0=std::max(0,x),y0=std::max(0,y);
   int x1=std::min(w,x+ww),y1=std::min(h,y+hh);
   for(int yy=y0;yy<y1;yy++)
@@ -64,6 +132,17 @@ public:
   for(int y=cy0-r;y<=cy0+r;y++)
    for(int x=cx0-r;x<=cx0+r;x++)
     if((x-cx0)*(x-cx0)+(y-cy0)*(y-cy0)<=r*r)drawPixel(x,y,c);
+ }
+ void drawCircle(int cx0,int cy0,int r,uint16_t c){
+  if(r<1)return;
+  int x=r,y=0,err=1-r;
+  while(x>=y){
+    drawPixel(cx0+x,cy0+y,c);drawPixel(cx0+y,cy0+x,c);
+    drawPixel(cx0-y,cy0+x,c);drawPixel(cx0-x,cy0+y,c);
+    drawPixel(cx0-x,cy0-y,c);drawPixel(cx0-y,cy0-x,c);
+    drawPixel(cx0+y,cy0-x,c);drawPixel(cx0+x,cy0-y,c);
+    ++y;if(err<0)err+=2*y+1;else{--x;err+=2*(y-x+1);}
+  }
  }
  void fillEllipse(int cx0,int cy0,int rx,int ry,uint16_t c){
   if(rx<1||ry<1)return;
@@ -108,7 +187,9 @@ public:
  }
  void setTextFont(uint8_t f){font=(f==2?2:1);}
  void setTextSize(uint8_t s){size=(s?s:1);}
+ void setTextWrap(bool){}
  void setTextColor(uint16_t c){fg=c;}
+ void setTextColor(uint16_t c,uint16_t){fg=c;}
  void setCursor(int x,int y){cx=x;cy=y;}
  int charWidth(unsigned ch) const {
    if(font==1)return 6*size;
@@ -157,14 +238,26 @@ class TFT_eSprite : public TFT_eSPI {
 public:
  explicit TFT_eSprite(TFT_eSPI* parent):TFT_eSPI(112,111,false),target(parent){}
  void setColorDepth(int){}
+ void deleteSprite(){pixel.clear();w=0;h=0;}
+ bool pushToSprite(TFT_eSprite* dest,int x,int y,uint16_t key){
+  if(!dest)return false;
+  for(int yy=0;yy<h;++yy)for(int xx=0;xx<w;++xx){
+    const uint16_t c=pixel[size_t(yy)*w+xx];
+    if(c!=key)dest->drawPixel(x+xx,y+yy,c);
+  }
+  return true;
+ }
  void* createSprite(int width,int height){
   w=width;h=height;pixel.assign(size_t(w)*h,0);
   return pixel.data();
  }
  void fillSprite(uint16_t c){fillScreen(c);}
- void pushSprite(int x,int y){
-  for(int yy=0;yy<h;yy++)for(int xx=0;xx<w;xx++)
-   target->drawPixel(x+xx,y+yy,pixel[size_t(yy)*w+xx]);
+ void pushSprite(int x,int y,uint16_t transparent=0xF81E){
+  ++MockDisplay::completedBandPushes;
+  for(int yy=0;yy<h;yy++)for(int xx=0;xx<w;xx++){
+   const uint16_t color=pixel[size_t(yy)*w+xx];
+   if(color!=transparent)target->drawPixel(x+xx,y+yy,color);
+  }
  }
 };
 constexpr uint16_t TFT_RED=0xF800,TFT_GREEN=0x07E0,TFT_BLUE=0x001F,TFT_WHITE=0xFFFF,TFT_BLACK=0;
