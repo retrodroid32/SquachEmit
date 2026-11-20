@@ -1,10 +1,10 @@
-# SquachEmit R14.15 — Squachy speech catalog
+# SquachEmit R14.16 — Squachy speech catalog (130 fixed + 2 event-only)
 
 This is the exact phrase catalog compiled into the CYD 3.2 LAB firmware. The words are humor, NOT receiver evidence. The current library has **172 real cases in 10 device categories**. Default random mix per popup: 60% real selected category or operational state, 25% general activity/idle, 10% rare humor, 5% Easter eggs. Each line is chosen ONCE at popup appearance and keeps R14.13 five-second visibility and randomized gaps. Long phrases wrap on whole words into the existing centered bubble; no automatic ellipsis in the normal case. All output is static ASCII so it works with the panel font. Portrait screens retain their existing text; these dynamic phrases show in landscape Home only.
 
 **Ring messages are included but dormant.** There is no Ring category or Ring synthetic test among the 172 cases; the firmware will not present a false Ring scenario. The BLE/Wi-Fi/AirTag/Remote ID banks are occasional subtopics of their real parent device category. Failure-stage details remain displayed as the second line of Wi-Fi failure messages.
 
-## Idle / waiting (10)
+## Idle / waiting (11)
 
 - `READY FOR A SIGNAL CHECK!`
 - `PICK A PROFILE. I WILL EMIT!`
@@ -16,8 +16,9 @@ This is the exact phrase catalog compiled into the CYD 3.2 LAB firmware. The wor
 - `I SMELL RADIO WAVES!`
 - `IS THIS THING ON?`
 - `MY ANTENNA IS ITCHY.`
+- `HERE WATCHY WATCHY!`
 
-## Active transmission (8)
+## Active transmission (9)
 
 - `SENDING SYNTHETIC SIGNAL...`
 - `CHECK YOUR RECEIVER NOW!`
@@ -27,6 +28,7 @@ This is the exact phrase catalog compiled into the CYD 3.2 LAB firmware. The wor
 - `BEHOLD! INVISIBLE NOISE!`
 - `SQUACHY GOES BRRRR!`
 - `SCIENCE! PROBABLY.`
+- `SETTING PHASERS TO ANNOY!`
 
 ## Wi-Fi starting (5)
 
@@ -53,7 +55,7 @@ This is the exact phrase catalog compiled into the CYD 3.2 LAB firmware. The wor
 - `THE HITS JUST KEEP COMING!`
 - `THIS MIX IS FIRE! (NOT RF)`
 
-## Test suite (6)
+## Test suite (7)
 
 - `TEST SUITE RUNNING`
 - `RELEASE THE TEST GOBLINS!`
@@ -61,6 +63,7 @@ This is the exact phrase catalog compiled into the CYD 3.2 LAB firmware. The wor
 - `ONE TEST TO RULE THEM ALL!`
 - `I WAS BUILT FOR THIS. MAYBE.`
 - `THE SCIENCE IS SCIENCING!`
+- `SENDING EVERYTHING BUT THE KITCHEN SINK!`
 
 ## AXON (6)
 
@@ -99,7 +102,7 @@ This is the exact phrase catalog compiled into the CYD 3.2 LAB firmware. The wor
 - `NO SPOOFED MAGIC TODAY!`
 - `THE CONTROL GROUP HAS SPOKEN.`
 
-## HACKER DEVICES (6)
+## HACKER DEVICES (7)
 
 - `FLIPPER? I HARDLY KNOW HER!`
 - `HACKERMAN HAS ENTERED THE CHAT!`
@@ -107,6 +110,7 @@ This is the exact phrase catalog compiled into the CYD 3.2 LAB firmware. The wor
 - `PINEAPPLE ON THE RADIO MENU?`
 - `THIS IS A LAB, NOT A HEIST!`
 - `SQUACH.EXE HAS STOPPED CARING.`
+- `HACK THE PLANET!`
 
 ## IBEACON (6)
 
