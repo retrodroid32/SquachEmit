@@ -234,12 +234,15 @@ inline const char* choose(Topic topic,uint32_t draw){
  const Bank b=bank(topic);
  return b.lines[draw%b.count];
 }
-inline Topic weightedTopic(Topic deviceOrContext,Topic generic,uint32_t roll){
- const uint32_t r=roll%100u;
- if(r<60)return deviceOrContext; // relevant device family / activity
- if(r<85)return generic;         // general Squachy humor
- if(r<95)return Topic::Rare;     // sarcastic
- return Topic::Easter;           // occasional secret
+// The only speech banks eligible for physical device popups.
+// 60% of active popups are the transmitting file's actual device category;
+// 40% are the generic TRANSMITTING bank. Off-air is always IDLE.
+// Invalid or unresolved active case IDs safely use TRANSMITTING only.
+inline Topic stateTopic(bool onAir,Topic fileCategory,uint32_t roll){
+ if(!onAir)return Topic::Idle;
+ if(fileCategory<Topic::Axon||fileCategory>Topic::Trackers)
+   return Topic::Transmitting;
+ return roll%100u<60u?fileCategory:Topic::Transmitting;
 }
 // Every quip is ASCII so TFT_eSPI's classic built-in fonts can draw it.
 #undef SQE_BANK

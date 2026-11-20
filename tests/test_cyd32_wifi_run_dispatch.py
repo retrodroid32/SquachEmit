@@ -19,8 +19,11 @@ class TouchWifiRunTests(unittest.TestCase):
         header=(ROOT/"include/cyd32_ui.h").read_text()
         catalog=(ROOT/"include/sqe_category_quips.h").read_text()
         self.assertIn('"STARTING WIFI TRANSMISSION"',catalog)
-        self.assertIn('case SqeBubble::Starting:',ui)
-        self.assertIn('SqeQuips::Topic::Starting',ui)
+        # While the radio initializes, it is not yet on air:
+        # the speech bubble uses IDLE even though STARTING is on the strip.
+        self.assertIn('return active&&*active?SqeBubble::OnAir:SqeBubble::Idle;',ui)
+        self.assertNotIn('case SqeBubble::Starting:',ui)
+        self.assertIn('radioStartingProfile[0]',ui)
         # Selected profile remains in the lower strip, not the speech bubble.
         self.assertIn('scenarioDeviceName(*chosen,friendly,sizeof(friendly))',ui)
         self.assertIn('fit(66,200,chosen?friendly:"NONE"',ui)
