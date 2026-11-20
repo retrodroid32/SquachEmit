@@ -22,10 +22,11 @@ class WifiStartRecoveryTest(unittest.TestCase):
   hdr=(ROOT/"include/cyd32_ui.h").read_text()
   phrases=(ROOT/"include/sqe_category_quips.h").read_text()
   self.assertIn('"WIFI START FAILED"',phrases)
-  self.assertIn('topical=SqeQuips::Topic::Failed;',ui)
-  self.assertIn('label(SqeBubbleLayout::centeredTextX(box,detailW)',ui)
-  self.assertIn('box.y+(failed?27:24),detail,failed?kYellow:kWhite,',ui)
-  self.assertIn('failed?1:2);',ui)
+  # Error remains in radio diagnostics/serial, but no off-air
+  # error jokes or Wi-Fi startup stages may appear in the speech bubble.
+  self.assertIn('snprintf(radioStartError,sizeof(radioStartError)',ui)
+  self.assertIn('return active&&*active?SqeBubble::OnAir:SqeBubble::Idle;',ui)
+  self.assertNotIn('SqeQuips::Topic::Failed;',ui)
   self.assertIn('void cyd32UiSetRadioError(const char* stage)',hdr)
   self.assertIn('void rightStatus(bool emitting,uint32_t count)',ui)
 if __name__=="__main__":unittest.main()
