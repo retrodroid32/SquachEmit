@@ -18,8 +18,10 @@ class TouchWifiRunTests(unittest.TestCase):
         ui=(ROOT/"src/cyd32_ui.cpp").read_text()
         header=(ROOT/"include/cyd32_ui.h").read_text()
         self.assertIn('"STARTING WIFI TRANSMISSION"',ui)
-        self.assertIn('starting?findScenario(radioStartingProfile):chosen',ui)
-        self.assertIn('scenarioDeviceName(*showing,friendly,sizeof(friendly))',ui)
+        self.assertIn('case SqeBubble::Starting:return "STARTING WIFI TRANSMISSION";',ui)
+        # Selected profile remains in the lower strip, not the speech bubble.
+        self.assertIn('scenarioDeviceName(*chosen,friendly,sizeof(friendly))',ui)
+        self.assertIn('fit(66,200,chosen?friendly:"NONE"',ui)
         self.assertIn('void cyd32UiSetRadioStarting(const char* scenarioId)',header)
         self.assertIn('void cyd32UiSetRadioError(const char* stage)',header)
         self.assertIn("radioStartingProfile[0]='\\0'",ui)
