@@ -113,6 +113,7 @@ bool portraitTouchTrace=false;
 uint32_t lastPortraitTouchTraceAt=0,portraitMenuRawRescues=0;
 uint16_t portraitTouchData[5]={0};
 SqeBubble::State landscapeBubble{};
+char speechActiveCase[56]={0};
 const char* landscapeSpeechText="READY FOR A SIGNAL CHECK!";
 uint32_t recentRunWindowStarted=0;
 uint8_t recentRunCount=0;
@@ -441,16 +442,12 @@ void countdownOnly(uint32_t count){
   rightStatus(true,count);
 }
 
-// SquachWatch-style random pop/hide. The selected profile is deliberately
-// absent: statusStrip() already shows it at y=200. Keep startup failures
-// visible only while the matching one-shot bubble is actually on screen.
+// Strict speech state gating: no RF means IDLE only, including suite
+// cooldowns, Wi-Fi startup and failed starts. The RF driver's active
+// scenario ID (not the highlighted menu selection) governs TX dialogue.
 SqeBubble::Kind bubbleContext(const char* active,bool suite){
-  if(active&&*active)return SqeBubble::OnAir;
-  if(radioStartError[0])return SqeBubble::Failed;
-  if(radioStartingProfile[0])return SqeBubble::Starting;
-  if(playlistRunning)return SqeBubble::Playlist;
-  if(suite)return SqeBubble::Suite;
-  return SqeBubble::Idle;
+  (void)suite;
+  return active&&*active?SqeBubble::OnAir:SqeBubble::Idle;
 }
 long speechRandom(long lo,long hi){return random(lo,hi);}
 SqeQuips::Topic categoryTopic(const Scenario* sc){
@@ -469,65 +466,27 @@ SqeQuips::Topic categoryTopic(const Scenario* sc){
     default:return SqeQuips::Topic::General;
   }
 }
-// Real CATEGORY mapping stays untouched. AirTag/BLE/Wi-Fi/RemoteID
-// are occasional subtopics only when selected actual case permits them.
-// RING is deliberately NEVER selected: no Ring case exists in 172 tests.
-SqeQuips::Topic selectedTopic(const Scenario* sc){
-  if(!sc)return SqeQuips::Topic::Idle;
-  const SqeQuips::Topic family=categoryTopic(sc);
-  if(sc->id&&strncmp(sc->id,"BLE-AIRTAG",10)==0 && random(0,4)==0)
-    return SqeQuips::Topic::AirTag;
-  if((sc->kind==Kind::WifiRemoteId||sc->kind==Kind::BleRemoteId)&&random(0,4)==0)
-    return SqeQuips::Topic::RemoteId;
-  if(sc->kind==Kind::WifiAp||sc->kind==Kind::WifiRemoteId){
-    if(random(0,5)==0)return SqeQuips::Topic::Wifi;
-  }else if(random(0,5)==0){
-    return SqeQuips::Topic::Ble;
-  }
-  return family;
-}
+// Only the currently transmitted scenario's actual top-level category
+// or TRANSMITTING may appear on air. When off air, only IDLE is legal.
+// The optional carrier, rare, Easter egg, event and suite/playlist banks
+// remain in the catalog but are not selected in this strict mode.
 void selectLandscapeSpeech(uint32_t now,const char* active,bool suite){
-  const SqeBubble::Kind kind=bubbleContext(active,suite);
-  const Scenario* sc=(active&&*active)?findScenario(active):
-                      (selected<kScenarioCount?&kScenarios[selected]:nullptr);
-  // Only true activity states get a contextual status phrase. The actual
-  // selected case and receiver results still live outside the bubble.
-  SqeQuips::Topic topical=SqeQuips::Topic::Idle;
-  SqeQuips::Topic general=SqeQuips::Topic::Idle;
-  switch(kind){
-    case SqeBubble::OnAir:
-      topical=selectedTopic(sc);
-      general=SqeQuips::Topic::Transmitting;
-      break;
-    case SqeBubble::Starting:
-      topical=SqeQuips::Topic::Starting;
-      general=SqeQuips::Topic::Wifi;
-      break;
-    case SqeBubble::Failed:
-      topical=SqeQuips::Topic::Failed;
-      general=SqeQuips::Topic::Failed; // keep true failure context readable
-      break;
-    case SqeBubble::Playlist:
-      topical=SqeQuips::Topic::Playlist;break;
-    case SqeBubble::Suite:
-      topical=SqeQuips::Topic::Suite;break;
-    default:
-      topical=selectedTopic(sc);break;
-  }
-  if(kind==SqeBubble::OnAir&&repeatedRunQuipPending){
-    landscapeSpeechText=SqeQuips::kRepeatRun;
-    repeatedRunQuipPending=false;
-  }else if(kind==SqeBubble::Idle&&!idleLonelyQuipShown &&
-           now-lastTouchActivity>=120000u){
-    landscapeSpeechText=SqeQuips::kLongIdle;
-    idleLonelyQuipShown=true;
-  }else{
-    const SqeQuips::Topic topic=SqeQuips::weightedTopic(
-       topical,general,(uint32_t)random(0,100));
-    landscapeSpeechText=SqeQuips::choose(topic,(uint32_t)random(0,32767));
-  }
+  (void)now;(void)suite;
+  const bool onAir=active&&*active;
+  const Scenario* transmitting=onAir?findScenario(active):nullptr;
+  const SqeQuips::Topic topic=SqeQuips::stateTopic(
+      onAir,categoryTopic(transmitting),(uint32_t)random(0,100));
+  landscapeSpeechText=SqeQuips::choose(topic,(uint32_t)random(0,32767));
 }
 void advanceLandscapeBubble(uint32_t now,const char* active,bool suite){
+  // Suite cases can change without an intervening UI idle tick. Never
+  // carry a bubble from the previous on-air category into the new case.
+  const char* activeId=active&&*active?active:"";
+  if(strcmp(speechActiveCase,activeId)!=0){
+    snprintf(speechActiveCase,sizeof(speechActiveCase),"%s",activeId);
+    if(activeId[0]&&landscapeBubble.context==(uint8_t)SqeBubble::OnAir)
+      landscapeBubble.context=255; // reannounce new active RF case
+  }
   const bool changed=SqeBubble::update(landscapeBubble,now,
       bubbleContext(active,suite),speechRandom);
   // Pick ONCE per popup, never on each LCD frame or sprite band.
