@@ -2050,6 +2050,18 @@ void rgbBars(){
 }
 } // namespace
 
+void cyd32UiNoteRunAction(){
+  const uint32_t now=millis();
+  if(recentRunCount==0||now-recentRunWindowStarted>45000u){
+    recentRunWindowStarted=now;
+    recentRunCount=0;
+  }
+  if(recentRunCount<10)++recentRunCount;
+  if(recentRunCount>=3){
+    repeatedRunQuipPending=true;
+    recentRunCount=0;
+  }
+}
 void cyd32UiSetRadioStarting(const char* scenarioId){
   radioStartError[0]='\0';
   snprintf(radioStartingProfile,sizeof(radioStartingProfile),"%s",
