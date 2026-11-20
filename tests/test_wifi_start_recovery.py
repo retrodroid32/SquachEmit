@@ -21,7 +21,7 @@ class WifiStartRecoveryTest(unittest.TestCase):
   ui=(ROOT/"src/cyd32_ui.cpp").read_text()
   hdr=(ROOT/"include/cyd32_ui.h").read_text()
   self.assertIn('"WIFI START FAILED"',ui)
-  self.assertIn('failed?radioStartError:',ui)
+  self.assertIn('if(failed)fit(16,47,radioStartError,288,kYellow,1);',ui)
   self.assertIn('void cyd32UiSetRadioError(const char* stage)',hdr)
   self.assertIn('void rightStatus(bool emitting,uint32_t count)',ui)
 if __name__=="__main__":unittest.main()
