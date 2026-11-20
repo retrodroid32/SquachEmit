@@ -78,7 +78,7 @@ class Cyd32UiGuards(unittest.TestCase):
                      'kBackgroundNames[]', 'kOutfitNames[]',
                      'backgroundPage', 'outfitPage',
                      'lcd.fillRoundRect(5,1,27,13,3,kWhite)',
-                     'onAirIndicator?kGreen:kYellow'):
+                     'drawTxBeacon(298,7,onAirIndicator)'):
             with self.subTest(term=term):
                 self.assertIn(term,self.s)
         self.assertIn('constexpr uint8_t kOutfitCount=22;',self.s)
