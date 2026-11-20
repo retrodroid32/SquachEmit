@@ -17,8 +17,10 @@ class TouchWifiRunTests(unittest.TestCase):
     def test_cyd_running_state_clears_on_result(self):
         ui=(ROOT/"src/cyd32_ui.cpp").read_text()
         header=(ROOT/"include/cyd32_ui.h").read_text()
-        self.assertIn('"STARTING WIFI TRANSMISSION"',ui)
-        self.assertIn('case SqeBubble::Starting:return "STARTING WIFI TRANSMISSION";',ui)
+        catalog=(ROOT/"include/sqe_category_quips.h").read_text()
+        self.assertIn('"STARTING WIFI TRANSMISSION"',catalog)
+        self.assertIn('case SqeBubble::Starting:',ui)
+        self.assertIn('SqeQuips::Topic::Starting',ui)
         # Selected profile remains in the lower strip, not the speech bubble.
         self.assertIn('scenarioDeviceName(*chosen,friendly,sizeof(friendly))',ui)
         self.assertIn('fit(66,200,chosen?friendly:"NONE"',ui)
