@@ -3,24 +3,24 @@
   "scenario_count": 172,
   "firmware_sources": {
     "src": "032168dfebcc9ca6b4e51ab522d2a5f454475034",
-    "include": "1632ad5ba58cda1fd690701f9e76ce5c8e4ebdb8",
+    "include": "7ac8a26a8f6dee93256fb7ed474a22904707740c",
     "lib": "c88135d6510b738fe2c208290c498f9e8b639681",
     "SquachEmit.ino": "90b4205813a2f7885bc1e12ce7431eebf7249f45",
     "platformio.ini": "c3ff3725248b4c67d60da6903982515031c501f6"
   },
   "builds": {
     "cyd32-st7798": {
-      "title": "SquachEmit v1.1.0 CYD 3.2 R14.15 LAB — 126 Squachy Quips Across All Device Categories (172 Cases)",
+      "title": "SquachEmit v1.1.0 CYD 3.2 R14.16 LAB — 130 Squachy Quips Plus 2 Easter Eggs (172 Cases)",
       "version": "v1.1.0 MAINLINE · 172 cases",
-      "summary": "R14.15 LAB brings 126 fixed Squachy phrases across all 10 real device categories, BLE/Wi-Fi/Remote ID subtypes, idle/TX/START/ERROR/playlist/suite, rare jokes and Easter eggs, plus two event-only repeat-RUN and long-idle sayings. Chooses 60% real category, 25% general, 10% rare, 5% Easter; wording stays fixed per popup and long jokes wrap on word boundaries. Ring phrases are dormant because no Ring case exists. Preserves R14.14 centered bubble/TX icon, R14.12 five-point portrait touch, FULL8/FAST and all 172 tests. Four-part SHA-256 integrity preflight and physical testing required. LAB only.",
+      "summary": "R14.16 LAB adds four user-requested Squachy quips exactly: Idle HERE WATCHY WATCHY!, Hacker HACK THE PLANET!, Transmitting SETTING PHASERS TO ANNOY!, and Test Suite SENDING EVERYTHING BUT THE KITCHEN SINK! Brings catalog to 130 fixed + 2 event-triggered lines across ten real device categories and activity states. Existing 60/25/10/5 mix, randomized pop timing, centered word wrapping, R14.12 five-point portrait calibration, R14.14 TX beacon, FULL8/FAST and 172 test cases stay unchanged. LAB only; four-part SHA-256 flash preflight and physical verification required.",
       "highlights": [
-        "126 fixed humorous phrases across every actual SquachEmit device category, plus 2 event-triggered Easter eggs.",
-        "Adds missing Raven, iBeacon, serial module, smart glasses, hacker, general/control and tracker jokes.",
-        "Includes FLOCK, AXON, DRONES, AirTag, BLE, Wi-Fi, Remote ID, idle/Tx/playlist/suite/start/error humor.",
-        "Weighted 60% relevant category, 25% general, 10% rare, 5% Easter; chosen once when bubble appears.",
-        "Long joke wording wraps at word boundaries into a centered two-line bubble; random timing unchanged.",
-        "Repeated RUN (3 taps/45s) and 2-minute idle Easter eggs never alter radio timing or detection.",
-        "Preserves R14.14 TX beacon, R14.12 portrait 5-point calibration and all 172 bounded test cases."
+        "Adds idle phrase HERE WATCHY WATCHY! without removing earlier idle dialogue.",
+        "Adds hacker category phrase HACK THE PLANET!",
+        "Adds transmitting phrase SETTING PHASERS TO ANNOY!",
+        "Adds test suite phrase SENDING EVERYTHING BUT THE KITCHEN SINK! (corrected spelling).",
+        "130 fixed lines plus two event-triggered Easter eggs; all previous 126 lines preserved.",
+        "Preserves random popup timing, centered bubble wrapping, TX icon and five-point portrait calibration.",
+        "LAB-only; 172 bounded RF cases remain unchanged, four-part SHA-256 flashing and CYD 3.2 hardware checks required."
       ]
     },
     "c5-waveshare-28": {
