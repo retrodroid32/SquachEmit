@@ -2,8 +2,8 @@
   "schema": 1,
   "scenario_count": 172,
   "firmware_sources": {
-    "src": "032168dfebcc9ca6b4e51ab522d2a5f454475034",
-    "include": "7ac8a26a8f6dee93256fb7ed474a22904707740c",
+    "src": "fea9d769edc6376a87c474b63bb1593c862a57e7",
+    "include": "dd19860f63eecb4924297da809b3f205a9e2fafc",
     "lib": "c88135d6510b738fe2c208290c498f9e8b639681",
     "SquachEmit.ino": "90b4205813a2f7885bc1e12ce7431eebf7249f45",
     "platformio.ini": "c3ff3725248b4c67d60da6903982515031c501f6"
@@ -12,7 +12,7 @@
     "cyd32-st7798": {
       "title": "SquachEmit v1.1.0 CYD 3.2 R14.17 LAB — Strict Idle/TX Speech Categories (172 Cases)",
       "version": "v1.1.0 MAINLINE · 172 cases",
-      "summary": "R14.17 LAB fixes unrelated speech: off air displays only IDLE quips (including Wi-Fi start/fail and suite/playlist gaps); active transmission selects only the actual running scenario's device category (60%) or TRANSMITTING (40%). Dynamic selection is tied to active ID, not highlighted profile, and refreshes when running case changes. Other 132 catalog phrases are retained but rare/Easter, carrier-only, suite, Wi-Fi startup/failure and event-only jokes are inactive. Preserves verified R14.12 touch, R14.14 centered bubble, FULL8/FAST and 172 bounded RF cases; LAB only; physical CYD 3.2 validation required.",
+      "summary": "R14.17 LAB fixes unrelated Squachy speech. RF OFF: only IDLE quips, including suite gaps and failed starts. RF ON: actual transmitting file device-category bank (60%) or TRANSMITTING bank (40%). Unrecognized active file uses TRANSMITTING only. Menu selection never controls live speech. New cases reset the on-air popup. All 130 fixed and two event-only phrases remain cataloged, but other speech banks are not selected. Keeps R14.12 touch, R14.14 bubble, FULL8/FAST and 172 bounded RF cases. LAB only; SHA-256 flash preflight and CYD 3.2 hardware verification required.",
       "highlights": [
         "OFF AIR: only the 11 IDLE phrases are eligible, including suite gaps and failed starts.",
         "ON AIR: only the active file's real category (60%) or 9 TRANSMITTING phrases (40%) are eligible.",
