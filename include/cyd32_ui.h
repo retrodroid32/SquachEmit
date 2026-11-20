@@ -30,6 +30,8 @@ void cyd32UiSetRadioError(const char* stage);
 
 // Acknowledge a Wi-Fi RUN touch before the radio driver blocks.
 void cyd32UiSetRadioStarting(const char* scenarioId);
+// Humor-only event notification; never affects RF execution or test results.
+void cyd32UiNoteRunAction();
 
 // Stream the device's canonical UI *state*, never a TFT/GRAM screenshot.
 void cyd32UiStreamState(const char* activeId,uint32_t remainingMs,
