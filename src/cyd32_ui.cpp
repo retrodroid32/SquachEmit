@@ -6,6 +6,7 @@
 #include "cyd32_squachy_port.h"
 #include "cyd32_fast_sprite.h"
 #include "cyd32_frame_push.h"
+#include "sqe_bubble_timing.h"
 #include "sqe_touch_fit.h"
 #include "sqe_touch_wizard.h"
 #if defined(SQE_ORIGINAL_SQUACHY)
@@ -109,7 +110,7 @@ bool portraitCalibrationPending=false;
 bool portraitTouchTrace=false;
 uint32_t lastPortraitTouchTraceAt=0,portraitMenuRawRescues=0;
 uint16_t portraitTouchData[5]={0};
-uint32_t lastBubbleAt=0;
+SqeBubble::State landscapeBubble{};
 uint8_t durationSeconds=12; // 3..30s, saved independently of touch calibration
 bool remoteDown=false;
 uint16_t remoteX=0,remoteY=0;
@@ -415,33 +416,67 @@ void countdownOnly(uint32_t count){
   rightStatus(true,count);
 }
 
-void speechBubble(const char* active,bool suite){
-  lcd.fillRoundRect(7,20,306,44,4,kBg);
-  lcd.drawRoundRect(7,20,306,44,4,kVaporPink);
-  lcd.drawRoundRect(9,22,302,40,3,kPurple);
-  const Scenario* chosen=selected<kScenarioCount?&kScenarios[selected]:nullptr;
-  const bool failed=!(active&&*active) && radioStartError[0];
-  const bool starting=!(active&&*active) && !failed && radioStartingProfile[0];
-  static const char* idleTalk[]={"READY FOR A SIGNAL CHECK!","PICK A PROFILE. I WILL EMIT!",
-    "172 TESTS. ONE LITTLE SQUACH.","NO RF UNTIL YOU PRESS RUN.",
-    "LET US TEST THAT DETECTOR!"};
-  static const char* activeTalk[]={"SENDING SYNTHETIC SIGNAL...",
-    "CHECK YOUR RECEIVER NOW!","TEST SIGNAL IS ON THE AIR!"};
-  const char* phrase=failed?"WIFI START FAILED":
-      starting?"STARTING WIFI TRANSMISSION":
-      (active&&*active)?activeTalk[(millis()/5500u)%3u]:
-      playlistRunning?"FAVORITES PLAYLIST":
-      suite?"TEST SUITE RUNNING":idleTalk[(millis()/6500u)%5u];
-  fit(16,25,phrase,285,failed?kPink:(starting?kYellow:kWhite),2);
-  char friendly[58]={0};
-  const Scenario* showing=(active&&*active)?findScenario(active):
-    starting?findScenario(radioStartingProfile):chosen;
-  if(showing)scenarioDeviceName(*showing,friendly,sizeof(friendly));
-  fit(16,47,failed?radioStartError:
-      showing?friendly:"NO PROFILE",
-      288,failed?kYellow:(starting?kYellow:(active&&*active?kPink:kCyan)),1);
+// SquachWatch-style random pop/hide. The selected profile is deliberately
+// absent: statusStrip() already shows it at y=200. Keep startup failures
+// visible only while the matching one-shot bubble is actually on screen.
+SqeBubble::Kind bubbleContext(const char* active,bool suite){
+  if(active&&*active)return SqeBubble::OnAir;
+  if(radioStartError[0])return SqeBubble::Failed;
+  if(radioStartingProfile[0])return SqeBubble::Starting;
+  if(playlistRunning)return SqeBubble::Playlist;
+  if(suite)return SqeBubble::Suite;
+  return SqeBubble::Idle;
 }
-
+long speechRandom(long lo,long hi){return random(lo,hi);}
+void advanceLandscapeBubble(uint32_t now,const char* active,bool suite){
+  const bool changed=SqeBubble::update(landscapeBubble,now,
+      bubbleContext(active,suite),speechRandom);
+  // FULL8/HALF8 redraws happen via renderBufferedHome(). Static fallback
+  // must repaint the backdrop to erase a disappearing speech bubble.
+  if(changed&&!portraitMode&&screen==Screen::Home&&!bandFrameReady)
+    redraw=true;
+}
+const char* speechLine(){
+  static const char* idleTalk[]={
+    "READY FOR A SIGNAL CHECK!",
+    "PICK A PROFILE. I WILL EMIT!",
+    "172 TESTS. ONE LITTLE SQUACH.",
+    "NO RF UNTIL YOU PRESS RUN.",
+    "LET US TEST THAT DETECTOR!"
+  };
+  static const char* activeTalk[]={
+    "SENDING SYNTHETIC SIGNAL...",
+    "CHECK YOUR RECEIVER NOW!",
+    "TEST SIGNAL IS ON THE AIR!"
+  };
+  switch((SqeBubble::Kind)landscapeBubble.context){
+    case SqeBubble::OnAir:return activeTalk[landscapeBubble.phrase%3];
+    case SqeBubble::Starting:return "STARTING WIFI TRANSMISSION";
+    case SqeBubble::Failed:return "WIFI START FAILED";
+    case SqeBubble::Playlist:return "FAVORITES PLAYLIST";
+    case SqeBubble::Suite:return "TEST SUITE RUNNING";
+    default:return idleTalk[landscapeBubble.phrase%5];
+  }
+}
+void speechBubble(const char* active,bool suite){
+  (void)active;(void)suite;
+  const uint32_t now=frameNow();
+  if(!SqeBubble::visible(landscapeBubble,now))return;
+  // SquachWatch's 220ms speech bubble pop, with a modest overshoot.
+  // The fully rendered background remains visible while the bubble is away.
+  const float scale=SqeBubble::popScale(landscapeBubble,now);
+  int w=(int)(306.f*scale),h=(int)(44.f*scale);
+  if(w<5)w=5;
+  if(h<4)h=4;
+  const int x=(320-w)/2,y=20+(44-h)/2;
+  lcd.fillRoundRect(x,y,w,h,4,kBg);
+  lcd.drawRoundRect(x,y,w,h,4,kVaporPink);
+  if(w>12&&h>12)lcd.drawRoundRect(x+2,y+2,w-4,h-4,3,kPurple);
+  if(scale<0.999f)return; // no text clipping during pop-in
+  const bool failed=landscapeBubble.context==(uint8_t)SqeBubble::Failed;
+  fit(16,failed?25:35,speechLine(),285,failed?kPink:kWhite,2);
+  if(failed)fit(16,47,radioStartError,288,kYellow,1);
+}
 void statusStrip(const char* active,bool suite){
   lcd.fillRect(0,183,320,29,kBg);
   lcd.drawFastHLine(6,182,308,kPurple);
@@ -2070,6 +2105,8 @@ Cyd32UiAction cyd32UiTick(const char* active,uint32_t remaining,bool suite){
     previousSuite=suite;
     redraw=true;
   }
+  // Advance state once per logical UI loop, never per sprite band.
+  advanceLandscapeBubble(now,active,suite);
   if(redraw){
     // Non-HOME screens and calibration draw directly on the TFT, outside
     // FramePush's hash ledger. Force a full refresh on return to HOME.
@@ -2116,15 +2153,8 @@ Cyd32UiAction cyd32UiTick(const char* active,uint32_t remaining,bool suite){
   if(calibrated&&screen==Screen::Diagnostics&&now-lastDiagAt>=1000u){
     Cyd32FramePush::invalidate();diagValues();lastDiagAt=now;
   }
-  if(calibrated&&screen==Screen::Home&&now-lastBubbleAt>6500u){
-    if(portraitMode){
-      // No portrait full-screen flash simply to rotate a speech bubble.
-      // The portrait bubble is redrawn only when page/TX state changes.
-    }else{
-      Cyd32FramePush::invalidate();speechBubble(active,suite);
-    }
-    lastBubbleAt=now;
-  }
+  // A timed, random bubble is assembled WITH the complete buffered frame.
+  // Never paint it directly to the ST7798 over a running FramePush frame.
   if(calibrated&&portraitMode&&screen==Screen::Home&&
      active&&*active&&!bandFrameReady){
     // No sprite available: update only the portrait TX text, in exactly
