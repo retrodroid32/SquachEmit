@@ -16,12 +16,11 @@
       "highlights": [
         "Selected profile removed from landscape speech bubble; lower PROFILE status unchanged.",
         "Random dialogue: first 15–30s, then 9–22s gaps, around 5s visible, 220ms pop-in.",
-        "No permanent bubble overlay; original background is visible between lines.",
-        "RF/START/ERROR/SUITE speech notices are temporary, with no duplicated profile.",
-        "Speech rendering stays inside FULL8/FAST buffered frames, not direct ST7798 writes.",
-        "R14.12 verified five-target portrait touch and all 172 bounded cases preserved.",
-        "SquachMesh is not enabled here; its radio coexistence requires a separate PR.",
-        "LAB only; 4-part SHA-256 flash integrity and physical checks required."
+        "No permanent bubble overlay; original background visible between quips.",
+        "RF/START/ERROR/SUITE speech notices temporary, with no duplicated profile.",
+        "Speech rendered only inside FULL8/FAST buffered frames, not direct ST7798 writes.",
+        "Preserves R14.12 verified five-point portrait touch, original artwork and 172 cases.",
+        "SquachMesh not enabled; LAB only, four-part SHA-256 preflight and physical touch/RF test required."
       ]
     },
     "c5-waveshare-28": {
