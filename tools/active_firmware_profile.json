@@ -12,7 +12,7 @@
     "cyd32-st7798": {
       "title": "SquachEmit v1.1.0 CYD 3.2 R14.15 LAB — 126 Squachy Quips Across All Device Categories (172 Cases)",
       "version": "v1.1.0 MAINLINE · 172 cases",
-      "summary": "R14.15 LAB adds all previously requested funny Squachy quotes, covering all 10 real device categories plus BLE/Wi-Fi/Remote ID, six activity modes, five rare sarcastic lines, five Easter eggs, and two special repeat-RUN/long-idle jokes. Weighted 60% selected category, 25% general, 10% rare, 5% Easter. Text selected once per popup and wrapped across two centered lines without truncation. Ring quotes preserved but disabled because no Ring test exists. Keeps R14.14 centered speech/TX beacon, R14.12 verified touch, FAST framebuffer and 172 RF cases. LAB only; hardware checks required.",
+      "summary": "R14.15 LAB brings 126 fixed Squachy phrases across all 10 real device categories, BLE/Wi-Fi/Remote ID subtypes, idle/TX/START/ERROR/playlist/suite, rare jokes and Easter eggs, plus two event-only repeat-RUN and long-idle sayings. Chooses 60% real category, 25% general, 10% rare, 5% Easter; wording stays fixed per popup and long jokes wrap on word boundaries. Ring phrases are dormant because no Ring case exists. Preserves R14.14 centered bubble/TX icon, R14.12 five-point portrait touch, FULL8/FAST and all 172 tests. Four-part SHA-256 integrity preflight and physical testing required. LAB only.",
       "highlights": [
         "126 fixed humorous phrases across every actual SquachEmit device category, plus 2 event-triggered Easter eggs.",
         "Adds missing Raven, iBeacon, serial module, smart glasses, hacker, general/control and tracker jokes.",
