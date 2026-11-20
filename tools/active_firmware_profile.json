@@ -2,25 +2,25 @@
   "schema": 1,
   "scenario_count": 172,
   "firmware_sources": {
-    "src": "99bd0183d37222955b342d5035014e7771eb0752",
-    "include": "92980523f6b411e04235c14996eef5fbed86c127",
+    "src": "032168dfebcc9ca6b4e51ab522d2a5f454475034",
+    "include": "1632ad5ba58cda1fd690701f9e76ce5c8e4ebdb8",
     "lib": "c88135d6510b738fe2c208290c498f9e8b639681",
     "SquachEmit.ino": "90b4205813a2f7885bc1e12ce7431eebf7249f45",
     "platformio.ini": "c3ff3725248b4c67d60da6903982515031c501f6"
   },
   "builds": {
     "cyd32-st7798": {
-      "title": "SquachEmit v1.1.0 CYD 3.2 R14.14 LAB — Centered Bubbles & New TX Beacon (172 Cases)",
+      "title": "SquachEmit v1.1.0 CYD 3.2 R14.15 LAB — 126 Squachy Quips Across All Device Categories (172 Cases)",
       "version": "v1.1.0 MAINLINE · 172 cases",
-      "summary": "R14.14 LAB CYD 3.2 centers speech within a content-width bubble with 13px side padding, compact one-line height and a two-line error layout. Replaces the old triangle TX status icon with a symmetric radio-wave beacon (cyan idle, green transmitting) in landscape and portrait. Retains R14.13 randomized 5-second bubble appearances, FULL8/FAST no-flicker framebuffer, original backgrounds, R14.12 verified five-point portrait touch and 172 synthetic cases. No radio behavior changes. LAB-only; four-part SHA-256 flash and physical verification required.",
+      "summary": "R14.15 LAB adds all previously requested funny Squachy quotes, covering all 10 real device categories plus BLE/Wi-Fi/Remote ID, six activity modes, five rare sarcastic lines, five Easter eggs, and two special repeat-RUN/long-idle jokes. Weighted 60% selected category, 25% general, 10% rare, 5% Easter. Text selected once per popup and wrapped across two centered lines without truncation. Ring quotes preserved but disabled because no Ring test exists. Keeps R14.14 centered speech/TX beacon, R14.12 verified touch, FAST framebuffer and 172 RF cases. LAB only; hardware checks required.",
       "highlights": [
-        "Speech text is precisely horizontally centered using TFT font measurements, not a fixed left margin.",
-        "Bubble width hugs the text with 13px side padding and a compact single-line height; errors retain two lines.",
-        "New symmetrical radio-wave TX beacon replaces the old triangular icon in both orientations.",
-        "Header beacon is cyan when idle and green when transmitting; no changes to RF behavior.",
-        "R14.13 randomized 5s show/hide and 220ms pop-in stay inside FULL8/FAST framebuffer.",
-        "R14.12 five-target portrait calibration, artwork and all 172 cases are unchanged.",
-        "LAB-only; SHA-256 four-part flashing, screen rendering, RUN/STOP and rotation need hardware checks."
+        "126 fixed humorous phrases across every actual SquachEmit device category, plus 2 event-triggered Easter eggs.",
+        "Adds missing Raven, iBeacon, serial module, smart glasses, hacker, general/control and tracker jokes.",
+        "Includes FLOCK, AXON, DRONES, AirTag, BLE, Wi-Fi, Remote ID, idle/Tx/playlist/suite/start/error humor.",
+        "Weighted 60% relevant category, 25% general, 10% rare, 5% Easter; chosen once when bubble appears.",
+        "Long joke wording wraps at word boundaries into a centered two-line bubble; random timing unchanged.",
+        "Repeated RUN (3 taps/45s) and 2-minute idle Easter eggs never alter radio timing or detection.",
+        "Preserves R14.14 TX beacon, R14.12 portrait 5-point calibration and all 172 bounded test cases."
       ]
     },
     "c5-waveshare-28": {
