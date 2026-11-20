@@ -8,6 +8,7 @@
 #include "cyd32_frame_push.h"
 #include "sqe_bubble_timing.h"
 #include "sqe_bubble_layout.h"
+#include "sqe_category_quips.h"
 #include "sqe_touch_fit.h"
 #include "sqe_touch_wizard.h"
 #if defined(SQE_ORIGINAL_SQUACHY)
@@ -112,6 +113,10 @@ bool portraitTouchTrace=false;
 uint32_t lastPortraitTouchTraceAt=0,portraitMenuRawRescues=0;
 uint16_t portraitTouchData[5]={0};
 SqeBubble::State landscapeBubble{};
+const char* landscapeSpeechText="READY FOR A SIGNAL CHECK!";
+uint32_t recentRunWindowStarted=0;
+uint8_t recentRunCount=0;
+bool repeatedRunQuipPending=false,idleLonelyQuipShown=false;
 uint8_t durationSeconds=12; // 3..30s, saved independently of touch calibration
 bool remoteDown=false;
 uint16_t remoteX=0,remoteY=0;
@@ -448,36 +453,92 @@ SqeBubble::Kind bubbleContext(const char* active,bool suite){
   return SqeBubble::Idle;
 }
 long speechRandom(long lo,long hi){return random(lo,hi);}
+SqeQuips::Topic categoryTopic(const Scenario* sc){
+  if(!sc)return SqeQuips::Topic::Idle;
+  switch(deviceCategory(*sc)){
+    case DeviceCategory::Axon:return SqeQuips::Topic::Axon;
+    case DeviceCategory::Drones:return SqeQuips::Topic::Drones;
+    case DeviceCategory::Flock:return SqeQuips::Topic::Flock;
+    case DeviceCategory::General:return SqeQuips::Topic::General;
+    case DeviceCategory::Hacker:return SqeQuips::Topic::Hacker;
+    case DeviceCategory::IBeacon:return SqeQuips::Topic::IBeacon;
+    case DeviceCategory::Raven:return SqeQuips::Topic::Raven;
+    case DeviceCategory::SerialModules:return SqeQuips::Topic::SerialModules;
+    case DeviceCategory::SmartGlasses:return SqeQuips::Topic::SmartGlasses;
+    case DeviceCategory::Trackers:return SqeQuips::Topic::Trackers;
+    default:return SqeQuips::Topic::General;
+  }
+}
+// Real CATEGORY mapping stays untouched. AirTag/BLE/Wi-Fi/RemoteID
+// are occasional subtopics only when selected actual case permits them.
+// RING is deliberately NEVER selected: no Ring case exists in 172 tests.
+SqeQuips::Topic selectedTopic(const Scenario* sc){
+  if(!sc)return SqeQuips::Topic::Idle;
+  const SqeQuips::Topic family=categoryTopic(sc);
+  if(sc->id&&strncmp(sc->id,"BLE-AIRTAG",10)==0 && random(0,4)==0)
+    return SqeQuips::Topic::AirTag;
+  if((sc->kind==Kind::WifiRemoteId||sc->kind==Kind::BleRemoteId)&&random(0,4)==0)
+    return SqeQuips::Topic::RemoteId;
+  if(sc->kind==Kind::WifiAp||sc->kind==Kind::WifiRemoteId){
+    if(random(0,5)==0)return SqeQuips::Topic::Wifi;
+  }else if(random(0,5)==0){
+    return SqeQuips::Topic::Ble;
+  }
+  return family;
+}
+void selectLandscapeSpeech(uint32_t now,const char* active,bool suite){
+  const SqeBubble::Kind kind=bubbleContext(active,suite);
+  const Scenario* sc=(active&&*active)?findScenario(active):
+                      (selected<kScenarioCount?&kScenarios[selected]:nullptr);
+  // Only true activity states get a contextual status phrase. The actual
+  // selected case and receiver results still live outside the bubble.
+  SqeQuips::Topic topical=SqeQuips::Topic::Idle;
+  SqeQuips::Topic general=SqeQuips::Topic::Idle;
+  switch(kind){
+    case SqeBubble::OnAir:
+      topical=selectedTopic(sc);
+      general=SqeQuips::Topic::Transmitting;
+      break;
+    case SqeBubble::Starting:
+      topical=SqeQuips::Topic::Starting;
+      general=SqeQuips::Topic::Wifi;
+      break;
+    case SqeBubble::Failed:
+      topical=SqeQuips::Topic::Failed;
+      general=SqeQuips::Topic::Failed; // keep true failure context readable
+      break;
+    case SqeBubble::Playlist:
+      topical=SqeQuips::Topic::Playlist;break;
+    case SqeBubble::Suite:
+      topical=SqeQuips::Topic::Suite;break;
+    default:
+      topical=selectedTopic(sc);break;
+  }
+  if(kind==SqeBubble::OnAir&&repeatedRunQuipPending){
+    landscapeSpeechText=SqeQuips::kRepeatRun;
+    repeatedRunQuipPending=false;
+  }else if(kind==SqeBubble::Idle&&!idleLonelyQuipShown &&
+           now-lastTouchActivity>=120000u){
+    landscapeSpeechText=SqeQuips::kLongIdle;
+    idleLonelyQuipShown=true;
+  }else{
+    const SqeQuips::Topic topic=SqeQuips::weightedTopic(
+       topical,general,(uint32_t)random(0,100));
+    landscapeSpeechText=SqeQuips::choose(topic,(uint32_t)random(0,32767));
+  }
+}
 void advanceLandscapeBubble(uint32_t now,const char* active,bool suite){
   const bool changed=SqeBubble::update(landscapeBubble,now,
       bubbleContext(active,suite),speechRandom);
+  // Pick ONCE per popup, never on each LCD frame or sprite band.
+  if(changed&&landscapeBubble.showing)
+    selectLandscapeSpeech(now,active,suite);
   // FULL8/HALF8 redraws happen via renderBufferedHome(). Static fallback
   // must repaint the backdrop to erase a disappearing speech bubble.
   if(changed&&!portraitMode&&screen==Screen::Home&&!bandFrameReady)
     redraw=true;
 }
-const char* speechLine(){
-  static const char* idleTalk[]={
-    "READY FOR A SIGNAL CHECK!",
-    "PICK A PROFILE. I WILL EMIT!",
-    "172 TESTS. ONE LITTLE SQUACH.",
-    "NO RF UNTIL YOU PRESS RUN.",
-    "LET US TEST THAT DETECTOR!"
-  };
-  static const char* activeTalk[]={
-    "SENDING SYNTHETIC SIGNAL...",
-    "CHECK YOUR RECEIVER NOW!",
-    "TEST SIGNAL IS ON THE AIR!"
-  };
-  switch((SqeBubble::Kind)landscapeBubble.context){
-    case SqeBubble::OnAir:return activeTalk[landscapeBubble.phrase%3];
-    case SqeBubble::Starting:return "STARTING WIFI TRANSMISSION";
-    case SqeBubble::Failed:return "WIFI START FAILED";
-    case SqeBubble::Playlist:return "FAVORITES PLAYLIST";
-    case SqeBubble::Suite:return "TEST SUITE RUNNING";
-    default:return idleTalk[landscapeBubble.phrase%5];
-  }
-}
+const char* speechLine(){return landscapeSpeechText;}
 // Preserve the rendered text width after truncation: this is what we use
 // for BOTH the bubble's width and exact horizontal centering.
 void bubbleLine(const char* source,char* dest,size_t cap,int font,int maxPx){
@@ -491,6 +552,35 @@ void bubbleLine(const char* source,char* dest,size_t cap,int font,int maxPx){
   while(dest[0]&&lcd.textWidth(dest)>maxPx)
     dest[strlen(dest)-1]='\0';
 }
+// Preserve full long joke wording on a small ST7798 by wrapping at a
+// whole-word boundary. Only use second line when a single font-2 line
+// exceeds the available 282 px. No scrolling or long redraw work.
+void speechWrap(const char* phrase,char first[64],char second[64],int maxPx){
+  second[0]='\0';
+  if(!phrase||!phrase[0])return;
+  lcd.setTextFont(2);lcd.setTextSize(1);
+  if(lcd.textWidth(phrase)<=maxPx)return; // bubbleLine() already copied it
+  char whole[64];
+  strncpy(whole,phrase,sizeof(whole)-1);whole[sizeof(whole)-1]='\0';
+  int best=-1,bestScore=0x7fffffff;
+  for(size_t i=1;i<strlen(whole);++i){
+    if(whole[i]!=' ')continue;
+    const char saved=whole[i];whole[i]='\0';
+    const int w1=lcd.textWidth(whole);
+    const int w2=lcd.textWidth(whole+i+1);
+    whole[i]=saved;
+    if(w1>maxPx||w2>maxPx)continue;
+    const int wider=w1>w2?w1:w2;
+    const int difference=w1>w2?w1-w2:w2-w1;
+    const int score=wider*4+difference;
+    if(score<bestScore){bestScore=score;best=(int)i;}
+  }
+  if(best>=0){
+    whole[best]='\0';
+    snprintf(first,64,"%s",whole);
+    snprintf(second,64,"%s",whole+best+1);
+  }
+}
 void speechBubble(const char* active,bool suite){
   (void)active;(void)suite;
   const uint32_t now=frameNow();
@@ -499,12 +589,14 @@ void speechBubble(const char* active,bool suite){
   char primary[64],detail[32];
   bubbleLine(speechLine(),primary,sizeof(primary),2,282);
   bubbleLine(failed?radioStartError:"",detail,sizeof(detail),1,282);
+  if(!failed)speechWrap(speechLine(),primary,detail,282);
+  const bool hasDetail=detail[0]!='\0';
   lcd.setTextFont(2);
   const int primaryW=lcd.textWidth(primary);
-  lcd.setTextFont(1);
-  const int detailW=failed?lcd.textWidth(detail):0;
+  lcd.setTextFont(failed?1:2);
+  const int detailW=hasDetail?lcd.textWidth(detail):0;
   const float scale=SqeBubble::popScale(landscapeBubble,now);
-  const SqeBubbleLayout::Rect box=SqeBubbleLayout::bounds(primaryW,detailW,failed,scale);
+  const SqeBubbleLayout::Rect box=SqeBubbleLayout::bounds(primaryW,detailW,hasDetail,scale);
   lcd.fillRoundRect(box.x,box.y,box.w,box.h,5,kBg);
   lcd.drawRoundRect(box.x,box.y,box.w,box.h,5,kVaporPink);
   if(box.w>14&&box.h>14)
@@ -513,11 +605,12 @@ void speechBubble(const char* active,bool suite){
   // Truly centered, no fixed left margin. Normal quips have a short,
   // content-hugging one-line bubble; failed-start details get two lines.
   label(SqeBubbleLayout::centeredTextX(box,primaryW),
-        failed?box.y+5:box.y+(box.h-16)/2,
+        hasDetail?box.y+5:box.y+(box.h-16)/2,
         primary,failed?kPink:kWhite,2);
-  if(failed&&detail[0])
+  if(hasDetail)
     label(SqeBubbleLayout::centeredTextX(box,detailW),
-          box.y+27,detail,kYellow,1);
+          box.y+(failed?27:24),detail,failed?kYellow:kWhite,
+          failed?1:2);
 }
 void statusStrip(const char* active,bool suite){
   lcd.fillRect(0,183,320,29,kBg);
@@ -2311,6 +2404,7 @@ Cyd32UiAction cyd32UiTick(const char* active,uint32_t remaining,bool suite){
   Cyd32UiAction action=Cyd32UiAction::None;
   if(pressed){
     lastTouchActivity=now;
+    idleLonelyQuipShown=false;
     if(screenDimmed){screenDimmed=false;applyBrightness();wasPressed=true;
       return Cyd32UiAction::None;}
   }
