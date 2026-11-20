@@ -482,14 +482,14 @@ const char* speechLine(){
 // for BOTH the bubble's width and exact horizontal centering.
 void bubbleLine(const char* source,char* dest,size_t cap,int font,int maxPx){
   if(!cap)return;
-  dest[0]='\\0';
+  dest[0]='\0';
   if(!source)return;
   strncpy(dest,source,cap-1);
-  dest[cap-1]='\\0';
+  dest[cap-1]='\0';
   lcd.setTextFont(font);
   lcd.setTextSize(1);
   while(dest[0]&&lcd.textWidth(dest)>maxPx)
-    dest[strlen(dest)-1]='\\0';
+    dest[strlen(dest)-1]='\0';
 }
 void speechBubble(const char* active,bool suite){
   (void)active;(void)suite;
