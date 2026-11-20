@@ -20,7 +20,9 @@ class WifiStartRecoveryTest(unittest.TestCase):
  def test_visible_failed_start(self):
   ui=(ROOT/"src/cyd32_ui.cpp").read_text()
   hdr=(ROOT/"include/cyd32_ui.h").read_text()
-  self.assertIn('"WIFI START FAILED"',ui)
+  phrases=(ROOT/"include/sqe_category_quips.h").read_text()
+  self.assertIn('"WIFI START FAILED"',phrases)
+  self.assertIn('topical=SqeQuips::Topic::Failed;',ui)
   self.assertIn('label(SqeBubbleLayout::centeredTextX(box,detailW)',ui)
   self.assertIn('box.y+27,detail,kYellow,1);',ui)
   self.assertIn('void cyd32UiSetRadioError(const char* stage)',hdr)
