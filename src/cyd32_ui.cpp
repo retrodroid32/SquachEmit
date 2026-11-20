@@ -115,9 +115,7 @@ uint16_t portraitTouchData[5]={0};
 SqeBubble::State landscapeBubble{};
 char speechActiveCase[56]={0};
 const char* landscapeSpeechText="READY FOR A SIGNAL CHECK!";
-uint32_t recentRunWindowStarted=0;
-uint8_t recentRunCount=0;
-bool repeatedRunQuipPending=false,idleLonelyQuipShown=false;
+// Deprecated event-only quips remain cataloged but never enter the popup selector.
 uint8_t durationSeconds=12; // 3..30s, saved independently of touch calibration
 bool remoteDown=false;
 uint16_t remoteX=0,remoteY=0;
@@ -2010,16 +2008,8 @@ void rgbBars(){
 } // namespace
 
 void cyd32UiNoteRunAction(){
-  const uint32_t now=millis();
-  if(recentRunCount==0||now-recentRunWindowStarted>45000u){
-    recentRunWindowStarted=now;
-    recentRunCount=0;
-  }
-  if(recentRunCount<10)++recentRunCount;
-  if(recentRunCount>=3){
-    repeatedRunQuipPending=true;
-    recentRunCount=0;
-  }
+  // Legacy UI hook retained for caller compatibility. R14.17 speech is
+  // strictly state-scoped: repeated RUN taps never inject extra messages.
 }
 void cyd32UiSetRadioStarting(const char* scenarioId){
   radioStartError[0]='\0';
@@ -2375,7 +2365,6 @@ Cyd32UiAction cyd32UiTick(const char* active,uint32_t remaining,bool suite){
   Cyd32UiAction action=Cyd32UiAction::None;
   if(pressed){
     lastTouchActivity=now;
-    idleLonelyQuipShown=false;
     if(screenDimmed){screenDimmed=false;applyBrightness();wasPressed=true;
       return Cyd32UiAction::None;}
   }
