@@ -7,6 +7,7 @@
 #include "cyd32_fast_sprite.h"
 #include "cyd32_frame_push.h"
 #include "sqe_bubble_timing.h"
+#include "sqe_bubble_layout.h"
 #include "sqe_touch_fit.h"
 #include "sqe_touch_wizard.h"
 #if defined(SQE_ORIGINAL_SQUACHY)
@@ -146,6 +147,27 @@ uint16_t blend(uint16_t a,uint16_t b,uint8_t t) {
                     ((ag+(bg-ag)*t/255)<<5)|
                      (ab+(bb-ab)*t/255));
 }
+// Small symmetric broadcasting radio glyph in the header (19 x 13).
+// Central signal dot + paired bracket waves: legible at 320x240 and 240x320.
+void drawTxBeacon(int cx,int cy,bool transmitting){
+  const uint16_t col=transmitting?kGreen:kCyan;
+  lcd.fillCircle(cx,cy,2,col);
+  // Inner propagation marks.
+  lcd.drawLine(cx-5,cy-4,cx-7,cy-1,col);
+  lcd.drawFastVLine(cx-7,cy-1,3,col);
+  lcd.drawLine(cx-7,cy+2,cx-5,cy+4,col);
+  lcd.drawLine(cx+5,cy-4,cx+7,cy-1,col);
+  lcd.drawFastVLine(cx+7,cy-1,3,col);
+  lcd.drawLine(cx+7,cy+2,cx+5,cy+4,col);
+  // Outer waves. Short enough to stay inside the top status strip.
+  lcd.drawLine(cx-9,cy-5,cx-11,cy-2,col);
+  lcd.drawFastVLine(cx-11,cy-2,5,col);
+  lcd.drawLine(cx-11,cy+3,cx-9,cy+5,col);
+  lcd.drawLine(cx+9,cy-5,cx+11,cy-2,col);
+  lcd.drawFastVLine(cx+11,cy-2,5,col);
+  lcd.drawLine(cx+11,cy+3,cx+9,cy+5,col);
+  if(transmitting)lcd.fillCircle(cx,cy,1,kWhite);
+}
 void titleBar(){
   for(int x=0;x<kW;++x){
     const uint16_t c=x<160?blend(kPurple,kCyan,(uint8_t)(x*255/160)):
@@ -161,11 +183,9 @@ void titleBar(){
   const int nameX=(kW-nameW)/2;
   lcd.fillRect(nameX-8,1,nameW+16,12,kTaskbar);
   label(nameX,3,"SQUACHEMIT",kWhite);
-  const uint16_t txColor=onAirIndicator?kGreen:kYellow;
-  lcd.drawLine(292,11,298,3,txColor);
-  lcd.drawLine(298,3,304,11,txColor);
-  lcd.drawFastVLine(298,6,7,txColor);
-  lcd.fillCircle(298,3,2,txColor);
+  // R14.14: compact radio beacon, not the old triangle-and-mast glyph.
+  // Muted at idle, vivid green only while the transmitter is active.
+  drawTxBeacon(298,7,onAirIndicator);
   if(pcControl)label(313,3,"P",kCyan);
 }
 void applyTheme(){
@@ -458,24 +478,46 @@ const char* speechLine(){
     default:return idleTalk[landscapeBubble.phrase%5];
   }
 }
+// Preserve the rendered text width after truncation: this is what we use
+// for BOTH the bubble's width and exact horizontal centering.
+void bubbleLine(const char* source,char* dest,size_t cap,int font,int maxPx){
+  if(!cap)return;
+  dest[0]='\\0';
+  if(!source)return;
+  strncpy(dest,source,cap-1);
+  dest[cap-1]='\\0';
+  lcd.setTextFont(font);
+  lcd.setTextSize(1);
+  while(dest[0]&&lcd.textWidth(dest)>maxPx)
+    dest[strlen(dest)-1]='\\0';
+}
 void speechBubble(const char* active,bool suite){
   (void)active;(void)suite;
   const uint32_t now=frameNow();
   if(!SqeBubble::visible(landscapeBubble,now))return;
-  // SquachWatch's 220ms speech bubble pop, with a modest overshoot.
-  // The fully rendered background remains visible while the bubble is away.
-  const float scale=SqeBubble::popScale(landscapeBubble,now);
-  int w=(int)(306.f*scale),h=(int)(44.f*scale);
-  if(w<5)w=5;
-  if(h<4)h=4;
-  const int x=(320-w)/2,y=20+(44-h)/2;
-  lcd.fillRoundRect(x,y,w,h,4,kBg);
-  lcd.drawRoundRect(x,y,w,h,4,kVaporPink);
-  if(w>12&&h>12)lcd.drawRoundRect(x+2,y+2,w-4,h-4,3,kPurple);
-  if(scale<0.999f)return; // no text clipping during pop-in
   const bool failed=landscapeBubble.context==(uint8_t)SqeBubble::Failed;
-  fit(16,failed?25:35,speechLine(),285,failed?kPink:kWhite,2);
-  if(failed)fit(16,47,radioStartError,288,kYellow,1);
+  char primary[64],detail[32];
+  bubbleLine(speechLine(),primary,sizeof(primary),2,282);
+  bubbleLine(failed?radioStartError:"",detail,sizeof(detail),1,282);
+  lcd.setTextFont(2);
+  const int primaryW=lcd.textWidth(primary);
+  lcd.setTextFont(1);
+  const int detailW=failed?lcd.textWidth(detail):0;
+  const float scale=SqeBubble::popScale(landscapeBubble,now);
+  const SqeBubbleLayout::Rect box=SqeBubbleLayout::bounds(primaryW,detailW,failed,scale);
+  lcd.fillRoundRect(box.x,box.y,box.w,box.h,5,kBg);
+  lcd.drawRoundRect(box.x,box.y,box.w,box.h,5,kVaporPink);
+  if(box.w>14&&box.h>14)
+    lcd.drawRoundRect(box.x+2,box.y+2,box.w-4,box.h-4,4,kPurple);
+  if(scale<0.999f)return; // text appears only after pop-in; no clipping
+  // Truly centered, no fixed left margin. Normal quips have a short,
+  // content-hugging one-line bubble; failed-start details get two lines.
+  label(SqeBubbleLayout::centeredTextX(box,primaryW),
+        failed?box.y+5:box.y+(box.h-16)/2,
+        primary,failed?kPink:kWhite,2);
+  if(failed&&detail[0])
+    label(SqeBubbleLayout::centeredTextX(box,detailW),
+          box.y+27,detail,kYellow,1);
 }
 void statusStrip(const char* active,bool suite){
   lcd.fillRect(0,183,320,29,kBg);
@@ -1519,9 +1561,7 @@ void portraitPage(const char* active,uint32_t remaining,bool suite){
   lcd.fillRoundRect(5,3,46,27,3,kWhite);
   for(int y=10;y<=22;y+=6)lcd.drawFastHLine(16,y,23,kInk);
   label(81,9,"SQUACHEMIT",kWhite);
-  const uint16_t tx=active&&*active?kGreen:kYellow;
-  lcd.drawLine(215,14,221,4,tx);lcd.drawLine(221,4,227,14,tx);
-  lcd.drawFastVLine(221,9,12,tx);
+  drawTxBeacon(221,13,active&&*active);
   const char* name=screen==Screen::Home?"HOME":screen==Screen::MainMenu?"MENU":
     screen==Screen::Categories?"TEST LIBRARY":screen==Screen::Library?"SIGNALS":
     screen==Screen::Settings?"SETTINGS":screen==Screen::Outfits?"OUTFITS":
