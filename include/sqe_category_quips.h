@@ -26,7 +26,8 @@ static const char* const kIdle[]={
  "JUST A SQUACH WITH A DREAM.",
  "I SMELL RADIO WAVES!",
  "IS THIS THING ON?",
- "MY ANTENNA IS ITCHY."
+ "MY ANTENNA IS ITCHY.",
+ "HERE WATCHY WATCHY!"
 };
 static const char* const kTransmitting[]={
  "SENDING SYNTHETIC SIGNAL...",
@@ -36,7 +37,8 @@ static const char* const kTransmitting[]={
  "I'M NOT SAYING IT'S ALIENS...",
  "BEHOLD! INVISIBLE NOISE!",
  "SQUACHY GOES BRRRR!",
- "SCIENCE! PROBABLY."
+ "SCIENCE! PROBABLY.",
+ "SETTING PHASERS TO ANNOY!"
 };
 static const char* const kStarting[]={
  "STARTING WIFI TRANSMISSION",
@@ -66,7 +68,8 @@ static const char* const kSuite[]={
  "LET THE CHAOS BEGIN!",
  "ONE TEST TO RULE THEM ALL!",
  "I WAS BUILT FOR THIS. MAYBE.",
- "THE SCIENCE IS SCIENCING!"
+ "THE SCIENCE IS SCIENCING!",
+ "SENDING EVERYTHING BUT THE KITCHEN SINK!"
 };
 
 // One family per real on-device CATEGORY.
@@ -109,7 +112,8 @@ static const char* const kHacker[]={
  "MY HOODIE HAS ROOT ACCESS.",
  "PINEAPPLE ON THE RADIO MENU?",
  "THIS IS A LAB, NOT A HEIST!",
- "SQUACH.EXE HAS STOPPED CARING."
+ "SQUACH.EXE HAS STOPPED CARING.",
+ "HACK THE PLANET!"
 };
 static const char* const kIBeacon[]={
  "IBEACON, THEREFORE I AM.",
