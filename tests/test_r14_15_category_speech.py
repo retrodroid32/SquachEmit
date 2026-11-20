@@ -51,11 +51,19 @@ int main(){
  assert(bank(Topic::Easter).count==5);
  assert(strcmp(kRepeatRun,"AGAIN? SERIOUSLY?")==0);
  assert(strcmp(kLongIdle,"DID YOU FORGET ABOUT ME?")==0);
+ // Exhaustively verify the active/idle bank whitelist for every roll.
  for(int r=0;r<100;r++){
-   auto t=weightedTopic(Topic::Flock,Topic::Transmitting,r);
-   assert(t==(r<60?Topic::Flock:
-       r<85?Topic::Transmitting:
-       r<95?Topic::Rare:Topic::Easter));
+   assert(stateTopic(false,Topic::Flock,r)==Topic::Idle);
+   assert(stateTopic(false,Topic::Rare,r)==Topic::Idle);
+   assert(stateTopic(false,Topic::Transmitting,r)==Topic::Idle);
+   assert(stateTopic(true,Topic::Flock,r)==
+          (r<60?Topic::Flock:Topic::Transmitting));
+   assert(stateTopic(true,Topic::Hacker,r)==
+          (r<60?Topic::Hacker:Topic::Transmitting));
+   // Missing/invalid active file IDs cannot reuse selected menu category.
+   assert(stateTopic(true,Topic::Idle,r)==Topic::Transmitting);
+   assert(stateTopic(true,Topic::Ring,r)==Topic::Transmitting);
+   assert(stateTopic(true,Topic::Rare,r)==Topic::Transmitting);
  }
  for(int t=0;t<=static_cast<int>(Topic::Easter);t++){
    const auto b=bank((Topic)t);
@@ -126,10 +134,13 @@ class CategoryBanterTests(unittest.TestCase):
   self.assertIn("selectLandscapeSpeech(now,active,suite);",ui)
   self.assertIn("if(changed&&landscapeBubble.showing)",ui)
   self.assertIn("landscapeSpeechText=SqeQuips::choose(",ui)
-  self.assertIn("now-lastTouchActivity>=120000u",ui)
-  self.assertIn("recentRunCount>=3",ui)
-  self.assertIn('SqeQuips::kRepeatRun',ui)
-  self.assertIn('SqeQuips::kLongIdle',ui)
+  self.assertNotIn("SqeQuips::weightedTopic(",ui)
+  self.assertNotIn("selectedTopic(",ui)
+  self.assertNotIn("SqeQuips::kRepeatRun",ui)
+  self.assertNotIn("SqeQuips::kLongIdle",ui)
+  self.assertIn("const Scenario* transmitting=onAir?findScenario(active):nullptr;",ui)
+  self.assertIn("onAir,categoryTopic(transmitting)",ui)
+  self.assertIn("landscapeBubble.context=255;",ui)
   self.assertIn("cyd32UiNoteRunAction();",main)
   self.assertIn("void cyd32UiNoteRunAction();",hdr)
   # Ring lives in the catalog for future use, never classified today.
