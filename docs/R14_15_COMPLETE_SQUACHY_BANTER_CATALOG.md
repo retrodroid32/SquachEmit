@@ -1,8 +1,8 @@
-# SquachEmit R14.16 — Squachy speech catalog (130 fixed + 2 event-only)
+# SquachEmit R14.17 — Squachy speech catalog (130 fixed + 2 event-only)
 
-This is the exact phrase catalog compiled into the CYD 3.2 LAB firmware. The words are humor, NOT receiver evidence. The current library has **172 real cases in 10 device categories**. Default random mix per popup: 60% real selected category or operational state, 25% general activity/idle, 10% rare humor, 5% Easter eggs. Each line is chosen ONCE at popup appearance and keeps R14.13 five-second visibility and randomized gaps. Long phrases wrap on whole words into the existing centered bubble; no automatic ellipsis in the normal case. All output is static ASCII so it works with the panel font. Portrait screens retain their existing text; these dynamic phrases show in landscape Home only.
+This is the retained phrase catalog compiled into the CYD 3.2 R14.17 LAB firmware. The words are humor, NOT receiver evidence. The library still has **172 real cases in 10 device categories**, but **only two kinds of speech are currently eligible**: when RF is OFF, 100% of bubbles are drawn from the **IDLE** bank, regardless of selected file, suite gap, playlist, Wi-Fi startup or failure; when RF is ON, 60% come from the **actual transmitting file's top-level device category** and 40% from the **TRANSMITTING** bank. An invalid on-air file ID falls back to TRANSMITTING only. NO other banks or event-only jokes are automatically displayed. This overrides R14.15's former 60/25/10/5 mix and disables rare/Easter/carrier/playlist/suite/failure/starting selection without deleting their texts. Each line is chosen ONCE at popup appearance and keeps five-second visibility and randomized gaps; active file changes trigger a fresh applicable popup. Long phrases wrap at whole words in the centered bubble. These dynamic phrases show on landscape Home only.
 
-**Ring messages are included but dormant.** There is no Ring category or Ring synthetic test among the 172 cases; the firmware will not present a false Ring scenario. The BLE/Wi-Fi/AirTag/Remote ID banks are occasional subtopics of their real parent device category. Failure-stage details remain displayed as the second line of Wi-Fi failure messages.
+**Inactive banks remain preserved for future use:** Ring has no corresponding scenario; BLE/Wi-Fi/AirTag/Remote ID subtopic banks, rare/Easter humor and operational starting/failure/suite/playlist banks are retained but are NOT selected by R14.17's speech bubble. Wi-Fi diagnostic errors remain in serial diagnostics, not in off-air speech bubbles.
 
 ## Idle / waiting (11)
 
@@ -208,4 +208,4 @@ This is the exact phrase catalog compiled into the CYD 3.2 LAB firmware. The wor
 - `AGAIN? SERIOUSLY?` — when the user taps RUN three times within approximately 45 seconds, next available active-TX popup.
 - `DID YOU FORGET ABOUT ME?` — after two idle minutes without a touchscreen press, on the next idle popup.
 
-Both are UI-only; neither changes timers, RF packets, START/STOP, or detection results. A tap resets the long-idle condition. Ring remains intentionally inactive.
+**Both event-only messages are preserved in source but are disabled for display in R14.17.** Neither changes timers, RF packets, START/STOP, or detection results. Ring remains intentionally inactive.
