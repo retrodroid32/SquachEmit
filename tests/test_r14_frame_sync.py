@@ -42,7 +42,7 @@ class OriginalArtBandSync(unittest.TestCase):
     def test_portrait_original_character_is_outside_background_else(self):
         s = self.ui
         portrait = s[s.index("void portraitPage(const char* active,uint32_t remaining,bool suite){"):]
-        split = portrait.index("#endif\n#if defined(SQE_ORIGINAL_SQUACHY)\n    // Must be outside")
+        split = portrait.index("#endif\n#if defined(SQE_ORIGINAL_SQUACHY)\n")
         self.assertIn("drawOriginalScene(60,215);", portrait[:split])
         self.assertIn("Squachy::tick(lcd,120,68,138,frameNow()", portrait[split:])
         self.assertIn("Squachy::holdBubble(true);", portrait[split:])
