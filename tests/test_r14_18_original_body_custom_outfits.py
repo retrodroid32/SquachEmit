@@ -72,8 +72,8 @@ class OriginalBodyCustomCostumes(unittest.TestCase):
         self.assertIn("const int hhLive = hy + s_headDrop + actHead;",torso)
         # First paint the chest, then moving sleeves, then original face.
         self.assertLess(torso.index("const int top = hy + S(23);"),
-                        torso.index("auto dressArm ="))
-        self.assertLess(torso.index("auto dressArm ="),
+                        torso.index("auto cuffArm ="))
+        self.assertLess(torso.index("auto cuffArm ="),
                         torso.index("// ---- head group"))
         self.assertLess(torso.index("// ---- head group"),
                         torso.index("drawOutfit(t, cx2, hh"))
@@ -100,39 +100,34 @@ class OriginalBodyCustomCostumes(unittest.TestCase):
         self.assertIn("t.drawFastHLine(cx2-S(th)+S(2),hy+S(43)",art)
         self.assertIn("t.drawFastHLine(cx2+S(2),hy+S(43)",art)
 
-    def test_sleeves_match_native_rectangles_and_pose_widths(self):
+    def test_sleeves_paint_native_arm_shapes_without_overlay_drift(self):
         art=self.source.split("static void drawBody(",1)[1]
-        native=art.split("auto limbTo =",1)[1].split("// Arms —",1)[0]
-        sleeve=art.split("// R14.21: dress the EXACT silhouette",1)[1].split(
+        native=art.split("// Shoulder-anchored limb:",1)[1].split(
+            "// R14.22: NO independently positioned sleeve shapes",1)[0]
+        cuffs=art.split("// R14.22: NO independently positioned sleeve shapes",1)[1].split(
             "// Native layered hood",1)[0]
-        # A resting original arm is S(8) wide x S(22) tall, and
-        # posed arms explicitly record the native S(7)/S(8) stroke width.
-        self.assertIn("int armWidthL = S(8), armWidthR = S(8);",art)
-        self.assertIn("bool armRectL = true, armRectR = true;",art)
-        self.assertIn("armWidthL = ww; armRectL = false;",native)
-        self.assertIn("armWidthR = ww; armRectR = false;",native)
-        self.assertIn("armWidthL = S(8); armWidthR = S(8);",native)
-        self.assertIn("armRectL = true; armRectR = true;",native)
-        # Use exact native rectangle locations; re-derived x0-S(4) may
-        # shift the left sleeve right at fractional LCD scales.
+        self.assertIn("const uint16_t armFill = s_sqemitCustomLook == 1",native)
+        self.assertIn("s_sqemitCustomLook == 2 ? t.color565(10,100,145)",native)
+        self.assertIn("furLight;",native)
+        # All 13 original arm rounded rectangles now use armFill, with
+        # no separate offset-colored sleeve copy drawn afterwards.
+        self.assertGreaterEqual(native.count("armFill);"),14)
+        self.assertIn("outfitNow == OutfitId::YZZERD ? YZ_SLEEVE : armFill",native)
         self.assertIn("armRectLX = cx2 - S(18); armRectLY = hy + S(22) + dL;",native)
         self.assertIn("armRectRX = cx2 + S(10); armRectRY = hy + S(22) + dR;",native)
-        self.assertIn("const int x = nativeRectX, y = nativeRectY;",sleeve)
-        self.assertNotIn("const int x = x0-S(4)",sleeve)
-        self.assertIn("armWidthL,armRectL,armRectLX,armRectLY",sleeve)
-        self.assertIn("armWidthR,armRectR,armRectRX,armRectRY",sleeve)
-        self.assertIn("const int w = S(8), h = S(22);",sleeve)
-        self.assertIn("t.fillRoundRect(x,y,w,h,S(3),sleeve);",sleeve)
-        self.assertIn("const int ex=x0+94*(x1-x0)/100;",sleeve)
-        self.assertIn("const int w=nativeWidth>1?nativeWidth:2;",sleeve)
-        self.assertNotIn("4*(x1-x0)/5",sleeve)
-        self.assertNotIn("wideLine(t,x0,y0,ex,ey,w+2,outline)",sleeve)
-        self.assertNotIn("fillCircle",sleeve)
-        self.assertIn("dressArm(s_armL0x",sleeve)
-        self.assertIn("dressArm(s_armR0x",sleeve)
-        # Outfit colors and other garment details remain those of R14.20.
-        self.assertIn("t.color565(43, 46, 88)",art)
-        self.assertIn("t.color565(43,46,88)",art)
+        self.assertIn("int armWidthL = S(8), armWidthR = S(8);",native)
+        self.assertIn("armWidthL = ww; armRectL = false;",native)
+        self.assertIn("armWidthR = ww; armRectR = false;",native)
+        self.assertIn("const int x=nativeRectX, y=nativeRectY;",cuffs)
+        self.assertIn("cuffArm(s_armL0x",cuffs)
+        self.assertIn("cuffArm(s_armR0x",cuffs)
+        self.assertIn("armWidthL,armRectL,armRectLX,armRectLY",cuffs)
+        self.assertIn("armWidthR,armRectR,armRectRX,armRectRY",cuffs)
+        self.assertIn("wideLine(t,ex,ey,x1,y1,w,furLight);",cuffs)
+        self.assertNotIn("t.fillRoundRect(x,y,w,h,S(3),sleeve)",cuffs)
+        self.assertNotIn("wideLine(t,x0,y0,ex,ey,w,sleeve)",cuffs)
+        self.assertNotIn("const int x = x0-S(4)",cuffs)
+        self.assertNotIn("dressArm(",cuffs)
 
     def test_no_scratch_sprite_allocated_on_original_art_board(self):
         begin=self.ui.split("void cyd32UiBegin()",1)[1]
