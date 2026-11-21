@@ -46,8 +46,13 @@ class FullSceneFramebufferTest(unittest.TestCase):
         rotate=c[c.index("void rotateCurrentScreen(){"):c.index("// On-device calibration escape:",c.index("void rotateCurrentScreen(){"))]
         self.assertIn("allocateSceneFrame();",rotate)
         self.assertIn("ROTATED_%s",rotate)
-        boot=c[c.index("  // Allocate the animation band FIRST"):]
-        self.assertLess(boot.index("allocateSceneFrame();"),boot.index("squachSprite.createSprite(112,111)"))
+        boot=c[c.index("  // The original character renders directly"):]
+        # Original SquachWatch art draws onto the completed scene frame:
+        # the 112x111 scratch sprite is only allowed in non-original builds.
+        self.assertLess(boot.index("allocateSceneFrame();"),
+                        boot.index("#if !defined(SQE_ORIGINAL_SQUACHY)"))
+        legacy=boot.split("#if !defined(SQE_ORIGINAL_SQUACHY)",1)[1].split("#endif",1)[0]
+        self.assertIn("squachSprite.createSprite(112,111)",legacy)
         self.assertIn("if(!bandFrameReady)return;",c)
 
 if __name__=="__main__":
