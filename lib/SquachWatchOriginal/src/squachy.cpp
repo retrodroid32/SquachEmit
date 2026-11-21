@@ -4303,30 +4303,6 @@ static void drawOutfit(TFT_eSPI& t, int cx2, int hy, uint32_t now, Mood m, float
     auto S = [scale](int v) { return (int)(v * scale); };
     (void)m;
     using namespace Theme;
-    if(s_sqemitCustomLook){
-      const uint16_t ink=t.color565(10,9,13);
-      const uint16_t fabric=s_sqemitCustomLook==1?t.color565(22,22,28):t.color565(4,56,75);
-      const uint16_t seam=s_sqemitCustomLook==1?t.color565(88,89,101):t.color565(40,211,236);
-      const uint16_t zipper=s_sqemitCustomLook==1?t.color565(215,218,225):t.color565(255,195,87);
-      const int x=cx2;
-      // Garment moves with the original Squachy body, pose, head and scale.
-      // Hood rim deliberately remains OUTSIDE the face opening.
-      const int hoodR=S(16);
-      t.drawCircle(x,hy+S(6),hoodR+S(1),ink);
-      t.drawCircle(x,hy+S(6),hoodR,seam);
-      t.fillRoundRect(x-S(14),hy+S(18),S(28),S(20),S(4),ink);
-      t.fillRoundRect(x-S(13),hy+S(19),S(26),S(18),S(3),fabric);
-      t.drawFastVLine(x,hy+S(21),S(15),zipper);
-      t.drawFastVLine(x-S(5),hy+S(19),S(7),seam);
-      t.drawFastVLine(x+S(5),hy+S(19),S(7),seam);
-      t.drawRoundRect(x-S(8),hy+S(29),S(16),S(7),S(2),seam);
-      if(s_sqemitCustomLook==2){
-        // SquachEmit's custom cyan lab jacket, not an upstream costume.
-        t.drawFastHLine(x-S(12),hy+S(20),S(24),zipper);
-        t.fillRect(x+S(6),hy+S(25),S(5),S(3),zipper);
-      }
-      return;
-    }
     if (outfit == OutfitId::NONE) return;
 
     switch (outfit) {
@@ -6390,7 +6366,40 @@ static void drawBody(TFT_eSPI& t, int cx, int hy, int headTopY, uint32_t now, Mo
     // The torso is also the largest flat area he has, and until now only three
     // outfits used it at all, which is most of why the hat-only ones read as
     // nothing from across a room.
-    if (outfitNow == OutfitId::SPACE) {
+    if (s_sqemitCustomLook) {
+        // R14.19: THIS is the real torso anchor (hy), not drawOutfit()'s
+        // moving HEAD anchor (hh). Using hh painted a giant jacket over
+        // his mouth, glasses and shoulders, as seen on the physical CYD.
+        // Match the original SquachWatch chest box exactly: y=hy+23,
+        // height=18, and torsoHalf() width. The head and animated arms
+        // paint later, OVER the clothing as they do for native costumes.
+        const bool hoodie = s_sqemitCustomLook == 1;
+        const int th = torsoHalf();
+        const int top = hy + S(23);
+        const uint16_t fabric = hoodie ? t.color565(43, 41, 56) : t.color565(10, 82, 118);
+        const uint16_t shade  = hoodie ? t.color565(22, 23, 34) : t.color565(7, 41, 69);
+        const uint16_t trim   = hoodie ? t.color565(107, 111, 136) : t.color565(57, 194, 224);
+        const uint16_t zip    = hoodie ? t.color565(182, 188, 203) : t.color565(210, 228, 240);
+        t.fillRoundRect(cx2 - S(th), top, S(2 * th), S(18), S(5), fabric);
+        if (hoodie) {
+            // Small kangaroo pocket, inside the true chest bounds.
+            t.fillRoundRect(cx2 - S(9), hy + S(33), S(18), S(6), S(2), shade);
+            t.drawRoundRect(cx2 - S(9), hy + S(33), S(18), S(6), S(2), trim);
+            t.drawFastVLine(cx2, hy + S(26), S(11), zip);
+            t.drawFastVLine(cx2 - S(5), hy + S(24), S(5), trim);
+            t.drawFastVLine(cx2 + S(5), hy + S(24), S(5), trim);
+        } else {
+            // Lab jacket: opening and two lapels, then a small breast badge.
+            // All details remain INSIDE the original 18-unit torso height.
+            t.drawFastVLine(cx2, hy + S(26), S(13), trim);
+            t.fillTriangle(cx2 - S(7), top, cx2 - S(1), top,
+                           cx2 - S(2), hy + S(31), shade);
+            t.fillTriangle(cx2 + S(7), top, cx2 + S(1), top,
+                           cx2 + S(2), hy + S(31), shade);
+            t.fillRoundRect(cx2 + S(6), hy + S(30), S(5), S(3), 1, zip);
+            t.drawFastHLine(cx2 - S(10), hy + S(39), S(20), trim);
+        }
+    } else if (outfitNow == OutfitId::SPACE) {
         t.fillRoundRect(cx2 - S(torsoHalf()), hy + S(23), S(2 * torsoHalf()), S(18), S(5), t.color565(224, 224, 232));
         t.fillRect(cx2 - S(torsoHalf()), hy + S(30), S(2 * torsoHalf()), S(2), t.color565(110, 116, 132));
         t.fillRoundRect(cx2 - S(5), hy + S(33), S(10), S(6), 2, t.color565(40, 44, 60));
@@ -6762,6 +6771,37 @@ static void drawBody(TFT_eSPI& t, int cx, int hy, int headTopY, uint32_t now, Mo
         t.fillRoundRect(cx2 - S(18), hy + S(22) + armSwingL, S(8), S(22), S(3), furLight);
         keyRR(cx2 + S(10), hy + S(22) + armSwingR, S(8), S(22), S(3));
         t.fillRoundRect(cx2 + S(10), hy + S(22) + armSwingR, S(8), S(22), S(3), furLight);
+    }
+
+    // R14.19 sleeves follow the real, pose-dependent arm endpoints recorded
+    // by limbTo()/restArms(). Draw over the original fur arm, stopping before
+    // the hand, with a width narrower than the existing arm/keyline.
+    // Unlike a floating post-head rectangle, these bend/sway with Squachy.
+    if (s_sqemitCustomLook) {
+        const bool hoodie = s_sqemitCustomLook == 1;
+        const uint16_t sleeve = hoodie ? t.color565(43, 41, 56) : t.color565(10, 82, 118);
+        const uint16_t cuff = hoodie ? t.color565(107, 111, 136) : t.color565(57, 194, 224);
+        auto dressArm = [&](int x0, int y0, int x1, int y1) {
+            const int ex = x0 + (3 * (x1 - x0)) / 4;
+            const int ey = y0 + (3 * (y1 - y0)) / 4;
+            const int width = S(6) > 2 ? S(6) : 2;
+            wideLine(t, x0, y0, ex, ey, width, sleeve);
+            wideLine(t, ex - (x1-x0)/18, ey - (y1-y0)/18,
+                        ex, ey, width, cuff);
+        };
+        dressArm(s_armL0x, s_armL0y, s_armL1x, s_armL1y);
+        dressArm(s_armR0x, s_armR0y, s_armR1x, s_armR1y);
+    }
+
+    // A hoodie hood stays behind the original animated face and follows
+    // its actual live head-drop offset. Never stroke a floating circle
+    // around the head or paint a jacket in drawOutfit() after the face.
+    if (s_sqemitCustomLook == 1) {
+        const int hhLive = hy + s_headDrop + actHead;
+        t.fillRoundRect(cx2 - S(17), hhLive - S(1), S(34), S(26),
+                        S(8), t.color565(22, 23, 34));
+        t.fillRoundRect(cx2 - S(16), hhLive, S(32), S(24),
+                        S(7), t.color565(43, 41, 56));
     }
 
     // ---- PARKA's hood shell ----------------------------------------------
