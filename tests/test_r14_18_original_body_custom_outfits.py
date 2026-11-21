@@ -43,6 +43,19 @@ class OriginalBodyCustomCostumes(unittest.TestCase):
         self.assertNotIn("pushSprite(",body)
         self.assertNotIn("pushToSprite(",body)
 
+    def test_portrait_all_styles_use_original_body(self):
+        ui=self.ui
+        portrait=ui.split("void portraitPage(",1)[1].split("for(int i=0;i<4;++i)",1)[0]
+        self.assertIn("Squachy::setOutfitPreview(outfitLevel<=2?0:(int8_t)(outfitLevel-2));",portrait)
+        self.assertIn("Squachy::setSqemitCustomLook(outfitLevel==1?1:outfitLevel==2?2:0);",portrait)
+        self.assertIn("Squachy::tick(lcd,120,68,138,frameNow(),advanceScene,0.3f,false,0,100);",portrait)
+        self.assertIn("Squachy::setSqemitCustomLook(0);",portrait)
+        self.assertIn("Squachy::setOutfitPreview(-1);",portrait)
+        self.assertNotIn("outfitLevel!=1&&outfitLevel!=2",portrait)
+        original=portrait.split("#if defined(SQE_ORIGINAL_SQUACHY)",1)[1].split("#else",1)[0]
+        self.assertNotIn("SquachyPort::render(",original)
+        self.assertNotIn("0xF81E",original)
+
     def test_custom_garment_from_approved_pr61_is_animated_overlay(self):
         self.assertIn("void setSqemitCustomLook(uint8_t look)",self.source)
         self.assertIn("void setSqemitCustomLook(uint8_t look);",self.header)
