@@ -56,7 +56,9 @@ class OriginalBodyCustomCostumes(unittest.TestCase):
     def test_no_scratch_sprite_allocated_on_original_art_board(self):
         begin=self.ui.split("void cyd32UiBegin()",1)[1]
         alloc=begin.split("allocateSceneFrame();",1)[1]
-        self.assertRegex(alloc,r"(?s)#if !defined\\(SQE_ORIGINAL_SQUACHY\\).*?squachSprite.createSprite\\(112,111\\).*?#endif")
+        self.assertIn("#if !defined(SQE_ORIGINAL_SQUACHY)",alloc)
+        legacy=alloc.split("#if !defined(SQE_ORIGINAL_SQUACHY)",1)[1].split("#endif",1)[0]
+        self.assertIn("squachSprite.createSprite(112,111)",legacy)
         self.assertIn("drawSquachyFrame(emitting,suite,frameNow());",self.ui)
 
     def test_existing_speech_and_scene_features_unmodified(self):
