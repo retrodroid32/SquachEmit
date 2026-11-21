@@ -6516,10 +6516,20 @@ static void drawBody(TFT_eSPI& t, int cx, int hy, int headTopY, uint32_t now, Mo
     // Side is decided by the SHOULDER, not the hand: DANCE throws both
     // arms to the same side of centre, and keying off the hand would
     // file both of them as the same arm.
+    // Record the EXACT width and geometry used by the native arm renderer.
+    // R14.20 instead guessed S(7) and shortened the sleeve to 80%, making
+    // the custom outfits much smaller than Squachy's real arms in idle poses.
+    int armWidthL = S(8), armWidthR = S(8);
+    bool armRectL = true, armRectR = true;
     auto limbTo = [&](int x0, int y0, int x1, int y1, int w = 0) {
-        if (x0 < cx2) { s_armL0x = x0; s_armL0y = y0; s_armL1x = x1; s_armL1y = y1; }
-        else          { s_armR0x = x0; s_armR0y = y0; s_armR1x = x1; s_armR1y = y1; }
         const int ww = w ? w : S(7);
+        if (x0 < cx2) {
+            s_armL0x = x0; s_armL0y = y0; s_armL1x = x1; s_armL1y = y1;
+            armWidthL = ww; armRectL = false;
+        } else {
+            s_armR0x = x0; s_armR0y = y0; s_armR1x = x1; s_armR1y = y1;
+            armWidthR = ww; armRectR = false;
+        }
         keyW(x0, y0, x1, y1, ww);
         // YZZERD's fur goes back to his own at the neck, but a few poses draw
         // an arm after the head, over his face. Those are still sleeves.
@@ -6530,6 +6540,10 @@ static void drawBody(TFT_eSPI& t, int cx, int hy, int headTopY, uint32_t now, Mo
     // longhand in several branches, so this records their centre line
     // rather than trying to rewrite all of them.
     auto restArms = [&](int dL, int dR) {
+        // These are rendered below as S(8) x S(22) rounded rectangles,
+        // NOT narrow S(7) line segments. Record that native silhouette.
+        armWidthL = S(8); armWidthR = S(8);
+        armRectL = true; armRectR = true;
         s_armL0x = cx2 - S(14); s_armL0y = hy + S(24) + dL;
         s_armL1x = cx2 - S(14); s_armL1y = hy + S(42) + dL;
         s_armR0x = cx2 + S(14); s_armR0y = hy + S(24) + dR;
@@ -6799,29 +6813,44 @@ static void drawBody(TFT_eSPI& t, int cx, int hy, int headTopY, uint32_t now, Mo
         t.fillRoundRect(cx2 + S(10), hy + S(22) + armSwingR, S(8), S(22), S(3), furLight);
     }
 
-    // R14.20: sprite-free garment sleeves follow SquachWatch's own moving
-    // arm endpoints. Keep rounded cuffs on the sleeve, not cyan circles on
-    // his furry hands. The hand itself remains exposed past the cuff.
+    // R14.21: dress the EXACT silhouette drawn by the original arm code.
+    // Rest/walk/idle have full S(8)-wide, S(22)-tall roundrect arms.
+    // LimbTo() poses use their own per-arm widths (default S(7), dancing S(8)).
+    // This fixes the narrow/short tubes of R14.20 without altering Squachy.
     if (s_sqemitCustomLook) {
         const bool hoodie = s_sqemitCustomLook == 1;
-        const uint16_t outline = t.color565(10,12,24);
         const uint16_t sleeve = hoodie ? t.color565(43,46,88) : t.color565(10,100,145);
         const uint16_t seam = hoodie ? t.color565(93,97,144) : t.color565(60,203,231);
         const uint16_t cuff = hoodie ? t.color565(23,26,68) : t.color565(188,228,232);
-        auto dressArm = [&](int x0, int y0, int x1, int y1) {
-            const int ex = x0 + 4*(x1-x0)/5, ey = y0 + 4*(y1-y0)/5;
-            const int w = S(7)>3 ? S(7) : 3;
-            wideLine(t,x0,y0,ex,ey,w+2,outline);
-            wideLine(t,x0,y0,ex,ey,w,sleeve);
-            const int shoulderX = x0 + (x1-x0)/5;
-            const int shoulderY = y0 + (y1-y0)/5;
-            wideLine(t,x0,y0,shoulderX,shoulderY,2,seam);
-            wideLine(t,ex-(x1-x0)/10,ey-(y1-y0)/10,ex,ey,w,cuff);
-            // Two trim pixels at the actual moving cuff.
-            t.drawPixel(ex,ey,seam);
+        auto dressArm = [&](int x0, int y0, int x1, int y1,
+                            int nativeWidth, bool rectangular) {
+            if (rectangular) {
+                // Original native arm: fillRoundRect(cx2-S(18),hy+S(22),
+                // S(8),S(22),S(3)). Match exactly, preserving its keyline.
+                const int x = x0-S(4), y = y0-S(2);
+                const int w = S(8), h = S(22);
+                t.fillRoundRect(x,y,w,h,S(3),sleeve);
+                const int cuffH = S(3)>1 ? S(3) : 2;
+                t.fillRect(x+1,y+h-cuffH-1,w-2,cuffH,cuff);
+                // Leave the native outline and shape; no oversized circles.
+                t.drawFastVLine(x+1,y+S(4),S(7),seam);
+            } else {
+                // Full original arm width, 94% of native length. The tiny
+                // remaining end is Squachy's real fur hand, not a colored dot.
+                const int ex=x0+94*(x1-x0)/100;
+                const int ey=y0+94*(y1-y0)/100;
+                const int cx=x0+86*(x1-x0)/100;
+                const int cy=y0+86*(y1-y0)/100;
+                const int w=nativeWidth>1?nativeWidth:2;
+                wideLine(t,x0,y0,ex,ey,w,sleeve);
+                wideLine(t,cx,cy,ex,ey,w,cuff);
+                t.drawPixel(x0,y0,seam);
+            }
         };
-        dressArm(s_armL0x,s_armL0y,s_armL1x,s_armL1y);
-        dressArm(s_armR0x,s_armR0y,s_armR1x,s_armR1y);
+        dressArm(s_armL0x,s_armL0y,s_armL1x,s_armL1y,
+                 armWidthL,armRectL);
+        dressArm(s_armR0x,s_armR0y,s_armR1x,s_armR1y,
+                 armWidthR,armRectR);
     }
 
     // Native layered hood behind the head, never an opaque rectangle in
