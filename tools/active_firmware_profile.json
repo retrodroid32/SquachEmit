@@ -4,22 +4,22 @@
   "firmware_sources": {
     "src": "0a589ffc477c02f0d78857e0ddbdce935b19ed97",
     "include": "dd19860f63eecb4924297da809b3f205a9e2fafc",
-    "lib": "1200259e9888be5b865b5290d40f4ef9c8f79cdc",
+    "lib": "c7c695cffb0c6bcfd53b4dedfca752df0a472893",
     "SquachEmit.ino": "90b4205813a2f7885bc1e12ce7431eebf7249f45",
     "platformio.ini": "c3ff3725248b4c67d60da6903982515031c501f6"
   },
   "builds": {
     "cyd32-st7798": {
-      "title": "SquachEmit v1.1.0 CYD 3.2 R14.19 LAB — Torso-Aligned Black Hoodie & Neon Lab Jacket (172 Cases)",
+      "title": "SquachEmit v1.1.0 CYD 3.2 R14.20 LAB — Native Pixel-Art Hoodie & Neon Lab Jacket (172 Cases)",
       "version": "v1.1.0 MAINLINE · 172 cases",
-      "summary": "R14.19 CYD 3.2 LAB aligns Black Hoodie and Neon Lab Jacket with the original SquachWatch torso (hy+23), not the head origin that covered the cheeks and mouth. Clothing now matches torso dimensions, sleeves follow moving shoulder/arm endpoints, and the hood is drawn behind the animated face. Preserves the 20 original SquachWatch costumes, 10 backgrounds, R14.17 idle/TX speech, and 172 RF cases. Four-part SHA-256 browser flash preflight; physical CYD 3.2 confirmation required. LAB only, not a stable release.",
+      "summary": "R14.20 CYD 3.2 LAB replaces the flat custom clothing overlays with native layered outfits: Black Hoodie gets an actual hood with dark RGB332-safe charcoal fabric, drawstrings, cuffs, pocket and ribbed hem. Neon Lab Jacket gets an open front, visible undershirt, pale lapels, two coat pockets and an extended hem. Both retain the original SquachWatch animated face, torso, arms, costumes and backgrounds. Corrected R14.19 geometry, R14.17 Idle/TX speech, and 172 bounded RF cases remain. Four-part SHA-256 flashing preflight; physical CYD 3.2 verification required. LAB prerelease only.",
       "highlights": [
-        "Fixes both custom outfits covering the face: chest now occupies exact original torso dimensions (hy+23, height 18).",
-        "Custom hoodie and lab jacket sleeves follow real animated arm endpoints, leaving original hands visible.",
-        "Black hood follows head bobbing and is drawn behind the original face instead of floating as a ring.",
-        "Preserves all 20 original SquachWatch outfits, ten animated backgrounds and 172 RF signal cases.",
-        "Preserves R14.17 state-scoped speech and R14.18 no-pink-sprite fix in portrait and landscape.",
-        "LAB build only; hardware verification required before merge, no production release or tag."
+        "Black Hoodie: native hood behind head, drawstrings, kangaroo pocket, ribbed hem; charcoal RGB332-safe palette instead of olive green.",
+        "Neon Lab Jacket: open center shirt, two pale lapels, breast detail, coat pockets and extended hem.",
+        "Animated shoulder sleeve geometry and contrasted cuffs follow SquachWatch pose without colored hand spots.",
+        "All original 20 SquachWatch costumes and 10 backgrounds remain unchanged.",
+        "R14.17 idle/category speech, 172 RF cases, navigation and STOP remain unchanged.",
+        "LAB prerelease only, SHA-256 complete flash package and real CYD 3.2 visual acceptance required."
       ]
     },
     "c5-waveshare-28": {
