@@ -131,7 +131,7 @@ jobs:
   # not just a CI compile. This job cannot run on main, tags or PR events.
   lab-release-cyd32:
     name: Build and Release FW (R14.21 LAB)
-    if: github.event_name == 'push' && github.ref == 'refs/heads/lab/cyd32-r14-21-native-layered-garments-20261120' && github.repository == 'retrodroid32/SquachEmit'
+    if: github.event_name == 'push' && github.ref == 'refs/heads/lab/cyd32-r14-21-full-size-custom-sleeves-20261120' && github.repository == 'retrodroid32/SquachEmit'
     needs: [host-fixtures, firmware, firmware-waveshare-c5, firmware-cyd32-st7798]
     runs-on: ubuntu-latest
     permissions:
