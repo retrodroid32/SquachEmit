@@ -31,6 +31,11 @@ static inline uint32_t tempo(uint32_t ms) { return ms * s_tempoPct / 100; }
 #include <Preferences.h>
 
 namespace Squachy {
+// SquachEmit extensions: original upstream poses/body are preserved for every
+// built-in outfit. Two explicitly custom garments are rendered on the SAME
+// animated body, never in a separate opaque square sprite.
+static uint8_t s_sqemitCustomLook=0;
+void setSqemitCustomLook(uint8_t look){s_sqemitCustomLook=look<=2?look:0;}
 #if !SQUACH_MESH
 // No visitors in SquachEmit transmitter mode. Upstream uses this flag
 // for host layout; keep exactly the solo-host branch of its draw code.
@@ -4295,10 +4300,34 @@ static void scouterTick(uint32_t now) {
 #include "th3_0n3.inc"
 
 static void drawOutfit(TFT_eSPI& t, int cx2, int hy, uint32_t now, Mood m, float scale, OutfitId outfit) {
-    if (outfit == OutfitId::NONE) return;
     auto S = [scale](int v) { return (int)(v * scale); };
     (void)m;
     using namespace Theme;
+    if(s_sqemitCustomLook){
+      const uint16_t ink=t.color565(10,9,13);
+      const uint16_t fabric=s_sqemitCustomLook==1?t.color565(22,22,28):t.color565(4,56,75);
+      const uint16_t seam=s_sqemitCustomLook==1?t.color565(88,89,101):t.color565(40,211,236);
+      const uint16_t zipper=s_sqemitCustomLook==1?t.color565(215,218,225):t.color565(255,195,87);
+      const int x=cx2;
+      // Garment moves with the original Squachy body, pose, head and scale.
+      // Hood rim deliberately remains OUTSIDE the face opening.
+      const int hoodR=S(16);
+      t.drawCircle(x,hy+S(6),hoodR+S(1),ink);
+      t.drawCircle(x,hy+S(6),hoodR,seam);
+      t.fillRoundRect(x-S(14),hy+S(18),S(28),S(20),S(4),ink);
+      t.fillRoundRect(x-S(13),hy+S(19),S(26),S(18),S(3),fabric);
+      t.drawFastVLine(x,hy+S(21),S(15),zipper);
+      t.drawFastVLine(x-S(5),hy+S(19),S(7),seam);
+      t.drawFastVLine(x+S(5),hy+S(19),S(7),seam);
+      t.drawRoundRect(x-S(8),hy+S(29),S(16),S(7),S(2),seam);
+      if(s_sqemitCustomLook==2){
+        // SquachEmit's custom cyan lab jacket, not an upstream costume.
+        t.drawFastHLine(x-S(12),hy+S(20),S(24),zipper);
+        t.fillRect(x+S(6),hy+S(25),S(5),S(3),zipper);
+      }
+      return;
+    }
+    if (outfit == OutfitId::NONE) return;
 
     switch (outfit) {
         case OutfitId::STRIPES: {

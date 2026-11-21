@@ -2,25 +2,25 @@
   "schema": 1,
   "scenario_count": 172,
   "firmware_sources": {
-    "src": "56696de786239f9932f583231be430656afcd42c",
+    "src": "6a4f7e01ec99024a72cdafa8d93fe3af87104496",
     "include": "8253b90b87623b164881b6a20663d16bcd05a85b",
-    "lib": "5a57738d27ce657ed0ff7b77bfb8ae30f98c0e3f",
+    "lib": "7ec610781e26cf640878a1d0c2a5df6387259ea5",
     "SquachEmit.ino": "90b4205813a2f7885bc1e12ce7431eebf7249f45",
-    "platformio.ini": "e3cd23be562b47d64647de5169202e8d18fb8c81"
+    "platformio.ini": "c3ff3725248b4c67d60da6903982515031c501f6"
   },
   "builds": {
     "cyd32-st7798": {
-      "title": "SquachEmit v1.1.0 CYD 3.2 — R14 LAB Original SquachWatch Art (172 Cases)",
+      "title": "SquachEmit v1.1.0 CYD 3.2 — R14 LAB Authentic SquachWatch Visuals (172 Cases)",
       "version": "v1.1.0 MAINLINE · 172 cases",
-      "summary": "R14 LAB CYD 3.2, 172 synthetic signals, attempts source-exact SquachWatch procedural Squachy costumes and all ten animated backgrounds over R13 8-bit half-height buffered rendering. Experimental build; original visual engine and transmitter dependencies are being isolated. No fake receiver data is shown. Custom Black Hoodie and Neon Lab Jacket remain SquachEmit-only. SHA-256 integrity and physical ST7798 tests required. Unmerged, hardware-unverified; not production firmware.",
+      "summary": "R14 LAB CYD3.2 with 172 synthetic signal cases. Integrates SquachWatch's original 19 costumes, character pose engine and all ten actual animated backgrounds. Uses 8-bit half-height buffered rendering to avoid ST7798 full-screen flicker. Eliminates pink sprite rectangle by drawing original character directly onto each band; custom Black Hoodie and Neon Lab Jacket now render on the same moving body. No invented receiver activity. SHA-256 verification, CI compilation and physical ST7798 validation required. Draft only; no OTA claim.",
       "highlights": [
-        "Vendor SquachWatch original Squachy body, poses, and 19 costume renderers under GPLv3.",
-        "Vendor original theme code for all 10 SquachWatch backgrounds.",
-        "Bounded 8-bit half-screen two-pass animator preserves motion without full-panel erase.",
-        "SquachEmit original Black Hoodie and Lab Jacket remain custom, not upstream assets.",
-        "Zero-activity adapter prevents fabricated receiver sightings in The Gibson.",
-        "Build/compiler integration is experimental; not flashed or hardware verified.",
-        "172 synthetic test cases and transmitted-signal controls preserved."
+        "Original upstream SquachWatch body, pose, 19 costumes and all ten scene draw algorithms used directly.",
+        "Correct per-frame motion: original Theme::drawActiveBackground and original Squachy::tick each execute two clipped half-height passes.",
+        "Magenta/pink mascot square removed, all costume geometry integrated into original body renderer.",
+        "Custom SquachEmit Black Hoodie and Neon Lab Jacket draw on the authentic character without a separate sprite.",
+        "Digital Rain, Starfield, Flying Toasters, Aquarium, Terminal, Fireflies, Fire, Snowfall, The Gibson and Synthwave.",
+        "172 synthetic tests, left/right background cycling, explicitly labeled ROT icon, and properly reflowed portrait controls.",
+        "LAB hardware verification needed: CPU/heap, seamless layering, touch rotation and TX STOP; never merge automatically."
       ]
     },
     "c5-waveshare-28": {

@@ -23,7 +23,9 @@
 #pragma once
 #include <stdint.h>
 #include <stddef.h>
-#include "ota_core.h"
+// Visual-only SquachEmit build: no OTA transport / OtaCore is linked.
+// This declaration header needs only uint8_t/size_t for Theme's optional
+// saved-network indicator; do not include SquachWatch update subsystem.
 
 namespace OtaWifi {
 
