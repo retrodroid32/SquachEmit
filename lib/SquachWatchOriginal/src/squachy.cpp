@@ -6367,37 +6367,63 @@ static void drawBody(TFT_eSPI& t, int cx, int hy, int headTopY, uint32_t now, Mo
     // outfits used it at all, which is most of why the hat-only ones read as
     // nothing from across a room.
     if (s_sqemitCustomLook) {
-        // R14.19: THIS is the real torso anchor (hy), not drawOutfit()'s
-        // moving HEAD anchor (hh). Using hh painted a giant jacket over
-        // his mouth, glasses and shoulders, as seen on the physical CYD.
-        // Match the original SquachWatch chest box exactly: y=hy+23,
-        // height=18, and torsoHalf() width. The head and animated arms
-        // paint later, OVER the clothing as they do for native costumes.
+        // R14.20 - two actual garment designs, not one generic recoloured
+        // box. All anchors match the original Squachy chest; the arms and
+        // face are rendered after this layer by the unmodified native engine.
+        // Values are chosen for RGB332 / RGB565 parity on the CYD ST7798.
         const bool hoodie = s_sqemitCustomLook == 1;
         const int th = torsoHalf();
         const int top = hy + S(23);
-        const uint16_t fabric = hoodie ? t.color565(43, 41, 56) : t.color565(10, 82, 118);
-        const uint16_t shade  = hoodie ? t.color565(22, 23, 34) : t.color565(7, 41, 69);
-        const uint16_t trim   = hoodie ? t.color565(107, 111, 136) : t.color565(57, 194, 224);
-        const uint16_t zip    = hoodie ? t.color565(182, 188, 203) : t.color565(210, 228, 240);
+        const uint16_t ink = t.color565(10, 12, 24);
+        const uint16_t fabric = hoodie ? t.color565(43, 46, 88) : t.color565(10, 100, 145);
+        const uint16_t shade = hoodie ? t.color565(23, 26, 68) : t.color565(6, 60, 101);
+        const uint16_t trim = hoodie ? t.color565(93, 97, 144) : t.color565(60, 203, 231);
+        const uint16_t pale = t.color565(188, 228, 232);
+        // The two overlaid rounded shapes deliberately use SquachWatch's
+        // existing shoulder/torso silhouette and NOT independent dimensions.
+        t.fillRoundRect(cx2-S(th)-1, top-1, S(2*th)+2, S(18)+2, S(5), ink);
         t.fillRoundRect(cx2 - S(th), top, S(2 * th), S(18), S(5), fabric);
         if (hoodie) {
-            // Small kangaroo pocket, inside the true chest bounds.
-            t.fillRoundRect(cx2 - S(9), hy + S(33), S(18), S(6), S(2), shade);
-            t.drawRoundRect(cx2 - S(9), hy + S(33), S(18), S(6), S(2), trim);
-            t.drawFastVLine(cx2, hy + S(26), S(11), zip);
-            t.drawFastVLine(cx2 - S(5), hy + S(24), S(5), trim);
-            t.drawFastVLine(cx2 + S(5), hy + S(24), S(5), trim);
+            // Pullover: dark side seams, double-cuffed waist, a kangaroo
+            // pocket and two dangling drawstrings. No fake central zipper.
+            t.fillRect(cx2-S(th)+S(1), hy+S(31), S(2), S(7), shade);
+            t.fillRect(cx2+S(th)-S(3), hy+S(31), S(2), S(7), shade);
+            t.fillRoundRect(cx2-S(10), hy+S(32), S(20), S(7), S(2), ink);
+            t.fillRoundRect(cx2-S(9), hy+S(33), S(18), S(5), S(2), shade);
+            t.drawFastHLine(cx2-S(6), hy+S(34), S(12), trim);
+            t.drawLine(cx2-S(8), hy+S(35), cx2-S(10), hy+S(37), trim);
+            t.drawLine(cx2+S(8), hy+S(35), cx2+S(10), hy+S(37), trim);
+            // Sweatshirt ribbed hem, entirely within original torso bounds.
+            t.drawFastHLine(cx2-S(th)+S(3), hy+S(39), S(2*th)-S(6), trim);
+            t.drawFastVLine(cx2-S(3), hy+S(25), S(7), pale);
+            t.drawFastVLine(cx2+S(3), hy+S(25), S(8), pale);
+            t.fillCircle(cx2-S(3), hy+S(32), S(1)>0?S(1):1, trim);
+            t.fillCircle(cx2+S(3), hy+S(33), S(1)>0?S(1):1, trim);
         } else {
-            // Lab jacket: opening and two lapels, then a small breast badge.
-            // All details remain INSIDE the original 18-unit torso height.
-            t.drawFastVLine(cx2, hy + S(26), S(13), trim);
-            t.fillTriangle(cx2 - S(7), top, cx2 - S(1), top,
-                           cx2 - S(2), hy + S(31), shade);
-            t.fillTriangle(cx2 + S(7), top, cx2 + S(1), top,
-                           cx2 + S(2), hy + S(31), shade);
-            t.fillRoundRect(cx2 + S(6), hy + S(30), S(5), S(3), 1, zip);
-            t.drawFastHLine(cx2 - S(10), hy + S(39), S(20), trim);
+            // Neon LAB JACKET: white collar/lapels, an open front with an
+            // undershirt, two pocket flaps and an overhanging coat hem.
+            const uint16_t undershirt = t.color565(21, 36, 78);
+            t.fillRoundRect(cx2-S(5), hy+S(25), S(10), S(14), S(2), undershirt);
+            t.drawFastVLine(cx2,hy+S(27),S(11),trim);
+            // Each lapel attaches directly at the collar on the native torso.
+            t.fillTriangle(cx2-S(10),top, cx2-S(2),top,
+                           cx2-S(3),hy+S(33), pale);
+            t.fillTriangle(cx2+S(10),top, cx2+S(2),top,
+                           cx2+S(3),hy+S(33), pale);
+            t.drawLine(cx2-S(10),top,cx2-S(3),hy+S(33),shade);
+            t.drawLine(cx2+S(10),top,cx2+S(3),hy+S(33),shade);
+            // Pale badge and a second pocket make the coat identifiable
+            // at small LCD sizes, unlike the previous uniform cyan panel.
+            t.fillRoundRect(cx2+S(7),hy+S(30),S(5),S(3),1,pale);
+            t.fillRoundRect(cx2-S(11),hy+S(35),S(7),S(4),1,shade);
+            t.fillRoundRect(cx2+S(5),hy+S(35),S(7),S(4),1,shade);
+            t.drawFastHLine(cx2-S(11),hy+S(35),S(7),pale);
+            t.drawFastHLine(cx2+S(5),hy+S(35),S(7),pale);
+            // Separate jacket panels below the original waistline.
+            t.fillRect(cx2-S(th)+S(2),hy+S(40),S(th)-S(4),S(4),fabric);
+            t.fillRect(cx2+S(2),hy+S(40),S(th)-S(4),S(4),fabric);
+            t.drawFastHLine(cx2-S(th)+S(2),hy+S(43),S(th)-S(4),trim);
+            t.drawFastHLine(cx2+S(2),hy+S(43),S(th)-S(4),trim);
         }
     } else if (outfitNow == OutfitId::SPACE) {
         t.fillRoundRect(cx2 - S(torsoHalf()), hy + S(23), S(2 * torsoHalf()), S(18), S(5), t.color565(224, 224, 232));
@@ -6773,35 +6799,41 @@ static void drawBody(TFT_eSPI& t, int cx, int hy, int headTopY, uint32_t now, Mo
         t.fillRoundRect(cx2 + S(10), hy + S(22) + armSwingR, S(8), S(22), S(3), furLight);
     }
 
-    // R14.19 sleeves follow the real, pose-dependent arm endpoints recorded
-    // by limbTo()/restArms(). Draw over the original fur arm, stopping before
-    // the hand, with a width narrower than the existing arm/keyline.
-    // Unlike a floating post-head rectangle, these bend/sway with Squachy.
+    // R14.20: sprite-free garment sleeves follow SquachWatch's own moving
+    // arm endpoints. Keep rounded cuffs on the sleeve, not cyan circles on
+    // his furry hands. The hand itself remains exposed past the cuff.
     if (s_sqemitCustomLook) {
         const bool hoodie = s_sqemitCustomLook == 1;
-        const uint16_t sleeve = hoodie ? t.color565(43, 41, 56) : t.color565(10, 82, 118);
-        const uint16_t cuff = hoodie ? t.color565(107, 111, 136) : t.color565(57, 194, 224);
+        const uint16_t outline = t.color565(10,12,24);
+        const uint16_t sleeve = hoodie ? t.color565(43,46,88) : t.color565(10,100,145);
+        const uint16_t seam = hoodie ? t.color565(93,97,144) : t.color565(60,203,231);
+        const uint16_t cuff = hoodie ? t.color565(23,26,68) : t.color565(188,228,232);
         auto dressArm = [&](int x0, int y0, int x1, int y1) {
-            const int ex = x0 + (3 * (x1 - x0)) / 4;
-            const int ey = y0 + (3 * (y1 - y0)) / 4;
-            const int width = S(6) > 2 ? S(6) : 2;
-            wideLine(t, x0, y0, ex, ey, width, sleeve);
-            wideLine(t, ex - (x1-x0)/18, ey - (y1-y0)/18,
-                        ex, ey, width, cuff);
+            const int ex = x0 + 4*(x1-x0)/5, ey = y0 + 4*(y1-y0)/5;
+            const int w = S(7)>3 ? S(7) : 3;
+            wideLine(t,x0,y0,ex,ey,w+2,outline);
+            wideLine(t,x0,y0,ex,ey,w,sleeve);
+            const int shoulderX = x0 + (x1-x0)/5;
+            const int shoulderY = y0 + (y1-y0)/5;
+            wideLine(t,x0,y0,shoulderX,shoulderY,2,seam);
+            wideLine(t,ex-(x1-x0)/10,ey-(y1-y0)/10,ex,ey,w,cuff);
+            // Two trim pixels at the actual moving cuff.
+            t.drawPixel(ex,ey,seam);
         };
-        dressArm(s_armL0x, s_armL0y, s_armL1x, s_armL1y);
-        dressArm(s_armR0x, s_armR0y, s_armR1x, s_armR1y);
+        dressArm(s_armL0x,s_armL0y,s_armL1x,s_armL1y);
+        dressArm(s_armR0x,s_armR0y,s_armR1x,s_armR1y);
     }
 
-    // A hoodie hood stays behind the original animated face and follows
-    // its actual live head-drop offset. Never stroke a floating circle
-    // around the head or paint a jacket in drawOutfit() after the face.
+    // Native layered hood behind the head, never an opaque rectangle in
+    // front of the face. It follows the head's independent squash/bob.
     if (s_sqemitCustomLook == 1) {
         const int hhLive = hy + s_headDrop + actHead;
-        t.fillRoundRect(cx2 - S(17), hhLive - S(1), S(34), S(26),
-                        S(8), t.color565(22, 23, 34));
-        t.fillRoundRect(cx2 - S(16), hhLive, S(32), S(24),
-                        S(7), t.color565(43, 41, 56));
+        const uint16_t ink = t.color565(10,12,24);
+        const uint16_t hood = t.color565(43,46,88);
+        const uint16_t rim = t.color565(93,97,144);
+        t.fillRoundRect(cx2-S(19),hhLive-S(2),S(38),S(29),S(9),ink);
+        t.fillRoundRect(cx2-S(18),hhLive-S(1),S(36),S(27),S(8),hood);
+        t.drawRoundRect(cx2-S(17),hhLive,S(34),S(25),S(8),rim);
     }
 
     // ---- PARKA's hood shell ----------------------------------------------
