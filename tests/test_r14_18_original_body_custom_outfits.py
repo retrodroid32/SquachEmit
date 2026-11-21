@@ -67,8 +67,8 @@ class OriginalBodyCustomCostumes(unittest.TestCase):
         self.assertNotIn("if(s_sqemitCustomLook)",original_custom)
         self.assertIn("const int top = hy + S(23);",torso)
         self.assertIn("S(2 * th), S(18), S(5), fabric",torso)
-        self.assertIn("s_armL0x, s_armL0y, s_armL1x, s_armL1y",torso)
-        self.assertIn("s_armR0x, s_armR0y, s_armR1x, s_armR1y",torso)
+        self.assertIn("s_armL0x,s_armL0y,s_armL1x,s_armL1y",torso)
+        self.assertIn("s_armR0x,s_armR0y,s_armR1x,s_armR1y",torso)
         self.assertIn("const int hhLive = hy + s_headDrop + actHead;",torso)
         # First paint the chest, then moving sleeves, then original face.
         self.assertLess(torso.index("const int top = hy + S(23);"),
@@ -78,6 +78,39 @@ class OriginalBodyCustomCostumes(unittest.TestCase):
         self.assertLess(torso.index("// ---- head group"),
                         torso.index("drawOutfit(t, cx2, hh"))
         self.assertNotIn("hy+S(19),S(26),S(18)",original_custom)
+
+    def test_native_hoodie_has_hood_strings_and_kangaroo_pocket(self):
+        art=self.source.split("static void drawBody(",1)[1]
+        self.assertIn("if (hoodie)",art)
+        self.assertIn("t.fillRoundRect(cx2-S(10), hy+S(32), S(20), S(7)",art)
+        self.assertIn("t.drawFastVLine(cx2-S(3), hy+S(25)",art)
+        self.assertIn("t.drawFastVLine(cx2+S(3), hy+S(25)",art)
+        self.assertIn("t.fillRoundRect(cx2-S(19),hhLive-S(2),S(38),S(29)",art)
+        self.assertIn("t.drawRoundRect(cx2-S(17),hhLive,S(34),S(25)",art)
+        # A pullover should not have the old central zipper.
+        self.assertNotIn("const uint16_t zipper=s_sqemitCustomLook",art)
+
+    def test_native_lab_jacket_has_true_collar_lapels_pockets_and_hem(self):
+        art=self.source.split("static void drawBody(",1)[1]
+        self.assertIn("const uint16_t undershirt",art)
+        self.assertIn("t.fillTriangle(cx2-S(10),top",art)
+        self.assertIn("t.fillTriangle(cx2+S(10),top",art)
+        self.assertIn("t.fillRoundRect(cx2-S(11),hy+S(35)",art)
+        self.assertIn("t.fillRoundRect(cx2+S(5),hy+S(35)",art)
+        self.assertIn("t.drawFastHLine(cx2-S(th)+S(2),hy+S(43)",art)
+        self.assertIn("t.drawFastHLine(cx2+S(2),hy+S(43)",art)
+
+    def test_sleeves_follow_pose_without_colored_hand_circles(self):
+        art=self.source.split("static void drawBody(",1)[1]
+        arm=art.split("auto dressArm =",1)[1].split("dressArm(s_armL0x",1)[0]
+        self.assertIn("const int ex = x0 + 4*(x1-x0)/5",arm)
+        self.assertIn("wideLine(t,x0,y0,ex,ey,w+2,outline);",arm)
+        self.assertIn("wideLine(t,x0,y0,ex,ey,w,sleeve);",arm)
+        self.assertNotIn("fillCircle",arm)
+        # RGB332-safe charcoal has blue >=64, avoiding an olive-green
+        # dark hoodie like R14.19 on ST7798.
+        self.assertIn("t.color565(43, 46, 88)",art)
+        self.assertIn("t.color565(43,46,88)",art)
 
     def test_no_scratch_sprite_allocated_on_original_art_board(self):
         begin=self.ui.split("void cyd32UiBegin()",1)[1]
