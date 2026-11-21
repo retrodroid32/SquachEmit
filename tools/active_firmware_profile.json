@@ -2,25 +2,25 @@
   "schema": 1,
   "scenario_count": 172,
   "firmware_sources": {
-    "src": "fea9d769edc6376a87c474b63bb1593c862a57e7",
+    "src": "ac712dc753786d7d86fc2e324b8c4f030f4262ee",
     "include": "dd19860f63eecb4924297da809b3f205a9e2fafc",
-    "lib": "c88135d6510b738fe2c208290c498f9e8b639681",
+    "lib": "e7d7d66c4e6e2891d47a4171c03c43bb1039b9d0",
     "SquachEmit.ino": "90b4205813a2f7885bc1e12ce7431eebf7249f45",
     "platformio.ini": "c3ff3725248b4c67d60da6903982515031c501f6"
   },
   "builds": {
     "cyd32-st7798": {
-      "title": "SquachEmit v1.1.0 CYD 3.2 R14.17 LAB — Strict Idle/TX Speech Categories (172 Cases)",
+      "title": "SquachEmit v1.1.0 CYD 3.2 R14.18 LAB — Original-Body Hoodie & Lab Jacket (172 Cases)",
       "version": "v1.1.0 MAINLINE · 172 cases",
-      "summary": "R14.17 LAB fixes unrelated Squachy speech. RF OFF: only IDLE quips, including suite gaps and failed starts. RF ON: actual transmitting file device-category bank (60%) or TRANSMITTING bank (40%). Unrecognized active file uses TRANSMITTING only. Menu selection never controls live speech. New cases reset the on-air popup. All 130 fixed and two event-only phrases remain cataloged, but other speech banks are not selected. Keeps R14.12 touch, R14.14 bubble, FULL8/FAST and 172 bounded RF cases. LAB only; SHA-256 flash preflight and CYD 3.2 hardware verification required.",
+      "summary": "R14.18 CYD 3.2 LAB fixes the pink rectangle and mismatched custom Squachy. Both Black Hoodie and Lab Jacket now use the same original SquachWatch animated body, facial features, poses and procedural render path as the 20 existing original styles. Approved PR #61 garment overlays replace the 112x111 RGB332 custom sprite, with no scratch tile allocation on CYD 3.2. R14.17 idle-only and category/TX speech, 172 cases, FULL8/FAST, touch and STOP are unchanged. SHA-256 4-part flashing and physical CYD 3.2 validation required; no stable release.",
       "highlights": [
-        "OFF AIR: only the 11 IDLE phrases are eligible, including suite gaps and failed starts.",
-        "ON AIR: only the active file's real category (60%) or 9 TRANSMITTING phrases (40%) are eligible.",
-        "Never use highlighted but nontransmitting profile to choose speech.",
-        "Force a new eligible popup when active RF case changes without idle redraw.",
-        "Keep all 130 fixed and two event-only phrases in source; disable all unrelated banks.",
-        "Preserve 172 RF profiles, STOP, touch calibration, graphics, TX countdown and build safety.",
-        "LAB-only, SHA-256 preflight and CYD 3.2 physical test; no production merges or releases."
+        "Black Hoodie and Lab Jacket now render on original SquachWatch character geometry and poses.",
+        "Removes the RGB332 pink rectangle: no color-keyed 112x111 custom sprite in normal CYD32 build.",
+        "All 22 outfits use one original-body render path; preserves upstream costume artwork and background animation.",
+        "Original SquachWatch renderer frame location and SquachEmit speech bubble remain unchanged.",
+        "Frees 112x111 RGB332 scratch sprite allocation on the CYD 3.2 original-art build.",
+        "Keeps R14.17 strict idle/TX speech, 172 bounded RF cases, STOP, calibration and FULL8/FAST.",
+        "LAB-only; SHA-256 four-segment flash preflight and real CYD 3.2 inspection required."
       ]
     },
     "c5-waveshare-28": {
