@@ -2,7 +2,7 @@
   "schema": 1,
   "scenario_count": 172,
   "firmware_sources": {
-    "src": "ac712dc753786d7d86fc2e324b8c4f030f4262ee",
+    "src": "0a589ffc477c02f0d78857e0ddbdce935b19ed97",
     "include": "dd19860f63eecb4924297da809b3f205a9e2fafc",
     "lib": "e7d7d66c4e6e2891d47a4171c03c43bb1039b9d0",
     "SquachEmit.ino": "90b4205813a2f7885bc1e12ce7431eebf7249f45",
