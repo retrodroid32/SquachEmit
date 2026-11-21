@@ -6521,6 +6521,12 @@ static void drawBody(TFT_eSPI& t, int cx, int hy, int headTopY, uint32_t now, Mo
     // the custom outfits much smaller than Squachy's real arms in idle poses.
     int armWidthL = S(8), armWidthR = S(8);
     bool armRectL = true, armRectR = true;
+    // Native rest arms are drawn as rectangles, NOT from a centered stroke.
+    // Remember their actual top-left bounds independently for each arm.
+    // Reconstructing x from s_arm*0x - S(4) introduced a rightward offset
+    // because integer-scaled S(14) - S(4) != S(10)/S(18) for all scales.
+    int armRectLX = cx2 - S(18), armRectRX = cx2 + S(10);
+    int armRectLY = hy + S(22), armRectRY = hy + S(22);
     auto limbTo = [&](int x0, int y0, int x1, int y1, int w = 0) {
         const int ww = w ? w : S(7);
         if (x0 < cx2) {
@@ -6544,6 +6550,10 @@ static void drawBody(TFT_eSPI& t, int cx, int hy, int headTopY, uint32_t now, Mo
         // NOT narrow S(7) line segments. Record that native silhouette.
         armWidthL = S(8); armWidthR = S(8);
         armRectL = true; armRectR = true;
+        // These are the SAME expressions used in the native arm
+        // fillRoundRect() calls for IDLE, WALK and SLEEPY.
+        armRectLX = cx2 - S(18); armRectLY = hy + S(22) + dL;
+        armRectRX = cx2 + S(10); armRectRY = hy + S(22) + dR;
         s_armL0x = cx2 - S(14); s_armL0y = hy + S(24) + dL;
         s_armL1x = cx2 - S(14); s_armL1y = hy + S(42) + dL;
         s_armR0x = cx2 + S(14); s_armR0y = hy + S(24) + dR;
@@ -6823,11 +6833,14 @@ static void drawBody(TFT_eSPI& t, int cx, int hy, int headTopY, uint32_t now, Mo
         const uint16_t seam = hoodie ? t.color565(93,97,144) : t.color565(60,203,231);
         const uint16_t cuff = hoodie ? t.color565(23,26,68) : t.color565(188,228,232);
         auto dressArm = [&](int x0, int y0, int x1, int y1,
-                            int nativeWidth, bool rectangular) {
+                            int nativeWidth, bool rectangular,
+                            int nativeRectX, int nativeRectY) {
             if (rectangular) {
-                // Original native arm: fillRoundRect(cx2-S(18),hy+S(22),
-                // S(8),S(22),S(3)). Match exactly, preserving its keyline.
-                const int x = x0-S(4), y = y0-S(2);
+                // R14.22: use the actual top-left coordinates used by
+                // SquachWatch's arm fillRoundRect, NEVER x0-S(4).
+                // Each side has different native x bounds (left -18,
+                // right +10), so scaled rounding cannot bias both sleeves.
+                const int x = nativeRectX, y = nativeRectY;
                 const int w = S(8), h = S(22);
                 t.fillRoundRect(x,y,w,h,S(3),sleeve);
                 const int cuffH = S(3)>1 ? S(3) : 2;
@@ -6848,9 +6861,9 @@ static void drawBody(TFT_eSPI& t, int cx, int hy, int headTopY, uint32_t now, Mo
             }
         };
         dressArm(s_armL0x,s_armL0y,s_armL1x,s_armL1y,
-                 armWidthL,armRectL);
+                 armWidthL,armRectL,armRectLX,armRectLY);
         dressArm(s_armR0x,s_armR0y,s_armR1x,s_armR1y,
-                 armWidthR,armRectR);
+                 armWidthR,armRectR,armRectRX,armRectRY);
     }
 
     // Native layered hood behind the head, never an opaque rectangle in
