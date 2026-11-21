@@ -4,7 +4,7 @@
   "firmware_sources": {
     "src": "0a589ffc477c02f0d78857e0ddbdce935b19ed97",
     "include": "dd19860f63eecb4924297da809b3f205a9e2fafc",
-    "lib": "df1f54f9bc019feb6b9fe0195abe65b3bace30c9",
+    "lib": "bbb71a1b441d98f3ada5d709c4b67a1c3395d161",
     "SquachEmit.ino": "90b4205813a2f7885bc1e12ce7431eebf7249f45",
     "platformio.ini": "c3ff3725248b4c67d60da6903982515031c501f6"
   },
@@ -12,14 +12,14 @@
     "cyd32-st7798": {
       "title": "SquachEmit v1.1.0 CYD 3.2 R14.22 LAB — Exact Left/Right Native Sleeve Alignment (172 Cases)",
       "version": "v1.1.0 MAINLINE · 172 cases",
-      "summary": "R14.22 LAB fixes the custom Black Hoodie and Neon Lab Jacket sleeves appearing shifted right of Squachy's real arms. R14.21 rebuilt the idle sleeve top-left from a recorded arm center using x0-S(4), introducing fractional-scale rounding offsets. R14.22 records and reuses the native left/right rectangle origins exactly (left cx-S(18), right cx+S(10)) plus each arm's live Y sway, keeping existing full-size S(8)xS(22) geometry and pose widths. Preserves R14.20 artwork, backgrounds, speech gating and 172 cases. Four-part SHA-256 LAB release; physical device verification required.",
+      "summary": "R14.22 LAB fixes Black Hoodie and Neon Lab Jacket sleeves drifting right. Instead of separate approximated sleeves, Squachy's original native arm fillRoundRect and wideLine primitives now directly use garment color. Only cuffs and fur hands are drawn afterward using exact left/right bounds and original pose widths. This removes overlay drift while preserving R14.21 full-size arms, R14.20 outfit art, all 20 original costumes, backgrounds, R14.17 speech and 172 RF cases. Four-part SHA-256 LAB prerelease; physical CYD 3.2 verification required.",
       "highlights": [
-        "Fixes custom sleeve right-shift by using exact native left/right arm rectangle x coordinates, not recalculated center-minus-half-width.",
-        "Tracks the original roundrect Y position per moving arm, preserving independent idle/walk sways.",
-        "Preserves R14.21 full-size arm geometry and posed-arm endpoint widths; changes alignment only.",
-        "Black Hoodie, Neon Lab Jacket, all original SquachWatch costumes and backgrounds retain their existing design.",
-        "R14.17 speech state gating, 172 bounded RF scenarios, portrait/landscape UI and STOP remain unchanged.",
-        "LAB-only Build and Release FW with four-part SHA-256 flash bundle; hardware visual approval required."
+        "Custom sleeves color SquachWatch's actual original arm primitives directly, removing shifted overlay shapes.",
+        "Exact left/right native arm bounds drive cuffs and small natural fur hands, without a second arm outline.",
+        "Articulated arms retain real endpoint and width with native moving sleeves.",
+        "Black Hoodie, Neon Lab Jacket, 20 original costumes and backgrounds retain existing artwork.",
+        "R14.17 speech gating, 172 RF cases, portrait/landscape and STOP are unchanged.",
+        "LAB Build and Release FW with four-part SHA-256 firmware; CYD 3.2 visual approval required."
       ]
     },
     "c5-waveshare-28": {
