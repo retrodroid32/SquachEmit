@@ -1,27 +1,22 @@
-# SquachEmit R14.22 — exact left/right sleeve alignment
+# SquachEmit R14.22 — native arm alignment, no shifted sleeve overlay
 
-## Device report
-The R14.21 full-size custom Black Hoodie and Neon Lab Jacket sleeves appear **shifted to the right** of Squachy's original arms. User explicitly requests fix + rebuild + **Build and Release FW** on each broken-hardware report.
+## Hardware defect
+The user reports the Black Hoodie and Neon Lab Jacket sleeves in R14.21 are shifted **to the right** of Squachy's original arms.
 
 ## Root cause
-The native SquachWatch renderer draws idle/rest/walk arms directly at:
-- LEFT: `fillRoundRect(cx2 - S(18), hy + S(22) + armSwingL, S(8), S(22), S(3))`
-- RIGHT: `fillRoundRect(cx2 + S(10), hy + S(22) + armSwingR, S(8), S(22), S(3))`
+R14.21 rendered the real SquachWatch arms in fur, then repainted a **second independent sleeve** using a reconstructed arm origin `s_arm0x-S(4)`, a guessed arm pose, and separate geometry. Those painted rectangles can be offset from original SquachWatch's true native arm fill locations, particularly at fractional display scales and non-rest poses.
 
-R14.21 custom art reconstructed its left/right sleeve x using `s_armL/R0x - S(4)`, where `s_armL/R0x` was a separately scaled shoulder CENTER (cx2 ± S(14)). Truncated integer scaling means this reconstructed value does not necessarily equal the original native arm's exact left edge. The error can shift custom sleeve pixels right relative to the real arm.
+## R14.22 correction — eliminate duplicate sleeve geometry
+1. In `drawBody()`, define `armFill` as the original `furLight` for all approved SquachWatch outfits, or the correct Hoodie/Lab Jacket fabric color for SquachEmit's two custom styles.
+2. Use `armFill` **directly in the native arm `fillRoundRect` and `limbTo` → `wideLine` calls**. This means the costume sleeves have exactly the same rendered x/y, width, height and silhouette as Squachy's real arms, by construction.
+3. For custom styles only, add **small cuffs and furry hand tips** within that original arm using recorded exact left/right native rectangle bounds, live Y sway and pose widths. No duplicate full-arm colored overlays.
+4. Leave the Hoodie hood, strings, pocket, Lab Jacket lapels/pockets/hem, original face, original costumes, 10 backgrounds, 172 scenarios, screen orientation and R14.17 Idle/TX speech unchanged.
 
-## R14.22 correction
-- `restArms(dL,dR)` records the **native** left and right roundrect top-left x/y from the exact expressions above, including per-side animated Y swing.
-- `dressArm` uses these exact four saved bounds for native-rectangle poses instead of recomputing x or y from the center.
-- When `limbTo` is used, the original pose's exact arm endpoint coordinates and width still control sleeves as in R14.21.
-- Hoodie and jacket colors, native body proportions, hand shapes, animations, backgrounds, portrait/landscape, speech selection and 172 RF cases remain unchanged.
+## On CYD 3.2 ST7798
+- Flash R14.22 **LAB** with four verified bootloader/partition/OTA/firmware images and SHA-256 checks.
+- Both Hoodie and Lab Jacket colored arms must now match the actual original arm silhouettes with **no right shift, detached tube or shoulder gap**.
+- Observe 20+ seconds of idle arm sway and moving poses, portrait and landscape, and repeat after cycling original approved outfits.
+- Verify no new pink sprite box, redraw/flicker, misplaced hood, or changed original costumes; RUN/STOP and speech behavior remain correct.
 
-## CYD 3.2 hardware acceptance
-1. Flash the LAB R14.22 four-part package with its SHA-256 checksums on the CYD 3.2 ST7798.
-2. Observe Black Hoodie on an original background. In IDLE, the colored left and right sleeves must sit directly on the original fur arm silhouettes **without a rightward gap on either side**.
-3. Repeat with Neon Lab Jacket. Check shoulders, cuffs and real exposed hands while left/right idle sway runs.
-4. Test moving arm poses, original outfit switch, landscape/portrait rotation and multiple backgrounds; make sure no new misalignment, pink box, redraw or flicker.
-5. Check R14.17 state-scoped speech remains idle-only when RF off, active category/Transmitting when RF on; RUN/STOP still work.
-
-## Build and release gate
-Four GitHub CI jobs must pass. LAB-only Build and Release FW publishes the complete four-part CYD32 package plus SHA-256 as a uniquely tagged GitHub prerelease. Production `main`, stable installer, SquachWatch repo and historical PR branches remain untouched. A compilation pass is not the same as visual acceptance on the hardware.
+## Build and release
+All four CI jobs must pass, followed by the `Build and Release FW (R14.22 LAB)` job. That job issues a uniquely tagged **LAB prerelease** with complete four-part CYD 3.2 ZIP and SHA-256. Physical visual approval is still required; no production merge or stable firmware changes.
