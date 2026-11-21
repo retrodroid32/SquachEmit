@@ -100,15 +100,30 @@ class OriginalBodyCustomCostumes(unittest.TestCase):
         self.assertIn("t.drawFastHLine(cx2-S(th)+S(2),hy+S(43)",art)
         self.assertIn("t.drawFastHLine(cx2+S(2),hy+S(43)",art)
 
-    def test_sleeves_follow_pose_without_colored_hand_circles(self):
+    def test_sleeves_match_native_rectangles_and_pose_widths(self):
         art=self.source.split("static void drawBody(",1)[1]
-        arm=art.split("auto dressArm =",1)[1].split("dressArm(s_armL0x",1)[0]
-        self.assertIn("const int ex = x0 + 4*(x1-x0)/5",arm)
-        self.assertIn("wideLine(t,x0,y0,ex,ey,w+2,outline);",arm)
-        self.assertIn("wideLine(t,x0,y0,ex,ey,w,sleeve);",arm)
-        self.assertNotIn("fillCircle",arm)
-        # RGB332-safe charcoal has blue >=64, avoiding an olive-green
-        # dark hoodie like R14.19 on ST7798.
+        native=art.split("auto limbTo =",1)[1].split("// Arms —",1)[0]
+        sleeve=art.split("// R14.21: dress the EXACT silhouette",1)[1].split(
+            "// Native layered hood",1)[0]
+        # A resting original arm is S(8) wide x S(22) tall, and
+        # posed arms explicitly record the native S(7)/S(8) stroke width.
+        self.assertIn("int armWidthL = S(8), armWidthR = S(8);",art)
+        self.assertIn("bool armRectL = true, armRectR = true;",art)
+        self.assertIn("armWidthL = ww; armRectL = false;",native)
+        self.assertIn("armWidthR = ww; armRectR = false;",native)
+        self.assertIn("armWidthL = S(8); armWidthR = S(8);",native)
+        self.assertIn("armRectL = true; armRectR = true;",native)
+        self.assertIn("const int x = x0-S(4), y = y0-S(2);",sleeve)
+        self.assertIn("const int w = S(8), h = S(22);",sleeve)
+        self.assertIn("t.fillRoundRect(x,y,w,h,S(3),sleeve);",sleeve)
+        self.assertIn("const int ex=x0+94*(x1-x0)/100;",sleeve)
+        self.assertIn("const int w=nativeWidth>1?nativeWidth:2;",sleeve)
+        self.assertNotIn("4*(x1-x0)/5",sleeve)
+        self.assertNotIn("wideLine(t,x0,y0,ex,ey,w+2,outline)",sleeve)
+        self.assertNotIn("fillCircle",sleeve)
+        self.assertIn("dressArm(s_armL0x",sleeve)
+        self.assertIn("dressArm(s_armR0x",sleeve)
+        # Outfit colors and other garment details remain those of R14.20.
         self.assertIn("t.color565(43, 46, 88)",art)
         self.assertIn("t.color565(43,46,88)",art)
 
