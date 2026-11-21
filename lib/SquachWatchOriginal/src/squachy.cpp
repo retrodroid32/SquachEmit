@@ -6519,8 +6519,20 @@ static void drawBody(TFT_eSPI& t, int cx, int hy, int headTopY, uint32_t now, Mo
     // Record the EXACT width and geometry used by the native arm renderer.
     // R14.20 instead guessed S(7) and shortened the sleeve to 80%, making
     // the custom outfits much smaller than Squachy's real arms in idle poses.
+    // R14.22: color the ORIGINAL arm geometry at the moment it is drawn.
+    // A second overlaid sleeve can visibly shift when scale truncation or
+    // motion positions differ. Use the native original render calls instead.
+    const uint16_t armFill = s_sqemitCustomLook == 1 ? t.color565(43,46,88) :
+                             s_sqemitCustomLook == 2 ? t.color565(10,100,145) :
+                             furLight;
     int armWidthL = S(8), armWidthR = S(8);
     bool armRectL = true, armRectR = true;
+    // Native rest arms are drawn as rectangles, NOT from a centered stroke.
+    // Remember their actual top-left bounds independently for each arm.
+    // Reconstructing x from s_arm*0x - S(4) introduced a rightward offset
+    // because integer-scaled S(14) - S(4) != S(10)/S(18) for all scales.
+    int armRectLX = cx2 - S(18), armRectRX = cx2 + S(10);
+    int armRectLY = hy + S(22), armRectRY = hy + S(22);
     auto limbTo = [&](int x0, int y0, int x1, int y1, int w = 0) {
         const int ww = w ? w : S(7);
         if (x0 < cx2) {
@@ -6533,7 +6545,7 @@ static void drawBody(TFT_eSPI& t, int cx, int hy, int headTopY, uint32_t now, Mo
         keyW(x0, y0, x1, y1, ww);
         // YZZERD's fur goes back to his own at the neck, but a few poses draw
         // an arm after the head, over his face. Those are still sleeves.
-        wideLine(t, x0, y0, x1, y1, ww, outfitNow == OutfitId::YZZERD ? YZ_SLEEVE : furLight);
+        wideLine(t, x0, y0, x1, y1, ww, outfitNow == OutfitId::YZZERD ? YZ_SLEEVE : armFill);
     };
 
     // The resting pose's equivalent: the hanging roundrects are drawn
@@ -6544,6 +6556,10 @@ static void drawBody(TFT_eSPI& t, int cx, int hy, int headTopY, uint32_t now, Mo
         // NOT narrow S(7) line segments. Record that native silhouette.
         armWidthL = S(8); armWidthR = S(8);
         armRectL = true; armRectR = true;
+        // These are the SAME expressions used in the native arm
+        // fillRoundRect() calls for IDLE, WALK and SLEEPY.
+        armRectLX = cx2 - S(18); armRectLY = hy + S(22) + dL;
+        armRectRX = cx2 + S(10); armRectRY = hy + S(22) + dR;
         s_armL0x = cx2 - S(14); s_armL0y = hy + S(24) + dL;
         s_armL1x = cx2 - S(14); s_armL1y = hy + S(42) + dL;
         s_armR0x = cx2 + S(14); s_armR0y = hy + S(24) + dR;
@@ -6607,7 +6623,7 @@ static void drawBody(TFT_eSPI& t, int cx, int hy, int headTopY, uint32_t now, Mo
         auto hang = [&](int side) {             // one arm hanging, left (-1) or right
             const int ax = (side < 0) ? cx2 - S(18) : cx2 + S(10);
             keyRR(ax, hy + S(22), S(8), S(22), S(3));
-            t.fillRoundRect(ax, hy + S(22), S(8), S(22), S(3), furLight);
+            t.fillRoundRect(ax, hy + S(22), S(8), S(22), S(3), armFill);
         };
         const float beat = sinf((float)(now % 500) / 500.0f * 6.2831853f);
         switch (act) {
@@ -6690,7 +6706,7 @@ static void drawBody(TFT_eSPI& t, int cx, int hy, int headTopY, uint32_t now, Mo
         const int sd = s_reachDir;
         const int hx = (sd > 0) ? cx2 - S(18) : cx2 + S(10);
         keyRR(hx, hy + S(22), S(8), S(22), S(3));
-        t.fillRoundRect(hx, hy + S(22), S(8), S(22), S(3), furLight);
+        t.fillRoundRect(hx, hy + S(22), S(8), S(22), S(3), armFill);
         static const int8_t REACH_HY[3] = { 4, 40, 22 };   // must match ui_clear's REACH_Y
         limbTo(cx2 + sd * S(11), hy + S(26), cx2 + sd * S(30), hy + S(REACH_HY[s_reachLevel % 3]));
     } else if (m == Mood::PUMP) {
@@ -6699,7 +6715,7 @@ static void drawBody(TFT_eSPI& t, int cx, int hy, int headTopY, uint32_t now, Mo
         const int sd = s_reachDir;
         const int hx = (sd > 0) ? cx2 - S(18) : cx2 + S(10);
         keyRR(hx, hy + S(22), S(8), S(22), S(3));
-        t.fillRoundRect(hx, hy + S(22), S(8), S(22), S(3), furLight);
+        t.fillRoundRect(hx, hy + S(22), S(8), S(22), S(3), armFill);
         const float pk = fabsf(sinf((float)(now % 500) / 500.0f * 3.14159265f));
         const int fx = cx2 + sd * S(22), fy = hy + S(6) + (int)(pk * S(12));
         limbTo(cx2 + sd * S(11), hy + S(26), fx, fy);
@@ -6710,7 +6726,7 @@ static void drawBody(TFT_eSPI& t, int cx, int hy, int headTopY, uint32_t now, Mo
         float ey = hy + S(28) + sinf(wa) * (18.0f * scale);
         limbTo(cx2 + S(11), hy + S(28), (int)ex, (int)ey);
         keyRR(cx2 - S(18), hy + S(22), S(8), S(22), S(3));
-        t.fillRoundRect(cx2 - S(18), hy + S(22), S(8), S(22), S(3), furLight);
+        t.fillRoundRect(cx2 - S(18), hy + S(22), S(8), S(22), S(3), armFill);
     } else if (m == Mood::SHOCKED) {
         // Fast small shake layered onto whichever pose reactPoseFor()
         // picks, so a flail reads as "can't hold still" instead of a
@@ -6733,7 +6749,7 @@ static void drawBody(TFT_eSPI& t, int cx, int hy, int headTopY, uint32_t now, Mo
                 // Resting arm now; the pointing/covering arm is drawn
                 // after the head for the same in-front-of-face reason.
                 keyRR(cx2 - S(18), hy + S(22), S(8), S(22), S(3));
-        t.fillRoundRect(cx2 - S(18), hy + S(22), S(8), S(22), S(3), furLight);
+        t.fillRoundRect(cx2 - S(18), hy + S(22), S(8), S(22), S(3), armFill);
                 break;
             case ReactPose::LOOK_UP:
             case ReactPose::LOOK_AROUND:
@@ -6771,14 +6787,14 @@ static void drawBody(TFT_eSPI& t, int cx, int hy, int headTopY, uint32_t now, Mo
         // limbTo() overwrites only this one.
         restArms(0, 0);
         keyRR(cx2 - S(18), hy + S(22), S(8), S(22), S(3));
-        t.fillRoundRect(cx2 - S(18), hy + S(22), S(8), S(22), S(3), furLight);
+        t.fillRoundRect(cx2 - S(18), hy + S(22), S(8), S(22), S(3), armFill);
         limbTo(cx2 + S(11), hy + S(26), cx2 + S(5), hy + S(1));
     } else if (m == Mood::WALK && s_walkBeat == 3) {
         // A scratch behind the ear, hand buzzing.
         const int bz = (int)(sinf((float)now / 45.0f) * S(2));
         restArms(0, 0);
         keyRR(cx2 - S(18), hy + S(22), S(8), S(22), S(3));
-        t.fillRoundRect(cx2 - S(18), hy + S(22), S(8), S(22), S(3), furLight);
+        t.fillRoundRect(cx2 - S(18), hy + S(22), S(8), S(22), S(3), armFill);
         limbTo(cx2 + S(11), hy + S(26), cx2 + S(16) + bz, hy + S(11));
     } else if (m == Mood::WALK) {
         // Opposite-arm-opposite-leg swing, same phase the legs above
@@ -6790,16 +6806,16 @@ static void drawBody(TFT_eSPI& t, int cx, int hy, int headTopY, uint32_t now, Mo
         int armR = (int)(sinf(legPhase) * S(4));
         restArms(armL, armR);
         keyRR(cx2 - S(18), hy + S(22) + armL, S(8), S(22), S(3));
-        t.fillRoundRect(cx2 - S(18), hy + S(22) + armL, S(8), S(22), S(3), furLight);
+        t.fillRoundRect(cx2 - S(18), hy + S(22) + armL, S(8), S(22), S(3), armFill);
         keyRR(cx2 + S(10), hy + S(22) + armR, S(8), S(22), S(3));
-        t.fillRoundRect(cx2 + S(10), hy + S(22) + armR, S(8), S(22), S(3), furLight);
+        t.fillRoundRect(cx2 + S(10), hy + S(22) + armR, S(8), S(22), S(3), armFill);
     } else if (m == Mood::SLEEPY) {
         // Static/droopy on purpose -- motion here would fight the
         // "tired" read the rest of this pose is going for.
         keyRR(cx2 - S(18), hy + S(22), S(8), S(22), S(3));
-        t.fillRoundRect(cx2 - S(18), hy + S(22), S(8), S(22), S(3), furLight);
+        t.fillRoundRect(cx2 - S(18), hy + S(22), S(8), S(22), S(3), armFill);
         keyRR(cx2 + S(10), hy + S(22), S(8), S(22), S(3));
-        t.fillRoundRect(cx2 + S(10), hy + S(22), S(8), S(22), S(3), furLight);
+        t.fillRoundRect(cx2 + S(10), hy + S(22), S(8), S(22), S(3), armFill);
     } else {
         // IDLE/BOUNCE -- gentle continuous opposing sway so just
         // standing there never reads as a frozen frame.
@@ -6808,49 +6824,47 @@ static void drawBody(TFT_eSPI& t, int cx, int hy, int headTopY, uint32_t now, Mo
         int armSwingR = (int)(sinf(armPhase + 3.14159265f) * S(3));
         restArms(armSwingL, armSwingR);
         keyRR(cx2 - S(18), hy + S(22) + armSwingL, S(8), S(22), S(3));
-        t.fillRoundRect(cx2 - S(18), hy + S(22) + armSwingL, S(8), S(22), S(3), furLight);
+        t.fillRoundRect(cx2 - S(18), hy + S(22) + armSwingL, S(8), S(22), S(3), armFill);
         keyRR(cx2 + S(10), hy + S(22) + armSwingR, S(8), S(22), S(3));
-        t.fillRoundRect(cx2 + S(10), hy + S(22) + armSwingR, S(8), S(22), S(3), furLight);
+        t.fillRoundRect(cx2 + S(10), hy + S(22) + armSwingR, S(8), S(22), S(3), armFill);
     }
 
-    // R14.21: dress the EXACT silhouette drawn by the original arm code.
-    // Rest/walk/idle have full S(8)-wide, S(22)-tall roundrect arms.
-    // LimbTo() poses use their own per-arm widths (default S(7), dancing S(8)).
-    // This fixes the narrow/short tubes of R14.20 without altering Squachy.
+    // R14.22: NO independently positioned sleeve shapes. The native
+    // wideLine/fillRoundRect arms above are already rendered in armFill,
+    // so cuffs and small fur hands are the only additional geometry.
+    // This avoids a second, potentially right-shifted arm completely.
     if (s_sqemitCustomLook) {
         const bool hoodie = s_sqemitCustomLook == 1;
-        const uint16_t sleeve = hoodie ? t.color565(43,46,88) : t.color565(10,100,145);
         const uint16_t seam = hoodie ? t.color565(93,97,144) : t.color565(60,203,231);
         const uint16_t cuff = hoodie ? t.color565(23,26,68) : t.color565(188,228,232);
-        auto dressArm = [&](int x0, int y0, int x1, int y1,
-                            int nativeWidth, bool rectangular) {
+        auto cuffArm = [&](int x0, int y0, int x1, int y1,
+                           int nativeWidth, bool rectangular,
+                           int nativeRectX, int nativeRectY) {
             if (rectangular) {
-                // Original native arm: fillRoundRect(cx2-S(18),hy+S(22),
-                // S(8),S(22),S(3)). Match exactly, preserving its keyline.
-                const int x = x0-S(4), y = y0-S(2);
-                const int w = S(8), h = S(22);
-                t.fillRoundRect(x,y,w,h,S(3),sleeve);
-                const int cuffH = S(3)>1 ? S(3) : 2;
-                t.fillRect(x+1,y+h-cuffH-1,w-2,cuffH,cuff);
-                // Leave the native outline and shape; no oversized circles.
+                const int x=nativeRectX, y=nativeRectY;
+                const int w=S(8), h=S(22);
+                const int handH = S(4)>1 ? S(4) : 1;
+                const int cuffH = S(3)>1 ? S(3) : 1;
+                // Thin cuffs lie INSIDE the same original arm bounds.
+                t.fillRect(x, y+h-handH-cuffH, w, cuffH, cuff);
+                t.fillRoundRect(x, y+h-handH, w, handH, 1, furLight);
                 t.drawFastVLine(x+1,y+S(4),S(7),seam);
             } else {
-                // Full original arm width, 94% of native length. The tiny
-                // remaining end is Squachy's real fur hand, not a colored dot.
-                const int ex=x0+94*(x1-x0)/100;
-                const int ey=y0+94*(y1-y0)/100;
-                const int cx=x0+86*(x1-x0)/100;
-                const int cy=y0+86*(y1-y0)/100;
-                const int w=nativeWidth>1?nativeWidth:2;
-                wideLine(t,x0,y0,ex,ey,w,sleeve);
+                const int w = nativeWidth>1 ? nativeWidth : 2;
+                const int cx = x0 + 85*(x1-x0)/100;
+                const int cy = y0 + 85*(y1-y0)/100;
+                const int ex = x0 + 93*(x1-x0)/100;
+                const int ey = y0 + 93*(y1-y0)/100;
+                // Keep real native sleeve width through the wrist.
                 wideLine(t,cx,cy,ex,ey,w,cuff);
+                wideLine(t,ex,ey,x1,y1,w,furLight);
                 t.drawPixel(x0,y0,seam);
             }
         };
-        dressArm(s_armL0x,s_armL0y,s_armL1x,s_armL1y,
-                 armWidthL,armRectL);
-        dressArm(s_armR0x,s_armR0y,s_armR1x,s_armR1y,
-                 armWidthR,armRectR);
+        cuffArm(s_armL0x,s_armL0y,s_armL1x,s_armL1y,
+                armWidthL,armRectL,armRectLX,armRectLY);
+        cuffArm(s_armR0x,s_armR0y,s_armR1x,s_armR1y,
+                armWidthR,armRectR,armRectRX,armRectRY);
     }
 
     // Native layered hood behind the head, never an opaque rectangle in
