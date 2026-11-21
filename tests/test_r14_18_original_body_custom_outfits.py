@@ -113,7 +113,14 @@ class OriginalBodyCustomCostumes(unittest.TestCase):
         self.assertIn("armWidthR = ww; armRectR = false;",native)
         self.assertIn("armWidthL = S(8); armWidthR = S(8);",native)
         self.assertIn("armRectL = true; armRectR = true;",native)
-        self.assertIn("const int x = x0-S(4), y = y0-S(2);",sleeve)
+        # Use exact native rectangle locations; re-derived x0-S(4) may
+        # shift the left sleeve right at fractional LCD scales.
+        self.assertIn("armRectLX = cx2 - S(18); armRectLY = hy + S(22) + dL;",native)
+        self.assertIn("armRectRX = cx2 + S(10); armRectRY = hy + S(22) + dR;",native)
+        self.assertIn("const int x = nativeRectX, y = nativeRectY;",sleeve)
+        self.assertNotIn("const int x = x0-S(4)",sleeve)
+        self.assertIn("armWidthL,armRectL,armRectLX,armRectLY",sleeve)
+        self.assertIn("armWidthR,armRectR,armRectRX,armRectRY",sleeve)
         self.assertIn("const int w = S(8), h = S(22);",sleeve)
         self.assertIn("t.fillRoundRect(x,y,w,h,S(3),sleeve);",sleeve)
         self.assertIn("const int ex=x0+94*(x1-x0)/100;",sleeve)
