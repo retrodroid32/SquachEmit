@@ -1680,14 +1680,17 @@ void portraitPage(const char* active,uint32_t remaining,bool suite){
     }
 #endif
 #if defined(SQE_ORIGINAL_SQUACHY)
-    // Must be outside the alternative-background #else above: otherwise
-    // original artwork is never drawn on the 240x320 portrait path.
-    if(outfitLevel!=1&&outfitLevel!=2){
-      Squachy::setOutfitPreview(outfitLevel==0?0:(int8_t)(outfitLevel-2));
-      Squachy::holdBubble(true);
-      Squachy::tick(lcd,120,68,138,frameNow(),advanceScene,0.3f,false,0,100);
-    }else
-#endif
+    // Portrait must use the SAME upstream Squachy procedural renderer as
+    // landscape for every style. A separate RGB332 custom sprite previously
+    // drew an opaque magenta box behind hoodie/jacket (or disappeared).
+    Squachy::setOutfitPreview(outfitLevel<=2?0:(int8_t)(outfitLevel-2));
+    Squachy::setSqemitCustomLook(outfitLevel==1?1:outfitLevel==2?2:0);
+    Squachy::holdBubble(true);
+    Squachy::tick(lcd,120,68,138,frameNow(),advanceScene,0.3f,false,0,100);
+    Squachy::setSqemitCustomLook(0);
+    Squachy::setOutfitPreview(-1);
+#else
+    // Non-original-art fallback only; standard CYD32 never enters here.
     if(squachSpriteReady){
       SquachyPort::render(squachSprite,frameNow(),active&&*active,suite,
                           (int32_t)(petUntil-frameNow())>0,outfitLevel);
@@ -1695,6 +1698,7 @@ void portraitPage(const char* active,uint32_t remaining,bool suite){
         squachSprite.pushToSprite(&halfFrame,64,75,0xF81E);
       else squachSprite.pushSprite(64,75,0xF81E);
     }
+#endif
     lcd.fillRoundRect(7,205,226,34,4,kTaskbar);
     lcd.drawRoundRect(7,205,226,34,4,kPink);
     const char* talk=active&&*active?"SYNTHETIC TX IN PROGRESS":
