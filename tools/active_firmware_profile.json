@@ -10,9 +10,9 @@
   },
   "builds": {
     "cyd32-st7798": {
-      "title": "SquachEmit CYD 3.2 R14.19 LAB — Torso-Aligned Custom Hoodie & Lab Jacket (172 Cases)",
+      "title": "SquachEmit v1.1.0 CYD 3.2 R14.19 LAB — Torso-Aligned Black Hoodie & Neon Lab Jacket (172 Cases)",
       "version": "v1.1.0 MAINLINE · 172 cases",
-      "summary": "R14.19 fixes Black Hoodie and Neon Lab Jacket alignment on CYD 3.2. The previous custom coat was drawn in drawOutfit using the animated head origin instead of the torso origin, covering the cheeks, glasses and shoulders. This build anchors the coat to the original torso (hy+23), follows real shoulder/arm pose endpoints, and draws the hood behind the face with live head-drop offsets. No pink sprite, no change to 20 original styles, 10 backgrounds, R14.17 speech, or 172 RF cases. LAB firmware requires CYD 3.2 hardware confirmation.",
+      "summary": "R14.19 CYD 3.2 LAB aligns Black Hoodie and Neon Lab Jacket with the original SquachWatch torso (hy+23), not the head origin that covered the cheeks and mouth. Clothing now matches torso dimensions, sleeves follow moving shoulder/arm endpoints, and the hood is drawn behind the animated face. Preserves the 20 original SquachWatch costumes, 10 backgrounds, R14.17 idle/TX speech, and 172 RF cases. Four-part SHA-256 browser flash preflight; physical CYD 3.2 confirmation required. LAB only, not a stable release.",
       "highlights": [
         "Fixes both custom outfits covering the face: chest now occupies exact original torso dimensions (hy+23, height 18).",
         "Custom hoodie and lab jacket sleeves follow real animated arm endpoints, leaving original hands visible.",
