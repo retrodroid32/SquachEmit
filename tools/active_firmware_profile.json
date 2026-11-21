@@ -4,23 +4,22 @@
   "firmware_sources": {
     "src": "0a589ffc477c02f0d78857e0ddbdce935b19ed97",
     "include": "dd19860f63eecb4924297da809b3f205a9e2fafc",
-    "lib": "e7d7d66c4e6e2891d47a4171c03c43bb1039b9d0",
+    "lib": "1200259e9888be5b865b5290d40f4ef9c8f79cdc",
     "SquachEmit.ino": "90b4205813a2f7885bc1e12ce7431eebf7249f45",
     "platformio.ini": "c3ff3725248b4c67d60da6903982515031c501f6"
   },
   "builds": {
     "cyd32-st7798": {
-      "title": "SquachEmit v1.1.0 CYD 3.2 R14.18 LAB — Original-Body Hoodie & Lab Jacket (172 Cases)",
+      "title": "SquachEmit v1.1.0 CYD 3.2 R14.19 LAB — Torso-Aligned Black Hoodie & Neon Lab Jacket (172 Cases)",
       "version": "v1.1.0 MAINLINE · 172 cases",
-      "summary": "R14.18 CYD 3.2 LAB fixes the pink rectangle and mismatched custom Squachy. Both Black Hoodie and Lab Jacket now use the same original SquachWatch animated body, facial features, poses and procedural render path as the 20 existing original styles. Approved PR #61 garment overlays replace the 112x111 RGB332 custom sprite, with no scratch tile allocation on CYD 3.2. R14.17 idle-only and category/TX speech, 172 cases, FULL8/FAST, touch and STOP are unchanged. SHA-256 4-part flashing and physical CYD 3.2 validation required; no stable release.",
+      "summary": "R14.19 CYD 3.2 LAB aligns Black Hoodie and Neon Lab Jacket with the original SquachWatch torso (hy+23), not the head origin that covered the cheeks and mouth. Clothing now matches torso dimensions, sleeves follow moving shoulder/arm endpoints, and the hood is drawn behind the animated face. Preserves the 20 original SquachWatch costumes, 10 backgrounds, R14.17 idle/TX speech, and 172 RF cases. Four-part SHA-256 browser flash preflight; physical CYD 3.2 confirmation required. LAB only, not a stable release.",
       "highlights": [
-        "Black Hoodie and Lab Jacket now render on original SquachWatch character geometry and poses.",
-        "Removes the RGB332 pink rectangle: no color-keyed 112x111 custom sprite in normal CYD32 build.",
-        "All 22 outfits use one original-body render path; preserves upstream costume artwork and background animation.",
-        "Original SquachWatch renderer frame location and SquachEmit speech bubble remain unchanged.",
-        "Frees 112x111 RGB332 scratch sprite allocation on the CYD 3.2 original-art build.",
-        "Keeps R14.17 strict idle/TX speech, 172 bounded RF cases, STOP, calibration and FULL8/FAST.",
-        "LAB-only; SHA-256 four-segment flash preflight and real CYD 3.2 inspection required."
+        "Fixes both custom outfits covering the face: chest now occupies exact original torso dimensions (hy+23, height 18).",
+        "Custom hoodie and lab jacket sleeves follow real animated arm endpoints, leaving original hands visible.",
+        "Black hood follows head bobbing and is drawn behind the original face instead of floating as a ring.",
+        "Preserves all 20 original SquachWatch outfits, ten animated backgrounds and 172 RF signal cases.",
+        "Preserves R14.17 state-scoped speech and R14.18 no-pink-sprite fix in portrait and landscape.",
+        "LAB build only; hardware verification required before merge, no production release or tag."
       ]
     },
     "c5-waveshare-28": {

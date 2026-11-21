@@ -56,15 +56,28 @@ class OriginalBodyCustomCostumes(unittest.TestCase):
         self.assertNotIn("SquachyPort::render(",original)
         self.assertNotIn("0xF81E",original)
 
-    def test_custom_garment_from_approved_pr61_is_animated_overlay(self):
+    def test_custom_garments_follow_original_body_and_animated_shoulders(self):
+        # R14.19 corrects the first original-body port's misplaced overlay:
+        # drawOutfit receives hh (head anchor), not hy (body anchor).
         self.assertIn("void setSqemitCustomLook(uint8_t look)",self.source)
         self.assertIn("void setSqemitCustomLook(uint8_t look);",self.header)
-        custom=self.source.split("static void drawOutfit(",1)[1]
-        self.assertLess(custom.index("if(s_sqemitCustomLook){"),
-                        custom.index("if (outfit == OutfitId::NONE) return;"))
-        self.assertIn("const uint16_t fabric=s_sqemitCustomLook==1?",custom)
-        self.assertIn("if(s_sqemitCustomLook==2)",custom)
-        self.assertIn("t.fillRoundRect(x-S(13),hy+S(19),S(26),S(18),S(3),fabric);",custom)
+        torso=self.source.split("static void drawBody(",1)[1]
+        original_custom=self.source.split("static void drawOutfit(",1)[1].split(
+            "static void drawBody(",1)[0]
+        self.assertNotIn("if(s_sqemitCustomLook)",original_custom)
+        self.assertIn("const int top = hy + S(23);",torso)
+        self.assertIn("S(2 * th), S(18), S(5), fabric",torso)
+        self.assertIn("s_armL0x, s_armL0y, s_armL1x, s_armL1y",torso)
+        self.assertIn("s_armR0x, s_armR0y, s_armR1x, s_armR1y",torso)
+        self.assertIn("const int hhLive = hy + s_headDrop + actHead;",torso)
+        # First paint the chest, then moving sleeves, then original face.
+        self.assertLess(torso.index("const int top = hy + S(23);"),
+                        torso.index("auto dressArm ="))
+        self.assertLess(torso.index("auto dressArm ="),
+                        torso.index("// ---- head group"))
+        self.assertLess(torso.index("// ---- head group"),
+                        torso.index("drawOutfit(t, cx2, hh"))
+        self.assertNotIn("hy+S(19),S(26),S(18)",original_custom)
 
     def test_no_scratch_sprite_allocated_on_original_art_board(self):
         begin=self.ui.split("void cyd32UiBegin()",1)[1]
