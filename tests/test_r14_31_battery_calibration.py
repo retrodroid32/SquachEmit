@@ -31,6 +31,12 @@ int main(){
   assert(linearPercent(4000)==80);
   assert(linearPercent(4050)==85);
   assert(linearPercent(4200)==100);
+  assert(linearPercent(4010)==81);
+  assert(linearPercent(4040)==84);
+  assert(centiVolts(4024)==402);  // 4.024V -> 4.02V
+  assert(centiVolts(4025)==403);  // 4.025V -> 4.03V
+  assert(centiVolts(4099)==410);  // 4.099V -> 4.10V
+  assert(centiVolts(correctedMv(3950,100))==405);
   assert(linearPercent(4300)==100);
   assert(linearPercent(correctedMv(3950,100))==85);
   assert(linearPercent(3200)==0);
