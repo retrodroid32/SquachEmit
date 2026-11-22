@@ -29,7 +29,7 @@ class R1426HeaderBatteryTests(unittest.TestCase):
     def test_unknown_charging_is_visible_at_98_percent(self):
         self.assertIn('batteryChargingEstimated?"+":"?"', SOURCE)
         self.assertIn('lcd.fillRect(x+7,y-5,7,10,kTaskbar);', SOURCE)
-        self.assertIn('const int32_t minRise=(mv>=4100u)?12:30;', SOURCE)
+        self.assertIn('const int32_t minRise=(batteryMillivolts>=4100u)?12:30;', SOURCE)
         self.assertNotIn('mv<4180u', SOURCE)
 
     def test_charging_claim_requires_verified_charge_pin(self):
