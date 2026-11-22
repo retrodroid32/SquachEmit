@@ -61,3 +61,12 @@ References:
 - https://www.lcdwiki.com/res/E32R32P/3.2inch_ESP32-32_Display_Schematic.pdf
 - https://www.lcdwiki.com/res/E32R32P/3.2inch_ESP32-32E_E32R32P_E32N32P_User_Manual.pdf
 - https://docs.espressif.com/projects/esp-hardware-design-guidelines/en/latest/esp32/schematic-checklist.html
+
+## R14.31 calibration and chosen percentage scale
+
+The R14.30 voltage-only header was a temporary diagnostic while the
+percentage lookup was unvalidated. R14.31 restores an explicitly
+**owner-defined linear scale of 3.20V=0%, 4.20V=100%**, with a
+user-adjustable, saved millivolt correction in **Settings → Battery**.
+See [R14.31 calibration instructions](R14_31_BATTERY_VOLTAGE_CALIBRATION.md).
+This is still not the manufacturer's true fuel-gauge SOC.
