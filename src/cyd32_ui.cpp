@@ -1699,9 +1699,19 @@ Cyd32UiAction touchBatteryCalibration(int x,int y){
   }
   return Cyd32UiAction::None;
 }
+// Settings submenus return to the FIRST Settings page on BACK, while
+// pages opened from the global main menu preserve their original return.
+void backFromSettingsSubmenu(){
+  if(settingsSubmenuFlow){
+    screen=Screen::Settings;
+    settingsMore=false;
+    settingsSubmenuFlow=false;
+  }else screen=Screen::MainMenu;
+  redraw=true;
+}
 Cyd32UiAction touchHelp(int x,int y){
   if(y>=kFooterY){
-    if(x<108){screen=settingsSubmenuFlow?Screen::Settings:Screen::MainMenu;}
+    if(x<108)backFromSettingsSubmenu();
     else if(x<213)helpPage=(helpPage+1)%3;
     else screen=Screen::Recovery;
     redraw=true;
@@ -1710,7 +1720,7 @@ Cyd32UiAction touchHelp(int x,int y){
 }
 Cyd32UiAction touchIdentity(int x,int y){
   if(y>=kFooterY){
-    if(x<108)screen=settingsSubmenuFlow?Screen::Settings:Screen::MainMenu;
+    if(x<108)backFromSettingsSubmenu();
     else if(x<213)screen=Screen::Help;
     else screen=Screen::Recovery;
     redraw=true;
@@ -1723,9 +1733,9 @@ Cyd32UiAction touchRecovery(int x,int y){
     return Cyd32UiAction::None;
   }
   if(y>=kFooterY){
-    if(x<108)screen=settingsSubmenuFlow?Screen::Settings:Screen::MainMenu;
+    if(x<108)backFromSettingsSubmenu();
     else if(x<213)screen=Screen::Help;
-    else screen=Screen::Home;
+    else {screen=Screen::Home;settingsSubmenuFlow=false;settingsMore=false;}
     redraw=true;
   }
   return Cyd32UiAction::None;
