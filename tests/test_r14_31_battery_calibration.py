@@ -32,11 +32,11 @@ int main(){
   assert(linearPercent(4050)==85);
   assert(linearPercent(4200)==100);
   assert(linearPercent(4300)==100);
-  assert(roundedPercent5(correctedMv(3950,100))==85);
-  assert(roundedPercent5(3200)==0);
-  assert(roundedPercent5(3700)==50);
-  assert(roundedPercent5(4000)==80);
-  assert(roundedPercent5(4200)==100);
+  assert(linearPercent(correctedMv(3950,100))==85);
+  assert(linearPercent(3200)==0);
+  assert(linearPercent(3700)==50);
+  assert(linearPercent(4000)==80);
+  assert(linearPercent(4200)==100);
   return 0;
 }
 """
@@ -75,7 +75,7 @@ int main(){
         end=src.index("void drawTxBeacon(",start)
         battery=src[start:end]
         self.assertIn("const uint16_t calibrated=correctedBatteryMv();",battery)
-        self.assertIn("SqeBatteryCalibration::roundedPercent5(calibrated)",battery)
+        self.assertIn("SqeBatteryCalibration::linearPercent(calibrated)",battery)
         self.assertIn('snprintf(value,sizeof(value),"~%u%%"',battery)
         self.assertIn("const int fill=(int)((unsigned)percent*13u/100u);",battery)
         self.assertNotIn("batteryCharging",battery)
