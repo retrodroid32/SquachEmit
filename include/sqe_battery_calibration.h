@@ -20,12 +20,9 @@ inline uint8_t linearPercent(uint16_t batteryMv) {
   if(batteryMv>=4200u)return 100;
   return (uint8_t)(((unsigned)batteryMv-3200u+5u)/10u);
 }
-inline uint8_t roundedPercent5(uint16_t batteryMv) {
-  const unsigned percent=linearPercent(batteryMv);
-  const unsigned rounded=((percent+2u)/5u)*5u;
-  return (uint8_t)(rounded>100u?100u:rounded);
-}
-inline unsigned displayStep50mV(uint16_t rawMv,int16_t offsetMv){
-  return ((unsigned)correctedMv(rawMv,offsetMv)+25u)/50u;
+// Display volts to exactly two decimal places (nearest 10mV), with no
+// previous 50mV / 0.05V stepping. Keep the 1mV-calibrated source intact.
+inline uint16_t centiVolts(uint16_t batteryMv){
+  return (uint16_t)(((unsigned)batteryMv+5u)/10u);
 }
 } // namespace SqeBatteryCalibration
