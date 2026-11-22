@@ -26,6 +26,7 @@
 #include <TFT_eSPI.h>
 #include <Preferences.h>
 #include <string.h>
+#include <time.h>
 
 // This screen structure follows the owner's SquachWatch-CYD CLEAR and
 // SETTINGS screens: centered large Squachy, fine 14px vapor title,
@@ -88,6 +89,7 @@ bool playlistRunning=false,playlistPaused=false;
 unsigned playlistIndex=0,playlistTotal=0;
 uint8_t brightnessLevel=2,animationLevel=1,screenTimeout=0,themeLevel=0,fontMode=1;
 bool settingsMore=false;
+bool openedFromMainMenu=false;
 bool pcControl=false,screenDimmed=false;
 unsigned resetReasonCode=0;
 uint32_t lastTouchActivity=0,lastDeviceAt=0;
@@ -247,10 +249,21 @@ void titleBar(){
   lcd.setTextFont(1);
   const int nameW=lcd.textWidth("SQUACHEMIT");
   const int nameX=(kW-nameW)/2;
-  lcd.fillRect(nameX-8,1,nameW+16,12,kTaskbar);
+  lcd.fillRect(nameX-4,1,nameW+8,12,kTaskbar);
   label(nameX,3,"SQUACHEMIT",kWhite);
   // R14.14: compact radio beacon, not the old triangle-and-mast glyph.
   // Muted at idle, vivid green only while the transmitter is active.
+#if defined(ARDUINO_ARCH_ESP32)
+  const time_t epoch=time(nullptr);
+  if(epoch>1704067200){
+    struct tm current{};
+    localtime_r(&epoch,&current);
+    char stamp[20];strftime(stamp,sizeof(stamp),"%m/%d %H:%M",&current);
+    label(43,3,stamp,kWhite);
+  }else label(43,3,"--/-- --:--",kMuted);
+#else
+  label(43,3,"--/-- --:--",kMuted);
+#endif
   drawBatteryStatus(259,7);
   drawTxBeacon(298,7,onAirIndicator);
   if(pcControl)label(313,3,"P",kCyan);
@@ -1137,7 +1150,7 @@ void mainMenuScreen(){
     if(n<kMenuEntries)menuRow(46+i*39,menuTitles[n],menuHints[n]);
   }
   char count[24];snprintf(count,sizeof(count),"PAGE %u/3",(unsigned)(menuPage+1));
-  label(12,201,count,kMuted);footer("HOME","< PREV","NEXT >");
+  label(12,201,count,kMuted);footer("HOME",menuPage?"< PREV":"",menuPage<2?"NEXT >":"");
 }
 static const char* const kOutfitNames[]={
   "CLASSIC SQUACHY","BLACK HOODIE","NEON LAB JACKET",
@@ -1476,7 +1489,7 @@ Cyd32UiAction touchHome(int x,int y,bool active,bool suite){
 Cyd32UiAction touchCategories(int x,int y){
   if(x>=233&&y>=15&&y<43){screen=Screen::QuickFilter;filterPage=0;redraw=true;return Cyd32UiAction::None;}
   if(y>=kFooterY){
-    if(x<108){screen=Screen::Home;redraw=true;return Cyd32UiAction::None;}
+    if(x<108){screen=openedFromMainMenu?Screen::MainMenu:Screen::Home;openedFromMainMenu=false;redraw=true;return Cyd32UiAction::None;}
     if(x<213){if(categoryPage>0){--categoryPage;redraw=true;}return Cyd32UiAction::None;}
     if((categoryPage+1)*kPageRows<kDeviceCategoryCount){++categoryPage;redraw=true;}
     return Cyd32UiAction::None;
@@ -1550,7 +1563,7 @@ Cyd32UiAction touchDiagnostics(int x,int y){
 }
 Cyd32UiAction touchActivity(int x,int y){
   if(y>=kFooterY){
-    screen=x<108?Screen::Home:x<213?Screen::Evidence:Screen::Details;
+    screen=x<108?Screen::MainMenu:x<213?Screen::Evidence:Screen::Details;
     redraw=true;
   }
   return Cyd32UiAction::None;
@@ -1611,7 +1624,7 @@ Cyd32UiAction touchRecovery(int x,int y){
     return Cyd32UiAction::None;
   }
   if(y>=kFooterY){
-    if(x<108)screen=Screen::Identity;
+    if(x<108)screen=Screen::MainMenu;
     else if(x<213)screen=Screen::Help;
     else screen=Screen::Home;
     redraw=true;
@@ -1623,7 +1636,7 @@ Cyd32UiAction touchFavorites(int x,int y){
     screen=Screen::Home;redraw=true;return Cyd32UiAction::PlaylistStart;
   }
   if(y>=kFooterY){
-    if(x<108){screen=Screen::Details;redraw=true;}
+    if(x<108){screen=openedFromMainMenu?Screen::MainMenu:Screen::Details;openedFromMainMenu=false;redraw=true;}
     else if(x<213){if(favoritesPage>0){--favoritesPage;redraw=true;}}
     else if((favoritesPage+1)*4<favoriteCount()){++favoritesPage;redraw=true;}
     return Cyd32UiAction::None;
@@ -1638,7 +1651,7 @@ Cyd32UiAction touchFavorites(int x,int y){
 }
 Cyd32UiAction touchHistory(int x,int y){
   if(y>=kFooterY){
-    if(x<108){screen=Screen::Details;redraw=true;}
+    if(x<108){screen=openedFromMainMenu?Screen::MainMenu:Screen::Details;openedFromMainMenu=false;redraw=true;}
     else if(x<213){if(historyPage>0){--historyPage;redraw=true;}}
     else if((historyPage+1)*4<historyCount){++historyPage;redraw=true;}
   }
@@ -1646,7 +1659,7 @@ Cyd32UiAction touchHistory(int x,int y){
 }
 Cyd32UiAction touchQuickFilter(int x,int y){
   if(y>=kFooterY){
-    if(x<108){screen=Screen::Categories;redraw=true;}
+    if(x<108){screen=openedFromMainMenu?Screen::MainMenu:Screen::Categories;openedFromMainMenu=false;redraw=true;}
     else if(x<213){if(filterPage>0)--filterPage;redraw=true;}
     else{if((filterPage+1)*4<filterCount())++filterPage;redraw=true;}
     return Cyd32UiAction::None;
@@ -1893,8 +1906,9 @@ void portraitPage(const char* active,uint32_t remaining,bool suite){
   // Permit menu navigation during bounded TX without hiding STOP.
   // Every portrait page keeps its emergency center STOP button.
   const bool radioBusy=(active&&*active)||suite||playlistRunning;
-  button(83,287,74,30,radioBusy?"STOP":screen==Screen::Home?"RUN":"PREV");
-  button(163,287,74,30,screen==Screen::Home?"SUITE":"NEXT");
+  button(83,287,74,30,radioBusy?"STOP":screen==Screen::Home?"RUN":screen==Screen::MainMenu&&!menuPage?"":"PREV");
+  button(163,287,74,30,screen==Screen::Home?"SUITE":screen==Screen::MainMenu&&menuPage>=2?"":"NEXT");
+  if(screen==Screen::MainMenu){char pg[18];snprintf(pg,sizeof(pg),"PAGE %u/3",(unsigned)menuPage+1);label(12,267,pg,kMuted);}
 }
 // TFT_eSPI getTouch() rejects a calibrated coordinate that falls outside
 // the panel. A bezel-edge touch can also have pressure below the 450
@@ -1934,7 +1948,7 @@ Cyd32UiAction portraitTap(int x,int y,bool active,bool suite){
   // Keep top-right rotation separate from the Quick Filter's y>=29
   // control and don't intercept its text row.
   if(y<70&&x<90){
-    screen=Screen::MainMenu;menuPage=0;redraw=true;
+    screen=Screen::MainMenu;menuPage=0;openedFromMainMenu=false;redraw=true;
     if(portraitTouchTrace)Serial.printf("CYD32,TOUCH,MENU_OPEN,x=%d,y=%d\n",x,y);
     return Cyd32UiAction::None;
   }
@@ -2033,7 +2047,7 @@ Cyd32UiAction portraitTap(int x,int y,bool active,bool suite){
         Screen::Favorites,Screen::History,Screen::Diagnostics,Screen::Settings,
         Screen::Outfits,Screen::OtaInfo,Screen::Activity,Screen::Help,
         Screen::Recovery,Screen::Backgrounds};
-      screen=targets[n];redraw=true;
+      openedFromMainMenu=true;screen=targets[n];redraw=true;
     }
   }else if(screen==Screen::Categories)return touchCategories(150,48+i*39);
   else if(screen==Screen::Library)return touchLibrary(150,53+i*36,active);
@@ -2451,7 +2465,7 @@ Cyd32UiAction cyd32UiTick(const char* active,uint32_t remaining,bool suite){
     }else if(y<23&&x>=275){
       rotateCurrentScreen();
     }else if(y<23&&x<48){
-      screen=Screen::MainMenu;menuPage=0;redraw=true;
+      screen=Screen::MainMenu;menuPage=0;openedFromMainMenu=false;redraw=true;
     }else if(screen==Screen::MainMenu){
       if(y>=kFooterY){
         if(x<108)screen=Screen::Home;
@@ -2465,7 +2479,7 @@ Cyd32UiAction cyd32UiTick(const char* active,uint32_t remaining,bool suite){
             Screen::Favorites,Screen::History,Screen::Diagnostics,
             Screen::Settings,Screen::Outfits,Screen::OtaInfo,
             Screen::Activity,Screen::Help,Screen::Recovery,Screen::Backgrounds};
-          screen=targets[n];redraw=true;
+          openedFromMainMenu=true;screen=targets[n];redraw=true;
           if(screen==Screen::Favorites)favoritesPage=0;
           if(screen==Screen::History)historyPage=0;
           if(screen==Screen::QuickFilter)filterPage=0;
