@@ -212,7 +212,7 @@ void sampleBattery(){
   batteryCharging=false; // No charger signal wired; only trend estimate possible.
 #endif
 #if defined(ARDUINO_ARCH_ESP32)
-  Serial.printf("CYD32,BATTERY,mV=%u,pct=%d,trend_rising=%u,charger_verified=%u\\n",
+  Serial.printf("CYD32,BATTERY,mV=%u,pct=%d,trend_rising=%u,charger_verified=%u\n",
       (unsigned)batteryMillivolts,(int)batteryPercent,batteryChargingEstimated?1u:0u,
       batteryCharging?1u:0u);
 #endif
@@ -222,15 +222,22 @@ void drawBatteryStatus(int x,int y){
     batteryPercent<=15?kPink:batteryCharging?kGreen:kWhite;
   char value[6];
   if(batteryPercent<0)snprintf(value,sizeof(value),"--");
-  else snprintf(value,sizeof(value),"%d",batteryPercent);
+  else snprintf(value,sizeof(value),"%d%%",batteryPercent);
+  // A previous animated sprite may leave textSize=2; reset it BEFORE
+  // measuring. The drawn label also uses size=1, so bounds must match.
   lcd.setTextFont(1);
+  lcd.setTextSize(1);
   label(x-4-lcd.textWidth(value),y-4,value,col);
-  lcd.drawRect(x,y-6,17,12,col);
-  lcd.fillRect(x+17,y-3,2,6,col);
+  // Clear only the offscreen status-icon well, not the physical panel.
+  // On a bright gradient, a white outline alone looked like an empty gauge.
+  lcd.fillRect(x+1,y-5,15,10,kTaskbar);
   if(batteryPercent>=0){
     const int fill=(batteryPercent*13+99)/100;
-    if(fill)lcd.fillRect(x+2,y-4,fill,8,col);
+    const uint16_t chargeCol=batteryPercent<=15?kPink:kGreen;
+    if(fill>0)lcd.fillRect(x+2,y-4,fill,8,chargeCol);
   }
+  lcd.drawRect(x,y-6,17,12,kWhite);
+  lcd.fillRect(x+17,y-3,2,6,kWhite);
   // Confirmed charge = solid lightning bolt. Rising voltage estimate = small
   // '?' by battery, never a false solid charging bolt.
   if(batteryChargingEstimated&&!batteryCharging)label(x+8,y-4,"?",kYellow);
@@ -271,11 +278,17 @@ void titleBar(){
   // Black hamburger tile; the full 48x23 top-left area is tappable.
   lcd.fillRoundRect(5,1,27,13,3,kWhite);
   for(int y=4;y<=10;y+=3)lcd.drawFastHLine(11,y,15,kInk);
-  lcd.setTextFont(1);
-  const int nameW=lcd.textWidth("SQUACHEMIT");
+  // The ST7798 frame sprite sometimes inherits a 2x text size from the
+  // preceding animation. Measure in the same font and size used to print.
+  // The fixed GLCD font 1 has 6-pixel pitch per ASCII glyph.
+  static constexpr char kAppTitle[]="SQUACHEMIT";
+  static constexpr int kTitleGlyphW=6;
+  const int nameW=(int)(sizeof(kAppTitle)-1)*kTitleGlyphW;
   const int nameX=(kW-nameW)/2;
+  lcd.setTextFont(1);
+  lcd.setTextSize(1);
   lcd.fillRect(nameX-4,1,nameW+8,12,kTaskbar);
-  label(nameX,3,"SQUACHEMIT",kWhite);
+  label(nameX,3,kAppTitle,kWhite);
   // R14.14: compact radio beacon, not the old triangle-and-mast glyph.
   // Muted at idle, vivid green only while the transmitter is active.
 #if defined(ARDUINO_ARCH_ESP32)
