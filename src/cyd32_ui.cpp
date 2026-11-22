@@ -107,7 +107,11 @@ bool onAirIndicator=false;
 uint16_t batteryMillivolts=0;
 int8_t batteryPercent=-1;
 bool batteryCharging=false;
+bool batteryChargingEstimated=false;
+uint16_t batteryTrendHistory[8]={0};
+uint8_t batteryTrendIndex=0,batteryTrendCount=0;
 uint32_t lastBatterySample=0;
+bool lastBatteryTrendDrawn=false;
 uint32_t lastClockMinute=UINT32_MAX;
 bool portraitCalibrated=false,portraitMode=false;
 // SquachWatch five-target affine fit, stored separately from old TFT_eSPI blob.
@@ -185,7 +189,24 @@ void sampleBattery(){
       }
     }
     batteryPercent=(int8_t)value;
-  }else{batteryPercent=-1;batteryMillivolts=0;}
+    // Slow voltage-rising trend only: NOT proof of USB input or charge state.
+    // Compare the latest ADC voltage to a 105-120 second old sample.
+    if(batteryTrendCount>=8){
+      const int32_t rise=(int32_t)batteryMillivolts-(int32_t)batteryTrendHistory[batteryTrendIndex];
+      batteryChargingEstimated=(rise>=35 && rise<=250 && mv<4180u);
+    }else batteryChargingEstimated=false;
+#if defined(ARDUINO_ARCH_ESP32)
+    Serial.printf("CYD32,BATTERY,mV=%lu,pct=%d,trend_rising=%u,charger_verified=%u\n",
+        (unsigned long)mv,(int)batteryPercent,batteryChargingEstimated?1u:0u,
+        batteryCharging?1u:0u);
+#endif
+    batteryTrendHistory[batteryTrendIndex]=(uint16_t)mv;
+    batteryTrendIndex=(uint8_t)((batteryTrendIndex+1u)%8u);
+    if(batteryTrendCount<8)++batteryTrendCount;
+  }else{
+    batteryPercent=-1;batteryMillivolts=0;batteryChargingEstimated=false;
+    batteryTrendCount=0;batteryTrendIndex=0;
+  }
 #if defined(ARDUINO_ARCH_ESP32) && defined(SQE_BAT_CHARGE_PIN)
 #ifndef SQE_BAT_CHARGE_ACTIVE_LOW
 #define SQE_BAT_CHARGE_ACTIVE_LOW 1
@@ -193,7 +214,7 @@ void sampleBattery(){
   pinMode(SQE_BAT_CHARGE_PIN,INPUT_PULLUP);
   batteryCharging=(digitalRead(SQE_BAT_CHARGE_PIN)==(SQE_BAT_CHARGE_ACTIVE_LOW?LOW:HIGH));
 #else
-  batteryCharging=false; // Unknown, not a claim that charging is absent.
+  batteryCharging=false; // No charger signal wired; only trend estimate possible.
 #endif
 }
 void drawBatteryStatus(int x,int y){
@@ -210,7 +231,9 @@ void drawBatteryStatus(int x,int y){
     const int fill=(batteryPercent*13+99)/100;
     if(fill)lcd.fillRect(x+2,y-4,fill,8,col);
   }
-  // Charging bolt appears only when a confirmed charger-status GPIO is wired.
+  // Confirmed charge = solid lightning bolt. Rising voltage estimate = small
+  // '?' by battery, never a false solid charging bolt.
+  if(batteryChargingEstimated&&!batteryCharging)label(x+8,y-4,"?",kYellow);
   if(batteryCharging){
     lcd.drawLine(x+9,y-5,x+6,y+1,kYellow);
     lcd.drawLine(x+6,y+1,x+11,y+1,kYellow);
@@ -2275,7 +2298,11 @@ Cyd32UiAction cyd32UiTick(const char* active,uint32_t remaining,bool suite){
     if(lastClockMinute!=minute){lastClockMinute=minute;redraw=true;}
   }
 #endif
-  if(priorBattery!=batteryPercent||priorCharging!=batteryCharging)redraw=true;
+  if(priorBattery!=batteryPercent||priorCharging!=batteryCharging ||
+     lastBatteryTrendDrawn!=batteryChargingEstimated){
+    lastBatteryTrendDrawn=batteryChargingEstimated;
+    redraw=true;
+  }
   if(colorBarsUntil){
     if((int32_t)(now-colorBarsUntil)>=0 || (active&&*active)){
       colorBarsUntil=0;redraw=true;
