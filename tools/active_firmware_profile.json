@@ -2,25 +2,25 @@
   "schema": 1,
   "scenario_count": 172,
   "firmware_sources": {
-    "src": "fb14e3d155fc3cb48f2bdd1e9efdd54a5fa08a50",
-    "include": "dd19860f63eecb4924297da809b3f205a9e2fafc",
+    "src": "a205bde52bf0e8c493305d8d0be6656ea5c0f7ff",
+    "include": "5f39135dd4eae2300e1c5a7f5e25c27259643791",
     "lib": "bbb71a1b441d98f3ada5d709c4b67a1c3395d161",
     "SquachEmit.ino": "90b4205813a2f7885bc1e12ce7431eebf7249f45",
     "platformio.ini": "c3ff3725248b4c67d60da6903982515031c501f6"
   },
   "builds": {
     "cyd32-st7798": {
-      "title": "SquachEmit v1.1.0 CYD 3.2 R14.27 LAB — Explicit Charging Status at 98% (172 Cases)",
+      "title": "SquachEmit v1.1.0 CYD 3.2 R14.28 LAB — Stable Battery Readings (172 Cases)",
       "version": "v1.1.0 MAINLINE · 172 cases",
-      "summary": "R14.27 LAB explicitly displays battery charging state as unknown (?) when the CYD3.2 has no connected TP4054 CHRG/VBUS sensor, including at 98%-100%. A '+' shows an unverified rising battery-voltage trend, never a confirmed charge; actual charging bolt remains gated on a verified dedicated GPIO. Near-full trend threshold no longer switches off above 4.18V. Fixes input-only GPIO34-39 pull-up handling and serial diagnostics. Retains R14.26 header and 172 cases. Four-part SHA-256 LAB firmware; hardware validation required.",
+      "summary": "R14.28 LAB fixes battery percentage changing erratically after restart. Delay the first battery sample until 3 seconds after boot; collect 32 calibrated ADC1 readings across eight UI ticks without stalling animation; reject outliers using a trimmed mean, smooth subsequent voltages, and display approximate 5%-step battery estimates with hysteresis (~). Serial logs include raw/filtered millivolts and sample spread. Charging remains unknown (?) without a verified CHRG signal and voltage-rise (+) is only an estimate. Retains 172 RF cases; four-part SHA-256 LAB package; hardware test required.",
       "highlights": [
-        "Charging status '?' is always visible without a verified CHRG input, including at 98%-100% battery.",
-        "'+' means only that measured voltage rose; a charging bolt requires a real charger-state GPIO.",
-        "Near-full trend accepts smaller voltage rises instead of disabling estimation at 4.18V.",
-        "GPIO34-39 charger inputs require an external 3.3V pull-up, not INPUT_PULLUP.",
-        "Serial lines now distinguish charge_sensor=0 / charge_state=UNKNOWN from charging=0.",
-        "Preserves R14.26 centered title, battery fill, Settings navigation and 172 test cases.",
-        "Four-part SHA-256 LAB packaging; physical charger/USB detection not possible on stock board."
+        "Delay first battery reading until 3 seconds after power-on, avoiding startup ADC transients.",
+        "Take 32 calibrated ADC1 millivolt samples over eight UI ticks to preserve animation performance.",
+        "Discard six highest and lowest ADC readings, smoothing noisy hardware samples.",
+        "Show honest approximate voltage-based battery percentage in stable 5% steps with hysteresis.",
+        "Diagnostics report raw and filtered mV, ADC spread, and whether a sample was valid.",
+        "Unverified charging remains '?' and rising voltage '+'; do not assert charging from battery percent.",
+        "Preserve ST7798 UI, original Squachy artwork, Settings navigation, 172 RF tests and SHA-256 packaging."
       ]
     },
     "c5-waveshare-28": {
