@@ -233,21 +233,25 @@ void sampleBattery(){
   (void)now;
 #endif
 }
+int batteryDisplayTick(){
+  if(batteryPercent<0||batteryMillivolts<2800u||batteryMillivolts>4350u)return -1;
+  const uint16_t v=correctedBatteryMv();
+  return batteryDisplayVolts?(int)SqeBatteryCalibration::centiVolts(v):
+         (int)SqeBatteryCalibration::linearPercent(v);
+}
 void drawBatteryStatus(int x,int y){
   const bool valid=batteryPercent>=0 && batteryMillivolts>=2800u &&
                    batteryMillivolts<=4350u;
   const uint16_t calibrated=correctedBatteryMv();
-  const uint8_t percent=SqeBatteryCalibration::roundedPercent5(calibrated);
+  const uint8_t percent=SqeBatteryCalibration::linearPercent(calibrated);
   const uint16_t col=!valid?kMuted:calibrated<=3500u?kPink:kWhite;
   char value[8];
-  if(!valid)snprintf(value,sizeof(value),batteryDisplayVolts?"--.-V":"--%%");
+  if(!valid)snprintf(value,sizeof(value),batteryDisplayVolts?"--.--V":"--%%");
   else if(batteryDisplayVolts){
-    // Show the same corrected voltage as the calibration screen, rounded
-    // to 50mV so startup ADC noise does not imply millivolt accuracy.
-    const unsigned shownMv=
-      SqeBatteryCalibration::displayStep50mV(batteryMillivolts,batteryOffsetMv)*50u;
+    // Round the calibrated battery voltage to the nearest 0.01V, not 0.05V.
+    const unsigned shownCv=SqeBatteryCalibration::centiVolts(calibrated);
     snprintf(value,sizeof(value),"%u.%02uV",
-             shownMv/1000u,(shownMv%1000u)/10u);
+             shownCv/100u,shownCv%100u);
   }else snprintf(value,sizeof(value),"~%u%%",(unsigned)percent);
   // Reset font before measuring to keep the title/status aligned with sprite.
   lcd.setTextFont(1);lcd.setTextSize(1);
@@ -1163,13 +1167,19 @@ void batteryCalibrationScreen(){
   label(10,24,"BATTERY VOLTAGE CAL",kVaporPink,2);
   char line[64];
   if(batteryPercent<0)snprintf(line,sizeof(line),"RAW: ACQUIRING...");
-  else snprintf(line,sizeof(line),"RAW: %u.%02u V",
-    (unsigned)batteryMillivolts/1000u,(unsigned)batteryMillivolts%1000u/10u);
+  else{
+    const unsigned rawCv=SqeBatteryCalibration::centiVolts(batteryMillivolts);
+    snprintf(line,sizeof(line),"RAW: %u.%02u V",rawCv/100u,rawCv%100u);
+  }
   menuRow(46,line,"GPIO34, 2:1 DIVIDER, SETTLING FILTER");
   if(batteryPercent<0)snprintf(line,sizeof(line),"ADJUSTED: WAITING");
-  else snprintf(line,sizeof(line),"ADJUSTED: %u.%02u V / ~%u%%",
-    (unsigned)correctedBatteryMv()/1000u,(unsigned)correctedBatteryMv()%1000u/10u,
-    (unsigned)SqeBatteryCalibration::roundedPercent5(correctedBatteryMv()));
+  else{
+    const uint16_t adjusted=correctedBatteryMv();
+    const unsigned correctedCv=SqeBatteryCalibration::centiVolts(adjusted);
+    snprintf(line,sizeof(line),"ADJUSTED: %u.%02u V / ~%u%%",
+      correctedCv/100u,correctedCv%100u,
+      (unsigned)SqeBatteryCalibration::linearPercent(adjusted));
+  }
   char extra[64];
   snprintf(extra,sizeof(extra),"OFFSET %+d mV | HEADER: %s",(int)batteryOffsetMv,
            batteryDisplayVolts?"VOLTS":"PERCENT");
@@ -1888,11 +1898,13 @@ void portraitPage(const char* active,uint32_t remaining,bool suite){
       snprintf(raw,sizeof(raw),"ACQUIRING...");
       snprintf(adjusted,sizeof(adjusted),"WAITING FOR ADC");
     }else{
-      snprintf(raw,sizeof(raw),"%u.%02u V",
-        (unsigned)batteryMillivolts/1000u,(unsigned)batteryMillivolts%1000u/10u);
+      const unsigned rawCv=SqeBatteryCalibration::centiVolts(batteryMillivolts);
+      const uint16_t adjustedMv=correctedBatteryMv();
+      const unsigned correctedCv=SqeBatteryCalibration::centiVolts(adjustedMv);
+      snprintf(raw,sizeof(raw),"%u.%02u V",rawCv/100u,rawCv%100u);
       snprintf(adjusted,sizeof(adjusted),"%u.%02u V  ~%u%%",
-        (unsigned)correctedBatteryMv()/1000u,(unsigned)correctedBatteryMv()%1000u/10u,
-        (unsigned)SqeBatteryCalibration::roundedPercent5(correctedBatteryMv()));
+        correctedCv/100u,correctedCv%100u,
+        (unsigned)SqeBatteryCalibration::linearPercent(adjustedMv));
     }
     snprintf(offset,sizeof(offset),"OFFSET %+d mV",(int)batteryOffsetMv);
     portraitRow(65,"RAW BATTERY",raw);
@@ -2392,8 +2404,7 @@ Cyd32UiAction cyd32UiTick(const char* active,uint32_t remaining,bool suite){
   const uint32_t now=millis();
   const uint32_t priorBatterySample=lastBatterySample;
   const int8_t priorBattery=batteryPercent;
-  const int prevBatteryVoltageStep=batteryPercent<0?-1:
-      (int)SqeBatteryCalibration::roundedPercent5(correctedBatteryMv());
+  const int prevBatteryVoltageStep=batteryDisplayTick();
   sampleBattery();
 #if defined(ARDUINO_ARCH_ESP32)
   const time_t clockNow=time(nullptr);
@@ -2402,8 +2413,7 @@ Cyd32UiAction cyd32UiTick(const char* active,uint32_t remaining,bool suite){
     if(lastClockMinute!=minute){lastClockMinute=minute;redraw=true;}
   }
 #endif
-  const int nextBatteryVoltageStep=batteryPercent<0?-1:
-      (int)SqeBatteryCalibration::roundedPercent5(correctedBatteryMv());
+  const int nextBatteryVoltageStep=batteryDisplayTick();
   if(priorBattery!=batteryPercent ||
      prevBatteryVoltageStep!=nextBatteryVoltageStep ||
      (screen==Screen::BatteryCalibration&&priorBatterySample!=lastBatterySample))
