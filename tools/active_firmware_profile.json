@@ -2,25 +2,25 @@
   "schema": 1,
   "scenario_count": 172,
   "firmware_sources": {
-    "src": "a205bde52bf0e8c493305d8d0be6656ea5c0f7ff",
-    "include": "5f39135dd4eae2300e1c5a7f5e25c27259643791",
+    "src": "6cb6b1f40010c48dfffaf89ce70a053d1b7c89f2",
+    "include": "4b32a7fdb89c5f103ca79799577f254af661663b",
     "lib": "bbb71a1b441d98f3ada5d709c4b67a1c3395d161",
     "SquachEmit.ino": "90b4205813a2f7885bc1e12ce7431eebf7249f45",
     "platformio.ini": "c3ff3725248b4c67d60da6903982515031c501f6"
   },
   "builds": {
     "cyd32-st7798": {
-      "title": "SquachEmit v1.1.0 CYD 3.2 R14.28 LAB — Stable Battery Readings (172 Cases)",
+      "title": "SquachEmit v1.1.0 CYD 3.2 R14.29 LAB — Stable Battery Boot Readings (172 Cases)",
       "version": "v1.1.0 MAINLINE · 172 cases",
-      "summary": "R14.28 LAB fixes battery percentage changing erratically after restart. Delay the first battery sample until 3 seconds after boot; collect 32 calibrated ADC1 readings across eight UI ticks without stalling animation; reject outliers using a trimmed mean, smooth subsequent voltages, and display approximate 5%-step battery estimates with hysteresis (~). Serial logs include raw/filtered millivolts and sample spread. Charging remains unknown (?) without a verified CHRG signal and voltage-rise (+) is only an estimate. Retains 172 RF cases; four-part SHA-256 LAB package; hardware test required.",
+      "summary": "R14.29 LAB removes all charging-status icons and prioritizes battery accuracy after 80–95% jumps across restarts. After 3s startup settling, four independent 32-sample voltage windows must agree within 60mV before displaying approximate 5% SOC steps; unstable readings display unknown instead of a false percent. ADC core noise is rejected and stable readings are median-smoothed. Serial exposes raw/filtered mV, spread and consensus. Battery voltage cannot yield exact SOC while charging or under load. Retains 172 RF cases and four-part SHA-256 packaging; physical validation pending.",
       "highlights": [
-        "Delay first battery reading until 3 seconds after power-on, avoiding startup ADC transients.",
-        "Take 32 calibrated ADC1 millivolt samples over eight UI ticks to preserve animation performance.",
-        "Discard six highest and lowest ADC readings, smoothing noisy hardware samples.",
-        "Show honest approximate voltage-based battery percentage in stable 5% steps with hysteresis.",
-        "Diagnostics report raw and filtered mV, ADC spread, and whether a sample was valid.",
-        "Unverified charging remains '?' and rising voltage '+'; do not assert charging from battery percent.",
-        "Preserve ST7798 UI, original Squachy artwork, Settings navigation, 172 RF tests and SHA-256 packaging."
+        "Remove charging-status bolt, question mark and plus; preserve only battery gauge and approximate percentage.",
+        "Require four separate ADC windows after boot that agree within 60mV before showing a battery estimate.",
+        "Reject unstable/noisy samples and report unknown instead of an unreliable 80–95% reading.",
+        "Median-filter and smooth stable voltages, then show 5% SOC steps with hysteresis.",
+        "Expose voltage, ADC spread and startup consensus in CYD32,BATTERY serial logs.",
+        "Preserve buffered ST7798 Squachy animation, Settings navigation and all 172 RF cases.",
+        "LAB only; four-part SHA-256 packaging; physical CYD3.2 battery validation required."
       ]
     },
     "c5-waveshare-28": {
