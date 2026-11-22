@@ -26,18 +26,20 @@ class R1426HeaderBatteryTests(unittest.TestCase):
         self.assertIn('lcd.fillRect(x+2,y-4,fill,8,chargeCol);', battery)
         self.assertIn('lcd.drawRect(x,y-6,17,12,kWhite);', battery)
 
-    def test_unknown_charging_is_visible_at_98_percent(self):
-        self.assertIn('batteryChargingEstimated?"+":"?"', SOURCE)
-        self.assertIn('lcd.fillRect(x+7,y-5,7,10,kTaskbar);', SOURCE)
-        self.assertIn('const int32_t minRise=(batteryMillivolts>=4100u)?12:30;', SOURCE)
-        self.assertNotIn('mv<4180u', SOURCE)
+    def test_battery_gauge_has_no_charging_symbols(self):
+        start = SOURCE.index("void drawBatteryStatus(")
+        end = SOURCE.index("void drawTxBeacon(", start)
+        battery = SOURCE[start:end]
+        self.assertNotIn("batteryCharging", battery)
+        self.assertNotIn("charging", battery.lower())
+        self.assertNotIn("kYellow", battery)
+        self.assertNotIn('label(x+7,y-4,', battery)
+        self.assertNotIn("SQE_BAT_CHARGE_PIN", SOURCE)
 
-    def test_charging_claim_requires_verified_charge_pin(self):
-        self.assertIn("defined(SQE_BAT_CHARGE_PIN)", SOURCE)
-        self.assertIn("if(batteryCharging){", SOURCE)
-        self.assertIn("charge_state=UNKNOWN", SOURCE)
-        self.assertIn("SQE_BAT_CHARGE_PIN >= 34 && SQE_BAT_CHARGE_PIN <= 39", SOURCE)
-        self.assertIn("batteryChargingEstimated", SOURCE)
+    def test_battery_reading_awaits_multiple_stable_windows(self):
+        self.assertIn("batteryPercent<0?3000u:15000u", SOURCE)
+        self.assertIn("batteryMeter.accept(batteryAdcSamples)", SOURCE)
+        self.assertIn("consensus_windows=", SOURCE)
 
 
 if __name__ == "__main__":
