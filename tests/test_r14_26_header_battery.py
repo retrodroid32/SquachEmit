@@ -22,7 +22,8 @@ class R1426HeaderBatteryTests(unittest.TestCase):
         end = SOURCE.index("void drawTxBeacon(", start)
         battery = SOURCE[start:end]
         self.assertIn('snprintf(value,sizeof(value),"~%u%%"', battery)
-        self.assertNotIn('snprintf(value,sizeof(value),"%u.%02uV"', battery)
+        self.assertIn('snprintf(value,sizeof(value),"%u.%02uV"', battery)
+        self.assertIn("else if(batteryDisplayVolts){", battery)
         self.assertIn("SqeBatteryCalibration::roundedPercent5(calibrated)",battery)
         self.assertIn("correctedBatteryMv()",battery)
         self.assertIn('lcd.fillRect(x+1,y-5,15,10,kTaskbar);', battery)
