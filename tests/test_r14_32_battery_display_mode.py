@@ -44,7 +44,7 @@ class BatteryDisplayModeTests(unittest.TestCase):
         self.assertIn("SqeBatteryCalibration::roundedPercent5(correctedBatteryMv())",self.src)
         self.assertIn("setBatteryOffsetMv(0);",self.src)
         self.assertIn("SqeBatteryCalibration::correctedMv(batteryMillivolts,batteryOffsetMv)",self.src)
-        self.assertIn("3.20V=0%",(ROOT/"docs"/"R14_31_BATTERY_VOLTAGE_CALIBRATION.md").read_text())
+        self.assertIn("3.20 V or below = 0%",(ROOT/"docs"/"R14_31_BATTERY_VOLTAGE_CALIBRATION.md").read_text())
         
 
 if __name__=="__main__":
