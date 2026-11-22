@@ -7,6 +7,7 @@
 #include "cyd32_fast_sprite.h"
 #include "cyd32_frame_push.h"
 #include "sqe_bubble_timing.h"
+#include "sqe_battery_filter.h"
 #include "sqe_bubble_layout.h"
 #include "sqe_category_quips.h"
 #include "sqe_touch_fit.h"
@@ -105,6 +106,10 @@ size_t filterPage=0;
 uint8_t helpPage=0,menuPage=0,outfitLevel=0,backgroundLevel=0,backgroundPage=0,outfitPage=0;
 bool onAirIndicator=false;
 uint16_t batteryMillivolts=0;
+SqeBattery::Meter batteryMeter{};
+uint16_t batteryAdcSamples[SqeBattery::kSamples]={0};
+uint8_t batteryAdcCount=0;
+bool batteryAdcCollecting=false;
 int8_t batteryPercent=-1;
 bool batteryCharging=false;
 bool batteryChargingEstimated=false;
@@ -167,68 +172,68 @@ uint16_t blend(uint16_t a,uint16_t b,uint8_t t) {
 // Charger status needs a verified physical GPIO; voltage alone cannot prove charging.
 void sampleBattery(){
   const uint32_t now=millis();
-  if(lastBatterySample&&now-lastBatterySample<15000u)return;
-  lastBatterySample=now?now:1u;
-  uint32_t mv=0;
+  // Avoid displaying the boot transient as a fresh fuel gauge reading.
+  if(now<3000u)return;
 #if defined(ARDUINO_ARCH_ESP32)
-  analogSetPinAttenuation(34,ADC_11db);
-  uint32_t total=0;
-  for(int i=0;i<8;++i)total+=analogReadMilliVolts(34);
-  mv=(total/8u)*2u;
-#endif
-  if(mv>=2800u&&mv<=4350u){
-    batteryMillivolts=(uint16_t)mv;
-    static constexpr uint16_t volts[]={3000,3300,3500,3600,3700,3750,3800,3850,3900,4000,4100,4200};
-    static constexpr uint8_t percents[]={0,5,10,15,25,35,45,55,65,80,92,100};
-    int value=mv<=volts[0]?0:100;
-    for(unsigned i=1;i<sizeof(volts)/sizeof(volts[0]);++i){
-      if(mv>volts[0]&&mv<=volts[i]){
-        const int span=volts[i]-volts[i-1];
-        value=percents[i-1]+(int)((mv-volts[i-1])*(percents[i]-percents[i-1])/span);
-        break;
-      }
-    }
-    batteryPercent=(int8_t)value;
-    // Slow voltage-rising trend only: NOT proof of USB input or charge state.
-    // Compare the latest ADC voltage to a 105-120 second old sample.
+  // Spread ADC work over eight UI ticks to avoid stalling ST7798 animation.
+  // Only ADC1 GPIO34 is used, so Bluetooth/Wi-Fi transmission can continue.
+  if(!batteryAdcCollecting){
+    if(lastBatterySample && now-lastBatterySample<15000u)return;
+    analogSetPinAttenuation(34,ADC_11db);
+    for(int i=0;i<4;++i)(void)analogReadMilliVolts(34); // discard warm-up
+    batteryAdcCount=0;
+    batteryAdcCollecting=true;
+  }
+  for(int i=0;i<4 && batteryAdcCount<SqeBattery::kSamples;++i)
+    batteryAdcSamples[batteryAdcCount++]=(uint16_t)analogReadMilliVolts(34);
+  if(batteryAdcCount<SqeBattery::kSamples)return;
+  batteryAdcCollecting=false;
+  lastBatterySample=now;
+  const bool valid=batteryMeter.accept(batteryAdcSamples);
+  batteryMillivolts=batteryMeter.filteredMillivolts;
+  batteryPercent=batteryMeter.displayedPercent;
+  if(valid){
     if(batteryTrendCount>=8){
-      const int32_t rise=(int32_t)batteryMillivolts-(int32_t)batteryTrendHistory[batteryTrendIndex];
-      // Near-full cells rise slowly; do not silently disable the trend
-      // indicator above 4.18 V. This remains an estimate, never CHRG.
-      const int32_t minRise=(mv>=4100u)?12:30;
-      batteryChargingEstimated=(rise>=minRise && rise<=250 && mv<=4300u);
+      const int32_t rise=(int32_t)batteryMillivolts-
+                         (int32_t)batteryTrendHistory[batteryTrendIndex];
+      const int32_t minRise=(batteryMillivolts>=4100u)?12:30;
+      batteryChargingEstimated=(rise>=minRise && rise<=250 &&
+                                batteryMillivolts<=4300u);
     }else batteryChargingEstimated=false;
-    batteryTrendHistory[batteryTrendIndex]=(uint16_t)mv;
+    batteryTrendHistory[batteryTrendIndex]=batteryMillivolts;
     batteryTrendIndex=(uint8_t)((batteryTrendIndex+1u)%8u);
     if(batteryTrendCount<8)++batteryTrendCount;
-  }else{
-    batteryPercent=-1;batteryMillivolts=0;batteryChargingEstimated=false;
+  }else if(batteryPercent<0){
+    batteryChargingEstimated=false;
     batteryTrendCount=0;batteryTrendIndex=0;
   }
-#if defined(ARDUINO_ARCH_ESP32) && defined(SQE_BAT_CHARGE_PIN)
+#if defined(SQE_BAT_CHARGE_PIN)
 #ifndef SQE_BAT_CHARGE_ACTIVE_LOW
 #define SQE_BAT_CHARGE_ACTIVE_LOW 1
 #endif
-  // GPIO34-39 on classic ESP32 have NO internal pull-ups.
-  // On those inputs a real, external 10k pull-up to 3V3 is required.
+  // Classic ESP32 GPIO34-39 have no internal pull-ups; external 3V3
+  // pull-up needed for open-drain CHRG if these inputs are selected.
 #if SQE_BAT_CHARGE_PIN >= 34 && SQE_BAT_CHARGE_PIN <= 39
   pinMode(SQE_BAT_CHARGE_PIN,INPUT);
 #else
   pinMode(SQE_BAT_CHARGE_PIN,INPUT_PULLUP);
 #endif
-  batteryCharging=(digitalRead(SQE_BAT_CHARGE_PIN)==(SQE_BAT_CHARGE_ACTIVE_LOW?LOW:HIGH));
-#else
-  batteryCharging=false; // No charger signal wired; only trend estimate possible.
-#endif
-#if defined(ARDUINO_ARCH_ESP32)
-#if defined(SQE_BAT_CHARGE_PIN)
-  Serial.printf("CYD32,BATTERY,mV=%u,pct=%d,trend_rising=%u,charge_sensor=1,charging=%u\n",
-      (unsigned)batteryMillivolts,(int)batteryPercent,batteryChargingEstimated?1u:0u,
+  batteryCharging=(digitalRead(SQE_BAT_CHARGE_PIN)==
+                   (SQE_BAT_CHARGE_ACTIVE_LOW?LOW:HIGH));
+  Serial.printf("CYD32,BATTERY,raw_mV=%u,filtered_mV=%u,spread_mV=%u,pct_est=%d,valid=%u,trend_rising=%u,charge_sensor=1,charging=%u\n",
+      (unsigned)batteryMeter.rawMillivolts,
+      (unsigned)batteryMillivolts,(unsigned)batteryMeter.sampleSpreadMillivolts,
+      (int)batteryPercent,valid?1u:0u,batteryChargingEstimated?1u:0u,
       batteryCharging?1u:0u);
 #else
-  Serial.printf("CYD32,BATTERY,mV=%u,pct=%d,trend_rising=%u,charge_sensor=0,charge_state=UNKNOWN\n",
-      (unsigned)batteryMillivolts,(int)batteryPercent,batteryChargingEstimated?1u:0u);
+  batteryCharging=false;
+  Serial.printf("CYD32,BATTERY,raw_mV=%u,filtered_mV=%u,spread_mV=%u,pct_est=%d,valid=%u,trend_rising=%u,charge_sensor=0,charge_state=UNKNOWN\n",
+      (unsigned)batteryMeter.rawMillivolts,
+      (unsigned)batteryMillivolts,(unsigned)batteryMeter.sampleSpreadMillivolts,
+      (int)batteryPercent,valid?1u:0u,batteryChargingEstimated?1u:0u);
 #endif
+#else
+  (void)now; // Native host UI fixture has no battery ADC.
 #endif
 }
 void drawBatteryStatus(int x,int y){
@@ -236,7 +241,7 @@ void drawBatteryStatus(int x,int y){
     batteryPercent<=15?kPink:batteryCharging?kGreen:kWhite;
   char value[6];
   if(batteryPercent<0)snprintf(value,sizeof(value),"--");
-  else snprintf(value,sizeof(value),"%d%%",batteryPercent);
+  else snprintf(value,sizeof(value),"~%d%%",batteryPercent);
   // A previous animated sprite may leave textSize=2; reset it BEFORE
   // measuring. The drawn label also uses size=1, so bounds must match.
   lcd.setTextFont(1);
