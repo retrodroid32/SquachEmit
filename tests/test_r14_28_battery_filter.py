@@ -116,7 +116,7 @@ int main(){
         self.assertIn('"~%u%%"',src)
         self.assertIn('prevBatteryVoltageStep',src)
         self.assertIn('nextBatteryVoltageStep',src)
-        self.assertIn("SqeBatteryCalibration::roundedPercent5(correctedBatteryMv())",src)
+        self.assertIn("batteryDisplayTick()",src)
         self.assertIn("filtered_mV=",src)
         self.assertIn("core_spread_mV=",src)
         self.assertNotIn("batteryCharging",src)
