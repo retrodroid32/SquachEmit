@@ -26,7 +26,8 @@ class R1426HeaderBatteryTests(unittest.TestCase):
         self.assertIn("displayedMv/1000u",battery)
         self.assertIn("50u*50u",battery)
         self.assertIn('lcd.fillRect(x+1,y-5,15,10,kTaskbar);', battery)
-        self.assertIn('lcd.fillRect(x+2,y-4,fill,8,chargeCol);', battery)
+        self.assertIn('lcd.fillRect(x+2,y-4,fill,8,levelCol);', battery)
+        self.assertIn("batteryMillivolts>3200u", battery)
         self.assertIn('lcd.drawRect(x,y-6,17,12,kWhite);', battery)
 
     def test_battery_gauge_has_no_charging_symbols(self):
