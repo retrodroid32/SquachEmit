@@ -2,7 +2,7 @@
   "schema": 1,
   "scenario_count": 172,
   "firmware_sources": {
-    "src": "758d49ca7f8d9ea46b0181548c34cae219e9fb45",
+    "src": "24c940821e2483a6473daa34af2b2f2eff68ec23",
     "include": "a18e9329d0a653e5f2b4af11bab4c878727353f6",
     "lib": "bbb71a1b441d98f3ada5d709c4b67a1c3395d161",
     "SquachEmit.ino": "90b4205813a2f7885bc1e12ce7431eebf7249f45",
@@ -10,17 +10,17 @@
   },
   "builds": {
     "cyd32-st7798": {
-      "title": "SquachEmit v1.1.0 CYD 3.2 R14.33 LAB — Battery Two-Decimal Voltage (172 Cases)",
+      "title": "SquachEmit v1.1.0 CYD 3.2 R14.34 LAB — Settings Submenu Back Fix (172 Cases)",
       "version": "v1.1.0 MAINLINE · 172 cases",
-      "summary": "R14.33 LAB removes coarse display rounding: corrected battery voltage shows exactly two decimal places rounded to 0.01V (e.g. 4.03V) rather than 0.05V increments. Battery percent uses the owner's 3.20V=0% to 4.20V=100% linear scale in whole 1% increments instead of 5% steps. Both portrait and landscape headers, plus raw/adjusted calibration readings, use matching display precision. Keeps NVS-saved percent/volt selection, voltage offset, four-window ADC stabilization, original animation and 172 RF cases. Four-part SHA-256 LAB firmware; hardware validation pending.",
+      "summary": "R14.34 LAB fixes Settings navigation: BACK from Identity, Help and Recovery opened through Settings now returns to the FIRST Settings page, not the secondary Display page or global Main Menu. The helper clears stale submenu/page context. Direct Help from global Main Menu still returns there; Settings page cycling and battery calibration BACK are unchanged. Native touch and UI-state regression tests added. Preserves R14.33 calibrated battery readings, two-decimal volts, Squachy animation and all 172 RF cases. Four-part SHA-256 LAB firmware, physical validation required.",
       "highlights": [
-        "Voltage mode: exactly two decimals (4.03V), rounded to nearest 0.01V with no 0.05V stepping.",
-        "Percent mode: whole 1% increments instead of rounding to multiples of 5%.",
-        "Battery calibration RAW and ADJUSTED lines use matching two-decimal voltage formatting.",
-        "Status header repaints when the selected mode's displayed value changes.",
-        "Retains battery offset NVS persistence and percent/volt mode choice across restarts.",
-        "Preserves CYD3.2 original Squachy animations and all 172 RF test cases.",
-        "LAB only; four-part SHA-256 firmware packaging; physical CYD3.2 verification required."
+        "Settings > Display > Identity BACK now returns to main Settings page, not secondary Settings.",
+        "Settings > Display > Help > Recovery BACK returns to first Settings page without stale context.",
+        "Direct Help from global menu continues returning to global menu.",
+        "Battery calibration BACK returns to first Settings; Settings page cycling unchanged.",
+        "Native CYD3.2 touch regressions check Settings, Identity, Help, Recovery and battery flows.",
+        "Preserves merged R14.33 calibration, two-decimal volts, Squachy art and 172 cases.",
+        "LAB only; four-part SHA-256 firmware packaging; physical CYD3.2 testing required."
       ]
     },
     "c5-waveshare-28": {
