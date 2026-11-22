@@ -107,6 +107,7 @@ uint16_t batteryMillivolts=0;
 int8_t batteryPercent=-1;
 bool batteryCharging=false;
 uint32_t lastBatterySample=0;
+uint32_t lastClockMinute=UINT32_MAX;
 bool portraitCalibrated=false,portraitMode=false;
 // SquachWatch five-target affine fit, stored separately from old TFT_eSPI blob.
 TouchFit::Fit portraitFit{};
@@ -2264,6 +2265,13 @@ Cyd32UiAction cyd32UiTick(const char* active,uint32_t remaining,bool suite){
   const int8_t priorBattery=batteryPercent;
   const bool priorCharging=batteryCharging;
   sampleBattery();
+#if defined(ARDUINO_ARCH_ESP32)
+  const time_t clockNow=time(nullptr);
+  if(clockNow>1704067200){
+    const uint32_t minute=(uint32_t)(clockNow/60);
+    if(lastClockMinute!=minute){lastClockMinute=minute;redraw=true;}
+  }
+#endif
   if(priorBattery!=batteryPercent||priorCharging!=batteryCharging)redraw=true;
   if(colorBarsUntil){
     if((int32_t)(now-colorBarsUntil)>=0 || (active&&*active)){
