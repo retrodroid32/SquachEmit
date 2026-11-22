@@ -1880,7 +1880,8 @@ void portraitPage(const char* active,uint32_t remaining,bool suite){
     portraitRow(163,"-10 mV  /  +10 mV","LEFT -   RIGHT +");
     portraitRow(212,"-50 mV  /  +50 mV",offset);
     button(3,287,74,30,"BACK");
-    button(83,287,74,30,"RESET");
+    // Portrait must never hide emergency STOP during a running test.
+    button(83,287,74,30,(active&&*active)||suite||playlistRunning?"STOP":"RESET");
     button(163,287,74,30,"DONE");
     return;
   }
@@ -2076,6 +2077,7 @@ Cyd32UiAction portraitTap(int x,int y,bool active,bool suite){
   if(screen==Screen::BatteryCalibration){
     if(y>=287){
       if(x<80||x>=160){screen=Screen::Settings;settingsMore=false;redraw=true;}
+      else if(active||suite||playlistRunning)return Cyd32UiAction::Stop;
       else setBatteryOffsetMv(0);
     }else if(y>=163&&y<261){
       const int increment=y<212?10:50;
