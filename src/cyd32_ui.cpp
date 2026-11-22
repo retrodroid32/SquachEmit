@@ -203,11 +203,20 @@ void sampleBattery(){
 #endif
 }
 void drawBatteryStatus(int x,int y){
-  const uint16_t col=batteryPercent<0?kMuted:
-    batteryPercent<=15?kPink:kWhite;
-  char value[6];
-  if(batteryPercent<0)snprintf(value,sizeof(value),"--");
-  else snprintf(value,sizeof(value),"~%d%%",batteryPercent);
+  // The LCDWiki E32R32P manual documents BAT_ADC voltage, not a fuel-gauge
+  // percent. Display the directly measured battery voltage instead.
+  const bool valid=batteryPercent>=0 && batteryMillivolts>=2800u &&
+                   batteryMillivolts<=4350u;
+  const uint16_t col=!valid?kMuted:
+    batteryMillivolts<=3500u?kPink:kWhite;
+  char value[8];
+  if(!valid)snprintf(value,sizeof(value),"--.-V");
+  else{
+    // 50mV display quantization avoids pretending the ADC is precise to 1mV.
+    const unsigned displayedMv=((unsigned)batteryMillivolts+25u)/50u*50u;
+    snprintf(value,sizeof(value),"%u.%02uV",
+             displayedMv/1000u,(displayedMv%1000u)/10u);
+  }
   // A previous animated sprite may leave textSize=2; reset it BEFORE
   // measuring. The drawn label also uses size=1, so bounds must match.
   lcd.setTextFont(1);
@@ -216,10 +225,14 @@ void drawBatteryStatus(int x,int y){
   // Clear only the offscreen status-icon well, not the physical panel.
   // On a bright gradient, a white outline alone looked like an empty gauge.
   lcd.fillRect(x+1,y-5,15,10,kTaskbar);
-  if(batteryPercent>=0){
-    const int fill=(batteryPercent*13+99)/100;
-    const uint16_t chargeCol=batteryPercent<=15?kPink:kGreen;
-    if(fill>0)lcd.fillRect(x+2,y-4,fill,8,chargeCol);
+  if(valid){
+    // Bar is a VOLTAGE-LEVEL indicator (3.2-4.2V), not a charge percentage.
+    int fill=0;
+    if(batteryMillivolts>=4200u)fill=13;
+    else if(batteryMillivolts>3200u)
+      fill=(int)(((unsigned)batteryMillivolts-3200u)*13u/1000u);
+    const uint16_t levelCol=batteryMillivolts<=3500u?kPink:kGreen;
+    if(fill>0)lcd.fillRect(x+2,y-4,fill,8,levelCol);
   }
   lcd.drawRect(x,y-6,17,12,kWhite);
   lcd.fillRect(x+17,y-3,2,6,kWhite);
@@ -2280,6 +2293,8 @@ Cyd32UiAction cyd32UiTick(const char* active,uint32_t remaining,bool suite){
   if(!ready)return Cyd32UiAction::None;
   const uint32_t now=millis();
   const int8_t priorBattery=batteryPercent;
+  const int prevBatteryVoltageStep=batteryPercent<0?-1:
+      (int)((batteryMillivolts+25u)/50u);
   sampleBattery();
 #if defined(ARDUINO_ARCH_ESP32)
   const time_t clockNow=time(nullptr);
@@ -2288,7 +2303,10 @@ Cyd32UiAction cyd32UiTick(const char* active,uint32_t remaining,bool suite){
     if(lastClockMinute!=minute){lastClockMinute=minute;redraw=true;}
   }
 #endif
-  if(priorBattery!=batteryPercent)redraw=true;
+  const int nextBatteryVoltageStep=batteryPercent<0?-1:
+      (int)((batteryMillivolts+25u)/50u);
+  if(priorBattery!=batteryPercent ||
+     prevBatteryVoltageStep!=nextBatteryVoltageStep)redraw=true;
   if(colorBarsUntil){
     if((int32_t)(now-colorBarsUntil)>=0 || (active&&*active)){
       colorBarsUntil=0;redraw=true;
