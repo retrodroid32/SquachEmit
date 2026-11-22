@@ -2,7 +2,7 @@
   "schema": 1,
   "scenario_count": 172,
   "firmware_sources": {
-    "src": "0a589ffc477c02f0d78857e0ddbdce935b19ed97",
+    "src": "46918745f2dc026fe0a2129143f8162004bd151e",
     "include": "dd19860f63eecb4924297da809b3f205a9e2fafc",
     "lib": "bbb71a1b441d98f3ada5d709c4b67a1c3395d161",
     "SquachEmit.ino": "90b4205813a2f7885bc1e12ce7431eebf7249f45",
@@ -10,16 +10,16 @@
   },
   "builds": {
     "cyd32-st7798": {
-      "title": "SquachEmit v1.1.0 CYD 3.2 R14.22 LAB — Exact Left/Right Native Sleeve Alignment (172 Cases)",
-      "version": "v1.1.0 MAINLINE · 172 cases",
-      "summary": "R14.22 LAB fixes Black Hoodie and Neon Lab Jacket sleeves drifting right. Instead of separate approximated sleeves, Squachy's original native arm fillRoundRect and wideLine primitives now directly use garment color. Only cuffs and fur hands are drawn afterward using exact left/right bounds and original pose widths. This removes overlay drift while preserving R14.21 full-size arms, R14.20 outfit art, all 20 original costumes, backgrounds, R14.17 speech and 172 RF cases. Four-part SHA-256 LAB prerelease; physical CYD 3.2 verification required.",
+      "title": "SquachEmit v1.1.0 CYD 3.2 R14.23 LAB — Battery Gauge by TX Beacon (172 Cases)",
+      "version": "v1.1.0 MAINLINE · R14.23 Battery LAB · 172 cases",
+      "summary": "R14.23 LAB adds a compact battery percentage and gauge beside the transmit icon in landscape and portrait. Battery voltage is estimated from GPIO34 with a presumed 1:1 voltage divider, requiring board-specific hardware verification. Unknown voltage displays --, and charging lightning appears only with a verified optional charger-status GPIO. Retains R14.22 artwork, 172 RF test cases, and SHA-256 four-segment packaging. Not physically validated.",
       "highlights": [
-        "Custom sleeves color SquachWatch's actual original arm primitives directly, removing shifted overlay shapes.",
-        "Exact left/right native arm bounds drive cuffs and small natural fur hands, without a second arm outline.",
-        "Articulated arms retain real endpoint and width with native moving sleeves.",
-        "Black Hoodie, Neon Lab Jacket, 20 original costumes and backgrounds retain existing artwork.",
-        "R14.17 speech gating, 172 RF cases, portrait/landscape and STOP are unchanged.",
-        "LAB Build and Release FW with four-part SHA-256 firmware; CYD 3.2 visual approval required."
+        "Landscape and portrait header battery gauge alongside the TX radio icon.",
+        "Read 8 ADC millivolt samples approximately every 15 seconds; display approximate single-cell lithium battery percentage.",
+        "Unknown or implausible voltage displays --; avoid claiming a valid reading when floating.",
+        "Charging icon requires explicitly configured verified SQE_BAT_CHARGE_PIN; no fabricated charging state.",
+        "Preserves 172 synthetic signals, R14.22 artwork and buffered animation.",
+        "LAB firmware only: verify GPIO34 divider and charging-status wiring on the exact 3.2-inch ST7798 hardware."
       ]
     },
     "c5-waveshare-28": {
