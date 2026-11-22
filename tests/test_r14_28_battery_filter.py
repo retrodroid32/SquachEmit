@@ -1,4 +1,4 @@
-"""R14.28 voltage filter regression: host-compile real C++ used by CYD32 firmware."""
+"""R14.29: host-compile real CYD3.2 battery code and verify boot consensus."""
 import pathlib
 import shutil
 import subprocess
@@ -9,43 +9,89 @@ ROOT = pathlib.Path(__file__).resolve().parents[1]
 
 
 class BatteryFilterTests(unittest.TestCase):
-    def test_filtered_voltage_and_boot_recovery(self):
+    def test_filtered_voltage_and_boot_consensus(self):
         cc = shutil.which("g++") or shutil.which("clang++")
         if cc is None:
             self.skipTest("C++ compiler unavailable")
         code = r"""
 #include "sqe_battery_filter.h"
 #include <assert.h>
+static void set(uint16_t (&v)[SqeBattery::kSamples],uint16_t mv){
+  for(auto &x:v)x=mv;
+}
 int main(){
-  static_assert(SqeBattery::kSamples==32, "ADC trim window");
+  static_assert(SqeBattery::kSamples==32, "ADC samples");
+  static_assert(SqeBattery::kConsensusWindows==4, "cross-window consensus");
   uint16_t adc[SqeBattery::kSamples]={0};
-  for(auto &v:adc)v=2050;
+  set(adc,2050);
   SqeBattery::Meter m;
+  for(int i=0;i<3;++i) {
+    assert(m.accept(adc));
+    assert(m.displayedPercent==-1); // no first-sample confidence
+  }
   assert(m.accept(adc));
   assert(m.rawMillivolts==4100);
   assert(m.filteredMillivolts==4100);
-  assert(m.displayedPercent==90); // 92% voltage estimate, display in 5% steps
-  // Outliers must not change the reading at all.
+  assert(m.displayedPercent==90);
+
+  // An isolated 80% reading at boot must not become a displayed estimate.
+  SqeBattery::Meter reboot;
+  set(adc,2000);assert(reboot.accept(adc));
+  assert(reboot.displayedPercent==-1);
+  set(adc,2050);
+  for(int i=0;i<3;++i) {
+    assert(reboot.accept(adc));
+    assert(reboot.displayedPercent==-1);
+  }
+  assert(reboot.accept(adc)); // first 4000mV window falls out
+  assert(reboot.displayedPercent==90);
+
+  // A high boot spike also gets dropped before a percentage is shown.
+  SqeBattery::Meter spike;
+  set(adc,2120);assert(spike.accept(adc)); // 4240mV spike
+  assert(spike.displayedPercent==-1);
+  set(adc,2050);
+  for(int i=0;i<4;++i)spike.accept(adc);
+  assert(spike.displayedPercent==90);
+
+  // Outliers do not change the trimmed mean or displayed bucket.
   adc[0]=100;adc[1]=2900;adc[2]=100;adc[3]=2900;
   assert(m.accept(adc));
   assert(m.rawMillivolts==4100);
   assert(m.displayedPercent==90);
-  // Mild ADC variation should not bounce the displayed bucket.
-  for(auto &v:adc)v=2054;
+
+  // Random-ish small drift should not cause SOC bounce.
+  set(adc,2054);
   assert(m.accept(adc));
   assert(m.displayedPercent==90);
-  // A single bad read window is not permission to erase the gauge.
-  for(auto &v:adc)v=300;
+
+  // Single bad windows leave the last trusted state intact, then reset.
+  set(adc,300);
   assert(!m.accept(adc)); assert(m.displayedPercent==90);
   assert(!m.accept(adc)); assert(m.displayedPercent==90);
   assert(!m.accept(adc)); assert(m.displayedPercent==-1);
-  // Genuine valid reading after disconnection/boot recovers.
-  for(auto &v:adc)v=2100;
+
+  // Valid readings after failed ADC must again reach four-window consensus.
+  set(adc,2100);
+  for(int i=0;i<3;++i){assert(m.accept(adc));assert(m.displayedPercent==-1);}
   assert(m.accept(adc));
-  assert(m.rawMillivolts==4200);
   assert(m.filteredMillivolts==4200);
   assert(m.displayedPercent==100);
-  // Fully-charged readings remain approximate voltage estimates.
+
+  // Repeated disagreement returns UNKNOWN rather than fake precision.
+  SqeBattery::Meter noisy;
+  set(adc,2000);
+  for(int i=0;i<4;++i)noisy.accept(adc);
+  assert(noisy.displayedPercent==80);
+  set(adc,2120);
+  assert(noisy.accept(adc));
+  assert(noisy.displayedPercent==80); // allow one transient
+  assert(noisy.accept(adc));
+  assert(noisy.displayedPercent==-1); // reject extended disagreement
+
+  // Wide within-window noise should be rejected, even with plausible mean.
+  for(size_t i=0;i<SqeBattery::kSamples;++i)adc[i]=(i&1)?1900:2200;
+  assert(!noisy.accept(adc));
   assert(SqeBattery::voltagePercent(3200)==3);
   assert(SqeBattery::voltagePercent(4200)==100);
   return 0;
@@ -63,12 +109,15 @@ int main(){
     def test_adc_is_stabilized_and_sampled_incrementally(self):
         src=(ROOT/"src"/"cyd32_ui.cpp").read_text(encoding="utf-8")
         self.assertIn("if(now<3000u)return;",src)
+        self.assertIn("batteryPercent<0?3000u:15000u",src)
         self.assertIn("batteryAdcSamples[batteryAdcCount++]",src)
-        self.assertIn("i<4 && batteryAdcCount<SqeBattery::kSamples",src)
+        self.assertIn("i<4&&batteryAdcCount<SqeBattery::kSamples",src)
         self.assertIn("batteryMeter.accept(batteryAdcSamples)",src)
         self.assertIn('"~%d%%"',src)
         self.assertIn("filtered_mV=",src)
-        self.assertIn("spread_mV=",src)
+        self.assertIn("core_spread_mV=",src)
+        self.assertNotIn("batteryCharging",src)
+        self.assertNotIn("batteryChargingEstimated",src)
 
 
 if __name__ == "__main__":
