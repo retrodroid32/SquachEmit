@@ -301,8 +301,8 @@ void button(int x,int y,int w,int h,const char* s,bool pressed=false){
 }
 void footer(const char* a,const char* b,const char* c){
   button(8,kFooterY,96,kFooterH,a);
-  button(112,kFooterY,96,kFooterH,b);
-  button(216,kFooterY,96,kFooterH,c);
+  if(b&&*b)button(112,kFooterY,96,kFooterH,b);
+  if(c&&*c)button(216,kFooterY,96,kFooterH,c);
 }
 void pinnedBack(){
   // SquachWatch's settings-like subpages pin a full-width BACK strip.
@@ -1907,8 +1907,10 @@ void portraitPage(const char* active,uint32_t remaining,bool suite){
   // Permit menu navigation during bounded TX without hiding STOP.
   // Every portrait page keeps its emergency center STOP button.
   const bool radioBusy=(active&&*active)||suite||playlistRunning;
-  button(83,287,74,30,radioBusy?"STOP":screen==Screen::Home?"RUN":screen==Screen::MainMenu&&!menuPage?"":"PREV");
-  button(163,287,74,30,screen==Screen::Home?"SUITE":screen==Screen::MainMenu&&menuPage>=2?"":"NEXT");
+  if(radioBusy||screen!=Screen::MainMenu||menuPage)
+    button(83,287,74,30,radioBusy?"STOP":screen==Screen::Home?"RUN":"PREV");
+  if(screen!=Screen::MainMenu||menuPage<2)
+    button(163,287,74,30,screen==Screen::Home?"SUITE":"NEXT");
   if(screen==Screen::MainMenu){char pg[18];snprintf(pg,sizeof(pg),"PAGE %u/3",(unsigned)menuPage+1);label(12,267,pg,kMuted);}
 }
 // TFT_eSPI getTouch() rejects a calibrated coordinate that falls outside
