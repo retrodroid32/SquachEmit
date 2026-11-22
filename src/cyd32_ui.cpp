@@ -101,6 +101,10 @@ uint8_t filterLetter=0; // 0 = ALL; 1..26 = A..Z
 size_t filterPage=0;
 uint8_t helpPage=0,menuPage=0,outfitLevel=0,backgroundLevel=0,backgroundPage=0,outfitPage=0;
 bool onAirIndicator=false;
+uint16_t batteryMillivolts=0;
+int8_t batteryPercent=-1;
+bool batteryCharging=false;
+uint32_t lastBatterySample=0;
 bool portraitCalibrated=false,portraitMode=false;
 // SquachWatch five-target affine fit, stored separately from old TFT_eSPI blob.
 TouchFit::Fit portraitFit{};
@@ -151,6 +155,61 @@ uint16_t blend(uint16_t a,uint16_t b,uint8_t t) {
                     ((ag+(bg-ag)*t/255)<<5)|
                      (ab+(bb-ab)*t/255));
 }
+// Battery-backed CYD32 revisions expose VBAT through a 1:1 divider on GPIO34.
+// Charger status needs a verified physical GPIO; voltage alone cannot prove charging.
+void sampleBattery(){
+  const uint32_t now=millis();
+  if(lastBatterySample&&now-lastBatterySample<15000u)return;
+  lastBatterySample=now?now:1u;
+  analogSetPinAttenuation(34,ADC_11db);
+  uint32_t total=0;
+  for(int i=0;i<8;++i)total+=analogReadMilliVolts(34);
+  const uint32_t mv=(total/8u)*2u;
+  if(mv>=2800u&&mv<=4350u){
+    batteryMillivolts=(uint16_t)mv;
+    static constexpr uint16_t volts[]={3000,3300,3500,3600,3700,3750,3800,3850,3900,4000,4100,4200};
+    static constexpr uint8_t percents[]={0,5,10,15,25,35,45,55,65,80,92,100};
+    int value=100;
+    for(unsigned i=1;i<sizeof(volts)/sizeof(volts[0]);++i){
+      if(mv<=volts[i]){
+        const int span=volts[i]-volts[i-1];
+        value=percents[i-1]+(int)((mv-volts[i-1])*(percents[i]-percents[i-1])/span);
+        break;
+      }
+    }
+    batteryPercent=(int8_t)value;
+  }else{batteryPercent=-1;batteryMillivolts=0;}
+#if defined(SQE_BAT_CHARGE_PIN)
+#ifndef SQE_BAT_CHARGE_ACTIVE_LOW
+#define SQE_BAT_CHARGE_ACTIVE_LOW 1
+#endif
+  pinMode(SQE_BAT_CHARGE_PIN,INPUT_PULLUP);
+  batteryCharging=(digitalRead(SQE_BAT_CHARGE_PIN)==(SQE_BAT_CHARGE_ACTIVE_LOW?LOW:HIGH));
+#else
+  batteryCharging=false; // Unknown, not a claim that charging is absent.
+#endif
+}
+void drawBatteryStatus(int x,int y){
+  const uint16_t col=batteryPercent<0?kMuted:
+    batteryPercent<=15?kPink:batteryCharging?kGreen:kWhite;
+  char value[6];
+  if(batteryPercent<0)snprintf(value,sizeof(value),"--");
+  else snprintf(value,sizeof(value),"%d",batteryPercent);
+  lcd.setTextFont(1);
+  label(x-4-lcd.textWidth(value),y-4,value,col);
+  lcd.drawRect(x,y-6,17,12,col);
+  lcd.fillRect(x+17,y-3,2,6,col);
+  if(batteryPercent>=0){
+    const int fill=(batteryPercent*13+99)/100;
+    if(fill)lcd.fillRect(x+2,y-4,fill,8,col);
+  }
+  // Charging bolt appears only when a confirmed charger-status GPIO is wired.
+  if(batteryCharging){
+    lcd.drawLine(x+9,y-5,x+6,y+1,kYellow);
+    lcd.drawLine(x+6,y+1,x+11,y+1,kYellow);
+    lcd.drawLine(x+11,y+1,x+8,y+5,kYellow);
+  }
+}
 // Small symmetric broadcasting radio glyph in the header (19 x 13).
 // Central signal dot + paired bracket waves: legible at 320x240 and 240x320.
 void drawTxBeacon(int cx,int cy,bool transmitting){
@@ -189,6 +248,7 @@ void titleBar(){
   label(nameX,3,"SQUACHEMIT",kWhite);
   // R14.14: compact radio beacon, not the old triangle-and-mast glyph.
   // Muted at idle, vivid green only while the transmitter is active.
+  drawBatteryStatus(259,7);
   drawTxBeacon(298,7,onAirIndicator);
   if(pcControl)label(313,3,"P",kCyan);
 }
@@ -1615,6 +1675,7 @@ void portraitPage(const char* active,uint32_t remaining,bool suite){
   lcd.fillRoundRect(5,3,46,27,3,kWhite);
   for(int y=10;y<=22;y+=6)lcd.drawFastHLine(16,y,23,kInk);
   label(81,9,"SQUACHEMIT",kWhite);
+  drawBatteryStatus(190,13);
   drawTxBeacon(221,13,active&&*active);
   const char* name=screen==Screen::Home?"HOME":screen==Screen::MainMenu?"MENU":
     screen==Screen::Categories?"TEST LIBRARY":screen==Screen::Library?"SIGNALS":
@@ -2183,6 +2244,10 @@ void cyd32UiResetCalibration(){
 Cyd32UiAction cyd32UiTick(const char* active,uint32_t remaining,bool suite){
   if(!ready)return Cyd32UiAction::None;
   const uint32_t now=millis();
+  const int8_t priorBattery=batteryPercent;
+  const bool priorCharging=batteryCharging;
+  sampleBattery();
+  if(priorBattery!=batteryPercent||priorCharging!=batteryCharging)redraw=true;
   if(colorBarsUntil){
     if((int32_t)(now-colorBarsUntil)>=0 || (active&&*active)){
       colorBarsUntil=0;redraw=true;
