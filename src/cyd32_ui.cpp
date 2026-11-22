@@ -111,12 +111,7 @@ uint16_t batteryAdcSamples[SqeBattery::kSamples]={0};
 uint8_t batteryAdcCount=0;
 bool batteryAdcCollecting=false;
 int8_t batteryPercent=-1;
-bool batteryCharging=false;
-bool batteryChargingEstimated=false;
-uint16_t batteryTrendHistory[8]={0};
-uint8_t batteryTrendIndex=0,batteryTrendCount=0;
 uint32_t lastBatterySample=0;
-bool lastBatteryTrendDrawn=false;
 uint32_t lastClockMinute=UINT32_MAX;
 bool portraitCalibrated=false,portraitMode=false;
 // SquachWatch five-target affine fit, stored separately from old TFT_eSPI blob.
@@ -172,19 +167,23 @@ uint16_t blend(uint16_t a,uint16_t b,uint8_t t) {
 // Charger status needs a verified physical GPIO; voltage alone cannot prove charging.
 void sampleBattery(){
   const uint32_t now=millis();
-  // Avoid displaying the boot transient as a fresh fuel gauge reading.
+  // Allow ESP32 supply, RF and the 50k-ohm equivalent divider to settle.
   if(now<3000u)return;
 #if defined(ARDUINO_ARCH_ESP32)
-  // Spread ADC work over eight UI ticks to avoid stalling ST7798 animation.
-  // Only ADC1 GPIO34 is used, so Bluetooth/Wi-Fi transmission can continue.
   if(!batteryAdcCollecting){
-    if(lastBatterySample && now-lastBatterySample<15000u)return;
+    // Startup: acquire four separate 32-sample windows before showing
+    // any percentage. Later, refresh every 15 seconds as before.
+    const uint32_t cadence=batteryPercent<0?3000u:15000u;
+    if(lastBatterySample && now-lastBatterySample<cadence)return;
     analogSetPinAttenuation(34,ADC_11db);
-    for(int i=0;i<4;++i)(void)analogReadMilliVolts(34); // discard warm-up
+    // Discard initial conversion results after enabling attenuation.
+    for(int i=0;i<8;++i)(void)analogReadMilliVolts(34);
     batteryAdcCount=0;
     batteryAdcCollecting=true;
   }
-  for(int i=0;i<4 && batteryAdcCount<SqeBattery::kSamples;++i)
+  // Spread 32 ADC samples over multiple display loops so Squachy retains
+  // its animation frame rate. ADC1 works alongside Wi-Fi/BLE.
+  for(int i=0;i<4&&batteryAdcCount<SqeBattery::kSamples;++i)
     batteryAdcSamples[batteryAdcCount++]=(uint16_t)analogReadMilliVolts(34);
   if(batteryAdcCount<SqeBattery::kSamples)return;
   batteryAdcCollecting=false;
@@ -192,53 +191,20 @@ void sampleBattery(){
   const bool valid=batteryMeter.accept(batteryAdcSamples);
   batteryMillivolts=batteryMeter.filteredMillivolts;
   batteryPercent=batteryMeter.displayedPercent;
-  if(valid){
-    if(batteryTrendCount>=8){
-      const int32_t rise=(int32_t)batteryMillivolts-
-                         (int32_t)batteryTrendHistory[batteryTrendIndex];
-      const int32_t minRise=(batteryMillivolts>=4100u)?12:30;
-      batteryChargingEstimated=(rise>=minRise && rise<=250 &&
-                                batteryMillivolts<=4300u);
-    }else batteryChargingEstimated=false;
-    batteryTrendHistory[batteryTrendIndex]=batteryMillivolts;
-    batteryTrendIndex=(uint8_t)((batteryTrendIndex+1u)%8u);
-    if(batteryTrendCount<8)++batteryTrendCount;
-  }else if(batteryPercent<0){
-    batteryChargingEstimated=false;
-    batteryTrendCount=0;batteryTrendIndex=0;
-  }
-#if defined(SQE_BAT_CHARGE_PIN)
-#ifndef SQE_BAT_CHARGE_ACTIVE_LOW
-#define SQE_BAT_CHARGE_ACTIVE_LOW 1
-#endif
-  // Classic ESP32 GPIO34-39 have no internal pull-ups; external 3V3
-  // pull-up needed for open-drain CHRG if these inputs are selected.
-#if SQE_BAT_CHARGE_PIN >= 34 && SQE_BAT_CHARGE_PIN <= 39
-  pinMode(SQE_BAT_CHARGE_PIN,INPUT);
+  Serial.printf("CYD32,BATTERY,raw_mV=%u,filtered_mV=%u,spread_mV=%u,core_spread_mV=%u,pct_est=%d,valid=%u,consensus_windows=%u,unstable_windows=%u\n",
+    (unsigned)batteryMeter.rawMillivolts,
+    (unsigned)batteryMeter.filteredMillivolts,
+    (unsigned)batteryMeter.sampleSpreadMillivolts,
+    (unsigned)batteryMeter.coreSpreadMillivolts,
+    (int)batteryPercent,valid?1u:0u,
+    (unsigned)batteryMeter.windowCount,(unsigned)batteryMeter.unstableWindows);
 #else
-  pinMode(SQE_BAT_CHARGE_PIN,INPUT_PULLUP);
-#endif
-  batteryCharging=(digitalRead(SQE_BAT_CHARGE_PIN)==
-                   (SQE_BAT_CHARGE_ACTIVE_LOW?LOW:HIGH));
-  Serial.printf("CYD32,BATTERY,raw_mV=%u,filtered_mV=%u,spread_mV=%u,pct_est=%d,valid=%u,trend_rising=%u,charge_sensor=1,charging=%u\n",
-      (unsigned)batteryMeter.rawMillivolts,
-      (unsigned)batteryMillivolts,(unsigned)batteryMeter.sampleSpreadMillivolts,
-      (int)batteryPercent,valid?1u:0u,batteryChargingEstimated?1u:0u,
-      batteryCharging?1u:0u);
-#else
-  batteryCharging=false;
-  Serial.printf("CYD32,BATTERY,raw_mV=%u,filtered_mV=%u,spread_mV=%u,pct_est=%d,valid=%u,trend_rising=%u,charge_sensor=0,charge_state=UNKNOWN\n",
-      (unsigned)batteryMeter.rawMillivolts,
-      (unsigned)batteryMillivolts,(unsigned)batteryMeter.sampleSpreadMillivolts,
-      (int)batteryPercent,valid?1u:0u,batteryChargingEstimated?1u:0u);
-#endif
-#else
-  (void)now; // Native host UI fixture has no battery ADC.
+  (void)now;
 #endif
 }
 void drawBatteryStatus(int x,int y){
   const uint16_t col=batteryPercent<0?kMuted:
-    batteryPercent<=15?kPink:batteryCharging?kGreen:kWhite;
+    batteryPercent<=15?kPink:kWhite;
   char value[6];
   if(batteryPercent<0)snprintf(value,sizeof(value),"--");
   else snprintf(value,sizeof(value),"~%d%%",batteryPercent);
@@ -257,20 +223,7 @@ void drawBatteryStatus(int x,int y){
   }
   lcd.drawRect(x,y-6,17,12,kWhite);
   lcd.fillRect(x+17,y-3,2,6,kWhite);
-  // Status always visible: bolt means a VERIFIED charge-status pin,
-  // '+' means only observed voltage rising, '?' means unknown.
-  // Never make a wall charger look electrically detected when there is
-  // no USB/VBUS/CHRG wire connected to this ESP32 revision.
-  if(batteryCharging){
-    lcd.drawLine(x+9,y-5,x+6,y+1,kYellow);
-    lcd.drawLine(x+6,y+1,x+11,y+1,kYellow);
-    lcd.drawLine(x+11,y+1,x+8,y+5,kYellow);
-  }
-#if !defined(SQE_BAT_CHARGE_PIN)
-  // Marker has an opaque well so it remains readable over the 100% fill.
-  lcd.fillRect(x+7,y-5,7,10,kTaskbar);
-  label(x+7,y-4,batteryChargingEstimated?"+":"?",kYellow);
-#endif
+
 }
 // Small symmetric broadcasting radio glyph in the header (19 x 13).
 // Central signal dot + paired bracket waves: legible at 320x240 and 240x320.
@@ -2327,7 +2280,6 @@ Cyd32UiAction cyd32UiTick(const char* active,uint32_t remaining,bool suite){
   if(!ready)return Cyd32UiAction::None;
   const uint32_t now=millis();
   const int8_t priorBattery=batteryPercent;
-  const bool priorCharging=batteryCharging;
   sampleBattery();
 #if defined(ARDUINO_ARCH_ESP32)
   const time_t clockNow=time(nullptr);
@@ -2336,11 +2288,7 @@ Cyd32UiAction cyd32UiTick(const char* active,uint32_t remaining,bool suite){
     if(lastClockMinute!=minute){lastClockMinute=minute;redraw=true;}
   }
 #endif
-  if(priorBattery!=batteryPercent||priorCharging!=batteryCharging ||
-     lastBatteryTrendDrawn!=batteryChargingEstimated){
-    lastBatteryTrendDrawn=batteryChargingEstimated;
-    redraw=true;
-  }
+  if(priorBattery!=batteryPercent)redraw=true;
   if(colorBarsUntil){
     if((int32_t)(now-colorBarsUntil)>=0 || (active&&*active)){
       colorBarsUntil=0;redraw=true;
