@@ -195,11 +195,6 @@ void sampleBattery(){
       const int32_t rise=(int32_t)batteryMillivolts-(int32_t)batteryTrendHistory[batteryTrendIndex];
       batteryChargingEstimated=(rise>=35 && rise<=250 && mv<4180u);
     }else batteryChargingEstimated=false;
-#if defined(ARDUINO_ARCH_ESP32)
-    Serial.printf("CYD32,BATTERY,mV=%lu,pct=%d,trend_rising=%u,charger_verified=%u\n",
-        (unsigned long)mv,(int)batteryPercent,batteryChargingEstimated?1u:0u,
-        batteryCharging?1u:0u);
-#endif
     batteryTrendHistory[batteryTrendIndex]=(uint16_t)mv;
     batteryTrendIndex=(uint8_t)((batteryTrendIndex+1u)%8u);
     if(batteryTrendCount<8)++batteryTrendCount;
@@ -215,6 +210,11 @@ void sampleBattery(){
   batteryCharging=(digitalRead(SQE_BAT_CHARGE_PIN)==(SQE_BAT_CHARGE_ACTIVE_LOW?LOW:HIGH));
 #else
   batteryCharging=false; // No charger signal wired; only trend estimate possible.
+#endif
+#if defined(ARDUINO_ARCH_ESP32)
+  Serial.printf("CYD32,BATTERY,mV=%u,pct=%d,trend_rising=%u,charger_verified=%u\\n",
+      (unsigned)batteryMillivolts,(int)batteryPercent,batteryChargingEstimated?1u:0u,
+      batteryCharging?1u:0u);
 #endif
 }
 void drawBatteryStatus(int x,int y){
