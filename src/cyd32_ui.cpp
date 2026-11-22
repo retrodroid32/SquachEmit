@@ -7,6 +7,8 @@
 #include "cyd32_fast_sprite.h"
 #include "cyd32_frame_push.h"
 #include "sqe_bubble_timing.h"
+#include "sqe_battery_filter.h"
+#include "sqe_battery_calibration.h"
 #include "sqe_bubble_layout.h"
 #include "sqe_category_quips.h"
 #include "sqe_touch_fit.h"
@@ -26,6 +28,7 @@
 #include <TFT_eSPI.h>
 #include <Preferences.h>
 #include <string.h>
+#include <time.h>
 
 // This screen structure follows the owner's SquachWatch-CYD CLEAR and
 // SETTINGS screens: centered large Squachy, fine 14px vapor title,
@@ -44,7 +47,7 @@ constexpr uint16_t kWhite=0xFFFF,kMuted=0x7393,kInk=0x1801;
 constexpr uint16_t kFurDark=0x38C0,kFurMain=0x5941,kFurLight=0x9326;
 constexpr uint16_t kSkin=0xF60F,kSkinDark=0xCB88;
 
-enum class Screen : uint8_t { Home, Categories, Library, Duration, Details, Diagnostics, Favorites, History, Settings, Help, Identity, Recovery, Activity, Evidence, QuickFilter, Portrait, MainMenu, Outfits, OtaInfo, Backgrounds };
+enum class Screen : uint8_t { Home, Categories, Library, Duration, Details, Diagnostics, Favorites, History, Settings, Help, Identity, Recovery, Activity, Evidence, QuickFilter, Portrait, MainMenu, Outfits, OtaInfo, Backgrounds, BatteryCalibration };
 constexpr size_t kPageRows=4;
 
 // SquachWatch-style staged rendering: physical ST7798 panel is never
@@ -88,6 +91,8 @@ bool playlistRunning=false,playlistPaused=false;
 unsigned playlistIndex=0,playlistTotal=0;
 uint8_t brightnessLevel=2,animationLevel=1,screenTimeout=0,themeLevel=0,fontMode=1;
 bool settingsMore=false;
+bool openedFromMainMenu=false;
+bool settingsSubmenuFlow=false;
 bool pcControl=false,screenDimmed=false;
 unsigned resetReasonCode=0;
 uint32_t lastTouchActivity=0,lastDeviceAt=0;
@@ -101,6 +106,16 @@ uint8_t filterLetter=0; // 0 = ALL; 1..26 = A..Z
 size_t filterPage=0;
 uint8_t helpPage=0,menuPage=0,outfitLevel=0,backgroundLevel=0,backgroundPage=0,outfitPage=0;
 bool onAirIndicator=false;
+uint16_t batteryMillivolts=0;
+SqeBattery::Meter batteryMeter{};
+uint16_t batteryAdcSamples[SqeBattery::kSamples]={0};
+uint8_t batteryAdcCount=0;
+bool batteryAdcCollecting=false;
+int8_t batteryPercent=-1; // only used to gate settled ADC validity
+int16_t batteryOffsetMv=0; // NVS battery-side voltage correction
+bool batteryDisplayVolts=false; // false: %, true: V; persists across restarts
+uint32_t lastBatterySample=0;
+uint32_t lastClockMinute=UINT32_MAX;
 bool portraitCalibrated=false,portraitMode=false;
 // SquachWatch five-target affine fit, stored separately from old TFT_eSPI blob.
 TouchFit::Fit portraitFit{};
@@ -151,6 +166,105 @@ uint16_t blend(uint16_t a,uint16_t b,uint8_t t) {
                     ((ag+(bg-ag)*t/255)<<5)|
                      (ab+(bb-ab)*t/255));
 }
+// Battery-backed CYD32 revisions expose VBAT through a 1:1 divider on GPIO34.
+// Charger status needs a verified physical GPIO; voltage alone cannot prove charging.
+uint16_t correctedBatteryMv(){
+  return SqeBatteryCalibration::correctedMv(batteryMillivolts,batteryOffsetMv);
+}
+void setBatteryOffsetMv(int32_t next){
+  const int16_t candidate=SqeBatteryCalibration::clampOffset(next);
+  if(candidate==batteryOffsetMv)return;
+  batteryOffsetMv=candidate;
+  if(prefs.begin("sqemit32",false)){
+    if(prefs.putInt("batoff_mv",(int32_t)batteryOffsetMv)!=sizeof(int32_t))
+      Serial.println("WARN,BATTERY_OFFSET_SAVE_FAILED");
+    prefs.end();
+  }else Serial.println("WARN,BATTERY_OFFSET_NVS_UNAVAILABLE");
+  Serial.printf("CYD32,BATCAL,OFFSET_MV=%d,CORRECTED_MV=%u\n",
+                (int)batteryOffsetMv,(unsigned)correctedBatteryMv());
+  redraw=true;
+}
+void setBatteryDisplayVolts(bool volts){
+  if(batteryDisplayVolts==volts)return;
+  batteryDisplayVolts=volts;
+  if(prefs.begin("sqemit32",false)){
+    prefs.putBool("batshow_v",batteryDisplayVolts);
+    prefs.end();
+  }else Serial.println("WARN,BATTERY_DISPLAY_NVS_UNAVAILABLE");
+  Serial.printf("CYD32,BATCAL,HEADER_MODE=%s\n",batteryDisplayVolts?"VOLTS":"PERCENT");
+  redraw=true;
+}
+void sampleBattery(){
+  const uint32_t now=millis();
+  // Allow ESP32 supply, RF and the 50k-ohm equivalent divider to settle.
+  if(now<3000u)return;
+#if defined(ARDUINO_ARCH_ESP32)
+  if(!batteryAdcCollecting){
+    // Startup: acquire four separate 32-sample windows before showing
+    // any percentage. Later, refresh every 15 seconds as before.
+    const uint32_t cadence=batteryPercent<0?3000u:15000u;
+    if(lastBatterySample && now-lastBatterySample<cadence)return;
+    analogSetPinAttenuation(34,ADC_11db);
+    // Discard initial conversion results after enabling attenuation.
+    for(int i=0;i<8;++i)(void)analogReadMilliVolts(34);
+    batteryAdcCount=0;
+    batteryAdcCollecting=true;
+  }
+  // Spread 32 ADC samples over multiple display loops so Squachy retains
+  // its animation frame rate. ADC1 works alongside Wi-Fi/BLE.
+  for(int i=0;i<4&&batteryAdcCount<SqeBattery::kSamples;++i)
+    batteryAdcSamples[batteryAdcCount++]=(uint16_t)analogReadMilliVolts(34);
+  if(batteryAdcCount<SqeBattery::kSamples)return;
+  batteryAdcCollecting=false;
+  lastBatterySample=now;
+  const bool valid=batteryMeter.accept(batteryAdcSamples);
+  batteryMillivolts=batteryMeter.filteredMillivolts;
+  batteryPercent=batteryMeter.displayedPercent;
+  Serial.printf("CYD32,BATTERY,raw_mV=%u,filtered_mV=%u,offset_mV=%d,corrected_mV=%u,linear_pct=%u,spread_mV=%u,core_spread_mV=%u,valid=%u,consensus_windows=%u,unstable_windows=%u\n",
+    (unsigned)batteryMeter.rawMillivolts,
+    (unsigned)batteryMeter.filteredMillivolts,
+    (int)batteryOffsetMv,(unsigned)correctedBatteryMv(),
+    (unsigned)SqeBatteryCalibration::linearPercent(correctedBatteryMv()),
+    (unsigned)batteryMeter.sampleSpreadMillivolts,
+    (unsigned)batteryMeter.coreSpreadMillivolts,
+    valid?1u:0u,
+    (unsigned)batteryMeter.windowCount,(unsigned)batteryMeter.unstableWindows);
+#else
+  (void)now;
+#endif
+}
+int batteryDisplayTick(){
+  if(batteryPercent<0||batteryMillivolts<2800u||batteryMillivolts>4350u)return -1;
+  const uint16_t v=correctedBatteryMv();
+  return batteryDisplayVolts?(int)SqeBatteryCalibration::centiVolts(v):
+         (int)SqeBatteryCalibration::linearPercent(v);
+}
+void drawBatteryStatus(int x,int y){
+  const bool valid=batteryPercent>=0 && batteryMillivolts>=2800u &&
+                   batteryMillivolts<=4350u;
+  const uint16_t calibrated=correctedBatteryMv();
+  const uint8_t percent=SqeBatteryCalibration::linearPercent(calibrated);
+  const uint16_t col=!valid?kMuted:calibrated<=3500u?kPink:kWhite;
+  char value[8];
+  if(!valid)snprintf(value,sizeof(value),batteryDisplayVolts?"--.--V":"--%%");
+  else if(batteryDisplayVolts){
+    // Round the calibrated battery voltage to the nearest 0.01V, not 0.05V.
+    const unsigned shownCv=SqeBatteryCalibration::centiVolts(calibrated);
+    snprintf(value,sizeof(value),"%u.%02uV",
+             shownCv/100u,shownCv%100u);
+  }else snprintf(value,sizeof(value),"~%u%%",(unsigned)percent);
+  // Reset font before measuring to keep the title/status aligned with sprite.
+  lcd.setTextFont(1);lcd.setTextSize(1);
+  label(x-4-lcd.textWidth(value),y-4,value,col);
+  lcd.fillRect(x+1,y-5,15,10,kTaskbar);
+  if(valid){
+    const int fill=(int)((unsigned)percent*13u/100u);
+    const uint16_t levelCol=calibrated<=3500u?kPink:kGreen;
+    if(fill>0)lcd.fillRect(x+2,y-4,fill,8,levelCol);
+  }
+  lcd.drawRect(x,y-6,17,12,kWhite);
+  lcd.fillRect(x+17,y-3,2,6,kWhite);
+}
 // Small symmetric broadcasting radio glyph in the header (19 x 13).
 // Central signal dot + paired bracket waves: legible at 320x240 and 240x320.
 void drawTxBeacon(int cx,int cy,bool transmitting){
@@ -182,13 +296,31 @@ void titleBar(){
   // Black hamburger tile; the full 48x23 top-left area is tappable.
   lcd.fillRoundRect(5,1,27,13,3,kWhite);
   for(int y=4;y<=10;y+=3)lcd.drawFastHLine(11,y,15,kInk);
-  lcd.setTextFont(1);
-  const int nameW=lcd.textWidth("SQUACHEMIT");
+  // The ST7798 frame sprite sometimes inherits a 2x text size from the
+  // preceding animation. Measure in the same font and size used to print.
+  // The fixed GLCD font 1 has 6-pixel pitch per ASCII glyph.
+  static constexpr char kAppTitle[]="SQUACHEMIT";
+  static constexpr int kTitleGlyphW=6;
+  const int nameW=(int)(sizeof(kAppTitle)-1)*kTitleGlyphW;
   const int nameX=(kW-nameW)/2;
-  lcd.fillRect(nameX-8,1,nameW+16,12,kTaskbar);
-  label(nameX,3,"SQUACHEMIT",kWhite);
+  lcd.setTextFont(1);
+  lcd.setTextSize(1);
+  lcd.fillRect(nameX-4,1,nameW+8,12,kTaskbar);
+  label(nameX,3,kAppTitle,kWhite);
   // R14.14: compact radio beacon, not the old triangle-and-mast glyph.
   // Muted at idle, vivid green only while the transmitter is active.
+#if defined(ARDUINO_ARCH_ESP32)
+  const time_t epoch=time(nullptr);
+  if(epoch>1704067200){
+    struct tm current{};
+    localtime_r(&epoch,&current);
+    char stamp[20];strftime(stamp,sizeof(stamp),"%m/%d %H:%M",&current);
+    label(43,3,stamp,kWhite);
+  }else label(43,3,"--/-- --:--",kMuted);
+#else
+  label(43,3,"--/-- --:--",kMuted);
+#endif
+  drawBatteryStatus(259,7);
   drawTxBeacon(298,7,onAirIndicator);
   if(pcControl)label(313,3,"P",kCyan);
 }
@@ -224,8 +356,8 @@ void button(int x,int y,int w,int h,const char* s,bool pressed=false){
 }
 void footer(const char* a,const char* b,const char* c){
   button(8,kFooterY,96,kFooterH,a);
-  button(112,kFooterY,96,kFooterH,b);
-  button(216,kFooterY,96,kFooterH,c);
+  if(b&&*b)button(112,kFooterY,96,kFooterH,b);
+  if(c&&*c)button(216,kFooterY,96,kFooterH,c);
 }
 void pinnedBack(){
   // SquachWatch's settings-like subpages pin a full-width BACK strip.
@@ -1030,6 +1162,34 @@ Cyd32UiAction touchPortrait(int x,int y,bool active,bool suite){
          Cyd32UiAction::PlaylistPause):Cyd32UiAction::Suite;
 }
 
+void batteryCalibrationScreen(){
+  lcd.fillScreen(kBg);titleBar();
+  label(10,24,"BATTERY VOLTAGE CAL",kVaporPink,2);
+  char line[64];
+  if(batteryPercent<0)snprintf(line,sizeof(line),"RAW: ACQUIRING...");
+  else{
+    const unsigned rawCv=SqeBatteryCalibration::centiVolts(batteryMillivolts);
+    snprintf(line,sizeof(line),"RAW: %u.%02u V",rawCv/100u,rawCv%100u);
+  }
+  menuRow(46,line,"GPIO34, 2:1 DIVIDER, SETTLING FILTER");
+  if(batteryPercent<0)snprintf(line,sizeof(line),"ADJUSTED: WAITING");
+  else{
+    const uint16_t adjusted=correctedBatteryMv();
+    const unsigned correctedCv=SqeBatteryCalibration::centiVolts(adjusted);
+    snprintf(line,sizeof(line),"ADJUSTED: %u.%02u V / ~%u%%",
+      correctedCv/100u,correctedCv%100u,
+      (unsigned)SqeBatteryCalibration::linearPercent(adjusted));
+  }
+  char extra[64];
+  snprintf(extra,sizeof(extra),"OFFSET %+d mV | HEADER: %s",(int)batteryOffsetMv,
+           batteryDisplayVolts?"VOLTS":"PERCENT");
+  menuRow(85,line,extra);
+  button(8,127,147,32,"- 10 mV");
+  button(165,127,147,32,"+ 10 mV");
+  button(8,168,147,32,"- 50 mV");
+  button(165,168,147,32,"+ 50 mV");
+  footer("BACK","RESET",batteryDisplayVolts?"SHOW V":"SHOW %");
+}
 void settingsScreen(){
   lcd.fillScreen(kBg);titleBar();
   label(10,24,settingsMore?"SETTINGS / DISPLAY":"HANDHELD SETTINGS",kVaporPink,2);
@@ -1055,7 +1215,7 @@ void settingsScreen(){
   menuRow(124,line,"WAKE TOUCH NEVER STARTS A TEST");
   snprintf(line,sizeof(line),"PANEL INVERT: %s",panelInverted?"ON":"OFF");
   menuRow(163,line,"BOARD-SPECIFIC DISPLAY POLARITY");
-  footer("BACK","MORE >","HELP");
+  footer("BACK","MORE >","BATTERY");
 }
 
 constexpr uint8_t kMenuEntries=12;
@@ -1074,7 +1234,7 @@ void mainMenuScreen(){
     if(n<kMenuEntries)menuRow(46+i*39,menuTitles[n],menuHints[n]);
   }
   char count[24];snprintf(count,sizeof(count),"PAGE %u/3",(unsigned)(menuPage+1));
-  label(12,201,count,kMuted);footer("HOME","< PREV","NEXT >");
+  label(12,201,count,kMuted);footer("HOME",menuPage?"< PREV":"",menuPage<2?"NEXT >":"");
 }
 static const char* const kOutfitNames[]={
   "CLASSIC SQUACHY","BLACK HOODIE","NEON LAB JACKET",
@@ -1413,7 +1573,7 @@ Cyd32UiAction touchHome(int x,int y,bool active,bool suite){
 Cyd32UiAction touchCategories(int x,int y){
   if(x>=233&&y>=15&&y<43){screen=Screen::QuickFilter;filterPage=0;redraw=true;return Cyd32UiAction::None;}
   if(y>=kFooterY){
-    if(x<108){screen=Screen::Home;redraw=true;return Cyd32UiAction::None;}
+    if(x<108){screen=Screen::Home;openedFromMainMenu=false;redraw=true;return Cyd32UiAction::None;}
     if(x<213){if(categoryPage>0){--categoryPage;redraw=true;}return Cyd32UiAction::None;}
     if((categoryPage+1)*kPageRows<kDeviceCategoryCount){++categoryPage;redraw=true;}
     return Cyd32UiAction::None;
@@ -1501,9 +1661,10 @@ Cyd32UiAction touchEvidence(int x,int y){
 }
 Cyd32UiAction touchSettings(int x,int y){
   if(y>=kFooterY){
-    if(x<108){screen=Screen::MainMenu;settingsMore=false;}
+    if(x<108){screen=Screen::MainMenu;settingsMore=false;settingsSubmenuFlow=false;}
     else if(x<213){settingsMore=!settingsMore;}
-    else {screen=Screen::Help;settingsMore=false;}
+    else if(settingsMore){settingsSubmenuFlow=true;screen=Screen::Help;settingsMore=false;}
+    else {screen=Screen::BatteryCalibration;}
     redraw=true;return Cyd32UiAction::None;
   }
   if(y>=46&&y<201){
@@ -1511,7 +1672,7 @@ Cyd32UiAction touchSettings(int x,int y){
     if(settingsMore){
       if(row==0){themeLevel=(themeLevel+1)%3;applyTheme();persistUiSettings();}
       else if(row==1){fontMode=(fontMode+1)%2;persistUiSettings();}
-      else if(row==2)screen=Screen::Identity;
+      else if(row==2){settingsSubmenuFlow=true;screen=Screen::Identity;}
       else if(row==3){calibratePortraitFromDevice();}
       redraw=true;return Cyd32UiAction::None;
     }
@@ -1524,9 +1685,23 @@ Cyd32UiAction touchSettings(int x,int y){
   }
   return Cyd32UiAction::None;
 }
+Cyd32UiAction touchBatteryCalibration(int x,int y){
+  if(y>=kFooterY){
+    if(x<108){screen=Screen::Settings;settingsMore=false;redraw=true;}
+    else if(x<213)setBatteryOffsetMv(0);
+    else setBatteryDisplayVolts(!batteryDisplayVolts);
+    return Cyd32UiAction::None;
+  }
+  if(y>=124&&y<164){
+    setBatteryOffsetMv((int32_t)batteryOffsetMv+(x<160?-10:10));
+  }else if(y>=164&&y<205){
+    setBatteryOffsetMv((int32_t)batteryOffsetMv+(x<160?-50:50));
+  }
+  return Cyd32UiAction::None;
+}
 Cyd32UiAction touchHelp(int x,int y){
   if(y>=kFooterY){
-    if(x<108)screen=Screen::MainMenu;
+    if(x<108){screen=settingsSubmenuFlow?Screen::Settings:Screen::MainMenu;}
     else if(x<213)helpPage=(helpPage+1)%3;
     else screen=Screen::Recovery;
     redraw=true;
@@ -1535,7 +1710,7 @@ Cyd32UiAction touchHelp(int x,int y){
 }
 Cyd32UiAction touchIdentity(int x,int y){
   if(y>=kFooterY){
-    if(x<108)screen=Screen::Settings;
+    if(x<108)screen=settingsSubmenuFlow?Screen::Settings:Screen::MainMenu;
     else if(x<213)screen=Screen::Help;
     else screen=Screen::Recovery;
     redraw=true;
@@ -1548,7 +1723,7 @@ Cyd32UiAction touchRecovery(int x,int y){
     return Cyd32UiAction::None;
   }
   if(y>=kFooterY){
-    if(x<108)screen=Screen::Identity;
+    if(x<108)screen=settingsSubmenuFlow?Screen::Settings:Screen::MainMenu;
     else if(x<213)screen=Screen::Help;
     else screen=Screen::Home;
     redraw=true;
@@ -1560,7 +1735,7 @@ Cyd32UiAction touchFavorites(int x,int y){
     screen=Screen::Home;redraw=true;return Cyd32UiAction::PlaylistStart;
   }
   if(y>=kFooterY){
-    if(x<108){screen=Screen::Details;redraw=true;}
+    if(x<108){screen=Screen::Details;openedFromMainMenu=false;redraw=true;}
     else if(x<213){if(favoritesPage>0){--favoritesPage;redraw=true;}}
     else if((favoritesPage+1)*4<favoriteCount()){++favoritesPage;redraw=true;}
     return Cyd32UiAction::None;
@@ -1575,7 +1750,7 @@ Cyd32UiAction touchFavorites(int x,int y){
 }
 Cyd32UiAction touchHistory(int x,int y){
   if(y>=kFooterY){
-    if(x<108){screen=Screen::Details;redraw=true;}
+    if(x<108){screen=Screen::Details;openedFromMainMenu=false;redraw=true;}
     else if(x<213){if(historyPage>0){--historyPage;redraw=true;}}
     else if((historyPage+1)*4<historyCount){++historyPage;redraw=true;}
   }
@@ -1583,7 +1758,7 @@ Cyd32UiAction touchHistory(int x,int y){
 }
 Cyd32UiAction touchQuickFilter(int x,int y){
   if(y>=kFooterY){
-    if(x<108){screen=Screen::Categories;redraw=true;}
+    if(x<108){screen=Screen::Categories;openedFromMainMenu=false;redraw=true;}
     else if(x<213){if(filterPage>0)--filterPage;redraw=true;}
     else{if((filterPage+1)*4<filterCount())++filterPage;redraw=true;}
     return Cyd32UiAction::None;
@@ -1615,10 +1790,12 @@ void portraitPage(const char* active,uint32_t remaining,bool suite){
   lcd.fillRoundRect(5,3,46,27,3,kWhite);
   for(int y=10;y<=22;y+=6)lcd.drawFastHLine(16,y,23,kInk);
   label(81,9,"SQUACHEMIT",kWhite);
+  drawBatteryStatus(190,13);
   drawTxBeacon(221,13,active&&*active);
   const char* name=screen==Screen::Home?"HOME":screen==Screen::MainMenu?"MENU":
     screen==Screen::Categories?"TEST LIBRARY":screen==Screen::Library?"SIGNALS":
-    screen==Screen::Settings?"SETTINGS":screen==Screen::Outfits?"OUTFITS":
+    screen==Screen::Settings?"SETTINGS":screen==Screen::BatteryCalibration?"BAT CAL":
+    screen==Screen::Outfits?"OUTFITS":
     screen==Screen::Backgrounds?"BACKGROUNDS":screen==Screen::Favorites?"FAVORITES":
     screen==Screen::QuickFilter?"QUICK FIND":screen==Screen::History?"HISTORY":
     screen==Screen::Duration?"TX TIME":screen==Screen::Details?"DETAILS":
@@ -1713,6 +1890,31 @@ void portraitPage(const char* active,uint32_t remaining,bool suite){
     button(3,287,74,30,"TESTS");
     button(83,287,74,30,active||suite?"STOP":"RUN");
     button(163,287,74,30,"SUITE");
+    return;
+  }
+  if(screen==Screen::BatteryCalibration){
+    char raw[28],adjusted[40],offset[28];
+    if(batteryPercent<0){
+      snprintf(raw,sizeof(raw),"ACQUIRING...");
+      snprintf(adjusted,sizeof(adjusted),"WAITING FOR ADC");
+    }else{
+      const unsigned rawCv=SqeBatteryCalibration::centiVolts(batteryMillivolts);
+      const uint16_t adjustedMv=correctedBatteryMv();
+      const unsigned correctedCv=SqeBatteryCalibration::centiVolts(adjustedMv);
+      snprintf(raw,sizeof(raw),"%u.%02u V",rawCv/100u,rawCv%100u);
+      snprintf(adjusted,sizeof(adjusted),"%u.%02u V  ~%u%%",
+        correctedCv/100u,correctedCv%100u,
+        (unsigned)SqeBatteryCalibration::linearPercent(adjustedMv));
+    }
+    snprintf(offset,sizeof(offset),"OFFSET %+d mV",(int)batteryOffsetMv);
+    portraitRow(65,"RAW BATTERY",raw);
+    portraitRow(114,"CORRECTED / SAVED",adjusted);
+    portraitRow(163,"-10 mV  /  +10 mV","LEFT -   RIGHT +");
+    portraitRow(212,"-50 mV  /  +50 mV",offset);
+    button(3,287,74,30,"BACK");
+    // Portrait must never hide emergency STOP during a running test.
+    button(83,287,74,30,(active&&*active)||suite||playlistRunning?"STOP":"RESET");
+    button(163,287,74,30,batteryDisplayVolts?"SHOW V":"SHOW %");
     return;
   }
   for(int i=0;i<4;++i){
@@ -1829,8 +2031,11 @@ void portraitPage(const char* active,uint32_t remaining,bool suite){
   // Permit menu navigation during bounded TX without hiding STOP.
   // Every portrait page keeps its emergency center STOP button.
   const bool radioBusy=(active&&*active)||suite||playlistRunning;
-  button(83,287,74,30,radioBusy?"STOP":screen==Screen::Home?"RUN":"PREV");
-  button(163,287,74,30,screen==Screen::Home?"SUITE":"NEXT");
+  if(radioBusy||screen!=Screen::MainMenu||menuPage)
+    button(83,287,74,30,radioBusy?"STOP":screen==Screen::Home?"RUN":"PREV");
+  if(screen!=Screen::MainMenu||menuPage<2)
+    button(163,287,74,30,screen==Screen::Home?"SUITE":"NEXT");
+  if(screen==Screen::MainMenu){char pg[18];snprintf(pg,sizeof(pg),"PAGE %u/3",(unsigned)menuPage+1);label(12,267,pg,kMuted);}
 }
 // TFT_eSPI getTouch() rejects a calibrated coordinate that falls outside
 // the panel. A bezel-edge touch can also have pressure below the 450
@@ -1870,7 +2075,7 @@ Cyd32UiAction portraitTap(int x,int y,bool active,bool suite){
   // Keep top-right rotation separate from the Quick Filter's y>=29
   // control and don't intercept its text row.
   if(y<70&&x<90){
-    screen=Screen::MainMenu;menuPage=0;redraw=true;
+    screen=Screen::MainMenu;menuPage=0;openedFromMainMenu=false;redraw=true;
     if(portraitTouchTrace)Serial.printf("CYD32,TOUCH,MENU_OPEN,x=%d,y=%d\n",x,y);
     return Cyd32UiAction::None;
   }
@@ -1900,6 +2105,18 @@ Cyd32UiAction portraitTap(int x,int y,bool active,bool suite){
   }
   if(screen==Screen::Favorites&&y>=29&&y<65&&x>=145&&favoriteCount()){
     return Cyd32UiAction::PlaylistStart;
+  }
+  if(screen==Screen::BatteryCalibration){
+    if(y>=287){
+      if(x<80){screen=Screen::Settings;settingsMore=false;redraw=true;}
+      else if(x>=160)setBatteryDisplayVolts(!batteryDisplayVolts);
+      else if(active||suite||playlistRunning)return Cyd32UiAction::Stop;
+      else setBatteryOffsetMv(0);
+    }else if(y>=163&&y<261){
+      const int increment=y<212?10:50;
+      setBatteryOffsetMv((int32_t)batteryOffsetMv+(x<120?-increment:increment));
+    }
+    return Cyd32UiAction::None;
   }
   if(y>=287){
     // A transmitting device must have accessible STOP even when
@@ -1969,7 +2186,7 @@ Cyd32UiAction portraitTap(int x,int y,bool active,bool suite){
         Screen::Favorites,Screen::History,Screen::Diagnostics,Screen::Settings,
         Screen::Outfits,Screen::OtaInfo,Screen::Activity,Screen::Help,
         Screen::Recovery,Screen::Backgrounds};
-      screen=targets[n];redraw=true;
+      openedFromMainMenu=true;settingsSubmenuFlow=false;screen=targets[n];redraw=true;
     }
   }else if(screen==Screen::Categories)return touchCategories(150,48+i*39);
   else if(screen==Screen::Library)return touchLibrary(150,53+i*36,active);
@@ -2048,6 +2265,8 @@ void cyd32UiBegin(){
     screenTimeout=prefs.getUChar("timeout",0);
     themeLevel=prefs.getUChar("theme",0);
     fontMode=prefs.getUChar("font",1);
+    batteryOffsetMv=SqeBatteryCalibration::clampOffset(prefs.getInt("batoff_mv",0));
+    batteryDisplayVolts=prefs.getBool("batshow_v",false);
     savedPortrait=prefs.getBool("portrait",false);
      outfitLevel=prefs.getUChar("outfit",0);
      if(prefs.isKey("bg_sqwatch")){
@@ -2183,6 +2402,22 @@ void cyd32UiResetCalibration(){
 Cyd32UiAction cyd32UiTick(const char* active,uint32_t remaining,bool suite){
   if(!ready)return Cyd32UiAction::None;
   const uint32_t now=millis();
+  const uint32_t priorBatterySample=lastBatterySample;
+  const int8_t priorBattery=batteryPercent;
+  const int prevBatteryVoltageStep=batteryDisplayTick();
+  sampleBattery();
+#if defined(ARDUINO_ARCH_ESP32)
+  const time_t clockNow=time(nullptr);
+  if(clockNow>1704067200){
+    const uint32_t minute=(uint32_t)(clockNow/60);
+    if(lastClockMinute!=minute){lastClockMinute=minute;redraw=true;}
+  }
+#endif
+  const int nextBatteryVoltageStep=batteryDisplayTick();
+  if(priorBattery!=batteryPercent ||
+     prevBatteryVoltageStep!=nextBatteryVoltageStep ||
+     (screen==Screen::BatteryCalibration&&priorBatterySample!=lastBatterySample))
+    redraw=true;
   if(colorBarsUntil){
     if((int32_t)(now-colorBarsUntil)>=0 || (active&&*active)){
       colorBarsUntil=0;redraw=true;
@@ -2226,6 +2461,7 @@ Cyd32UiAction cyd32UiTick(const char* active,uint32_t remaining,bool suite){
     else if(screen==Screen::Favorites)favoritesScreen();
     else if(screen==Screen::History)historyScreen();
     else if(screen==Screen::Settings)settingsScreen();
+    else if(screen==Screen::BatteryCalibration)batteryCalibrationScreen();
     else if(screen==Screen::Help)helpScreen();
     else if(screen==Screen::Identity)identityScreen();
     else if(screen==Screen::Recovery)recoveryScreen();
@@ -2383,7 +2619,7 @@ Cyd32UiAction cyd32UiTick(const char* active,uint32_t remaining,bool suite){
     }else if(y<23&&x>=275){
       rotateCurrentScreen();
     }else if(y<23&&x<48){
-      screen=Screen::MainMenu;menuPage=0;redraw=true;
+      screen=Screen::MainMenu;menuPage=0;openedFromMainMenu=false;redraw=true;
     }else if(screen==Screen::MainMenu){
       if(y>=kFooterY){
         if(x<108)screen=Screen::Home;
@@ -2397,7 +2633,7 @@ Cyd32UiAction cyd32UiTick(const char* active,uint32_t remaining,bool suite){
             Screen::Favorites,Screen::History,Screen::Diagnostics,
             Screen::Settings,Screen::Outfits,Screen::OtaInfo,
             Screen::Activity,Screen::Help,Screen::Recovery,Screen::Backgrounds};
-          screen=targets[n];redraw=true;
+          openedFromMainMenu=true;settingsSubmenuFlow=false;screen=targets[n];redraw=true;
           if(screen==Screen::Favorites)favoritesPage=0;
           if(screen==Screen::History)historyPage=0;
           if(screen==Screen::QuickFilter)filterPage=0;
@@ -2444,6 +2680,7 @@ Cyd32UiAction cyd32UiTick(const char* active,uint32_t remaining,bool suite){
     else if(screen==Screen::Favorites)action=touchFavorites(x,y);
     else if(screen==Screen::History)action=touchHistory(x,y);
     else if(screen==Screen::Settings)action=touchSettings(x,y);
+    else if(screen==Screen::BatteryCalibration)action=touchBatteryCalibration(x,y);
     else if(screen==Screen::Help)action=touchHelp(x,y);
     else if(screen==Screen::Identity)action=touchIdentity(x,y);
     else if(screen==Screen::Recovery)action=touchRecovery(x,y);
@@ -2481,6 +2718,7 @@ void cyd32UiStreamState(const char* activeId,uint32_t remainingMs,
       screen==Screen::Favorites?"FAVORITES":
       screen==Screen::History?"HISTORY":
       screen==Screen::Settings?"SETTINGS":
+       screen==Screen::BatteryCalibration?"BATCAL":
       screen==Screen::Help?"HELP":
       screen==Screen::Identity?"IDENTITY":
       screen==Screen::Recovery?"RECOVERY":

@@ -2,24 +2,25 @@
   "schema": 1,
   "scenario_count": 172,
   "firmware_sources": {
-    "src": "0a589ffc477c02f0d78857e0ddbdce935b19ed97",
-    "include": "dd19860f63eecb4924297da809b3f205a9e2fafc",
+    "src": "758d49ca7f8d9ea46b0181548c34cae219e9fb45",
+    "include": "a18e9329d0a653e5f2b4af11bab4c878727353f6",
     "lib": "bbb71a1b441d98f3ada5d709c4b67a1c3395d161",
     "SquachEmit.ino": "90b4205813a2f7885bc1e12ce7431eebf7249f45",
     "platformio.ini": "c3ff3725248b4c67d60da6903982515031c501f6"
   },
   "builds": {
     "cyd32-st7798": {
-      "title": "SquachEmit v1.1.0 CYD 3.2 R14.22 LAB — Exact Left/Right Native Sleeve Alignment (172 Cases)",
+      "title": "SquachEmit v1.1.0 CYD 3.2 R14.33 LAB — Battery Two-Decimal Voltage (172 Cases)",
       "version": "v1.1.0 MAINLINE · 172 cases",
-      "summary": "R14.22 LAB fixes Black Hoodie and Neon Lab Jacket sleeves drifting right. Instead of separate approximated sleeves, Squachy's original native arm fillRoundRect and wideLine primitives now directly use garment color. Only cuffs and fur hands are drawn afterward using exact left/right bounds and original pose widths. This removes overlay drift while preserving R14.21 full-size arms, R14.20 outfit art, all 20 original costumes, backgrounds, R14.17 speech and 172 RF cases. Four-part SHA-256 LAB prerelease; physical CYD 3.2 verification required.",
+      "summary": "R14.33 LAB removes coarse display rounding: corrected battery voltage shows exactly two decimal places rounded to 0.01V (e.g. 4.03V) rather than 0.05V increments. Battery percent uses the owner's 3.20V=0% to 4.20V=100% linear scale in whole 1% increments instead of 5% steps. Both portrait and landscape headers, plus raw/adjusted calibration readings, use matching display precision. Keeps NVS-saved percent/volt selection, voltage offset, four-window ADC stabilization, original animation and 172 RF cases. Four-part SHA-256 LAB firmware; hardware validation pending.",
       "highlights": [
-        "Custom sleeves color SquachWatch's actual original arm primitives directly, removing shifted overlay shapes.",
-        "Exact left/right native arm bounds drive cuffs and small natural fur hands, without a second arm outline.",
-        "Articulated arms retain real endpoint and width with native moving sleeves.",
-        "Black Hoodie, Neon Lab Jacket, 20 original costumes and backgrounds retain existing artwork.",
-        "R14.17 speech gating, 172 RF cases, portrait/landscape and STOP are unchanged.",
-        "LAB Build and Release FW with four-part SHA-256 firmware; CYD 3.2 visual approval required."
+        "Voltage mode: exactly two decimals (4.03V), rounded to nearest 0.01V with no 0.05V stepping.",
+        "Percent mode: whole 1% increments instead of rounding to multiples of 5%.",
+        "Battery calibration RAW and ADJUSTED lines use matching two-decimal voltage formatting.",
+        "Status header repaints when the selected mode's displayed value changes.",
+        "Retains battery offset NVS persistence and percent/volt mode choice across restarts.",
+        "Preserves CYD3.2 original Squachy animations and all 172 RF test cases.",
+        "LAB only; four-part SHA-256 firmware packaging; physical CYD3.2 verification required."
       ]
     },
     "c5-waveshare-28": {

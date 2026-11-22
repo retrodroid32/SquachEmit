@@ -3,6 +3,8 @@
 #include <cstddef>
 #include <cstdint>
 inline uint8_t mock_saved_tx_time=12;
+inline int32_t mock_battery_offset_mv=0;
+inline bool mock_battery_display_volts=false;
 // Default remains calibrated for existing host fixtures. New RF-safe
 // portrait tests can set false to emulate a freshly erased portrait key.
 inline bool mock_portrait_touch_saved=true;
@@ -11,6 +13,13 @@ inline bool mock_background_saved=false;
 inline uint8_t mock_background_value=9;
 class Preferences{
 public:
+ int32_t getInt(const char* name,int32_t fallback) {
+  return std::strcmp(name,"batoff_mv")==0?mock_battery_offset_mv:fallback;
+ }
+ size_t putInt(const char* name,int32_t value) {
+  if(std::strcmp(name,"batoff_mv")==0)mock_battery_offset_mv=value;
+  return sizeof(int32_t);
+ }
  uint8_t getUChar(const char* name,uint8_t fallback){
   if(std::strcmp(name,"txtime")==0)return mock_saved_tx_time?mock_saved_tx_time:fallback;
   if(std::strcmp(name,"v")==0)return mock_portrait_fit_saved?1:fallback;
@@ -24,7 +33,10 @@ public:
  }
  bool begin(const char*,bool){return true;}
  void end(){}
- bool getBool(const char*,bool defaultVal){return defaultVal;}
+ bool getBool(const char* name,bool defaultVal){
+  if(std::strcmp(name,"batshow_v")==0)return mock_battery_display_volts;
+  return defaultVal;
+ }
  bool isKey(const char* name){return std::strcmp(name,"bg_sqwatch")==0&&mock_background_saved;}
  size_t getBytesLength(const char* name){
   if(std::strcmp(name,"fit")==0)return mock_portrait_fit_saved?28:0;
@@ -52,6 +64,8 @@ public:
   if(std::strcmp(name,"fit")==0)mock_portrait_fit_saved=true;
   return length;
  }
- void putBool(const char*,bool){}
+ void putBool(const char* name,bool value){
+  if(std::strcmp(name,"batshow_v")==0)mock_battery_display_volts=value;
+ }
  void remove(const char*){}
 };
