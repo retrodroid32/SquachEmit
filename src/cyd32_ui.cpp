@@ -90,6 +90,7 @@ unsigned playlistIndex=0,playlistTotal=0;
 uint8_t brightnessLevel=2,animationLevel=1,screenTimeout=0,themeLevel=0,fontMode=1;
 bool settingsMore=false;
 bool openedFromMainMenu=false;
+bool settingsSubmenuFlow=false;
 bool pcControl=false,screenDimmed=false;
 unsigned resetReasonCode=0;
 uint32_t lastTouchActivity=0,lastDeviceAt=0;
@@ -1490,7 +1491,7 @@ Cyd32UiAction touchHome(int x,int y,bool active,bool suite){
 Cyd32UiAction touchCategories(int x,int y){
   if(x>=233&&y>=15&&y<43){screen=Screen::QuickFilter;filterPage=0;redraw=true;return Cyd32UiAction::None;}
   if(y>=kFooterY){
-    if(x<108){screen=openedFromMainMenu?Screen::MainMenu:Screen::Home;openedFromMainMenu=false;redraw=true;return Cyd32UiAction::None;}
+    if(x<108){screen=Screen::Home;openedFromMainMenu=false;redraw=true;return Cyd32UiAction::None;}
     if(x<213){if(categoryPage>0){--categoryPage;redraw=true;}return Cyd32UiAction::None;}
     if((categoryPage+1)*kPageRows<kDeviceCategoryCount){++categoryPage;redraw=true;}
     return Cyd32UiAction::None;
@@ -1564,7 +1565,7 @@ Cyd32UiAction touchDiagnostics(int x,int y){
 }
 Cyd32UiAction touchActivity(int x,int y){
   if(y>=kFooterY){
-    screen=x<108?Screen::MainMenu:x<213?Screen::Evidence:Screen::Details;
+    screen=x<108?Screen::Home:x<213?Screen::Evidence:Screen::Details;
     redraw=true;
   }
   return Cyd32UiAction::None;
@@ -1578,9 +1579,9 @@ Cyd32UiAction touchEvidence(int x,int y){
 }
 Cyd32UiAction touchSettings(int x,int y){
   if(y>=kFooterY){
-    if(x<108){screen=Screen::MainMenu;settingsMore=false;}
+    if(x<108){screen=Screen::MainMenu;settingsMore=false;settingsSubmenuFlow=false;}
     else if(x<213){settingsMore=!settingsMore;}
-    else {screen=Screen::Help;settingsMore=false;}
+    else {settingsSubmenuFlow=true;screen=Screen::Help;settingsMore=false;}
     redraw=true;return Cyd32UiAction::None;
   }
   if(y>=46&&y<201){
@@ -1588,7 +1589,7 @@ Cyd32UiAction touchSettings(int x,int y){
     if(settingsMore){
       if(row==0){themeLevel=(themeLevel+1)%3;applyTheme();persistUiSettings();}
       else if(row==1){fontMode=(fontMode+1)%2;persistUiSettings();}
-      else if(row==2)screen=Screen::Identity;
+      else if(row==2){settingsSubmenuFlow=true;screen=Screen::Identity;}
       else if(row==3){calibratePortraitFromDevice();}
       redraw=true;return Cyd32UiAction::None;
     }
@@ -1603,7 +1604,7 @@ Cyd32UiAction touchSettings(int x,int y){
 }
 Cyd32UiAction touchHelp(int x,int y){
   if(y>=kFooterY){
-    if(x<108)screen=Screen::MainMenu;
+    if(x<108){screen=settingsSubmenuFlow?Screen::Settings:Screen::MainMenu;}
     else if(x<213)helpPage=(helpPage+1)%3;
     else screen=Screen::Recovery;
     redraw=true;
@@ -1612,7 +1613,7 @@ Cyd32UiAction touchHelp(int x,int y){
 }
 Cyd32UiAction touchIdentity(int x,int y){
   if(y>=kFooterY){
-    if(x<108)screen=Screen::Settings;
+    if(x<108)screen=settingsSubmenuFlow?Screen::Settings:Screen::MainMenu;
     else if(x<213)screen=Screen::Help;
     else screen=Screen::Recovery;
     redraw=true;
@@ -1625,7 +1626,7 @@ Cyd32UiAction touchRecovery(int x,int y){
     return Cyd32UiAction::None;
   }
   if(y>=kFooterY){
-    if(x<108)screen=Screen::MainMenu;
+    if(x<108)screen=settingsSubmenuFlow?Screen::Settings:Screen::MainMenu;
     else if(x<213)screen=Screen::Help;
     else screen=Screen::Home;
     redraw=true;
@@ -1637,7 +1638,7 @@ Cyd32UiAction touchFavorites(int x,int y){
     screen=Screen::Home;redraw=true;return Cyd32UiAction::PlaylistStart;
   }
   if(y>=kFooterY){
-    if(x<108){screen=openedFromMainMenu?Screen::MainMenu:Screen::Details;openedFromMainMenu=false;redraw=true;}
+    if(x<108){screen=Screen::Details;openedFromMainMenu=false;redraw=true;}
     else if(x<213){if(favoritesPage>0){--favoritesPage;redraw=true;}}
     else if((favoritesPage+1)*4<favoriteCount()){++favoritesPage;redraw=true;}
     return Cyd32UiAction::None;
@@ -1652,7 +1653,7 @@ Cyd32UiAction touchFavorites(int x,int y){
 }
 Cyd32UiAction touchHistory(int x,int y){
   if(y>=kFooterY){
-    if(x<108){screen=openedFromMainMenu?Screen::MainMenu:Screen::Details;openedFromMainMenu=false;redraw=true;}
+    if(x<108){screen=Screen::Details;openedFromMainMenu=false;redraw=true;}
     else if(x<213){if(historyPage>0){--historyPage;redraw=true;}}
     else if((historyPage+1)*4<historyCount){++historyPage;redraw=true;}
   }
@@ -1660,7 +1661,7 @@ Cyd32UiAction touchHistory(int x,int y){
 }
 Cyd32UiAction touchQuickFilter(int x,int y){
   if(y>=kFooterY){
-    if(x<108){screen=openedFromMainMenu?Screen::MainMenu:Screen::Categories;openedFromMainMenu=false;redraw=true;}
+    if(x<108){screen=Screen::Categories;openedFromMainMenu=false;redraw=true;}
     else if(x<213){if(filterPage>0)--filterPage;redraw=true;}
     else{if((filterPage+1)*4<filterCount())++filterPage;redraw=true;}
     return Cyd32UiAction::None;
@@ -2050,7 +2051,7 @@ Cyd32UiAction portraitTap(int x,int y,bool active,bool suite){
         Screen::Favorites,Screen::History,Screen::Diagnostics,Screen::Settings,
         Screen::Outfits,Screen::OtaInfo,Screen::Activity,Screen::Help,
         Screen::Recovery,Screen::Backgrounds};
-      openedFromMainMenu=true;screen=targets[n];redraw=true;
+      openedFromMainMenu=true;settingsSubmenuFlow=false;screen=targets[n];redraw=true;
     }
   }else if(screen==Screen::Categories)return touchCategories(150,48+i*39);
   else if(screen==Screen::Library)return touchLibrary(150,53+i*36,active);
@@ -2489,7 +2490,7 @@ Cyd32UiAction cyd32UiTick(const char* active,uint32_t remaining,bool suite){
             Screen::Favorites,Screen::History,Screen::Diagnostics,
             Screen::Settings,Screen::Outfits,Screen::OtaInfo,
             Screen::Activity,Screen::Help,Screen::Recovery,Screen::Backgrounds};
-          openedFromMainMenu=true;screen=targets[n];redraw=true;
+          openedFromMainMenu=true;settingsSubmenuFlow=false;screen=targets[n];redraw=true;
           if(screen==Screen::Favorites)favoritesPage=0;
           if(screen==Screen::History)historyPage=0;
           if(screen==Screen::QuickFilter)filterPage=0;
