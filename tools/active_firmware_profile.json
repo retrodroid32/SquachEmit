@@ -2,7 +2,7 @@
   "schema": 1,
   "scenario_count": 172,
   "firmware_sources": {
-    "src": "46918745f2dc026fe0a2129143f8162004bd151e",
+    "src": "ba637c95f1785ca6598f8fb284ec8a7376021d01",
     "include": "dd19860f63eecb4924297da809b3f205a9e2fafc",
     "lib": "bbb71a1b441d98f3ada5d709c4b67a1c3395d161",
     "SquachEmit.ino": "90b4205813a2f7885bc1e12ce7431eebf7249f45",
@@ -10,16 +10,17 @@
   },
   "builds": {
     "cyd32-st7798": {
-      "title": "SquachEmit v1.1.0 CYD 3.2 R14.23 LAB — Battery Gauge by TX Beacon (172 Cases)",
-      "version": "v1.1.0 MAINLINE R14.23 · 172 cases",
-      "summary": "R14.23 LAB adds a compact battery percentage and gauge beside the transmit icon in landscape and portrait. Battery voltage is estimated from GPIO34 with a presumed 1:1 voltage divider, requiring board-specific hardware verification. Unknown voltage displays --, and charging lightning appears only with a verified optional charger-status GPIO. Retains R14.22 artwork, 172 RF test cases, and SHA-256 four-segment packaging. Not physically validated.",
+      "title": "SquachEmit v1.1.0 CYD 3.2 R14.24 LAB — Battery, Navigation, Date/Time (172 Cases)",
+      "version": "v1.1.0 MAINLINE · 172 cases",
+      "summary": "R14.24 LAB adds the battery gauge beside the TX icon, fixes main-menu back navigation including Recovery, hides PREV/NEXT at page boundaries, displays PAGE x/3, centers the main title box and adds system-time date/clock (placeholder until time synchronized). Battery voltage is approximate and requires GPIO34 board verification; charge lightning requires confirmed charger status pin. All 172 synthetic test cases and R14.22 artwork are preserved. LAB hardware validation pending.",
       "highlights": [
-        "Landscape and portrait header battery gauge alongside the TX radio icon.",
-        "Read 8 ADC millivolt samples approximately every 15 seconds; display approximate single-cell lithium battery percentage.",
-        "Unknown or implausible voltage displays --; avoid claiming a valid reading when floating.",
-        "Charging icon requires explicitly configured verified SQE_BAT_CHARGE_PIN; no fabricated charging state.",
-        "Preserves 172 synthetic signals, R14.22 artwork and buffered animation.",
-        "LAB firmware only: verify GPIO34 divider and charging-status wiring on the exact 3.2-inch ST7798 hardware."
+        "Header battery gauge and approximate percent alongside TX icon; charging only with verified status pin.",
+        "Return from main-menu sections to the main menu, fixing Recovery Back behavior.",
+        "Hide PREV on first menu page and NEXT on last page, in portrait and landscape.",
+        "Show PAGE x/3 in both orientations and tighten centered SquachEmit title box.",
+        "Show date/time only from valid system clock; otherwise placeholder (no invented wall time).",
+        "Preserve 172 synthetic RF cases, R14.22 Squachy artwork and full/half-screen buffering.",
+        "LAB firmware; physical ST7798 validation and time synchronization still required."
       ]
     },
     "c5-waveshare-28": {
