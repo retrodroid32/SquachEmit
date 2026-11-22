@@ -8,8 +8,10 @@ icon and an approximate voltage-derived charge percentage.
 
 The E32R32P schematic uses two 100 kΩ resistors to measure the battery
 through GPIO34, presenting roughly 50 kΩ source impedance to the ADC.
-The ESP32's ADC is sensitive to electrical noise and source impedance;
-Espressif recommends a 0.1 µF capacitor at the ADC input for accuracy.
+The official LCDWiki schematic and user manual show that **C1 and C2
+(0.1 µF each) are already fitted** to the battery-voltage sensing circuit.
+Adding another capacitor is **not** the first recommendation; verify the
+hardware reading against a meter before considering any component changes.
 
 The firmware waits 3 seconds after starting, rejects bad/noisy
 individual samples, and requires **four separate 32-sample voltage
@@ -43,14 +45,19 @@ chemistry, or ADC calibration.
 ## Hardware limitation
 
 Software cannot turn this board's battery divider and ESP32 ADC into a
-coulomb-counting fuel gauge. If accuracy is still poor, a qualified
-technician may examine whether a small 0.1 µF ceramic capacitor from
-**BAT_ADC (GPIO34) to GND** is suitable on the exact assembled board.
-Disconnect USB and the battery before any soldering. A calibrated
-external battery fuel-gauge IC is the preferred approach for a true
-state-of-charge percentage; otherwise use a multimeter comparison to
-calibrate the voltage reading.
+coulomb-counting fuel gauge. **The board already has the manufacturer's
+specified ADC bypass capacitor** (C1, 0.1 µF), so no extra capacitor
+should be assumed necessary. The official manual specifies only battery
+voltage (BAT_ADC × 2), **not a percent lookup**. Furthermore, when USB-C
+is connected, Q3 disconnects the battery from the device power supply;
+BAT_ADC then measures terminal voltage during charging, not resting SOC.
+Starting in **R14.30** the header displays voltage (e.g. 4.05V), not
+an uncalibrated percentage. Use a multimeter comparison to verify voltage
+accuracy before considering board modifications. True percentage reporting
+requires the particular cell's characterized resting-voltage curve or a
+fuel-gauge IC.
 
 References:
 - https://www.lcdwiki.com/res/E32R32P/3.2inch_ESP32-32_Display_Schematic.pdf
+- https://www.lcdwiki.com/res/E32R32P/3.2inch_ESP32-32E_E32R32P_E32N32P_User_Manual.pdf
 - https://docs.espressif.com/projects/esp-hardware-design-guidelines/en/latest/esp32/schematic-checklist.html
