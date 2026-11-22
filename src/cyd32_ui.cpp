@@ -1764,7 +1764,8 @@ void portraitPage(const char* active,uint32_t remaining,bool suite){
   drawTxBeacon(221,13,active&&*active);
   const char* name=screen==Screen::Home?"HOME":screen==Screen::MainMenu?"MENU":
     screen==Screen::Categories?"TEST LIBRARY":screen==Screen::Library?"SIGNALS":
-    screen==Screen::Settings?"SETTINGS":screen==Screen::Outfits?"OUTFITS":
+    screen==Screen::Settings?"SETTINGS":screen==Screen::BatteryCalibration?"BAT CAL":
+    screen==Screen::Outfits?"OUTFITS":
     screen==Screen::Backgrounds?"BACKGROUNDS":screen==Screen::Favorites?"FAVORITES":
     screen==Screen::QuickFilter?"QUICK FIND":screen==Screen::History?"HISTORY":
     screen==Screen::Duration?"TX TIME":screen==Screen::Details?"DETAILS":
@@ -1859,6 +1860,28 @@ void portraitPage(const char* active,uint32_t remaining,bool suite){
     button(3,287,74,30,"TESTS");
     button(83,287,74,30,active||suite?"STOP":"RUN");
     button(163,287,74,30,"SUITE");
+    return;
+  }
+  if(screen==Screen::BatteryCalibration){
+    char raw[28],adjusted[40],offset[28];
+    if(batteryPercent<0){
+      snprintf(raw,sizeof(raw),"ACQUIRING...");
+      snprintf(adjusted,sizeof(adjusted),"WAITING FOR ADC");
+    }else{
+      snprintf(raw,sizeof(raw),"%u.%02u V",
+        (unsigned)batteryMillivolts/1000u,(unsigned)batteryMillivolts%1000u/10u);
+      snprintf(adjusted,sizeof(adjusted),"%u.%02u V  ~%u%%",
+        (unsigned)correctedBatteryMv()/1000u,(unsigned)correctedBatteryMv()%1000u/10u,
+        (unsigned)SqeBatteryCalibration::roundedPercent5(correctedBatteryMv()));
+    }
+    snprintf(offset,sizeof(offset),"OFFSET %+d mV",(int)batteryOffsetMv);
+    portraitRow(65,"RAW BATTERY",raw);
+    portraitRow(114,"CORRECTED / SAVED",adjusted);
+    portraitRow(163,"-10 mV  /  +10 mV","LEFT -   RIGHT +");
+    portraitRow(212,"-50 mV  /  +50 mV",offset);
+    button(3,287,74,30,"BACK");
+    button(83,287,74,30,"RESET");
+    button(163,287,74,30,"DONE");
     return;
   }
   for(int i=0;i<4;++i){
@@ -2049,6 +2072,16 @@ Cyd32UiAction portraitTap(int x,int y,bool active,bool suite){
   }
   if(screen==Screen::Favorites&&y>=29&&y<65&&x>=145&&favoriteCount()){
     return Cyd32UiAction::PlaylistStart;
+  }
+  if(screen==Screen::BatteryCalibration){
+    if(y>=287){
+      if(x<80||x>=160){screen=Screen::Settings;settingsMore=false;redraw=true;}
+      else setBatteryOffsetMv(0);
+    }else if(y>=163&&y<261){
+      const int increment=y<212?10:50;
+      setBatteryOffsetMv((int32_t)batteryOffsetMv+(x<120?-increment:increment));
+    }
+    return Cyd32UiAction::None;
   }
   if(y>=287){
     // A transmitting device must have accessible STOP even when
@@ -2333,6 +2366,7 @@ void cyd32UiResetCalibration(){
 Cyd32UiAction cyd32UiTick(const char* active,uint32_t remaining,bool suite){
   if(!ready)return Cyd32UiAction::None;
   const uint32_t now=millis();
+  const uint32_t priorBatterySample=lastBatterySample;
   const int8_t priorBattery=batteryPercent;
   const int prevBatteryVoltageStep=batteryPercent<0?-1:
       (int)SqeBatteryCalibration::roundedPercent5(correctedBatteryMv());
@@ -2347,7 +2381,9 @@ Cyd32UiAction cyd32UiTick(const char* active,uint32_t remaining,bool suite){
   const int nextBatteryVoltageStep=batteryPercent<0?-1:
       (int)SqeBatteryCalibration::roundedPercent5(correctedBatteryMv());
   if(priorBattery!=batteryPercent ||
-     prevBatteryVoltageStep!=nextBatteryVoltageStep)redraw=true;
+     prevBatteryVoltageStep!=nextBatteryVoltageStep ||
+     (screen==Screen::BatteryCalibration&&priorBatterySample!=lastBatterySample))
+    redraw=true;
   if(colorBarsUntil){
     if((int32_t)(now-colorBarsUntil)>=0 || (active&&*active)){
       colorBarsUntil=0;redraw=true;
@@ -2648,6 +2684,7 @@ void cyd32UiStreamState(const char* activeId,uint32_t remainingMs,
       screen==Screen::Favorites?"FAVORITES":
       screen==Screen::History?"HISTORY":
       screen==Screen::Settings?"SETTINGS":
+       screen==Screen::BatteryCalibration?"BATCAL":
       screen==Screen::Help?"HELP":
       screen==Screen::Identity?"IDENTITY":
       screen==Screen::Recovery?"RECOVERY":
