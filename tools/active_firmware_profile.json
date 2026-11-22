@@ -2,7 +2,7 @@
   "schema": 1,
   "scenario_count": 172,
   "firmware_sources": {
-    "src": "78675879f9e634e92fe115a10675c0b29088db46",
+    "src": "72ed16f05c85a4ef83ac3ed7ae754f8910cf5c71",
     "include": "dd19860f63eecb4924297da809b3f205a9e2fafc",
     "lib": "bbb71a1b441d98f3ada5d709c4b67a1c3395d161",
     "SquachEmit.ino": "90b4205813a2f7885bc1e12ce7431eebf7249f45",
@@ -10,17 +10,17 @@
   },
   "builds": {
     "cyd32-st7798": {
-      "title": "SquachEmit v1.1.0 CYD 3.2 R14.25 LAB — Charging Trend Diagnostics (172 Cases)",
+      "title": "SquachEmit v1.1.0 CYD 3.2 R14.26 LAB — Centered Header and Battery Fill (172 Cases)",
       "version": "v1.1.0 MAINLINE · 172 cases",
-      "summary": "R14.25 LAB adds a cautiously inferred rising-voltage indicator ('?') after approximately two minutes of GPIO34 battery voltage samples, alongside a verified-only charging bolt when a real charger pin is installed. Serial CYD32,BATTERY readings expose mV, percentage, trend and verified charger state for diagnosis. The E32R32P has no known charger-status GPIO, so this cannot confirm USB power or charging. Retains R14.24 menu, clock, title and all 172 RF cases. Four-part SHA-256 packaging; hardware validation required.",
+      "summary": "R14.26 LAB corrects ST7798 header background sizing using exact 6px GLCD glyph pitch after font-size reset; fixes displaced title and visibly fills battery up to 100%. Battery reads as percentage. Rising voltage is only a tentative charge estimate; confirmed charging needs a verified status GPIO. Retains R14.25 diagnostics, R14.24 Settings navigation, unsynchronized clock placeholder, all 172 RF cases and four-part SHA-256 firmware packaging. Hardware validation required.",
       "highlights": [
-        "Rising voltage over approximately 120 seconds displays '?' for possible charging; never asserts verified charge.",
-        "Confirmed charging lightning bolt still requires physically verified charger-status GPIO connection.",
-        "Logs CYD32,BATTERY millivolts, estimated percent, rising trend and charger input state over serial.",
-        "Retains R14.24 Settings submenu Back behavior and clean menu page boundaries.",
-        "Retains title alignment, valid system-time date/clock placeholder and 172 synthetic test cases.",
-        "Unverified power measurement must not be interpreted as proof of USB input or charge completion.",
-        "LAB-only build; physical validation required, with SHA-256 firmware packaging."
+        "Top SQUACHEMIT label centered with 4px padding, independent of stale sprite text-size metrics.",
+        "Battery now includes % sign and a high-contrast solid fill, including at 100%.",
+        "Rising-voltage '?' remains only a hint, never a false confirmed charging bolt.",
+        "Battery serial diagnostics get proper newline delimiters.",
+        "Preserves buffered ST7798 animation, Settings submenu routing and all 172 RF cases.",
+        "No fabricated date/time without an external clock source.",
+        "LAB only: four-segment SHA-256 packaging and physical CYD 3.2 validation required."
       ]
     },
     "c5-waveshare-28": {
