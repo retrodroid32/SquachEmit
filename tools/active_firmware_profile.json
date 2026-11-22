@@ -11,7 +11,7 @@
   "builds": {
     "cyd32-st7798": {
       "title": "SquachEmit v1.1.0 CYD 3.2 R14.23 LAB — Battery Gauge by TX Beacon (172 Cases)",
-      "version": "v1.1.0 MAINLINE · R14.23 Battery LAB · 172 cases",
+      "version": "v1.1.0 MAINLINE R14.23 · 172 cases",
       "summary": "R14.23 LAB adds a compact battery percentage and gauge beside the transmit icon in landscape and portrait. Battery voltage is estimated from GPIO34 with a presumed 1:1 voltage divider, requiring board-specific hardware verification. Unknown voltage displays --, and charging lightning appears only with a verified optional charger-status GPIO. Retains R14.22 artwork, 172 RF test cases, and SHA-256 four-segment packaging. Not physically validated.",
       "highlights": [
         "Landscape and portrait header battery gauge alongside the TX radio icon.",
