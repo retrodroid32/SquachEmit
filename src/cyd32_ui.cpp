@@ -169,9 +169,9 @@ void sampleBattery(){
     batteryMillivolts=(uint16_t)mv;
     static constexpr uint16_t volts[]={3000,3300,3500,3600,3700,3750,3800,3850,3900,4000,4100,4200};
     static constexpr uint8_t percents[]={0,5,10,15,25,35,45,55,65,80,92,100};
-    int value=100;
+    int value=mv<=volts[0]?0:100;
     for(unsigned i=1;i<sizeof(volts)/sizeof(volts[0]);++i){
-      if(mv<=volts[i]){
+      if(mv>volts[0]&&mv<=volts[i]){
         const int span=volts[i]-volts[i-1];
         value=percents[i-1]+(int)((mv-volts[i-1])*(percents[i]-percents[i-1])/span);
         break;
