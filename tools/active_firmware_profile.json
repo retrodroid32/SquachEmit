@@ -2,7 +2,7 @@
   "schema": 1,
   "scenario_count": 172,
   "firmware_sources": {
-    "src": "efa7e3f977e11d9b8b3425d9d3e087b3b4c06a17",
+    "src": "78675879f9e634e92fe115a10675c0b29088db46",
     "include": "dd19860f63eecb4924297da809b3f205a9e2fafc",
     "lib": "bbb71a1b441d98f3ada5d709c4b67a1c3395d161",
     "SquachEmit.ino": "90b4205813a2f7885bc1e12ce7431eebf7249f45",
@@ -10,17 +10,17 @@
   },
   "builds": {
     "cyd32-st7798": {
-      "title": "SquachEmit v1.1.0 CYD 3.2 R14.24 LAB — Battery, Navigation, Date/Time (172 Cases)",
+      "title": "SquachEmit v1.1.0 CYD 3.2 R14.25 LAB — Charging Trend Diagnostics (172 Cases)",
       "version": "v1.1.0 MAINLINE · 172 cases",
-      "summary": "R14.24 LAB adds battery gauge beside TX, sets Settings submenu BACK to return to Settings (including Identity, Help and Recovery when opened through Settings), preserves unrelated main-menu navigation, hides PREV/NEXT on first/last main-menu pages, shows PAGE x/3, tightens centered title and shows date/time when clock synchronized. Battery GPIO34 divider and charge-status wiring need board validation. Retains 172 synthetic cases and R14.22 artwork. Four-part SHA-256 firmware packaging; hardware validation pending.",
+      "summary": "R14.25 LAB adds a cautiously inferred rising-voltage indicator ('?') after approximately two minutes of GPIO34 battery voltage samples, alongside a verified-only charging bolt when a real charger pin is installed. Serial CYD32,BATTERY readings expose mV, percentage, trend and verified charger state for diagnosis. The E32R32P has no known charger-status GPIO, so this cannot confirm USB power or charging. Retains R14.24 menu, clock, title and all 172 RF cases. Four-part SHA-256 packaging; hardware validation required.",
       "highlights": [
-        "Header battery gauge and approximate percent alongside TX icon; charging only with verified status pin.",
-        "BACK from Settings-launched Identity, Help and Recovery returns to Settings, without rerouting unrelated menus.",
-        "Hide PREV on first menu page and NEXT on last page, in portrait and landscape.",
-        "Show PAGE x/3 in both orientations and tighten centered SquachEmit title box.",
-        "Show date/time only from valid system clock; otherwise placeholder (no invented wall time).",
-        "Preserve 172 synthetic RF cases, R14.22 Squachy artwork and full/half-screen buffering.",
-        "LAB firmware; physical ST7798 validation and time synchronization still required."
+        "Rising voltage over approximately 120 seconds displays '?' for possible charging; never asserts verified charge.",
+        "Confirmed charging lightning bolt still requires physically verified charger-status GPIO connection.",
+        "Logs CYD32,BATTERY millivolts, estimated percent, rising trend and charger input state over serial.",
+        "Retains R14.24 Settings submenu Back behavior and clean menu page boundaries.",
+        "Retains title alignment, valid system-time date/clock placeholder and 172 synthetic test cases.",
+        "Unverified power measurement must not be interpreted as proof of USB input or charge completion.",
+        "LAB-only build; physical validation required, with SHA-256 firmware packaging."
       ]
     },
     "c5-waveshare-28": {
