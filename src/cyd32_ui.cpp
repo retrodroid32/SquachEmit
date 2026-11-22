@@ -113,6 +113,7 @@ uint8_t batteryAdcCount=0;
 bool batteryAdcCollecting=false;
 int8_t batteryPercent=-1; // only used to gate settled ADC validity
 int16_t batteryOffsetMv=0; // NVS battery-side voltage correction
+bool batteryDisplayVolts=false; // false: %, true: V; persists across restarts
 uint32_t lastBatterySample=0;
 uint32_t lastClockMinute=UINT32_MAX;
 bool portraitCalibrated=false,portraitMode=false;
@@ -183,6 +184,16 @@ void setBatteryOffsetMv(int32_t next){
                 (int)batteryOffsetMv,(unsigned)correctedBatteryMv());
   redraw=true;
 }
+void setBatteryDisplayVolts(bool volts){
+  if(batteryDisplayVolts==volts)return;
+  batteryDisplayVolts=volts;
+  if(prefs.begin("sqemit32",false)){
+    prefs.putBool("batshow_v",batteryDisplayVolts);
+    prefs.end();
+  }else Serial.println("WARN,BATTERY_DISPLAY_NVS_UNAVAILABLE");
+  Serial.printf("CYD32,BATCAL,HEADER_MODE=%s\n",batteryDisplayVolts?"VOLTS":"PERCENT");
+  redraw=true;
+}
 void sampleBattery(){
   const uint32_t now=millis();
   // Allow ESP32 supply, RF and the 50k-ohm equivalent divider to settle.
@@ -229,8 +240,15 @@ void drawBatteryStatus(int x,int y){
   const uint8_t percent=SqeBatteryCalibration::roundedPercent5(calibrated);
   const uint16_t col=!valid?kMuted:calibrated<=3500u?kPink:kWhite;
   char value[8];
-  if(!valid)snprintf(value,sizeof(value),"--%%");
-  else snprintf(value,sizeof(value),"~%u%%",(unsigned)percent);
+  if(!valid)snprintf(value,sizeof(value),batteryDisplayVolts?"--.-V":"--%%");
+  else if(batteryDisplayVolts){
+    // Show the same corrected voltage as the calibration screen, rounded
+    // to 50mV so startup ADC noise does not imply millivolt accuracy.
+    const unsigned shownMv=
+      SqeBatteryCalibration::displayStep50mV(batteryMillivolts,batteryOffsetMv)*50u;
+    snprintf(value,sizeof(value),"%u.%02uV",
+             shownMv/1000u,(shownMv%1000u)/10u);
+  }else snprintf(value,sizeof(value),"~%u%%",(unsigned)percent);
   // Reset font before measuring to keep the title/status aligned with sprite.
   lcd.setTextFont(1);lcd.setTextSize(1);
   label(x-4-lcd.textWidth(value),y-4,value,col);
@@ -1153,13 +1171,14 @@ void batteryCalibrationScreen(){
     (unsigned)correctedBatteryMv()/1000u,(unsigned)correctedBatteryMv()%1000u/10u,
     (unsigned)SqeBatteryCalibration::roundedPercent5(correctedBatteryMv()));
   char extra[64];
-  snprintf(extra,sizeof(extra),"OFFSET %+d mV  |  SAVED ON CHANGE",(int)batteryOffsetMv);
+  snprintf(extra,sizeof(extra),"OFFSET %+d mV | HEADER: %s",(int)batteryOffsetMv,
+           batteryDisplayVolts?"VOLTS":"PERCENT");
   menuRow(85,line,extra);
   button(8,127,147,32,"- 10 mV");
   button(165,127,147,32,"+ 10 mV");
   button(8,168,147,32,"- 50 mV");
   button(165,168,147,32,"+ 50 mV");
-  footer("BACK","RESET","DONE");
+  footer("BACK","RESET",batteryDisplayVolts?"SHOW V":"SHOW %");
 }
 void settingsScreen(){
   lcd.fillScreen(kBg);titleBar();
@@ -1658,8 +1677,9 @@ Cyd32UiAction touchSettings(int x,int y){
 }
 Cyd32UiAction touchBatteryCalibration(int x,int y){
   if(y>=kFooterY){
-    if(x<108||x>=213){screen=Screen::Settings;settingsMore=false;redraw=true;}
-    else setBatteryOffsetMv(0);
+    if(x<108){screen=Screen::Settings;settingsMore=false;redraw=true;}
+    else if(x<213)setBatteryOffsetMv(0);
+    else setBatteryDisplayVolts(!batteryDisplayVolts);
     return Cyd32UiAction::None;
   }
   if(y>=124&&y<164){
@@ -1882,7 +1902,7 @@ void portraitPage(const char* active,uint32_t remaining,bool suite){
     button(3,287,74,30,"BACK");
     // Portrait must never hide emergency STOP during a running test.
     button(83,287,74,30,(active&&*active)||suite||playlistRunning?"STOP":"RESET");
-    button(163,287,74,30,"DONE");
+    button(163,287,74,30,batteryDisplayVolts?"SHOW V":"SHOW %");
     return;
   }
   for(int i=0;i<4;++i){
@@ -2076,7 +2096,8 @@ Cyd32UiAction portraitTap(int x,int y,bool active,bool suite){
   }
   if(screen==Screen::BatteryCalibration){
     if(y>=287){
-      if(x<80||x>=160){screen=Screen::Settings;settingsMore=false;redraw=true;}
+      if(x<80){screen=Screen::Settings;settingsMore=false;redraw=true;}
+      else if(x>=160)setBatteryDisplayVolts(!batteryDisplayVolts);
       else if(active||suite||playlistRunning)return Cyd32UiAction::Stop;
       else setBatteryOffsetMv(0);
     }else if(y>=163&&y<261){
@@ -2233,6 +2254,7 @@ void cyd32UiBegin(){
     themeLevel=prefs.getUChar("theme",0);
     fontMode=prefs.getUChar("font",1);
     batteryOffsetMv=SqeBatteryCalibration::clampOffset(prefs.getInt("batoff_mv",0));
+    batteryDisplayVolts=prefs.getBool("batshow_v",false);
     savedPortrait=prefs.getBool("portrait",false);
      outfitLevel=prefs.getUChar("outfit",0);
      if(prefs.isKey("bg_sqwatch")){
