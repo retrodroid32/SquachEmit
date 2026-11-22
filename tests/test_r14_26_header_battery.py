@@ -21,7 +21,7 @@ class R1426HeaderBatteryTests(unittest.TestCase):
         start = SOURCE.index("void drawBatteryStatus(")
         end = SOURCE.index("void drawTxBeacon(", start)
         battery = SOURCE[start:end]
-        self.assertIn('"%d%%"', battery)
+        self.assertIn('"~%d%%"', battery)
         self.assertIn('lcd.fillRect(x+1,y-5,15,10,kTaskbar);', battery)
         self.assertIn('lcd.fillRect(x+2,y-4,fill,8,chargeCol);', battery)
         self.assertIn('lcd.drawRect(x,y-6,17,12,kWhite);', battery)
