@@ -57,3 +57,25 @@ measurement.
 
 Manufacturer reference:
 https://www.lcdwiki.com/res/E32R32P/3.2inch_ESP32-32E_E32R32P_E32N32P_User_Manual.pdf
+
+## R14.32 — Main-screen battery display mode
+
+In **Settings → Battery**, use the right-hand footer button to choose
+**SHOW %** or **SHOW V**. The button displays the *currently selected*
+mode; tap it to switch.
+
+- **SHOW %** displays a battery icon and approximate percentage, for
+  example `~85%`, computed from the calibrated battery voltage and the
+  user-defined **3.20 V = 0% / 4.20 V = 100%** linear scale.
+- **SHOW V** displays the same battery icon and corrected battery voltage,
+  for example `4.05V` (rounded to 50 mV).
+
+The selection applies to the main-screen header in **both portrait and
+landscape**, and is saved immediately in device Preferences/NVS under
+`batshow_v`, independently of the `batoff_mv` calibration offset.
+The selection survives a reboot. The battery bar still follows the
+calibrated 3.20–4.20 V voltage scale in either mode.
+
+The existing calibration controls (±10 mV, ±50 mV and RESET) remain
+unchanged. On portrait, the center footer remains STOP while transmitting.
+No charging indicator is reintroduced.
