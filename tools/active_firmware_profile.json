@@ -2,25 +2,25 @@
   "schema": 1,
   "scenario_count": 172,
   "firmware_sources": {
-    "src": "93b28459eb49a544e78f2c37eec7dbf72500db16",
-    "include": "4b32a7fdb89c5f103ca79799577f254af661663b",
+    "src": "fb83a431afaad4821f56f14b66267c5effb2b2b6",
+    "include": "dbf3506ad2ceba3009888e0cf007e4c800b02211",
     "lib": "bbb71a1b441d98f3ada5d709c4b67a1c3395d161",
     "SquachEmit.ino": "90b4205813a2f7885bc1e12ce7431eebf7249f45",
     "platformio.ini": "c3ff3725248b4c67d60da6903982515031c501f6"
   },
   "builds": {
     "cyd32-st7798": {
-      "title": "SquachEmit v1.1.0 CYD 3.2 R14.30 LAB — Documented Battery Voltage (172 Cases)",
+      "title": "SquachEmit v1.1.0 CYD 3.2 R14.31 LAB — Battery Voltage Calibration (172 Cases)",
       "version": "v1.1.0 MAINLINE · 172 cases",
-      "summary": "R14.30 LAB corrects the misleading battery percentage: the manufacturer's E32R32P manual specifies GPIO34 BAT_ADC as half the actual battery voltage, but provides no state-of-charge percent curve. Display filtered battery volts rounded to 0.05V with a voltage-level bar rather than uncalibrated SOC %. Preserve four-window boot consensus, noise rejection and raw/filtered mV diagnostics. C1/C2 capacitors are already fitted; Q3 isolates the battery on USB; readings while charging cannot show true SOC. Preserves 172 RF cases; four-part SHA-256 LAB firmware; physical validation required.",
+      "summary": "R14.31 LAB adds Settings > Battery to calibrate the CYD3.2 ADC voltage with +/-10 and +/-50mV buttons, NVS persistence and reset to 0. Uses the owner-defined linear voltage scale 3.20V=0%, 4.20V=100%, displaying approximate 5% steps with a matching battery bar. Corrected voltage drives the gauge; calibration shows both raw and adjusted volts. Retains four-window ADC stability, boot filtering, no charging symbol, original Squachy artwork and 172 RF cases. Includes portrait navigation and emergency STOP. Four-part SHA-256 LAB package; physical verification required.",
       "highlights": [
-        "Replace invented battery SOC percentages with manufacturer-supported battery voltage displayed as 4.05V.",
-        "Round voltage in 0.05V increments; refresh the header when that displayed voltage changes.",
-        "Battery icon fill represents voltage level between 3.2 and 4.2V, not actual percentage capacity.",
-        "Retain multi-window ADC consensus, boot settling, serial mV/noise diagnostics and no charging icon.",
-        "Document existing C1/C2 0.1uF filters and the USB battery-disconnect FET Q3.",
-        "Preserve buffered ST7798 animation, Squachy artwork, Settings navigation and 172 RF test cases.",
-        "LAB only, SHA-256 four-part firmware packaging; confirm ADC accuracy with a multimeter."
+        "Settings > Battery calibration: compare raw GPIO34 volts with multimeter and adjust +/-10 or +/-50mV.",
+        "NVS saved offset -500..+500mV, restored at boot; RESET clears calibration without affecting other settings.",
+        "Corrected voltage follows owner-defined 3.20V=0% and 4.20V=100% linear percent mapping.",
+        "Header shows approximate 5% charge steps and a calibrated gauge; calibration screen displays raw and corrected volts.",
+        "Portrait and landscape touchscreen controls; portrait STOP remains available while transmitter runs.",
+        "Retains four-window ADC filtering, original buffered Squachy animation and all 172 RF test cases.",
+        "LAB only, four-part SHA-256 firmware packaging; physical CYD3.2 voltage verification required."
       ]
     },
     "c5-waveshare-28": {
