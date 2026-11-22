@@ -12,7 +12,7 @@
     "cyd32-st7798": {
       "title": "SquachEmit v1.1.0 CYD 3.2 R14.30 LAB — Documented Battery Voltage (172 Cases)",
       "version": "v1.1.0 MAINLINE · 172 cases",
-      "summary": "R14.30 LAB corrects the misleading battery percentage: the manufacturer's E32R32P manual specifies GPIO34 BAT_ADC as half the actual battery voltage, but provides no state-of-charge percent curve. Display filtered battery volts rounded to 0.05V with a voltage-level bar rather than uncalibrated SOC %. Preserve four-window boot consensus, noise rejection and raw/filtered mV diagnostics. The manual confirms C1/C2 bypass capacitors already fitted and Q3 isolates the battery load on USB; readings while charging cannot show true SOC. Four-part SHA-256 LAB firmware; physical validation required.",
+      "summary": "R14.30 LAB corrects the misleading battery percentage: the manufacturer's E32R32P manual specifies GPIO34 BAT_ADC as half the actual battery voltage, but provides no state-of-charge percent curve. Display filtered battery volts rounded to 0.05V with a voltage-level bar rather than uncalibrated SOC %. Preserve four-window boot consensus, noise rejection and raw/filtered mV diagnostics. C1/C2 capacitors are already fitted; Q3 isolates the battery on USB; readings while charging cannot show true SOC. Preserves 172 RF cases; four-part SHA-256 LAB firmware; physical validation required.",
       "highlights": [
         "Replace invented battery SOC percentages with manufacturer-supported battery voltage displayed as 4.05V.",
         "Round voltage in 0.05V increments; refresh the header when that displayed voltage changes.",
