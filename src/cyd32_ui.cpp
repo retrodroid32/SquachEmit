@@ -8,6 +8,7 @@
 #include "cyd32_frame_push.h"
 #include "sqe_bubble_timing.h"
 #include "sqe_battery_filter.h"
+#include "sqe_battery_calibration.h"
 #include "sqe_bubble_layout.h"
 #include "sqe_category_quips.h"
 #include "sqe_touch_fit.h"
@@ -46,7 +47,7 @@ constexpr uint16_t kWhite=0xFFFF,kMuted=0x7393,kInk=0x1801;
 constexpr uint16_t kFurDark=0x38C0,kFurMain=0x5941,kFurLight=0x9326;
 constexpr uint16_t kSkin=0xF60F,kSkinDark=0xCB88;
 
-enum class Screen : uint8_t { Home, Categories, Library, Duration, Details, Diagnostics, Favorites, History, Settings, Help, Identity, Recovery, Activity, Evidence, QuickFilter, Portrait, MainMenu, Outfits, OtaInfo, Backgrounds };
+enum class Screen : uint8_t { Home, Categories, Library, Duration, Details, Diagnostics, Favorites, History, Settings, Help, Identity, Recovery, Activity, Evidence, QuickFilter, Portrait, MainMenu, Outfits, OtaInfo, Backgrounds, BatteryCalibration };
 constexpr size_t kPageRows=4;
 
 // SquachWatch-style staged rendering: physical ST7798 panel is never
@@ -90,6 +91,7 @@ bool playlistRunning=false,playlistPaused=false;
 unsigned playlistIndex=0,playlistTotal=0;
 uint8_t brightnessLevel=2,animationLevel=1,screenTimeout=0,themeLevel=0,fontMode=1;
 bool settingsMore=false;
+bool settingsBatteryFlow=false;
 bool openedFromMainMenu=false;
 bool settingsSubmenuFlow=false;
 bool pcControl=false,screenDimmed=false;
@@ -110,7 +112,8 @@ SqeBattery::Meter batteryMeter{};
 uint16_t batteryAdcSamples[SqeBattery::kSamples]={0};
 uint8_t batteryAdcCount=0;
 bool batteryAdcCollecting=false;
-int8_t batteryPercent=-1;
+int8_t batteryPercent=-1; // only used to gate settled ADC validity
+int16_t batteryOffsetMv=0; // NVS battery-side voltage correction
 uint32_t lastBatterySample=0;
 uint32_t lastClockMinute=UINT32_MAX;
 bool portraitCalibrated=false,portraitMode=false;
@@ -165,6 +168,22 @@ uint16_t blend(uint16_t a,uint16_t b,uint8_t t) {
 }
 // Battery-backed CYD32 revisions expose VBAT through a 1:1 divider on GPIO34.
 // Charger status needs a verified physical GPIO; voltage alone cannot prove charging.
+uint16_t correctedBatteryMv(){
+  return SqeBatteryCalibration::correctedMv(batteryMillivolts,batteryOffsetMv);
+}
+void setBatteryOffsetMv(int32_t next){
+  const int16_t candidate=SqeBatteryCalibration::clampOffset(next);
+  if(candidate==batteryOffsetMv)return;
+  batteryOffsetMv=candidate;
+  if(prefs.begin("sqemit32",false)){
+    if(prefs.putInt("batoff_mv",(int32_t)batteryOffsetMv)!=sizeof(int32_t))
+      Serial.println("WARN,BATTERY_OFFSET_SAVE_FAILED");
+    prefs.end();
+  }else Serial.println("WARN,BATTERY_OFFSET_NVS_UNAVAILABLE");
+  Serial.printf("CYD32,BATCAL,OFFSET_MV=%d,CORRECTED_MV=%u\n",
+                (int)batteryOffsetMv,(unsigned)correctedBatteryMv());
+  redraw=true;
+}
 void sampleBattery(){
   const uint32_t now=millis();
   // Allow ESP32 supply, RF and the 50k-ohm equivalent divider to settle.
@@ -191,52 +210,39 @@ void sampleBattery(){
   const bool valid=batteryMeter.accept(batteryAdcSamples);
   batteryMillivolts=batteryMeter.filteredMillivolts;
   batteryPercent=batteryMeter.displayedPercent;
-  Serial.printf("CYD32,BATTERY,raw_mV=%u,filtered_mV=%u,spread_mV=%u,core_spread_mV=%u,pct_est=%d,valid=%u,consensus_windows=%u,unstable_windows=%u\n",
+  Serial.printf("CYD32,BATTERY,raw_mV=%u,filtered_mV=%u,offset_mV=%d,corrected_mV=%u,linear_pct=%u,spread_mV=%u,core_spread_mV=%u,valid=%u,consensus_windows=%u,unstable_windows=%u\n",
     (unsigned)batteryMeter.rawMillivolts,
     (unsigned)batteryMeter.filteredMillivolts,
+    (int)batteryOffsetMv,(unsigned)correctedBatteryMv(),
+    (unsigned)SqeBatteryCalibration::linearPercent(correctedBatteryMv()),
     (unsigned)batteryMeter.sampleSpreadMillivolts,
     (unsigned)batteryMeter.coreSpreadMillivolts,
-    (int)batteryPercent,valid?1u:0u,
+    valid?1u:0u,
     (unsigned)batteryMeter.windowCount,(unsigned)batteryMeter.unstableWindows);
 #else
   (void)now;
 #endif
 }
 void drawBatteryStatus(int x,int y){
-  // The LCDWiki E32R32P manual documents BAT_ADC voltage, not a fuel-gauge
-  // percent. Display the directly measured battery voltage instead.
   const bool valid=batteryPercent>=0 && batteryMillivolts>=2800u &&
                    batteryMillivolts<=4350u;
-  const uint16_t col=!valid?kMuted:
-    batteryMillivolts<=3500u?kPink:kWhite;
+  const uint16_t calibrated=correctedBatteryMv();
+  const uint8_t percent=SqeBatteryCalibration::roundedPercent5(calibrated);
+  const uint16_t col=!valid?kMuted:calibrated<=3500u?kPink:kWhite;
   char value[8];
-  if(!valid)snprintf(value,sizeof(value),"--.-V");
-  else{
-    // 50mV display quantization avoids pretending the ADC is precise to 1mV.
-    const unsigned displayedMv=((unsigned)batteryMillivolts+25u)/50u*50u;
-    snprintf(value,sizeof(value),"%u.%02uV",
-             displayedMv/1000u,(displayedMv%1000u)/10u);
-  }
-  // A previous animated sprite may leave textSize=2; reset it BEFORE
-  // measuring. The drawn label also uses size=1, so bounds must match.
-  lcd.setTextFont(1);
-  lcd.setTextSize(1);
+  if(!valid)snprintf(value,sizeof(value),"--%%");
+  else snprintf(value,sizeof(value),"~%u%%",(unsigned)percent);
+  // Reset font before measuring to keep the title/status aligned with sprite.
+  lcd.setTextFont(1);lcd.setTextSize(1);
   label(x-4-lcd.textWidth(value),y-4,value,col);
-  // Clear only the offscreen status-icon well, not the physical panel.
-  // On a bright gradient, a white outline alone looked like an empty gauge.
   lcd.fillRect(x+1,y-5,15,10,kTaskbar);
   if(valid){
-    // Bar is a VOLTAGE-LEVEL indicator (3.2-4.2V), not a charge percentage.
-    int fill=0;
-    if(batteryMillivolts>=4200u)fill=13;
-    else if(batteryMillivolts>3200u)
-      fill=(int)(((unsigned)batteryMillivolts-3200u)*13u/1000u);
-    const uint16_t levelCol=batteryMillivolts<=3500u?kPink:kGreen;
+    const int fill=(int)((unsigned)percent*13u/100u);
+    const uint16_t levelCol=calibrated<=3500u?kPink:kGreen;
     if(fill>0)lcd.fillRect(x+2,y-4,fill,8,levelCol);
   }
   lcd.drawRect(x,y-6,17,12,kWhite);
   lcd.fillRect(x+17,y-3,2,6,kWhite);
-
 }
 // Small symmetric broadcasting radio glyph in the header (19 x 13).
 // Central signal dot + paired bracket waves: legible at 320x240 and 240x320.
@@ -2157,6 +2163,7 @@ void cyd32UiBegin(){
     screenTimeout=prefs.getUChar("timeout",0);
     themeLevel=prefs.getUChar("theme",0);
     fontMode=prefs.getUChar("font",1);
+    batteryOffsetMv=SqeBatteryCalibration::clampOffset(prefs.getInt("batoff_mv",0));
     savedPortrait=prefs.getBool("portrait",false);
      outfitLevel=prefs.getUChar("outfit",0);
      if(prefs.isKey("bg_sqwatch")){
@@ -2294,7 +2301,7 @@ Cyd32UiAction cyd32UiTick(const char* active,uint32_t remaining,bool suite){
   const uint32_t now=millis();
   const int8_t priorBattery=batteryPercent;
   const int prevBatteryVoltageStep=batteryPercent<0?-1:
-      (int)((batteryMillivolts+25u)/50u);
+      (int)SqeBatteryCalibration::roundedPercent5(correctedBatteryMv());
   sampleBattery();
 #if defined(ARDUINO_ARCH_ESP32)
   const time_t clockNow=time(nullptr);
@@ -2304,7 +2311,7 @@ Cyd32UiAction cyd32UiTick(const char* active,uint32_t remaining,bool suite){
   }
 #endif
   const int nextBatteryVoltageStep=batteryPercent<0?-1:
-      (int)((batteryMillivolts+25u)/50u);
+      (int)SqeBatteryCalibration::roundedPercent5(correctedBatteryMv());
   if(priorBattery!=batteryPercent ||
      prevBatteryVoltageStep!=nextBatteryVoltageStep)redraw=true;
   if(colorBarsUntil){
