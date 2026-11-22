@@ -2,7 +2,7 @@
   "schema": 1,
   "scenario_count": 172,
   "firmware_sources": {
-    "src": "fb83a431afaad4821f56f14b66267c5effb2b2b6",
+    "src": "7e835c8b7783d8c6a763f08cf7d6c20ce648edbb",
     "include": "dbf3506ad2ceba3009888e0cf007e4c800b02211",
     "lib": "bbb71a1b441d98f3ada5d709c4b67a1c3395d161",
     "SquachEmit.ino": "90b4205813a2f7885bc1e12ce7431eebf7249f45",
@@ -10,17 +10,17 @@
   },
   "builds": {
     "cyd32-st7798": {
-      "title": "SquachEmit v1.1.0 CYD 3.2 R14.31 LAB — Battery Voltage Calibration (172 Cases)",
+      "title": "SquachEmit v1.1.0 CYD 3.2 R14.32 LAB — Battery Percent/Volts Toggle (172 Cases)",
       "version": "v1.1.0 MAINLINE · 172 cases",
-      "summary": "R14.31 LAB adds Settings > Battery to calibrate the CYD3.2 ADC voltage with +/-10 and +/-50mV buttons, NVS persistence and reset to 0. Uses the owner-defined linear voltage scale 3.20V=0%, 4.20V=100%, displaying approximate 5% steps with a matching battery bar. Corrected voltage drives the gauge; calibration shows both raw and adjusted volts. Retains four-window ADC stability, boot filtering, no charging symbol, original Squachy artwork and 172 RF cases. Includes portrait navigation and emergency STOP. Four-part SHA-256 LAB package; physical verification required.",
+      "summary": "R14.32 LAB adds Settings > Battery header mode: tap SHOW % or SHOW V to select approximate percent or corrected battery voltage on the main screen. The choice saves independently of the voltage calibration offset to NVS and restores after restart. Both portrait and landscape draw from the same calibrated GPIO34 measurement; the battery bar keeps the user-defined 3.20V=0%, 4.20V=100% linear scale. Preserves R14.31 +/-10mV and +/-50mV offset, RESET, portrait STOP, four-window filtering and 172 RF cases. SHA-256 four-part LAB firmware; physical testing needed.",
       "highlights": [
-        "Settings > Battery calibration: compare raw GPIO34 volts with multimeter and adjust +/-10 or +/-50mV.",
-        "NVS saved offset -500..+500mV, restored at boot; RESET clears calibration without affecting other settings.",
-        "Corrected voltage follows owner-defined 3.20V=0% and 4.20V=100% linear percent mapping.",
-        "Header shows approximate 5% charge steps and a calibrated gauge; calibration screen displays raw and corrected volts.",
-        "Portrait and landscape touchscreen controls; portrait STOP remains available while transmitter runs.",
-        "Retains four-window ADC filtering, original buffered Squachy animation and all 172 RF test cases.",
-        "LAB only, four-part SHA-256 firmware packaging; physical CYD3.2 voltage verification required."
+        "Settings > Battery adds SHOW % / SHOW V toggle for the main status header in both rotations.",
+        "Battery display mode persists across power cycles in Preferences (batshow_v), independent of voltage offset.",
+        "Percent mode shows approximate 5% steps; volts mode shows corrected voltage in 0.05V increments.",
+        "The 3.20V=0% / 4.20V=100% scale and battery icon bar are unchanged by the selection.",
+        "Retains the calibrated -500..+500mV adjustment, fine/coarse step buttons and reset to zero.",
+        "Original ST7798 Squachy animation, RF emission and 172 detection cases unchanged.",
+        "LAB-only with four-part SHA-256 packaging; CYD 3.2 hardware verification required."
       ]
     },
     "c5-waveshare-28": {
