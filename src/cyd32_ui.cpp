@@ -161,10 +161,13 @@ void sampleBattery(){
   const uint32_t now=millis();
   if(lastBatterySample&&now-lastBatterySample<15000u)return;
   lastBatterySample=now?now:1u;
+  uint32_t mv=0;
+#if defined(ARDUINO_ARCH_ESP32)
   analogSetPinAttenuation(34,ADC_11db);
   uint32_t total=0;
   for(int i=0;i<8;++i)total+=analogReadMilliVolts(34);
-  const uint32_t mv=(total/8u)*2u;
+  mv=(total/8u)*2u;
+#endif
   if(mv>=2800u&&mv<=4350u){
     batteryMillivolts=(uint16_t)mv;
     static constexpr uint16_t volts[]={3000,3300,3500,3600,3700,3750,3800,3850,3900,4000,4100,4200};
@@ -179,7 +182,7 @@ void sampleBattery(){
     }
     batteryPercent=(int8_t)value;
   }else{batteryPercent=-1;batteryMillivolts=0;}
-#if defined(SQE_BAT_CHARGE_PIN)
+#if defined(ARDUINO_ARCH_ESP32) && defined(SQE_BAT_CHARGE_PIN)
 #ifndef SQE_BAT_CHARGE_ACTIVE_LOW
 #define SQE_BAT_CHARGE_ACTIVE_LOW 1
 #endif
