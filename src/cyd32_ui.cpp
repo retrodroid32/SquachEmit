@@ -193,7 +193,10 @@ void sampleBattery(){
     // Compare the latest ADC voltage to a 105-120 second old sample.
     if(batteryTrendCount>=8){
       const int32_t rise=(int32_t)batteryMillivolts-(int32_t)batteryTrendHistory[batteryTrendIndex];
-      batteryChargingEstimated=(rise>=35 && rise<=250 && mv<4180u);
+      // Near-full cells rise slowly; do not silently disable the trend
+      // indicator above 4.18 V. This remains an estimate, never CHRG.
+      const int32_t minRise=(mv>=4100u)?12:30;
+      batteryChargingEstimated=(rise>=minRise && rise<=250 && mv<=4300u);
     }else batteryChargingEstimated=false;
     batteryTrendHistory[batteryTrendIndex]=(uint16_t)mv;
     batteryTrendIndex=(uint8_t)((batteryTrendIndex+1u)%8u);
@@ -206,15 +209,26 @@ void sampleBattery(){
 #ifndef SQE_BAT_CHARGE_ACTIVE_LOW
 #define SQE_BAT_CHARGE_ACTIVE_LOW 1
 #endif
+  // GPIO34-39 on classic ESP32 have NO internal pull-ups.
+  // On those inputs a real, external 10k pull-up to 3V3 is required.
+#if SQE_BAT_CHARGE_PIN >= 34 && SQE_BAT_CHARGE_PIN <= 39
+  pinMode(SQE_BAT_CHARGE_PIN,INPUT);
+#else
   pinMode(SQE_BAT_CHARGE_PIN,INPUT_PULLUP);
+#endif
   batteryCharging=(digitalRead(SQE_BAT_CHARGE_PIN)==(SQE_BAT_CHARGE_ACTIVE_LOW?LOW:HIGH));
 #else
   batteryCharging=false; // No charger signal wired; only trend estimate possible.
 #endif
 #if defined(ARDUINO_ARCH_ESP32)
-  Serial.printf("CYD32,BATTERY,mV=%u,pct=%d,trend_rising=%u,charger_verified=%u\n",
+#if defined(SQE_BAT_CHARGE_PIN)
+  Serial.printf("CYD32,BATTERY,mV=%u,pct=%d,trend_rising=%u,charge_sensor=1,charging=%u\n",
       (unsigned)batteryMillivolts,(int)batteryPercent,batteryChargingEstimated?1u:0u,
       batteryCharging?1u:0u);
+#else
+  Serial.printf("CYD32,BATTERY,mV=%u,pct=%d,trend_rising=%u,charge_sensor=0,charge_state=UNKNOWN\n",
+      (unsigned)batteryMillivolts,(int)batteryPercent,batteryChargingEstimated?1u:0u);
+#endif
 #endif
 }
 void drawBatteryStatus(int x,int y){
@@ -238,14 +252,20 @@ void drawBatteryStatus(int x,int y){
   }
   lcd.drawRect(x,y-6,17,12,kWhite);
   lcd.fillRect(x+17,y-3,2,6,kWhite);
-  // Confirmed charge = solid lightning bolt. Rising voltage estimate = small
-  // '?' by battery, never a false solid charging bolt.
-  if(batteryChargingEstimated&&!batteryCharging)label(x+8,y-4,"?",kYellow);
+  // Status always visible: bolt means a VERIFIED charge-status pin,
+  // '+' means only observed voltage rising, '?' means unknown.
+  // Never make a wall charger look electrically detected when there is
+  // no USB/VBUS/CHRG wire connected to this ESP32 revision.
   if(batteryCharging){
     lcd.drawLine(x+9,y-5,x+6,y+1,kYellow);
     lcd.drawLine(x+6,y+1,x+11,y+1,kYellow);
     lcd.drawLine(x+11,y+1,x+8,y+5,kYellow);
   }
+#if !defined(SQE_BAT_CHARGE_PIN)
+  // Marker has an opaque well so it remains readable over the 100% fill.
+  lcd.fillRect(x+7,y-5,7,10,kTaskbar);
+  label(x+7,y-4,batteryChargingEstimated?"+":"?",kYellow);
+#endif
 }
 // Small symmetric broadcasting radio glyph in the header (19 x 13).
 // Central signal dot + paired bracket waves: legible at 320x240 and 240x320.
