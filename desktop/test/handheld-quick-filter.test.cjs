@@ -1,0 +1,3 @@
+'use strict';const test=require('node:test'),assert=require('node:assert/strict');const fs=require('node:fs'),path=require('node:path');const dir=path.resolve(__dirname,'../..');const read=p=>fs.readFileSync(path.join(dir,p),'utf8');
+test('quick find only browses and never starts transmitter RF',()=>{const s=read('src/cyd32_ui.cpp');assert.match(s,/Screen::QuickFilter/);assert.match(s,/filterAt\(/);assert.match(s,/touchQuickFilter\(/);assert.match(s,/screen=Screen::Home;redraw=true/);});
+test('Windows native state uses actual device filter results',()=>{assert.match(read('desktop/public/controller.js'),/UI FILTER BEGIN/);assert.match(read('desktop/public/native-emitter.js'),/'QUICKFILTER'/);});

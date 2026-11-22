@@ -39,9 +39,11 @@ static void backdrop(TFT_eSprite& t){
   t.drawFastHLine(0,104,112,0xAC1F);
   t.drawFastHLine(0,110,112,CYAN);
 }
-void render(TFT_eSprite& t,uint32_t now,bool onAir,bool suite,bool pet){
+void render(TFT_eSprite& t,uint32_t now,bool onAir,bool suite,bool pet,uint8_t outfit){
   if(t.width()!=112||t.height()!=111)return;
-  backdrop(t);
+  // Transparent sprite overlays the actual selected background, instead of
+  // smuggling an unrelated synthwave rectangle behind every costume.
+  t.fillSprite(0xF81E);
   // Preserve SquachWatch's source body proportions, procedural eye timing,
   // arm movement, head bob, bounce, wave, shocked, dance, walking and nap.
   const uint32_t phase=now%22000u;
@@ -49,12 +51,13 @@ void render(TFT_eSprite& t,uint32_t now,bool onAir,bool suite,bool pet){
   const bool sleep=!onAir&&!suite&&phase>19000&&!pet;
   const bool walk=!onAir&&!suite&&phase>16200&&phase<18800;
   const bool bounce=!onAir&&!suite&&phase>6500&&phase<7400;
+  const bool dance=!onAir&&!suite&&phase>14200&&phase<16100;
   const bool wink=!onAir&&!suite&&phase>9600&&phase<10300;
   const float speed=bounce?220.0f:(sleep?2200.0f:1100.0f);
   const float amount=(bounce?9.0f:(sleep?1.5f:3.0f))*K;
   float bob=sinf((float)(now%(uint32_t)speed)/speed*6.2831853f)*amount;
   if(bounce)bob=-fabsf(bob);
-  const int cx=56+(walk?(int)(sinf(now/700.0f)*S(5)):0);
+  const int cx=56+(walk?(int)(sinf(now/700.0f)*S(5)):dance?(int)(sinf(now/230.0f)*S(5)):0);
   const int hy=22+(int)bob, hh=hy-(int)(bob*0.16f);
   const float ph=(float)(now%400u)/400.0f*6.2831853f;
   const int leg=(walk?(int)(sinf(ph)*S(3)):0);
@@ -69,12 +72,26 @@ void render(TFT_eSprite& t,uint32_t now,bool onAir,bool suite,bool pet){
   }
   t.fillRoundRect(cx-S(12),hy+S(22),S(24),S(20),S(5),BLACK);
   t.fillRoundRect(cx-S(11),hy+S(23),S(22),S(18),S(5),FUR);
+  if(outfit==1){
+    // BLACK HOODIE: unmistakable dark sweatshirt, pocket and drawstrings.
+    t.fillRoundRect(cx-S(13),hy+S(20),S(26),S(25),S(5),BLACK);
+    t.fillRoundRect(cx-S(11),hy+S(23),S(22),S(18),S(4),0x1082);
+    t.drawRoundRect(cx-S(7),hy+S(33),S(14),S(8),S(2),0x4208);
+    t.drawFastVLine(cx-S(3),hy+S(23),S(7),WHITE);
+    t.drawFastVLine(cx+S(3),hy+S(23),S(7),WHITE);
+    t.drawFastHLine(cx-S(10),hy+S(43),S(20),0x4208);
+  }else if(outfit==2){
+    t.fillRoundRect(cx-S(11),hy+S(23),S(22),S(19),S(4),0x19EF);
+    t.drawFastVLine(cx,hy+S(23),S(19),CYAN);
+    t.drawFastHLine(cx-S(9),hy+S(34),S(18),PINK);
+    t.fillCircle(cx+S(7),hy+S(28),S(2),WHITE);
+  }
   auto limb=[&](int x0,int y0,int x1,int y1){
     wedge(t,x0,y0,x1,y1,S(7)+2,BLACK);
     wedge(t,x0,y0,x1,y1,S(7),LIGHT);
   };
-  if(wave){
-    const float a=-1.0f+sinf((float)(now%400u)/400.0f*6.2831853f)*0.5f;
+  if(wave||dance){
+    const float a=-1.0f+sinf((float)(now%(dance?260u:400u))/(dance?260.0f:400.0f)*6.2831853f)*0.5f;
     limb(cx+S(11),hy+S(28),cx+S(13)+(int)(cosf(a)*18*K),hy+S(28)+(int)(sinf(a)*18*K));
     limb(cx-S(14),hy+S(24),cx-S(14),hy+S(44));
   }else if(onAir){
@@ -94,6 +111,11 @@ void render(TFT_eSprite& t,uint32_t now,bool onAir,bool suite,bool pet){
     t.fillRoundRect(cx-S(18),hy+S(22)+l,S(8),S(22),S(3),LIGHT);
     t.fillRoundRect(cx+S(10),hy+S(22)+r,S(8),S(22),S(3),LIGHT);
   }
+  if(outfit==1){
+    // Hood frames the head without covering the animated face or glasses.
+    t.fillRoundRect(cx-S(18),hh-S(3),S(36),S(30),S(10),BLACK);
+    t.drawRoundRect(cx-S(17),hh-S(2),S(34),S(28),S(9),0x4208);
+  }
   t.fillRoundRect(cx-S(16),hh-1,S(32),S(26),S(8),BLACK);
   t.fillRoundRect(cx-S(15),hh,S(30),S(24),S(7),LIGHT);
   t.fillRoundRect(cx-S(12),hh+S(2),S(24),S(19),S(5),FUR);
@@ -107,6 +129,87 @@ void render(TFT_eSprite& t,uint32_t now,bool onAir,bool suite,bool pet){
     t.fillCircle(cx+side*S(15),hh+S(13),S(3),FUR);
     t.fillCircle(cx+side*S(15),hh+S(13),S(1),SKIN);
     t.fillCircle(cx+side*S(8),hh+S(15),S(2),0xFB99);
+  }
+  // Compact costume accents based on SquachWatch's outfit catalog.
+  // Distinct simplified renders deliberately fit the existing 112x111 sprite.
+  switch(outfit){
+    case 3: // TANOOKI: ears and striped tail
+      t.fillCircle(cx-S(13),hh+S(1),S(6),0x79C3);
+      t.fillCircle(cx+S(13),hh+S(1),S(6),0x79C3);
+      t.drawLine(cx+S(13),hy+S(38),cx+S(26),hy+S(47),0x79C3);
+      break;
+    case 4: // UNICORN
+      t.fillTriangle(cx-S(4),hh+S(1),cx,hh-S(20),cx+S(4),hh+S(1),0xFFFF);
+      t.drawFastVLine(cx,hh-S(15),S(9),PINK);break;
+    case 5: // TINFOIL antenna
+      t.fillTriangle(cx-S(12),hh+S(3),cx,hh-S(14),cx+S(13),hh+S(3),0xC638);
+      t.fillCircle(cx,hh-S(16),S(2),WHITE);break;
+    case 6: // SHADOW
+      t.drawRoundRect(cx-S(17),hh-S(1),S(34),S(27),S(7),0x3186);
+      t.fillRoundRect(cx-S(14),hy+S(27),S(28),S(14),S(5),0x2104);break;
+    case 7: // PLUMBER BRO
+      t.fillRoundRect(cx-S(16),hh-S(7),S(32),S(9),S(3),0xF800);
+      t.drawFastHLine(cx-S(18),hh+S(1),S(36),0xF800);
+      t.fillRect(cx-S(10),hy+S(31),S(20),S(12),0x001F);break;
+    case 8: // TALL BRO, high cap
+      t.fillRoundRect(cx-S(13),hh-S(15),S(26),S(15),S(3),0x07E0);
+      t.drawFastHLine(cx-S(17),hh, S(34),0x07E0);break;
+    case 9: // SPACE helmet
+      t.drawRoundRect(cx-S(18),hh-S(7),S(36),S(36),S(12),0xFFFF);
+      t.drawRoundRect(cx-S(19),hh-S(8),S(38),S(38),S(12),CYAN);
+      t.fillRect(cx-S(9),hy+S(32),S(18),S(10),0x4208);break;
+    case 10: // BLUE BLUR quills
+      for(int i=0;i<4;++i)
+        t.fillTriangle(cx-S(13),hh+S(i*5),cx-S(28),hh-S(8)+S(i*5),
+                       cx-S(12),hh+S(8+i*3),0x05FF);
+      break;
+    case 11: // CAPTAIN, tricorn hat
+      t.fillTriangle(cx-S(20),hh+S(1),cx-S(17),hh-S(15),cx,hh-S(2),0x2104);
+      t.fillTriangle(cx+S(20),hh+S(1),cx+S(17),hh-S(15),cx,hh-S(2),0x2104);
+      t.drawFastHLine(cx-S(19),hh+S(1),S(38),0xFFD0);break;
+    case 12: // WOLF PELT
+      t.fillTriangle(cx-S(17),hh+S(4),cx-S(18),hh-S(17),cx-S(4),hh+S(1),0x8410);
+      t.fillTriangle(cx+S(17),hh+S(4),cx+S(18),hh-S(17),cx+S(4),hh+S(1),0x8410);
+      break;
+    case 13: // CHROME WING
+      for(int side=-1;side<=1;side+=2)
+        t.fillTriangle(cx+side*S(11),hy+S(24),
+                       cx+side*S(33),hy+S(4),
+                       cx+side*S(29),hy+S(42),0xC638);
+      break;
+    case 14: // VOID EYE
+      t.fillCircle(cx,hh-S(9),S(6),0xA81F);
+      t.fillCircle(cx,hh-S(9),S(3),BLACK);
+      t.fillCircle(cx,hh-S(9),S(1),WHITE);break;
+    case 15: // SNOW PARKA
+      t.drawRoundRect(cx-S(19),hh-S(5),S(38),S(33),S(9),WHITE);
+      t.fillRect(cx-S(12),hy+S(26),S(24),S(16),0xA514);break;
+    case 16: // SHARK SUIT dorsal fin
+      t.fillTriangle(cx-S(4),hh, cx+S(13),hh-S(23),
+                     cx+S(13),hh+S(4),0x7BEF);
+      t.drawRoundRect(cx-S(17),hh-S(3),S(34),S(30),S(8),0x7BEF);
+      break;
+    case 17: // YZZERD, wizard hat
+      t.fillTriangle(cx-S(12),hh, cx+S(2),hh-S(22),cx+S(14),hh,0x8010);
+      t.drawFastHLine(cx-S(19),hh,S(38),0xE51F);
+      t.fillCircle(cx+S(1),hh-S(11),S(2),WHITE);break;
+    case 18: // OVER 9000 hair
+      for(int i=-2;i<=2;++i)
+        t.fillTriangle(cx+S(i*6-2),hh+S(4),cx+S(i*7),hh-S(20-(i&1)*5),
+                       cx+S(i*6+4),hh+S(4),0xFD20);
+      break;
+    case 19: // SHAMBLER: flies
+      for(int i=0;i<8;++i)t.fillCircle(cx-S(20)+(i*13)%S(41),
+        hh-S(15)+(i*7)%S(13),1,i%2?0x07E0:0xFFFF);
+      break;
+    case 20: // TH3 0N3: digital green marks
+      t.drawRoundRect(cx-S(16),hh-S(4),S(32),S(30),S(7),0x07E0);
+      t.drawFastVLine(cx-S(14),hh+S(5),S(16),0x07E0);break;
+    case 21: // STRIPES: vertical prison shirt stripes
+      for(int i=-2;i<=2;++i)
+        t.drawFastVLine(cx+S(i*4),hy+S(24),S(19),WHITE);
+      break;
+    default:break;
   }
   if(onAir){
     for(int side=-1;side<=1;side+=2){

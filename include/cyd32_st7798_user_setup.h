@@ -19,7 +19,9 @@
 #define TFT_BACKLIGHT_ON HIGH
 #define USE_HSPI_PORT
 #define SPI_FREQUENCY 40000000
-#define SPI_READ_FREQUENCY 20000000
+// Conservative ST7789/ST7798-compatible RAM read clock: 20MHz can return
+// all-zero or garbled rows even when SPI writes/touch work correctly.
+#define SPI_READ_FREQUENCY 6000000
 #define SPI_TOUCH_FREQUENCY 2500000
 #define TFT_RGB_ORDER TFT_BGR
 #define TFT_INVERSION_OFF

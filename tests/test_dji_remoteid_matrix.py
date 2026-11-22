@@ -40,8 +40,10 @@ class DjiModelMatrixTests(unittest.TestCase):
         # No raw DJI proprietary DroneID or custom 802.11 action frame transmitter.
         self.assertNotIn("OcuSync", code)
         ui = (ROOT/"src/cyd32_ui.cpp").read_text()
-        self.assertIn('startsWith(s->id,"RID-WIFI-DJI-")',ui)
-        self.assertIn('SYNTHETIC WIFI BEACON / BASIC ID',ui)
+        self.assertIn('scenarioDeviceName(*s,name,sizeof(name))',ui)
+        names=(ROOT/"include/scenario_display.h").read_text()
+        self.assertIn('sqeStarts(id,"RID-WIFI-DJI-")',names)
+        self.assertIn('NO REMOTE ID',names)
 
     def test_all_dji_cases_in_drones_library(self):
         header = (ROOT/"include/scenario_library.h").read_text()

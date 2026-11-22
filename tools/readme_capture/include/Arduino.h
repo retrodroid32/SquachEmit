@@ -5,12 +5,36 @@
 #include <cstdlib>
 inline uint32_t mock_time_ms = 1000;
 inline uint32_t millis(){ return mock_time_ms; }
+inline uint32_t micros(){ return mock_time_ms*1000u; }
+// SquachWatch calibration has bounded release/hold/timeout loops.
+inline void delay(uint32_t ms){mock_time_ms+=ms;}
+inline long random(long lower,long upper){
+ if(upper<=lower)return lower;
+ return lower+std::rand()%(upper-lower);
+}
 inline void pinMode(int,int){}
 inline void digitalWrite(int,int){}
 constexpr int OUTPUT=1,LOW=0,HIGH=1;
 constexpr int TFT_BL=27;
 struct SerialMock {
   void println(const char* s){ fprintf(stderr,"%s\n",s); }
+  void println(){ fputc('\n',stderr); }
+  size_t availableForWrite() const { return 256; }
+  size_t write(const uint8_t* bytes,size_t n){
+    // Native mock has no USB transport; exercise call sites without
+    // emitting hundreds of kB of framebuffer rows to test logs.
+    (void)bytes;
+    return n;
+  }
   template<typename... Ts> void printf(const char* fmt, Ts... a){ fprintf(stderr,fmt,a...); }
 };
 inline SerialMock Serial;
+struct EspMock {
+  unsigned getFreeHeap() const { return 120000; }
+  unsigned getMaxAllocHeap() const { return 90000; }
+};
+inline EspMock ESP;
+
+inline double ledcSetup(int, unsigned, int){return 5000.0;}
+inline void ledcAttachPin(int,int){}
+inline void ledcWrite(int,unsigned){}

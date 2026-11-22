@@ -1,4 +1,7 @@
 #include <Arduino.h>
+#if defined(SQE_CYD32)
+#include <esp_system.h>
+#endif
 #include <WiFi.h>
 #include <esp_wifi.h>
 #include <NimBLEDevice.h>
@@ -41,6 +44,11 @@ static uint32_t g_lastRotation = 0;
 static uint8_t g_remotePart = 0;
 static uint32_t g_caseNumber = 0;
 static bool g_suite = false;
+#if defined(SQE_CYD32)
+static bool g_playlist=false,g_playlistPaused=false,g_playlistPauseRequested=false;
+static size_t g_playlistNext=0;
+static uint32_t g_playlistAt=0;
+#endif
 static size_t g_suiteNext = 0;
 static uint32_t g_suiteAt = 0;
 static String g_line;
@@ -49,6 +57,12 @@ static uint32_t g_radioIdentity = 0;
 
 static void truth(const char* event, const Scenario* s, const char* status = "ok") {
   // Existing keys remain stable for the serial truth consumer. 0 = BLE.
+#if defined(SQE_CYD32)
+  if(s && !strcmp(event,"BEGIN"))cyd32UiRecordIdentity(s->id,g_address);
+  cyd32UiRecordTxEvent(event,status,g_duration);
+  if(s && (!strcmp(event,"END")||!strcmp(event,"ERROR")))
+    cyd32UiRecordResult(s->id,status,millis());
+#endif
   const bool wifi = s && (s->kind == Kind::WifiAp || s->kind == Kind::WifiRemoteId);
   const unsigned channel = wifi ? (s->code ? (unsigned)s->code : 1u) : 0u;
   Serial.printf("TRUTH,{\"event\":\"%s\",\"seq\":%lu,\"ms\":%lu,\"id\":\"%s\",\"expected\":\"%s\",\"status\":\"%s\",\"carrier\":\"%s\",\"channel\":%u,\"mac\":\"%s\"}\n",
@@ -364,6 +378,9 @@ static void finish(const char* status = "ok") {
 
 static void cancelAll() {
   g_suite = false;
+#if defined(SQE_CYD32)
+  g_playlist=false;g_playlistPaused=false;g_playlistPauseRequested=false;
+#endif
   finish("stopped");
   Serial.println("STATE,IDLE");
 }
@@ -466,30 +483,127 @@ static void help() {
   Serial.println("SUITE                 run each case with 2.4s off-air gaps");
   Serial.println("STOP                  stop current case/suite immediately");
   Serial.println("STATUS                show current case and time remaining");
+  Serial.println("HEALTH                show real heap, largest allocation, uptime, radio and serial status");
+  Serial.println("RX RESULT <id> <class> <rssi> <status> - PC-reported receiver observation (not RF verified by transmitter)");
   Serial.println("IDENTITY              current synthetic case MAC");
   Serial.println("Remote ID profiles are synthetic; no genuine vendor serials or flight links.");
   Serial.println("BLE5 extended/coded PHY and Wi-Fi NAN: OFFLINE FIXTURES ONLY.");
   Serial.println("Single 2.4GHz radio: BLE and Wi-Fi scenarios are exclusive.");
 #if defined(SQE_CYD32)
+  Serial.println("UI ON/OFF/GET, UI TOUCH x y DOWN|MOVE|UP — local software-rendered desktop UI");
+  Serial.println("UI STATE transmits only navigation and test state; no LCD pixel readback.");
+#endif
+#if defined(SQE_CYD32)
   Serial.println("Tap TX TIME on the home screen to set 3..30s for RUN and SUITE.");
-  Serial.println("CALTOUCH             reset touchscreen fit, then tap to calibrate");
+  Serial.println("CALTOUCH             reset landscape touchscreen fit (idle only)");
+  Serial.println("CALTOUCH PORTRAIT    rerun portrait 4-corner touch wizard (portrait+idle)");
+  Serial.println("TOUCH STATUS         report saved portrait calibration and edge-rescue count");
+  Serial.println("TOUCH TRACE ON|OFF   log physical touch pressure and coordinates (115200)");
   Serial.println("COLORS               show idle-only RED/GREEN/BLUE/WHITE/BLACK test");
   Serial.println("INVERT ON|OFF        save absolute panel inversion state");
+  Serial.println("PUSH ON|OFF          optimized FramePush vs stock TFT_eSPI (A/B, reboot resets)");
+  Serial.println("PUSH STATUS          report push mode, rows, hash/wire timings and fallback count");
 #endif
 }
 
+// UI state is opt-in and is not coupled to receiver LOG evidence, RF test
+// dispatch, baud switching or any physical TFT readback.
+static bool g_uiStreamOn=false;
+static bool g_uiStatePending=false;
 static void command(String cmd) {
   cmd.trim();
   if (!cmd.length()) return;
+  if (cmd.startsWith("UI ") || cmd.startsWith("ui ")) {
+#if defined(SQE_CYD32)
+    cmd.toUpperCase();
+    if(cmd=="UI ON"){
+      g_uiStreamOn=true;g_uiStatePending=true;
+      cyd32UiSetPcControl(true);
+      Serial.println("UI READY 1 320 240 MODEL");
+      return;
+    }
+    if(cmd=="UI OFF"){
+      g_uiStreamOn=false;g_uiStatePending=false;
+      cyd32UiSetPcControl(false);
+      cyd32UiRemoteTouch(0,0,"UP");
+      Serial.println("UI OFF OK");
+      return;
+    }
+    if(cmd=="UI GET"){
+      g_uiStatePending=true;return;
+    }
+    unsigned x=0,y=0;char phase[8]={0};char garbage=0;
+    if(sscanf(cmd.c_str(),"UI TOUCH %u %u %7s %c",&x,&y,phase,&garbage)==3
+       && x<480 && y<480
+       && cyd32UiRemoteTouch((uint16_t)x,(uint16_t)y,phase)){
+      g_uiStatePending=true;
+      Serial.println("UI TOUCH OK");
+      return;
+    }
+    Serial.println("UI ERROR UNSUPPORTED_COMMAND");
+#else
+    Serial.println("UI ERROR UNSUPPORTED_BOARD");
+#endif
+    return;
+  }
+  // Old pixel-capture commands intentionally do nothing in R7. No
+  // accidental GRAM readback or 2Mbps handoff is possible from desktop.
+  if(cmd.startsWith("MIRROR ")||cmd.startsWith("mirror ")){
+    Serial.println("MIRROR ERROR REMOVED_USE_UI_STATE");
+    return;
+  }
+  if(cmd.startsWith("RX RESULT ")){
+#if defined(SQE_CYD32)
+    char id[60]={0},cls[28]={0},status[16]={0},extra=0;
+    int rssi=0;
+    if(sscanf(cmd.c_str(),"RX RESULT %59s %27s %d %15s %c",id,cls,&rssi,status,&extra)==4 &&
+       rssi>=-127&&rssi<=20 && findScenario(id) &&
+       (!strcmp(status,"VERIFIED")||!strcmp(status,"CANDIDATE")||!strcmp(status,"UNVERIFIED"))){
+      cyd32UiRecordReceiverEvidence(id,cls,rssi,status);
+      Serial.println("RX REPORT ACCEPTED - PC-REPORTED, NOT INDEPENDENT RF EVIDENCE");
+    }else Serial.println("RX ERROR INVALID_REPORT");
+#else
+    Serial.println("RX ERROR UNSUPPORTED_BOARD");
+#endif
+    return;
+  }
+  if (cmd.equalsIgnoreCase("HEALTH")) {
+    Serial.printf("HEALTH,heap=%lu,largest=%lu,uptime=%lu,tx=%u,serial_free=%u\n",
+      (unsigned long)ESP.getFreeHeap(),(unsigned long)ESP.getMaxAllocHeap(),
+      (unsigned long)(millis()/1000UL),g_active?1u:0u,
+      (unsigned)Serial.availableForWrite());return;
+  }
   if (cmd.equalsIgnoreCase("HELP") || cmd == "?") { help(); return; }
   if (cmd.equalsIgnoreCase("LIST")) { listCases(); return; }
   if (cmd.equalsIgnoreCase("STOP")) { cancelAll(); return; }
 #if defined(SQE_CYD32)
-  if (cmd.equalsIgnoreCase("CALTOUCH")) { cyd32UiResetCalibration(); return; }
+  if (cmd.equalsIgnoreCase("PUSH ON")) { cyd32UiSetFramePush(true); return; }
+  if (cmd.equalsIgnoreCase("PUSH OFF")) { cyd32UiSetFramePush(false); return; }
+  if (cmd.equalsIgnoreCase("PUSH STATUS")) { cyd32UiPrintFramePushStatus(); return; }
+  if (cmd.equalsIgnoreCase("TOUCH STATUS")) { cyd32UiPrintTouchStatus(); return; }
+  if (cmd.equalsIgnoreCase("TOUCH TRACE ON")) { cyd32UiSetTouchTrace(true); return; }
+  if (cmd.equalsIgnoreCase("TOUCH TRACE OFF")) { cyd32UiSetTouchTrace(false); return; }
+  if (cmd.equalsIgnoreCase("CALTOUCH PORTRAIT")) {
+    if(g_active||g_suite||g_playlist){
+      Serial.println("ERROR,CALTOUCH_REQUIRES_IDLE");
+      return;
+    }
+    cyd32UiCalibratePortraitTouch(); return;
+  }
+  // Touch recalibration removes the only local STOP control until the
+  // blocking calibration completes. NEVER start it with RF/suite/playlist
+  // active, including the off-air gap between suite/playlist cases.
+  if (cmd.equalsIgnoreCase("CALTOUCH")) {
+    if (g_active || g_suite || g_playlist) {
+      Serial.println("ERROR,CALTOUCH_REQUIRES_IDLE");
+      return;
+    }
+    cyd32UiResetCalibration(); return;
+  }
   if (cmd.equalsIgnoreCase("INVERT ON")) { cyd32UiSetInversion(true); return; }
   if (cmd.equalsIgnoreCase("INVERT OFF")) { cyd32UiSetInversion(false); return; }
   if (cmd.equalsIgnoreCase("COLORS")) {
-    if (g_active || g_suite) {Serial.println("ERROR,COLORS_REQUIRES_IDLE");return;}
+    if (g_active || g_suite || g_playlist) {Serial.println("ERROR,COLORS_REQUIRES_IDLE");return;}
     cyd32UiColorBars();return;
   }
 #endif
@@ -531,6 +645,9 @@ static void command(String cmd) {
       duration = (uint32_t)sec * 1000UL;
     }
     g_suite = false;
+#if defined(SQE_CYD32)
+    g_playlist=false;g_playlistPaused=false;g_playlistPauseRequested=false;
+#endif
     startScenario(s, duration);
     return;
   }
@@ -548,6 +665,7 @@ void setup() {
 #elif defined(SQE_CYD32)
   Serial.println("BOOT,SquachEmit,v1.1.0,ESP32-2432S032R-ST7798,172-CASES-TXTIME");
   cyd32UiBegin();
+  cyd32UiSetResetReason((unsigned)esp_reset_reason());
 #else
   Serial.println("BOOT,SquachEmit,v1.1.0,ESP32-S3,172-CASES");
 #endif
@@ -577,6 +695,9 @@ void loop() {
   if (g_active && now - g_started >= g_duration) {
     finish();
     g_suiteAt = millis() + kSuiteGapMs;
+#if defined(SQE_CYD32)
+    g_playlistAt = millis() + 3000UL;
+#endif
   }
   if (g_suite && !g_active && (int32_t)(millis() - g_suiteAt) >= 0) {
     if (g_suiteNext >= kScenarioCount) {
@@ -587,21 +708,42 @@ void loop() {
       Serial.println("STATE,SUITE_ABORTED");
     }
   }
+#if defined(SQE_CYD32)
+  if(g_playlist && !g_active){
+    if(g_playlistPauseRequested){
+      g_playlistPaused=true;g_playlistPauseRequested=false;
+      Serial.println("STATE,PLAYLIST_PAUSED");
+    }
+    if(!g_playlistPaused&&(int32_t)(millis()-g_playlistAt)>=0){
+      const Scenario* next=cyd32UiFavoriteAt(g_playlistNext);
+      if(!next){g_playlist=false;Serial.println("STATE,PLAYLIST_DONE");}
+      else{
+        ++g_playlistNext;
+        if(!startScenario(next,selectedDurationMs())){
+          g_playlist=false;Serial.println("STATE,PLAYLIST_ABORTED");
+        }
+      }
+    }
+  }
+#endif
 #if defined(SQE_WAVESHARE_C5) || defined(SQE_CYD32)
   const uint32_t current = millis();
   const uint32_t remaining = (g_active && g_duration > current-g_started)
     ? g_duration-(current-g_started) : 0;
 #if defined(SQE_CYD32)
+  cyd32UiSetPlaylistState(g_playlist,g_playlistPaused,(unsigned)g_playlistNext,
+                         (unsigned)cyd32UiFavoriteCount());
   const Cyd32UiAction action = cyd32UiTick(
-      g_active ? g_active->id : nullptr, remaining, g_suite);
+      g_active ? g_active->id : nullptr, remaining, g_suite||g_playlist);
   switch(action) {
     case Cyd32UiAction::Run: {
       const Scenario* chosen = cyd32UiSelection();
+      if(chosen)cyd32UiNoteRunAction();
       if(chosen) {
         const bool ouiCase=isOuiOnly(chosen);
         Serial.printf("UI,RUN_TAP,%s,%s\n",chosen->id,
               ouiCase?"WIFI_OUI":chosen->kind==Kind::WifiRemoteId?"WIFI_RID":"OTHER");
-        g_suite=false;
+        g_suite=false;g_playlist=false;g_playlistPaused=false;g_playlistPauseRequested=false;
         if(chosen->kind==Kind::WifiRemoteId || ouiCase) {
           cyd32UiSetRadioStarting(chosen->id);
           // Render the accepted touch before the potentially blocking Wi-Fi
@@ -617,6 +759,26 @@ void loop() {
       break;
     }
     case Cyd32UiAction::Stop: cancelAll(); break;
+    case Cyd32UiAction::PlaylistStart:
+      cancelAll();
+      if(cyd32UiFavoriteCount()){
+        g_playlist=true;g_playlistNext=0;g_playlistAt=millis()+200;
+        Serial.println("STATE,PLAYLIST_START");
+      }
+      break;
+    case Cyd32UiAction::PlaylistPause:
+      if(g_playlist){
+        if(g_active)g_playlistPauseRequested=true;
+        else {g_playlistPaused=true;Serial.println("STATE,PLAYLIST_PAUSED");}
+      }
+      break;
+    case Cyd32UiAction::PlaylistResume:
+      if(g_playlist&&g_playlistPaused){
+        g_playlistPaused=false;g_playlistPauseRequested=false;
+        g_playlistAt=millis()+3000UL;
+        Serial.println("STATE,PLAYLIST_RESUMED");
+      }
+      break;
     case Cyd32UiAction::Suite:
       cancelAll();
       g_suite=true;g_suiteNext=0;g_suiteAt=millis();
@@ -638,6 +800,14 @@ void loop() {
       Serial.println("STATE,SUITE_START");
       break;
     default: break;
+  }
+#endif
+  // The CYD remains authoritative for navigation, selection and RF.
+  // Only tiny UI records are sent; no LCD readback or huge pixel streams.
+#if defined(SQE_CYD32)
+  if(g_uiStreamOn||g_uiStatePending){
+    cyd32UiStreamState(g_active?g_active->id:nullptr,remaining,g_suite,g_uiStatePending);
+    g_uiStatePending=false;
   }
 #endif
 #endif
