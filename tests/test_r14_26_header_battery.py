@@ -17,11 +17,14 @@ class R1426HeaderBatteryTests(unittest.TestCase):
         self.assertNotIn('textWidth("SQUACHEMIT")', title)
         self.assertIn("lcd.setTextSize(1);", title)
 
-    def test_full_battery_uses_solid_color_fill_not_just_outline(self):
+    def test_battery_voltage_uses_documented_voltage_indicator(self):
         start = SOURCE.index("void drawBatteryStatus(")
         end = SOURCE.index("void drawTxBeacon(", start)
         battery = SOURCE[start:end]
-        self.assertIn('"~%d%%"', battery)
+        self.assertIn('snprintf(value,sizeof(value),"%u.%02uV"', battery)
+        self.assertNotIn('snprintf(value,sizeof(value),"~%d%%"', battery)
+        self.assertIn("displayedMv/1000u",battery)
+        self.assertIn("50u*50u",battery)
         self.assertIn('lcd.fillRect(x+1,y-5,15,10,kTaskbar);', battery)
         self.assertIn('lcd.fillRect(x+2,y-4,fill,8,chargeCol);', battery)
         self.assertIn('lcd.drawRect(x,y-6,17,12,kWhite);', battery)
