@@ -91,7 +91,6 @@ bool playlistRunning=false,playlistPaused=false;
 unsigned playlistIndex=0,playlistTotal=0;
 uint8_t brightnessLevel=2,animationLevel=1,screenTimeout=0,themeLevel=0,fontMode=1;
 bool settingsMore=false;
-bool settingsBatteryFlow=false;
 bool openedFromMainMenu=false;
 bool settingsSubmenuFlow=false;
 bool pcControl=false,screenDimmed=false;
@@ -1141,6 +1140,27 @@ Cyd32UiAction touchPortrait(int x,int y,bool active,bool suite){
          Cyd32UiAction::PlaylistPause):Cyd32UiAction::Suite;
 }
 
+void batteryCalibrationScreen(){
+  lcd.fillScreen(kBg);titleBar();
+  label(10,24,"BATTERY VOLTAGE CAL",kVaporPink,2);
+  char line[64];
+  if(batteryPercent<0)snprintf(line,sizeof(line),"RAW: ACQUIRING...");
+  else snprintf(line,sizeof(line),"RAW: %u.%02u V",
+    (unsigned)batteryMillivolts/1000u,(unsigned)batteryMillivolts%1000u/10u);
+  menuRow(46,line,"GPIO34, 2:1 DIVIDER, SETTLING FILTER");
+  if(batteryPercent<0)snprintf(line,sizeof(line),"ADJUSTED: WAITING");
+  else snprintf(line,sizeof(line),"ADJUSTED: %u.%02u V / ~%u%%",
+    (unsigned)correctedBatteryMv()/1000u,(unsigned)correctedBatteryMv()%1000u/10u,
+    (unsigned)SqeBatteryCalibration::roundedPercent5(correctedBatteryMv()));
+  char extra[64];
+  snprintf(extra,sizeof(extra),"OFFSET %+d mV  |  SAVED ON CHANGE",(int)batteryOffsetMv);
+  menuRow(85,line,extra);
+  button(8,127,147,32,"- 10 mV");
+  button(165,127,147,32,"+ 10 mV");
+  button(8,168,147,32,"- 50 mV");
+  button(165,168,147,32,"+ 50 mV");
+  footer("BACK","RESET","DONE");
+}
 void settingsScreen(){
   lcd.fillScreen(kBg);titleBar();
   label(10,24,settingsMore?"SETTINGS / DISPLAY":"HANDHELD SETTINGS",kVaporPink,2);
@@ -1166,7 +1186,7 @@ void settingsScreen(){
   menuRow(124,line,"WAKE TOUCH NEVER STARTS A TEST");
   snprintf(line,sizeof(line),"PANEL INVERT: %s",panelInverted?"ON":"OFF");
   menuRow(163,line,"BOARD-SPECIFIC DISPLAY POLARITY");
-  footer("BACK","MORE >","HELP");
+  footer("BACK","MORE >","BATTERY");
 }
 
 constexpr uint8_t kMenuEntries=12;
@@ -1614,7 +1634,8 @@ Cyd32UiAction touchSettings(int x,int y){
   if(y>=kFooterY){
     if(x<108){screen=Screen::MainMenu;settingsMore=false;settingsSubmenuFlow=false;}
     else if(x<213){settingsMore=!settingsMore;}
-    else {settingsSubmenuFlow=true;screen=Screen::Help;settingsMore=false;}
+    else if(settingsMore){settingsSubmenuFlow=true;screen=Screen::Help;settingsMore=false;}
+    else {screen=Screen::BatteryCalibration;}
     redraw=true;return Cyd32UiAction::None;
   }
   if(y>=46&&y<201){
@@ -1632,6 +1653,19 @@ Cyd32UiAction touchSettings(int x,int y){
     else if(row==3){panelInverted=!panelInverted;lcd.invertDisplay(panelInverted);
       if(prefs.begin("sqemit32",false)){prefs.putBool("invert2",panelInverted);prefs.end();}}
     redraw=true;
+  }
+  return Cyd32UiAction::None;
+}
+Cyd32UiAction touchBatteryCalibration(int x,int y){
+  if(y>=kFooterY){
+    if(x<108||x>=213){screen=Screen::Settings;settingsMore=false;redraw=true;}
+    else setBatteryOffsetMv(0);
+    return Cyd32UiAction::None;
+  }
+  if(y>=124&&y<164){
+    setBatteryOffsetMv((int32_t)batteryOffsetMv+(x<160?-10:10));
+  }else if(y>=164&&y<205){
+    setBatteryOffsetMv((int32_t)batteryOffsetMv+(x<160?-50:50));
   }
   return Cyd32UiAction::None;
 }
@@ -2357,6 +2391,7 @@ Cyd32UiAction cyd32UiTick(const char* active,uint32_t remaining,bool suite){
     else if(screen==Screen::Favorites)favoritesScreen();
     else if(screen==Screen::History)historyScreen();
     else if(screen==Screen::Settings)settingsScreen();
+    else if(screen==Screen::BatteryCalibration)batteryCalibrationScreen();
     else if(screen==Screen::Help)helpScreen();
     else if(screen==Screen::Identity)identityScreen();
     else if(screen==Screen::Recovery)recoveryScreen();
@@ -2575,6 +2610,7 @@ Cyd32UiAction cyd32UiTick(const char* active,uint32_t remaining,bool suite){
     else if(screen==Screen::Favorites)action=touchFavorites(x,y);
     else if(screen==Screen::History)action=touchHistory(x,y);
     else if(screen==Screen::Settings)action=touchSettings(x,y);
+    else if(screen==Screen::BatteryCalibration)action=touchBatteryCalibration(x,y);
     else if(screen==Screen::Help)action=touchHelp(x,y);
     else if(screen==Screen::Identity)action=touchIdentity(x,y);
     else if(screen==Screen::Recovery)action=touchRecovery(x,y);
