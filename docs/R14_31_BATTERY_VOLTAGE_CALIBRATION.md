@@ -14,9 +14,10 @@ curve:
 - **4.20 V or above = 100%**
 
 Inside the 3.20–4.20 V range, `percent = (V - 3.20) * 100` (with
-V in volts). The header shows the result rounded to 5% steps (`~80%`)
-to avoid implying more accuracy than the ESP32 ADC / voltage sensing
-circuit can offer. The icon fill uses the same calibrated percentage.
+V in volts). Starting in R14.33, the header displays whole percentage
+points (1% increments, e.g. `~81%`), not the previous 5% steps. This
+is still a voltage-based estimate; displaying smaller increments does not
+make the ADC or state-of-charge estimate more accurate. The icon fill uses the same calibrated percentage.
 This voltage-based estimate is **not true battery state-of-charge**,
 especially while USB charging or under RF load.
 
@@ -68,7 +69,7 @@ mode; tap it to switch.
   example `~85%`, computed from the calibrated battery voltage and the
   user-defined **3.20 V = 0% / 4.20 V = 100%** linear scale.
 - **SHOW V** displays the same battery icon and corrected battery voltage,
-  for example `4.05V` (rounded to 50 mV).
+  for example `4.03V` (two decimal places, rounded to the nearest 0.01 V).
 
 The selection applies to the main-screen header in **both portrait and
 landscape**, and is saved immediately in device Preferences/NVS under
@@ -79,3 +80,13 @@ calibrated 3.20–4.20 V voltage scale in either mode.
 The existing calibration controls (±10 mV, ±50 mV and RESET) remain
 unchanged. On portrait, the center footer remains STOP while transmitting.
 No charging indicator is reintroduced.
+
+## R14.33 — Two decimal places without 0.05 V stepping
+
+SHOW V displays calibrated battery voltage to **two decimal places**
+(e.g. `4.02V`, `4.03V`), rounded to the nearest **0.01 V**. The
+calibration screen's RAW and ADJUSTED readings use the same 0.01 V
+format. SHOW % displays the owner-defined linear battery percentage in
+**whole 1% increments**; it no longer rounds to multiples of 5%.
+These changes affect display rounding only. Four-window ADC filtering,
+saved offset, battery-bar scale and mode persistence are unchanged.
