@@ -12,16 +12,15 @@
     "cyd32-st7798": {
       "title": "SquachEmit v1.1.0 CYD 3.2 R14.36 LAB — SquachWatch v1.50 Coverage (248 Cases)",
       "version": "v1.1.0 MAINLINE · 248 cases",
-      "summary": "R14.36 LAB compares the pinned SquachWatch v1.50.0 detection library and expands SquachEmit from 172 to 248 synthetic BLE/Wi-Fi cases (66 added). Corrects 24 outdated expected labels, adds 22 OUI beacons, 24 SSID fixtures, 9 BLE UUID, 4 manufacturer and 7 special BLE payload cases. New categories include ALPR, CAMERA, RING, LISTENER and GOOGLE_TAG. Source matrix maps 105 of 220 explicit v1.50 table entries to candidate tests. Preserves R14.33 battery calibration and animations. Four-part SHA-256 packaging. Hardware reception NOT verified. Includes ten SquachWatch fork-only OUI fixture tests (Flock, drones, skimmer and Flipper). Physical receiver verification pending.",
+      "summary": "R14.36 LAB compares the pinned SquachWatch v1.50.0 detection library and expands SquachEmit from 172 to 248 synthetic BLE/Wi-Fi cases (66 added). Corrects 24 outdated expected labels, adds 22 OUI beacons, 24 SSID fixtures, 9 BLE UUID, 4 manufacturer and 7 special BLE payload cases. New categories include ALPR, CAMERA, RING, LISTENER and GOOGLE_TAG. Source matrix maps 105 of 220 explicit v1.50 table entries to candidate tests. Preserves R14.33 battery calibration and animations. Four-part SHA-256 packaging. Hardware reception NOT verified. Includes ten Sq Physical RF receiver validation pending.",
       "highlights": [
-        "66 new v1.50.0-derived synthetic signal fixtures, 248 total; original 172 stable IDs preserved.",
+        "66 new v1.50.0-derived synthetic signal fixtures, 248 total; original 172 stable IDs preserved. Includes 10 fork-only OUI tests.",
         "24 stale expected results corrected; negative-control detection prevents false positives.",
         "Camera/dashcam, Ring, ALPR, Listener, Google Find Hub, HomePod and AirTag tests added.",
         "22 temporary source-matched vendor-prefix AP MACs with synthetic suffixes; not authentic devices.",
         "14 alphabetic test libraries, source-pinned 105/220 table-rule candidate coverage matrix.",
         "Buffered CYD 3.2 animation, R14.33 calibrated %/V and original 172 RF profiles retained.",
-        "LAB only; four-part SHA-256 flash packaging; physical SquachWatch receiver test pending.",
-        "10 fork-only OUI beacons added; parent v1.50.0 rule matrix remains separately source-pinned."
+        "LAB only; four-part SHA-256 flash packaging; physical SquachWatch receiver test pending."
       ]
     },
     "c5-waveshare-28": {
