@@ -23,7 +23,7 @@ int main() {
                              0xABCDEF125566ULL};
     std::set<std::string> unique;
     for (auto chip:boards) {
-        for (size_t i=0;i<172;++i) {
+        for (size_t i=0;i<1024;++i) {
             const auto ble=mac(chip,i,SquachIdentity::Radio::Ble);
             const auto wifi=mac(chip,i,SquachIdentity::Radio::Wifi);
             assert(ble==mac(chip,i,SquachIdentity::Radio::Ble));
@@ -33,6 +33,8 @@ int main() {
             assert(unique.insert(wifi).second);
         }
     }
-    assert(unique.size()==3u*172u*2u);
-    puts("Static BLE and LAA WiFi MACs: unique per board, scenario, radio; stable on rerun");
+    assert(unique.size()==3u*1024u*2u);
+    assert(mac(boards[0],0,SquachIdentity::Radio::Wifi)=="02:60:50:40:30:01");
+    assert(mac(boards[0],255,SquachIdentity::Radio::Wifi)=="02:60:50:40:31:00");
+    puts("Static BLE and LAA WiFi MACs: unique for 1024 cases per board, stable on rerun");
 }
