@@ -27,7 +27,7 @@ test('reject invalid durations, oversized queues and impossible progress',()=>{
     {index:-1},{queue:[]}]) {
     assert.throws(()=>v2.createSnapshot({...batch(),...patch}));
   }
-  assert.throws(()=>v2.createSnapshot({...batch(),queue:[...ids,'BLE-EXTRA']}));
+  assert.throws(()=>v2.createSnapshot({...batch(),queue:Array.from({length:65536},(_,i)=>'BLE-CASE-'+i)}));
 });
 test('finished or corrupt checkpoints never automatically restart',()=>{
   const s=store();const b=batch();b.index=248;b.completed=248;
