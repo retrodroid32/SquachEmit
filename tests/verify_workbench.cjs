@@ -8,10 +8,10 @@ const catalog={
   'BLE-NEG-DRONE-UUID':{id:'BLE-NEG-DRONE-UUID',expected:'NONE'},
   'OUI-DJI-04A85A':{id:'OUI-DJI-04A85A',expected:'DRONE'}
 };
-// Every one of the firmware's 238 reviewed signal IDs must have a descriptive
+// Every one of the firmware's 248 reviewed signal IDs must have a descriptive
 // device-first label, including vendor-OUI and negative-control fixtures.
 const allCases=JSON.parse(fs.readFileSync('tests/cases.json','utf8'));
-assert.equal(allCases.length,238);
+assert.equal(allCases.length,248);
 const names=new Map();
 for(const c of allCases){
   const name=core.signalName(c);
@@ -28,10 +28,10 @@ assert.match(names.get('OUI-AUTEL-18D7936'),/^Autel Intelligent/);
 assert.match(names.get('BLE-NEG-FLIP-MFG'),/^Flipper Zero —/);
 assert.throws(()=>core.signalName({id:'BLE-UNKNOWN-NEW',description:'x'}),/No device name/);
 const fullPlan=core.batchPlan(allCases,'all');
-assert.equal(fullPlan.length,238);
+assert.equal(fullPlan.length,248);
 assert.equal(core.batchPlan(allCases,'BLE').length,108);
 assert.equal(core.batchPlan(allCases,'WIFI').length,130);
-assert.equal(new Set(fullPlan.map(x=>x.id)).size,238);
+assert.equal(new Set(fullPlan.map(x=>x.id)).size,248);
 assert.deepEqual(fullPlan.map(x=>x.id),core.batchPlan(allCases,'all').map(x=>x.id));
 assert.throws(()=>core.batchPlan(allCases,'unknown'),/scope/);
 const sha='a'.repeat(40);
