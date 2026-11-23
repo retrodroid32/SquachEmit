@@ -253,6 +253,17 @@ const Scenario kScenarios[] = {
   {"V150-BLE-GOOGLE-FMDN40", Kind::BleUuid, "GOOGLE_TAG", "Google Find Hub FMDN service-data frame 40 | SYNTHETIC v1.50 signature test; no authentic device RF", 65194, nullptr},
   {"V150-BLE-GOOGLE-FMDN41", Kind::BleUuid, "GOOGLE_TAG", "Google Find Hub FMDN service-data frame 41 | SYNTHETIC v1.50 signature test; no authentic device RF", 65194, nullptr},
   {"V150-BLE-AXON-BWC", Kind::BleName, "AXON", "Axon BodyWorn BWCDEVICE raw advertisement match | SYNTHETIC v1.50 signature test; no authentic device RF", 0, "BWCDEVICE"},
+  // Fork-only Wi-Fi OUI rules, distinct from upstream v1.50.
+  {"FORK-OUI-FLOCK-3C71BF", Kind::WifiAp, "FLOCK", "Flock-Field fork-only OUI 3C71BF | SYNTHETIC; no authentic device RF", 6, "SQE-FORK-3C71BF"},
+  {"FORK-OUI-FLOCK-4827EA", Kind::WifiAp, "FLOCK", "Flock-Field fork-only OUI 4827EA | SYNTHETIC; no authentic device RF", 6, "SQE-FORK-4827EA"},
+  {"FORK-OUI-FLOCK-A4CF12", Kind::WifiAp, "FLOCK", "Flock-Field fork-only OUI A4CF12 | SYNTHETIC; no authentic device RF", 6, "SQE-FORK-A4CF12"},
+  {"FORK-OUI-DRONE-B030C8", Kind::WifiAp, "DRONE", "Teal fork-only OUI B030C8 | SYNTHETIC; no authentic device RF", 6, "SQE-FORK-B030C8"},
+  {"FORK-OUI-DRONE-EC715E", Kind::WifiAp, "DRONE", "Freefly fork-only OUI EC715E | SYNTHETIC; no authentic device RF", 6, "SQE-FORK-EC715E"},
+  {"FORK-OUI-DRONE-001AF9", Kind::WifiAp, "DRONE", "AeroViron fork-only OUI 001AF9 | SYNTHETIC; no authentic device RF", 6, "SQE-FORK-001AF9"},
+  {"FORK-OUI-DRONE-547D40", Kind::WifiAp, "DRONE", "PowerVis fork-only OUI 547D40 | SYNTHETIC; no authentic device RF", 6, "SQE-FORK-547D40"},
+  {"FORK-OUI-DRONE-74B80F", Kind::WifiAp, "DRONE", "Zipline fork-only OUI 74B80F | SYNTHETIC; no authentic device RF", 6, "SQE-FORK-74B80F"},
+  {"FORK-OUI-SKIMMER-98D300", Kind::WifiAp, "SKIMMER", "Skim-SPP fork-only OUI 98D300 | SYNTHETIC; no authentic device RF", 6, "SQE-FORK-98D300"},
+  {"FORK-OUI-HACKER-0CFA22", Kind::WifiAp, "HACKER", "Flipper fork-only OUI 0CFA22 | SYNTHETIC; no authentic device RF", 6, "SQE-FORK-0CFA22"},
 };
 const size_t kScenarioCount = sizeof(kScenarios) / sizeof(kScenarios[0]);
 const Scenario* findScenario(const char* id) {
