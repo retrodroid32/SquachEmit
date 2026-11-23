@@ -1,6 +1,6 @@
 {
   "schema": 1,
-  "scenario_count": 238,
+  "scenario_count": 248,
   "firmware_sources": {
     "src": "3819bb950d50beb9396635c68189e204739e1106",
     "include": "cebe718ed9cf4638c2d8626ea1a9d794f9cf2a8e",
@@ -10,43 +10,46 @@
   },
   "builds": {
     "cyd32-st7798": {
-      "title": "SquachEmit v1.1.0 CYD 3.2 R14.35 LAB — SquachWatch v1.50 Coverage (238 Cases)",
-      "version": "v1.1.0 MAINLINE · 238 cases",
-      "summary": "R14.35 LAB compares the pinned SquachWatch v1.50.0 detection library and expands SquachEmit from 172 to 238 synthetic BLE/Wi-Fi cases (66 added). Corrects 24 outdated expected labels, adds 22 OUI beacons, 24 SSID fixtures, 9 BLE UUID, 4 manufacturer and 7 special BLE payload cases. New categories include ALPR, CAMERA, RING, LISTENER and GOOGLE_TAG. Source matrix maps 105 of 220 explicit v1.50 table entries to candidate tests. Preserves R14.33 battery calibration and animations. Four-part SHA-256 packaging. Hardware reception NOT verified.",
+      "title": "SquachEmit v1.1.0 CYD 3.2 R14.36 LAB — SquachWatch v1.50 Coverage (248 Cases)",
+      "version": "v1.1.0 MAINLINE · 248 cases",
+      "summary": "R14.36 LAB compares the pinned SquachWatch v1.50.0 detection library and expands SquachEmit from 172 to 248 synthetic BLE/Wi-Fi cases (66 added). Corrects 24 outdated expected labels, adds 22 OUI beacons, 24 SSID fixtures, 9 BLE UUID, 4 manufacturer and 7 special BLE payload cases. New categories include ALPR, CAMERA, RING, LISTENER and GOOGLE_TAG. Source matrix maps 105 of 220 explicit v1.50 table entries to candidate tests. Preserves R14.33 battery calibration and animations. Four-part SHA-256 packaging. Hardware reception NOT verified. Includes ten SquachWatch fork-only OUI fixture tests (Flock, drones, skimmer and Flipper). Physical receiver verification pending.",
       "highlights": [
-        "66 new v1.50.0-derived synthetic signal fixtures, 238 total; original 172 stable IDs preserved.",
+        "66 new v1.50.0-derived synthetic signal fixtures, 248 total; original 172 stable IDs preserved.",
         "24 stale expected results corrected; negative-control detection prevents false positives.",
         "Camera/dashcam, Ring, ALPR, Listener, Google Find Hub, HomePod and AirTag tests added.",
         "22 temporary source-matched vendor-prefix AP MACs with synthetic suffixes; not authentic devices.",
         "14 alphabetic test libraries, source-pinned 105/220 table-rule candidate coverage matrix.",
         "Buffered CYD 3.2 animation, R14.33 calibrated %/V and original 172 RF profiles retained.",
-        "LAB only; four-part SHA-256 flash packaging; physical SquachWatch receiver test pending."
+        "LAB only; four-part SHA-256 flash packaging; physical SquachWatch receiver test pending.",
+        "10 fork-only OUI beacons added; parent v1.50.0 rule matrix remains separately source-pinned."
       ]
     },
     "c5-waveshare-28": {
-      "title": "SquachEmit v1.1.0 Waveshare C5 R14.35 LAB — v1.50 Coverage (238 Cases)",
-      "version": "v1.1.0 MAINLINE · 238 cases",
-      "summary": "R14.35 LAB shares the full 238-case synthetic BLE/Wi-Fi catalog and 14 device categories with the CYD3.2 and S3: 66 new SquachWatch v1.50 signal fixtures, 24 corrected expected classifications and a pinned signature-source audit. All 238 are manual, bounded TEST/RUN/STOP scenarios. Does not claim LoRaWAN or Wi-Fi deauth/EvilTwin validation. Four-part SHA-256 flashing preflight. Physical C5 verification pending.",
+      "title": "SquachEmit v1.1.0 Waveshare C5 R14.36 LAB — v1.50 Coverage (248 Cases)",
+      "version": "v1.1.0 MAINLINE · 248 cases",
+      "summary": "R14.36 LAB shares the full 248-case synthetic BLE/Wi-Fi catalog and 14 device categories with the CYD3.2 and S3: 66 new SquachWatch v1.50 signal fixtures, 24 corrected expected classifications and a pinned signature-source audit. All 248 are manual, bounded TEST/RUN/STOP scenarios. Does not claim LoRaWAN or Wi-Fi deauth/EvilTwin validation. Four-part SHA-256 flashing preflight. Physical C5 verification pending. Includes ten SquachWatch fork-only OUI fixture tests (Flock, drones, skimmer and Flipper). Physical receiver verification pending.",
       "highlights": [
-        "238 bounded BLE and Wi-Fi synthetic test cases; 66 new v1.50 fixtures.",
+        "248 bounded BLE and Wi-Fi synthetic test cases; 66 new v1.50 fixtures.",
         "24 expected-label corrections and source-pinned signature matrix.",
         "14 alphabetically sorted device test categories.",
         "No actual vendor/device authentication; restricted to normal BLE and Wi-Fi test frames.",
         "Serial truth reporting and manual STOP preserved.",
-        "Four-part SHA-256 preflight; no physical C5 verification yet."
+        "Four-part SHA-256 preflight; no physical C5 verification yet.",
+        "10 fork-only OUI beacons added; parent v1.50.0 rule matrix remains separately source-pinned."
       ]
     },
     "s3-devkit": {
-      "title": "SquachEmit v1.1.0 ESP32-S3 R14.35 LAB — v1.50 Coverage (238 Cases)",
-      "version": "v1.1.0 MAINLINE · 238 cases",
-      "summary": "R14.35 LAB provides 238 time-bounded synthetic BLE/Wi-Fi test scenarios on the ESP32-S3 serial development target, including 66 new upstream SquachWatch v1.50 signature fixtures and 24 corrected expected labels. The source matrix identifies candidate coverage for 105 of 220 v1.50 signature-table rules; no physical receiver results are claimed. No LoRaWAN/deauth/EvilTwin proof. Four-part SHA-256 verified flashing preflight; physical S3 verification pending.",
+      "title": "SquachEmit v1.1.0 ESP32-S3 R14.36 LAB — v1.50 Coverage (248 Cases)",
+      "version": "v1.1.0 MAINLINE · 248 cases",
+      "summary": "R14.36 LAB provides 248 time-bounded synthetic BLE/Wi-Fi test scenarios on the ESP32-S3 serial development target, including 66 new upstream SquachWatch v1.50 signature fixtures and 24 corrected expected labels. The source matrix identifies candidate coverage for 105 of 220 v1.50 signature-table rules; no physical receiver results are claimed. No LoRaWAN/deauth/EvilTwin proof. Four-part SHA-256 verified flashing preflight; physical S3 verification pending. Includes ten SquachWatch fork-only OUI fixture tests (Flock, drones, skimmer and Flipper). Physical receiver verification pending.",
       "highlights": [
-        "238 manual RUN/STOP/SUITE scenarios, including 66 v1.50 synthetic additions.",
+        "248 manual RUN/STOP/SUITE scenarios, including 66 v1.50 synthetic additions.",
         "Source-verified 24 corrected expected labels.",
         "BLE FMDN, HomePod and AirTag frame pattern tests; Wi-Fi camera/Ring/ALPR prefixes.",
         "No proprietary transmitter or authenticated device impersonation.",
         "Serial TRUTH output for receiver comparison and bounded duration.",
-        "Four-part SHA-256 flashing preflight; S3 physical RF validation pending."
+        "Four-part SHA-256 flashing preflight; S3 physical RF validation pending.",
+        "10 fork-only OUI beacons added; parent v1.50.0 rule matrix remains separately source-pinned."
       ]
     }
   }
