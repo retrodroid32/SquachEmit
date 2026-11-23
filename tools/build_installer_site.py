@@ -238,8 +238,10 @@ def publish_workbench(output: Path) -> None:
         shutil.copyfile(path, out / name)
     cases = root / 'tests' / 'cases.json'
     content = json.loads(cases.read_text(encoding='utf-8'))
-    if not isinstance(content, list) or len(content) != 172:
-        raise ValueError('Workbench requires the current reviewed 172-case catalog')
+    profile = json.loads((root / 'tools' / 'active_firmware_profile.json').read_text(encoding='utf-8'))
+    expected_count = profile.get('scenario_count')
+    if not isinstance(content, list) or not isinstance(expected_count, int) or len(content) != expected_count:
+        raise ValueError(f'Workbench catalog mismatch: reviewed profile requires {expected_count} cases')
     ids = [case.get('id') for case in content]
     if len(ids) != len(set(ids)):
         raise ValueError('Duplicate case IDs in workbench catalog')
