@@ -41,7 +41,7 @@ class V150SignatureCoverage(unittest.TestCase):
         self.assertEqual(len(self.cases),248)
         self.assertEqual(len(self.byid),248)
         self.assertEqual(len([x for x in self.cases if x["id"].startswith("V150-")]),66)
-        self.assertLess(len(self.cases),254)  # per-case identity index limit
+        self.assertLessEqual(len(self.cases),65535)  # two-octet identity
         positive={c["expected"] for c in self.cases if c["expected"]!="NONE"}
         self.assertEqual(positive,{
             "FLOCK","AXON","META","SKIMMER","RAVEN","AIRTAG","DRONE",
