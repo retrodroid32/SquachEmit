@@ -7,7 +7,7 @@
   "physical_receiver_validation": "NOT PERFORMED",
   "scope": "Raw OUI/UUID/company-ID/SSID/BT-name tables only; parser-specific, motion and radio behavior separately documented",
   "rule_count": 220,
-  "table_covered_count": 105,
+  "table_covered_count": 220,
   "tables": {
     "oui": [
       {
@@ -24,91 +24,117 @@
         "vendor": "Axon-Body",
         "category": "AXON",
         "confidence": "LOW_CONF",
-        "fixture_ids": []
+        "fixture_ids": [
+          "V150-OUI-AXON-E40540"
+        ]
       },
       {
         "key": "2824FF",
         "vendor": "Axon-Signal",
         "category": "AXON",
         "confidence": "LOW_CONF",
-        "fixture_ids": []
+        "fixture_ids": [
+          "V150-OUI-AXON-2824FF"
+        ]
       },
       {
         "key": "001D96",
         "vendor": "WatchGuard",
         "category": "AXON",
         "confidence": "MED_CONF",
-        "fixture_ids": []
+        "fixture_ids": [
+          "V150-OUI-AXON-001D96"
+        ]
       },
       {
         "key": "0023BD",
         "vendor": "DigitalAlly",
         "category": "AXON",
         "confidence": "MED_CONF",
-        "fixture_ids": []
+        "fixture_ids": [
+          "V150-OUI-AXON-0023BD"
+        ]
       },
       {
         "key": "003044",
         "vendor": "Cradlepoint",
         "category": "AXON",
         "confidence": "LOW_CONF",
-        "fixture_ids": []
+        "fixture_ids": [
+          "V150-OUI-AXON-003044"
+        ]
       },
       {
         "key": "00E01C",
         "vendor": "Cradlepoint",
         "category": "AXON",
         "confidence": "LOW_CONF",
-        "fixture_ids": []
+        "fixture_ids": [
+          "V150-OUI-AXON-00E01C"
+        ]
       },
       {
         "key": "00A0D5",
         "vendor": "AirLink",
         "category": "AXON",
         "confidence": "LOW_CONF",
-        "fixture_ids": []
+        "fixture_ids": [
+          "V150-OUI-AXON-00A0D5"
+        ]
       },
       {
         "key": "28A331",
         "vendor": "AirLink",
         "category": "AXON",
         "confidence": "LOW_CONF",
-        "fixture_ids": []
+        "fixture_ids": [
+          "V150-OUI-AXON-28A331"
+        ]
       },
       {
         "key": "50139D",
         "vendor": "AirLink",
         "category": "AXON",
         "confidence": "LOW_CONF",
-        "fixture_ids": []
+        "fixture_ids": [
+          "V150-OUI-AXON-50139D"
+        ]
       },
       {
         "key": "64CE6E",
         "vendor": "AirLink",
         "category": "AXON",
         "confidence": "LOW_CONF",
-        "fixture_ids": []
+        "fixture_ids": [
+          "V150-OUI-AXON-64CE6E"
+        ]
       },
       {
         "key": "84DB2F",
         "vendor": "AirLink",
         "category": "AXON",
         "confidence": "LOW_CONF",
-        "fixture_ids": []
+        "fixture_ids": [
+          "V150-OUI-AXON-84DB2F"
+        ]
       },
       {
         "key": "CC934A",
         "vendor": "AirLink",
         "category": "AXON",
         "confidence": "LOW_CONF",
-        "fixture_ids": []
+        "fixture_ids": [
+          "V150-OUI-AXON-CC934A"
+        ]
       },
       {
         "key": "D411D6",
         "vendor": "ShotSpotter",
         "category": "RAVEN",
         "confidence": "HIGH_CONF",
-        "fixture_ids": []
+        "fixture_ids": [
+          "V150-OUI-RAVEN-D411D6"
+        ]
       },
       {
         "key": "B41E52",
@@ -124,217 +150,279 @@
         "vendor": "Flock-Liteo",
         "category": "FLOCK",
         "confidence": "LOW_CONF",
-        "fixture_ids": []
+        "fixture_ids": [
+          "V150-OUI-FLOCK-24B2B9"
+        ]
       },
       {
         "key": "D03957",
         "vendor": "Flock",
         "category": "FLOCK",
         "confidence": "LOW_CONF",
-        "fixture_ids": []
+        "fixture_ids": [
+          "V150-OUI-FLOCK-D03957"
+        ]
       },
       {
         "key": "00F48D",
         "vendor": "Flock",
         "category": "FLOCK",
         "confidence": "LOW_CONF",
-        "fixture_ids": []
+        "fixture_ids": [
+          "V150-OUI-FLOCK-00F48D"
+        ]
       },
       {
         "key": "145AFC",
         "vendor": "Flock",
         "category": "FLOCK",
         "confidence": "LOW_CONF",
-        "fixture_ids": []
+        "fixture_ids": [
+          "V150-OUI-FLOCK-145AFC"
+        ]
       },
       {
         "key": "803049",
         "vendor": "Flock",
         "category": "FLOCK",
         "confidence": "LOW_CONF",
-        "fixture_ids": []
+        "fixture_ids": [
+          "V150-OUI-FLOCK-803049"
+        ]
       },
       {
         "key": "E00AF6",
         "vendor": "Flock",
         "category": "FLOCK",
         "confidence": "LOW_CONF",
-        "fixture_ids": []
+        "fixture_ids": [
+          "V150-OUI-FLOCK-E00AF6"
+        ]
       },
       {
         "key": "70C94E",
         "vendor": "Flock",
         "category": "FLOCK",
         "confidence": "LOW_CONF",
-        "fixture_ids": []
+        "fixture_ids": [
+          "V150-OUI-FLOCK-70C94E"
+        ]
       },
       {
         "key": "3C9180",
         "vendor": "Flock",
         "category": "FLOCK",
         "confidence": "LOW_CONF",
-        "fixture_ids": []
+        "fixture_ids": [
+          "V150-OUI-FLOCK-3C9180"
+        ]
       },
       {
         "key": "D8F3BC",
         "vendor": "Flock",
         "category": "FLOCK",
         "confidence": "LOW_CONF",
-        "fixture_ids": []
+        "fixture_ids": [
+          "V150-OUI-FLOCK-D8F3BC"
+        ]
       },
       {
         "key": "B83532",
         "vendor": "Flock",
         "category": "FLOCK",
         "confidence": "LOW_CONF",
-        "fixture_ids": []
+        "fixture_ids": [
+          "V150-OUI-FLOCK-B83532"
+        ]
       },
       {
         "key": "826BF2",
         "vendor": "Flock-DeFlk",
         "category": "FLOCK",
         "confidence": "LOW_CONF",
-        "fixture_ids": []
+        "fixture_ids": [
+          "V150-OUI-FLOCK-826BF2"
+        ]
       },
       {
         "key": "744CA1",
         "vendor": "Flock-Liteo",
         "category": "FLOCK",
         "confidence": "LOW_CONF",
-        "fixture_ids": []
+        "fixture_ids": [
+          "V150-OUI-FLOCK-744CA1"
+        ]
       },
       {
         "key": "9C2F9D",
         "vendor": "Flock-Liteo",
         "category": "FLOCK",
         "confidence": "LOW_CONF",
-        "fixture_ids": []
+        "fixture_ids": [
+          "V150-OUI-FLOCK-9C2F9D"
+        ]
       },
       {
         "key": "C03532",
         "vendor": "Flock-Liteo",
         "category": "FLOCK",
         "confidence": "LOW_CONF",
-        "fixture_ids": []
+        "fixture_ids": [
+          "V150-OUI-FLOCK-C03532"
+        ]
       },
       {
         "key": "940853",
         "vendor": "Flock-Liteo",
         "category": "FLOCK",
         "confidence": "LOW_CONF",
-        "fixture_ids": []
+        "fixture_ids": [
+          "V150-OUI-FLOCK-940853"
+        ]
       },
       {
         "key": "E4AAEA",
         "vendor": "Flock-Liteo",
         "category": "FLOCK",
         "confidence": "LOW_CONF",
-        "fixture_ids": []
+        "fixture_ids": [
+          "V150-OUI-FLOCK-E4AAEA"
+        ]
       },
       {
         "key": "F46ADD",
         "vendor": "Flock-Liteo",
         "category": "FLOCK",
         "confidence": "LOW_CONF",
-        "fixture_ids": []
+        "fixture_ids": [
+          "V150-OUI-FLOCK-F46ADD"
+        ]
       },
       {
         "key": "E8D0FC",
         "vendor": "Flock-Liteo",
         "category": "FLOCK",
         "confidence": "LOW_CONF",
-        "fixture_ids": []
+        "fixture_ids": [
+          "V150-OUI-FLOCK-E8D0FC"
+        ]
       },
       {
         "key": "B81EA4",
         "vendor": "Flock-Liteo",
         "category": "FLOCK",
         "confidence": "LOW_CONF",
-        "fixture_ids": []
+        "fixture_ids": [
+          "V150-OUI-FLOCK-B81EA4"
+        ]
       },
       {
         "key": "700894",
         "vendor": "Flock-Liteo",
         "category": "FLOCK",
         "confidence": "LOW_CONF",
-        "fixture_ids": []
+        "fixture_ids": [
+          "V150-OUI-FLOCK-700894"
+        ]
       },
       {
         "key": "5800E3",
         "vendor": "Flock-Liteo",
         "category": "FLOCK",
         "confidence": "LOW_CONF",
-        "fixture_ids": []
+        "fixture_ids": [
+          "V150-OUI-FLOCK-5800E3"
+        ]
       },
       {
         "key": "5C93A2",
         "vendor": "Flock-Liteo",
         "category": "FLOCK",
         "confidence": "LOW_CONF",
-        "fixture_ids": []
+        "fixture_ids": [
+          "V150-OUI-FLOCK-5C93A2"
+        ]
       },
       {
         "key": "646E69",
         "vendor": "Flock-Liteo",
         "category": "FLOCK",
         "confidence": "LOW_CONF",
-        "fixture_ids": []
+        "fixture_ids": [
+          "V150-OUI-FLOCK-646E69"
+        ]
       },
       {
         "key": "14B5CD",
         "vendor": "Flock-Liteo",
         "category": "FLOCK",
         "confidence": "LOW_CONF",
-        "fixture_ids": []
+        "fixture_ids": [
+          "V150-OUI-FLOCK-14B5CD"
+        ]
       },
       {
         "key": "083A88",
         "vendor": "Flock-UGSI",
         "category": "FLOCK",
         "confidence": "LOW_CONF",
-        "fixture_ids": []
+        "fixture_ids": [
+          "V150-OUI-FLOCK-083A88"
+        ]
       },
       {
         "key": "E04F43",
         "vendor": "Flock-UGSI",
         "category": "FLOCK",
         "confidence": "LOW_CONF",
-        "fixture_ids": []
+        "fixture_ids": [
+          "V150-OUI-FLOCK-E04F43"
+        ]
       },
       {
         "key": "588E81",
         "vendor": "Flock-SiLab",
         "category": "FLOCK",
         "confidence": "LOW_CONF",
-        "fixture_ids": []
+        "fixture_ids": [
+          "V150-OUI-FLOCK-588E81"
+        ]
       },
       {
         "key": "EC1BBD",
         "vendor": "Flock-SiLab",
         "category": "FLOCK",
         "confidence": "LOW_CONF",
-        "fixture_ids": []
+        "fixture_ids": [
+          "V150-OUI-FLOCK-EC1BBD"
+        ]
       },
       {
         "key": "9035EA",
         "vendor": "Flock-SiLab",
         "category": "FLOCK",
         "confidence": "LOW_CONF",
-        "fixture_ids": []
+        "fixture_ids": [
+          "V150-OUI-FLOCK-9035EA"
+        ]
       },
       {
         "key": "00037F",
         "vendor": "Flock-QCA",
         "category": "FLOCK",
         "confidence": "LOW_CONF",
-        "fixture_ids": []
+        "fixture_ids": [
+          "V150-OUI-FLOCK-00037F"
+        ]
       },
       {
         "key": "00A0D8",
         "vendor": "Flock-OEM",
         "category": "FLOCK",
         "confidence": "LOW_CONF",
-        "fixture_ids": []
+        "fixture_ids": [
+          "V150-OUI-FLOCK-00A0D8"
+        ]
       },
       {
         "key": "00047D",
@@ -359,21 +447,27 @@
         "vendor": "ALPR-Mtrla",
         "category": "ALPR",
         "confidence": "HIGH_CONF",
-        "fixture_ids": []
+        "fixture_ids": [
+          "V150-OUI-ALPR-001F92"
+        ]
       },
       {
         "key": "4CCC34",
         "vendor": "ALPR-Mtrla",
         "category": "ALPR",
         "confidence": "HIGH_CONF",
-        "fixture_ids": []
+        "fixture_ids": [
+          "V150-OUI-ALPR-4CCC34"
+        ]
       },
       {
         "key": "B8E28C",
         "vendor": "ALPR-Mtrla",
         "category": "ALPR",
         "confidence": "HIGH_CONF",
-        "fixture_ids": []
+        "fixture_ids": [
+          "V150-OUI-ALPR-B8E28C"
+        ]
       },
       {
         "key": "00BF15",
@@ -389,49 +483,63 @@
         "vendor": "ALPR-Gentec",
         "category": "ALPR",
         "confidence": "HIGH_CONF",
-        "fixture_ids": []
+        "fixture_ids": [
+          "V150-OUI-ALPR-0CBF15"
+        ]
       },
       {
         "key": "201300",
         "vendor": "Skim-Linvor",
         "category": "SKIMMER",
         "confidence": "LOW_CONF",
-        "fixture_ids": []
+        "fixture_ids": [
+          "V150-OUI-SKIMMER-201300"
+        ]
       },
       {
         "key": "98D331",
         "vendor": "Skim-HC05",
         "category": "SKIMMER",
         "confidence": "LOW_CONF",
-        "fixture_ids": []
+        "fixture_ids": [
+          "V150-OUI-SKIMMER-98D331"
+        ]
       },
       {
         "key": "001A7D",
         "vendor": "Skim-CSR",
         "category": "SKIMMER",
         "confidence": "LOW_CONF",
-        "fixture_ids": []
+        "fixture_ids": [
+          "V150-OUI-SKIMMER-001A7D"
+        ]
       },
       {
         "key": "2CAA8E",
         "vendor": "Wyze",
         "category": "CAMERA",
         "confidence": "HIGH_CONF",
-        "fixture_ids": []
+        "fixture_ids": [
+          "V150-OUI-CAMERA-2CAA8E"
+        ]
       },
       {
         "key": "D03F27",
         "vendor": "Wyze",
         "category": "CAMERA",
         "confidence": "HIGH_CONF",
-        "fixture_ids": []
+        "fixture_ids": [
+          "V150-OUI-CAMERA-D03F27"
+        ]
       },
       {
         "key": "7C78B2",
         "vendor": "Wyze",
         "category": "CAMERA",
         "confidence": "HIGH_CONF",
-        "fixture_ids": []
+        "fixture_ids": [
+          "V150-OUI-CAMERA-7C78B2"
+        ]
       },
       {
         "key": "F0C88B",
@@ -465,133 +573,171 @@
         "vendor": "Wyze-Mod",
         "category": "CAMERA",
         "confidence": "LOW_CONF",
-        "fixture_ids": []
+        "fixture_ids": [
+          "V150-OUI-CAMERA-B8D7AF"
+        ]
       },
       {
         "key": "34D270",
         "vendor": "Amazon",
         "category": "CAMERA",
         "confidence": "MED_CONF",
-        "fixture_ids": []
+        "fixture_ids": [
+          "V150-OUI-CAMERA-34D270"
+        ]
       },
       {
         "key": "F0272D",
         "vendor": "Amazon",
         "category": "CAMERA",
         "confidence": "MED_CONF",
-        "fixture_ids": []
+        "fixture_ids": [
+          "V150-OUI-CAMERA-F0272D"
+        ]
       },
       {
         "key": "C056E3",
         "vendor": "Hikvision",
         "category": "CAMERA",
         "confidence": "HIGH_CONF",
-        "fixture_ids": []
+        "fixture_ids": [
+          "V150-OUI-CAMERA-C056E3"
+        ]
       },
       {
         "key": "4419B6",
         "vendor": "Hikvision",
         "category": "CAMERA",
         "confidence": "HIGH_CONF",
-        "fixture_ids": []
+        "fixture_ids": [
+          "V150-OUI-CAMERA-4419B6"
+        ]
       },
       {
         "key": "2857BE",
         "vendor": "Hikvision",
         "category": "CAMERA",
         "confidence": "HIGH_CONF",
-        "fixture_ids": []
+        "fixture_ids": [
+          "V150-OUI-CAMERA-2857BE"
+        ]
       },
       {
         "key": "00E04C",
         "vendor": "Realtek",
         "category": "CAMERA",
         "confidence": "LOW_CONF",
-        "fixture_ids": []
+        "fixture_ids": [
+          "V150-OUI-CAMERA-00E04C"
+        ]
       },
       {
         "key": "FC9C98",
         "vendor": "Arlo",
         "category": "CAMERA",
         "confidence": "HIGH_CONF",
-        "fixture_ids": []
+        "fixture_ids": [
+          "V150-OUI-CAMERA-FC9C98"
+        ]
       },
       {
         "key": "486264",
         "vendor": "Arlo",
         "category": "CAMERA",
         "confidence": "HIGH_CONF",
-        "fixture_ids": []
+        "fixture_ids": [
+          "V150-OUI-CAMERA-486264"
+        ]
       },
       {
         "key": "A41162",
         "vendor": "Arlo",
         "category": "CAMERA",
         "confidence": "HIGH_CONF",
-        "fixture_ids": []
+        "fixture_ids": [
+          "V150-OUI-CAMERA-A41162"
+        ]
       },
       {
         "key": "4C6905",
         "vendor": "Blink",
         "category": "CAMERA",
         "confidence": "LOW_CONF",
-        "fixture_ids": []
+        "fixture_ids": [
+          "V150-OUI-CAMERA-4C6905"
+        ]
       },
       {
         "key": "A4C138",
         "vendor": "Tuya",
         "category": "CAMERA",
         "confidence": "LOW_CONF",
-        "fixture_ids": []
+        "fixture_ids": [
+          "V150-OUI-CAMERA-A4C138"
+        ]
       },
       {
         "key": "3CA070",
         "vendor": "Blink",
         "category": "CAMERA",
         "confidence": "MED_CONF",
-        "fixture_ids": []
+        "fixture_ids": [
+          "V150-OUI-CAMERA-3CA070"
+        ]
       },
       {
         "key": "70AD43",
         "vendor": "Blink",
         "category": "CAMERA",
         "confidence": "MED_CONF",
-        "fixture_ids": []
+        "fixture_ids": [
+          "V150-OUI-CAMERA-70AD43"
+        ]
       },
       {
         "key": "741348",
         "vendor": "Blink",
         "category": "CAMERA",
         "confidence": "MED_CONF",
-        "fixture_ids": []
+        "fixture_ids": [
+          "V150-OUI-CAMERA-741348"
+        ]
       },
       {
         "key": "74AB93",
         "vendor": "Blink",
         "category": "CAMERA",
         "confidence": "MED_CONF",
-        "fixture_ids": []
+        "fixture_ids": [
+          "V150-OUI-CAMERA-74AB93"
+        ]
       },
       {
         "key": "C819D8",
         "vendor": "Blink",
         "category": "CAMERA",
         "confidence": "MED_CONF",
-        "fixture_ids": []
+        "fixture_ids": [
+          "V150-OUI-CAMERA-C819D8"
+        ]
       },
       {
         "key": "F074C1",
         "vendor": "Blink",
         "category": "CAMERA",
         "confidence": "MED_CONF",
-        "fixture_ids": []
+        "fixture_ids": [
+          "V150-OUI-CAMERA-F074C1"
+        ]
       },
       {
         "key": "D42DC5",
         "vendor": "i-PRO",
         "category": "CAMERA",
         "confidence": "HIGH_CONF",
-        "fixture_ids": []
+        "fixture_ids": [
+          "V150-OUI-CAMERA-D42DC5"
+        ]
       },
       {
         "key": "FC65DE",
@@ -607,7 +753,9 @@
         "vendor": "Ring",
         "category": "RING",
         "confidence": "MED_CONF",
-        "fixture_ids": []
+        "fixture_ids": [
+          "V150-OUI-RING-6837E9"
+        ]
       },
       {
         "key": "AC9FC3",
@@ -632,56 +780,72 @@
         "vendor": "Ring",
         "category": "RING",
         "confidence": "HIGH_CONF",
-        "fixture_ids": []
+        "fixture_ids": [
+          "V150-OUI-RING-343EA4"
+        ]
       },
       {
         "key": "54E019",
         "vendor": "Ring",
         "category": "RING",
         "confidence": "HIGH_CONF",
-        "fixture_ids": []
+        "fixture_ids": [
+          "V150-OUI-RING-54E019"
+        ]
       },
       {
         "key": "5C475E",
         "vendor": "Ring",
         "category": "RING",
         "confidence": "HIGH_CONF",
-        "fixture_ids": []
+        "fixture_ids": [
+          "V150-OUI-RING-5C475E"
+        ]
       },
       {
         "key": "649A63",
         "vendor": "Ring",
         "category": "RING",
         "confidence": "HIGH_CONF",
-        "fixture_ids": []
+        "fixture_ids": [
+          "V150-OUI-RING-649A63"
+        ]
       },
       {
         "key": "90486C",
         "vendor": "Ring",
         "category": "RING",
         "confidence": "HIGH_CONF",
-        "fixture_ids": []
+        "fixture_ids": [
+          "V150-OUI-RING-90486C"
+        ]
       },
       {
         "key": "9C7613",
         "vendor": "Ring",
         "category": "RING",
         "confidence": "HIGH_CONF",
-        "fixture_ids": []
+        "fixture_ids": [
+          "V150-OUI-RING-9C7613"
+        ]
       },
       {
         "key": "CC3BFB",
         "vendor": "Ring",
         "category": "RING",
         "confidence": "HIGH_CONF",
-        "fixture_ids": []
+        "fixture_ids": [
+          "V150-OUI-RING-CC3BFB"
+        ]
       },
       {
         "key": "C4DBAD",
         "vendor": "Ring",
         "category": "RING",
         "confidence": "HIGH_CONF",
-        "fixture_ids": []
+        "fixture_ids": [
+          "V150-OUI-RING-C4DBAD"
+        ]
       },
       {
         "key": "242BD6",
@@ -697,42 +861,54 @@
         "vendor": "Ring",
         "category": "RING",
         "confidence": "HIGH_CONF",
-        "fixture_ids": []
+        "fixture_ids": [
+          "V150-OUI-RING-00B463"
+        ]
       },
       {
         "key": "50E467",
         "vendor": "Ring",
         "category": "RING",
         "confidence": "HIGH_CONF",
-        "fixture_ids": []
+        "fixture_ids": [
+          "V150-OUI-RING-50E467"
+        ]
       },
       {
         "key": "E0A700",
         "vendor": "Verkada",
         "category": "CAMERA",
         "confidence": "HIGH_CONF",
-        "fixture_ids": []
+        "fixture_ids": [
+          "V150-OUI-CAMERA-E0A700"
+        ]
       },
       {
         "key": "701AD5",
         "vendor": "Avigilon",
         "category": "CAMERA",
         "confidence": "HIGH_CONF",
-        "fixture_ids": []
+        "fixture_ids": [
+          "V150-OUI-CAMERA-701AD5"
+        ]
       },
       {
         "key": "00408C",
         "vendor": "Axis",
         "category": "CAMERA",
         "confidence": "HIGH_CONF",
-        "fixture_ids": []
+        "fixture_ids": [
+          "V150-OUI-CAMERA-00408C"
+        ]
       },
       {
         "key": "B8A44F",
         "vendor": "Axis",
         "category": "CAMERA",
         "confidence": "HIGH_CONF",
-        "fixture_ids": []
+        "fixture_ids": [
+          "V150-OUI-CAMERA-B8A44F"
+        ]
       },
       {
         "key": "002542",
@@ -757,7 +933,9 @@
         "vendor": "70mai",
         "category": "CAMERA",
         "confidence": "HIGH_CONF",
-        "fixture_ids": []
+        "fixture_ids": [
+          "V150-OUI-CAMERA-B859C8"
+        ]
       },
       {
         "key": "001F4F",
@@ -782,28 +960,36 @@
         "vendor": "Lytx",
         "category": "CAMERA",
         "confidence": "MED_CONF",
-        "fixture_ids": []
+        "fixture_ids": [
+          "V150-OUI-CAMERA-2C4205"
+        ]
       },
       {
         "key": "50DF95",
         "vendor": "Lytx",
         "category": "CAMERA",
         "confidence": "MED_CONF",
-        "fixture_ids": []
+        "fixture_ids": [
+          "V150-OUI-CAMERA-50DF95"
+        ]
       },
       {
         "key": "70E46E",
         "vendor": "Lytx",
         "category": "CAMERA",
         "confidence": "MED_CONF",
-        "fixture_ids": []
+        "fixture_ids": [
+          "V150-OUI-CAMERA-70E46E"
+        ]
       },
       {
         "key": "58A748",
         "vendor": "Lytx",
         "category": "CAMERA",
         "confidence": "MED_CONF",
-        "fixture_ids": []
+        "fixture_ids": [
+          "V150-OUI-CAMERA-58A748"
+        ]
       },
       {
         "key": "FCDB21",
@@ -819,14 +1005,18 @@
         "vendor": "Samsara",
         "category": "CAMERA",
         "confidence": "LOW_CONF",
-        "fixture_ids": []
+        "fixture_ids": [
+          "V150-OUI-CAMERA-28EA5B"
+        ]
       },
       {
         "key": "985949",
         "vendor": "Luxottica",
         "category": "META",
         "confidence": "MED_CONF",
-        "fixture_ids": []
+        "fixture_ids": [
+          "V150-OUI-META-985949"
+        ]
       },
       {
         "key": "28E888",
@@ -959,14 +1149,18 @@
         "vendor": "DJI-BW",
         "category": "DRONE",
         "confidence": "LOW_CONF",
-        "fixture_ids": []
+        "fixture_ids": [
+          "V150-OUI-DRONE-3491F0"
+        ]
       },
       {
         "key": "C8A162",
         "vendor": "DJI-BW",
         "category": "DRONE",
         "confidence": "LOW_CONF",
-        "fixture_ids": []
+        "fixture_ids": [
+          "V150-OUI-DRONE-C8A162"
+        ]
       },
       {
         "key": "381D14",
@@ -1027,14 +1221,18 @@
         "vendor": "Hak5-LA",
         "category": "HACKER",
         "confidence": "LOW_CONF",
-        "fixture_ids": []
+        "fixture_ids": [
+          "V150-OUI-HACKER-02C0CA"
+        ]
       },
       {
         "key": "021337",
         "vendor": "Hak5-LA",
         "category": "HACKER",
         "confidence": "LOW_CONF",
-        "fixture_ids": []
+        "fixture_ids": [
+          "V150-OUI-HACKER-021337"
+        ]
       },
       {
         "key": "000E58",
@@ -1068,84 +1266,108 @@
         "vendor": "Sonos",
         "category": "LISTENER",
         "confidence": "MED_CONF",
-        "fixture_ids": []
+        "fixture_ids": [
+          "V150-OUI-LISTENER-48A6B8"
+        ]
       },
       {
         "key": "542A1B",
         "vendor": "Sonos",
         "category": "LISTENER",
         "confidence": "MED_CONF",
-        "fixture_ids": []
+        "fixture_ids": [
+          "V150-OUI-LISTENER-542A1B"
+        ]
       },
       {
         "key": "5CAAFD",
         "vendor": "Sonos",
         "category": "LISTENER",
         "confidence": "MED_CONF",
-        "fixture_ids": []
+        "fixture_ids": [
+          "V150-OUI-LISTENER-5CAAFD"
+        ]
       },
       {
         "key": "60F620",
         "vendor": "Sonos",
         "category": "LISTENER",
         "confidence": "MED_CONF",
-        "fixture_ids": []
+        "fixture_ids": [
+          "V150-OUI-LISTENER-60F620"
+        ]
       },
       {
         "key": "74CA60",
         "vendor": "Sonos",
         "category": "LISTENER",
         "confidence": "MED_CONF",
-        "fixture_ids": []
+        "fixture_ids": [
+          "V150-OUI-LISTENER-74CA60"
+        ]
       },
       {
         "key": "7828CA",
         "vendor": "Sonos",
         "category": "LISTENER",
         "confidence": "MED_CONF",
-        "fixture_ids": []
+        "fixture_ids": [
+          "V150-OUI-LISTENER-7828CA"
+        ]
       },
       {
         "key": "804AF2",
         "vendor": "Sonos",
         "category": "LISTENER",
         "confidence": "MED_CONF",
-        "fixture_ids": []
+        "fixture_ids": [
+          "V150-OUI-LISTENER-804AF2"
+        ]
       },
       {
         "key": "949F3E",
         "vendor": "Sonos",
         "category": "LISTENER",
         "confidence": "MED_CONF",
-        "fixture_ids": []
+        "fixture_ids": [
+          "V150-OUI-LISTENER-949F3E"
+        ]
       },
       {
         "key": "B8E937",
         "vendor": "Sonos",
         "category": "LISTENER",
         "confidence": "MED_CONF",
-        "fixture_ids": []
+        "fixture_ids": [
+          "V150-OUI-LISTENER-B8E937"
+        ]
       },
       {
         "key": "C43875",
         "vendor": "Sonos",
         "category": "LISTENER",
         "confidence": "MED_CONF",
-        "fixture_ids": []
+        "fixture_ids": [
+          "V150-OUI-LISTENER-C43875"
+        ]
       },
       {
         "key": "F0F6C1",
         "vendor": "Sonos",
         "category": "LISTENER",
         "confidence": "MED_CONF",
-        "fixture_ids": []
+        "fixture_ids": [
+          "V150-OUI-LISTENER-F0F6C1"
+        ]
       },
       {
         "key": "F85C24",
         "vendor": "Sonos",
         "category": "LISTENER",
         "confidence": "MED_CONF",
-        "fixture_ids": []
+        "fixture_ids": [
+          "V150-OUI-LISTENER-F85C24"
+        ]
       }
     ],
     "uuid": [
@@ -1153,7 +1375,9 @@
         "key": "1101",
         "vendor": "Skim-SPP",
         "category": "SKIMMER",
-        "fixture_ids": []
+        "fixture_ids": [
+          "V150-UUID-SKIMMER-1101"
+        ]
       },
       {
         "key": "FEED",
@@ -1199,7 +1423,9 @@
         "key": "FE6C",
         "vendor": "Axon",
         "category": "AXON",
-        "fixture_ids": []
+        "fixture_ids": [
+          "V150-UUID-AXON-FE6C"
+        ]
       },
       {
         "key": "FEB7",
@@ -1213,7 +1439,9 @@
         "key": "FEB8",
         "vendor": "Meta",
         "category": "META",
-        "fixture_ids": []
+        "fixture_ids": [
+          "V150-UUID-META-FEB8"
+        ]
       },
       {
         "key": "FE45",
@@ -1299,7 +1527,9 @@
         "key": "FFFA",
         "vendor": "DroneID",
         "category": "DRONE",
-        "fixture_ids": []
+        "fixture_ids": [
+          "BLE-DRONE"
+        ]
       },
       {
         "key": "FD5A",

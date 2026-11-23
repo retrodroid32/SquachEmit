@@ -12,6 +12,7 @@
 #include "dji_oui_lab.h"
 #include "uav_vendor_oui_lab.h"
 #include "squach_v150_oui_lab.h"
+#include "squach_v150_oui_extended.h"
 #include "squach_fork_oui_lab.h"
 #if defined(SQE_WAVESHARE_C5)
 #include "c5_ui.h"
@@ -100,6 +101,9 @@ static bool deriveIdentity(const Scenario* s, bool wifi, uint8_t out[6]) {
   }
   if (wifi && SquachV150OuiLab::find(s->id)) {
     if (!SquachV150OuiLab::apply(s->id,out)) return false;
+  }
+  if (wifi && SquachV150OuiExtended::find(s->id)) {
+    if (!SquachV150OuiExtended::apply(s->id,out)) return false;
   }
   if (wifi && SquachForkOuiLab::find(s->id)) {
     if (!SquachForkOuiLab::apply(s->id,out)) return false;
@@ -444,7 +448,8 @@ static bool isOuiOnly(const Scenario* s) {
   return s && (SquachDjiOuiLab::find(s->id)!=nullptr ||
                SquachUavVendorLab::find(s->id)!=nullptr ||
                SquachV150OuiLab::find(s->id)!=nullptr ||
-               SquachForkOuiLab::find(s->id)!=nullptr);
+               SquachForkOuiLab::find(s->id)!=nullptr ||
+               SquachV150OuiExtended::find(s->id)!=nullptr);
 }
 // CYD 3.2 time selection controls touchscreen RUN and every SUITE case.
 // Other boards keep their existing 12-second default.
