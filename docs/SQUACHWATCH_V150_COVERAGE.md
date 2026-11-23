@@ -116,3 +116,7 @@ owner's explicit approval.
 
 Source:
 https://github.com/skizzophrenic/SquachWatch-CYD/tree/v1.50.0
+
+## R14.36 fork-only signature increment
+
+SquachEmit now adds **10 individually selectable, bounded Wi-Fi AP OUI fixtures** unique to `retrodroid32/SquachWatch-CYD` default branch `src/signatures.cpp` blob `1f63a08ce3eba4148d557312bb0d1abe8b18545c`: FLOCK (3C71BF, 4827EA, A4CF12), DRONE (B030C8, EC715E, 001AF9, 547D40, 74B80F), SKIMMER (98D300), and HACKER (0CFA22). This brings the total to **248 synthetic cases** (172 original + 66 upstream v1.50 + 10 fork-only). Each OUI uses a per-case temporary AP MAC prefix and synthetic suffix; all are unverified against physical receivers. The pinned 105/220 upstream mapping is unchanged. Cases are not real devices, and a MAC-prefix match is not authenticated identity. Additional upstream and fork detection behaviors remain out of coverage, and the 254-case address scheme must be redesigned before expanding beyond its bound.
