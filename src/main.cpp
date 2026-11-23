@@ -85,7 +85,7 @@ static bool deriveIdentity(const Scenario* s, bool wifi, uint8_t out[6]) {
   size_t index = kScenarioCount;
   for (size_t i=0; i<kScenarioCount; ++i)
     if (&kScenarios[i] == s) { index=i; break; }
-  if (index >= kScenarioCount || index >= 254) return false;
+  if (index >= kScenarioCount || index >= 65535) return false;
   g_radioIdentity = (uint32_t)index + 1u;
   SquachIdentity::derive(ESP.getEfuseMac(), index,
         wifi ? SquachIdentity::Radio::Wifi : SquachIdentity::Radio::Ble, out);
