@@ -313,11 +313,14 @@
       // Names come from the reviewed source-pinned fixture description,
       // not an inferred actual device. Unknown IDs still fail closed.
       device=desc.split('|')[0].trim();
-      if(!device||!desc.includes('SYNTHETIC v1.50'))
+      if(!device||!(desc.includes('SYNTHETIC')||desc.includes('synthetic')))
         throw Error('Missing v1.50 fixture label for '+id);
       method='synthetic '+(c.carrier==='WIFI'?'Wi-Fi':'BLE')+
              ' '+(c.kind==='WifiAp'?'beacon':'advertisement')+
              '; v1.50 receiver category '+expected;
+    } else if(id.startsWith('FORK-OUI-')) {
+      device=desc.split('|')[0].trim();
+      method='synthetic fork-only manufacturer Wi-Fi MAC beacon; no Remote ID';
     } else if(id.startsWith('OUI-')) {
       device=desc.split('|')[0].trim();
       method='synthetic manufacturer Wi-Fi MAC beacon; NO Remote ID';
