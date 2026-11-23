@@ -23,7 +23,7 @@ inline void scenarioDeviceName(const Scenario& s,char* out,size_t cap){
   if(!out||!cap)return;
   const char* id=s.id?s.id:"";
   const char* name=nullptr;
-  if(sqeStarts(id,"V150-")){
+  if(sqeStarts(id,"V150-")||sqeStarts(id,"FORK-OUI-")){
     // Explicit synthetic ID becomes a human-facing vendor/test label,
     // without presenting it as a physical authentic device.
     sqeDescriptionHead(s.description,out,cap);return;
