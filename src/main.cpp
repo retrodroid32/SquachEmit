@@ -157,6 +157,27 @@ static bool beginWifiIdentity(const Scenario* s) {
   return true;
 }
 
+// Check the active radio's AP MAC, not just the pre-start address.
+// SoftAP transitions can reset the BSSID, invalidating an OUI test.
+static bool verifyWifiApMac(const Scenario* s) {
+  uint8_t expected[6]={}, actual[6]={};
+  if (!deriveIdentity(s,true,expected)) {
+    wifiFailure("AP_MAC_EXPECTED",ESP_ERR_INVALID_ARG);return false;
+  }
+  const esp_err_t err=esp_wifi_get_mac(WIFI_IF_AP,actual);
+  if (err!=ESP_OK){wifiFailure("AP_MAC_READBACK",err);return false;}
+  if (memcmp(actual,expected,6)!=0) {
+    char observed[18]={};
+    SquachIdentity::text(actual,observed);
+    Serial.printf("ERROR,AP_MAC_MISMATCH,%s,expected=%s,actual=%s\n",
+                  s->id,g_address,observed);
+    wifiFailure("AP_MAC_MISMATCH",ESP_FAIL);
+    return false;
+  }
+  Serial.printf("RADIO,AP_MAC_CONFIRMED,%s,%s\n",s->id,g_address);
+  return true;
+}
+
 static bool beginBle() {
   if (g_bleInit) return true;
   if (!NimBLEDevice::init("SquachEmit-Lab")) return false;
@@ -276,6 +297,7 @@ static bool startWifiRemote(const Scenario* s) {
                    "SquachLab2026!", channel, false, 1)) {
     wifiFailure("SOFTAP_START"); return false;
   }
+  if (!verifyWifiApMac(s)) return false;
   // Synthetic message pack: Basic ID, Location, System, Self-ID, Operator ID.
   // This tests complete receiver parsing but is not flight-compliant broadcast:
   // there is no true GNSS/UTC on the emitter and all identities are fictional.
@@ -445,21 +467,28 @@ static bool startScenario(const Scenario* s, uint32_t duration = kDefaultMs) {
     const bool ouiTest=isOuiOnly(s);
     // The vendor-OUI fixtures contain NO Remote ID; the BSSID is the
     // selected registry prefix with a generated, synthetic 3-byte suffix.
-    if (!beginWifiIdentity(s)) {
-      if(ouiTest) {
-        Serial.printf("ERROR,WIFI_OUI_CASE,%s,%s,%d\n",
-                      s->id,g_wifiFailureStage,(int)g_wifiFailureCode);
-#if defined(SQE_CYD32)
-        cyd32UiSetRadioError(g_wifiFailureStage);
-#endif
+    // Radio-hardware recovery for every ordinary SoftAP signature case.
+    // Only BEGIN after the active AP BSSID matches the requested OUI.
+    const uint8_t channel=s->code ? static_cast<uint8_t>(s->code) : 1;
+    if(channel<1 || channel>11) wifiFailure("CHANNEL",ESP_ERR_INVALID_ARG);
+    else for(unsigned attempt=1;attempt<=2 && !ok;++attempt){
+      Serial.printf("RADIO,WIFI_AP_ATTEMPT,%s,%u\n",s->id,attempt);
+      g_wifiFailureStage="UNKNOWN";g_wifiFailureCode=ESP_OK;
+      if(beginWifiIdentity(s)){
+        if(WiFi.softAP(s->text ? s->text : "SQE-LAB-AP",
+                       "SquachLab2026!",channel,false,1))
+          ok=verifyWifiApMac(s);
+        else wifiFailure("SOFTAP_START");
       }
-      truth("ERROR",s,"identity_failed");stopTx();return false;
+      if(!ok && attempt==1){
+        Serial.printf("WARN,WIFI_AP_RETRY,%s,%s\n",s->id,g_wifiFailureStage);
+        stopTx();
+        delay(120);
+      }
     }
-    // Channel 0 is the legacy channel-1 profile; explicit 1..11 for LAB.
-    const uint8_t channel = s->code ? static_cast<uint8_t>(s->code) : 1;
-    if (channel >= 1 && channel <= 11)
-      ok = WiFi.softAP(s->text, "SquachLab2026!", channel, false, 1);
-    if(ouiTest && !ok) wifiFailure("SOFTAP_START");
+    if(ouiTest && !ok)
+      Serial.printf("ERROR,WIFI_OUI_CASE,%s,%s,%d\n",
+                    s->id,g_wifiFailureStage,(int)g_wifiFailureCode);
   } else if (s->kind == Kind::WifiRemoteId) {
     // One bounded recovery after a failed Wi-Fi mode transition.
     for(unsigned attempt=1; attempt<=2 && !ok; ++attempt){
