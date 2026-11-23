@@ -55,10 +55,10 @@ class BuildDescriptionTests(unittest.TestCase):
             with self.subTest(board=board):
                 desc = site.describe_source_profile(profile, board, 'a' * 40)
                 self.assertTrue(desc['notes_verified_for_sha'])
-                self.assertIn('238', desc['title'])
+                self.assertIn('248', desc['title'])
                 self.assertIn('MAINLINE', desc['version_label'])
                 self.assertIn('aaaaaaaa', desc['version_label'])
-                self.assertIn('238', desc['summary'])
+                self.assertIn('248', desc['summary'])
                 self.assertIn('SHA-256', desc['summary'])
                 titles.add(desc['title'])
                 versions.add(desc['version_label'])
@@ -72,7 +72,7 @@ class BuildDescriptionTests(unittest.TestCase):
         profile = json.loads((ROOT/'tools/active_firmware_profile.json').read_text())
         cases = json.loads((ROOT/'tests/cases.json').read_text())
         self.assertEqual(profile['scenario_count'], len(cases))
-        self.assertEqual(len(cases), 238)
+        self.assertEqual(len(cases), 248)
         for path, expected_sha in profile['firmware_sources'].items():
             with self.subTest(path=path):
                 actual_sha = subprocess.check_output(
