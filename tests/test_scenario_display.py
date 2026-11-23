@@ -15,7 +15,7 @@ class ScenarioDisplayTests(unittest.TestCase):
 #include <cstdio>
 #include <cstring>
 int main() {
-    assert(kScenarioCount == 238);
+    assert(kScenarioCount == 248);
     for(size_t i=0;i<kScenarioCount;++i){
         char label[80]={0};
         scenarioDeviceName(kScenarios[i],label,sizeof label);
@@ -40,6 +40,8 @@ int main() {
     assert(std::strstr(name,"DJI Mini 3 Pro"));
     scenarioDeviceName(*findScenario("BLE-NEG-FLIP-MFG"),name,sizeof name);
     assert(std::strstr(name,"Flipper Zero"));
+    scenarioDeviceName(*findScenario("FORK-OUI-DRONE-B030C8"),name,sizeof name);
+    assert(std::strstr(name,"Teal"));
     return 0;
 }
 '''
