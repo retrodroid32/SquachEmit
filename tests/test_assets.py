@@ -22,7 +22,7 @@ class TestFixtures(unittest.TestCase):
         self.assertEqual(len(self.cases), 248)
         self.assertEqual(len(self.cases), len(__import__('re').findall(r'^\s*\{"', source, __import__('re').M)))
         self.assertEqual(next(s for s in self.cases if s['id']=='BLE-GOOGLE')['expected'], 'NONE')
-        self.assertLess(len(self.cases), 254)  # synthetic per-case MAC identity limit
+        self.assertLessEqual(len(self.cases), 65535)  # two-octet synthetic identity
         self.assertTrue(all(s['text'] is None or len(s['text']) <= 26 for s in self.cases if s['kind']=='BleName'))
 
     def test_observation_template(self):
