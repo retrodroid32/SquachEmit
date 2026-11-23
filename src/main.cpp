@@ -89,7 +89,7 @@ static bool deriveIdentity(const Scenario* s, bool wifi, uint8_t out[6]) {
   g_radioIdentity = (uint32_t)index + 1u;
   SquachIdentity::derive(ESP.getEfuseMac(), index,
         wifi ? SquachIdentity::Radio::Wifi : SquachIdentity::Radio::Ble, out);
-  // The 37 original UAS OUI fixtures and 22 new v1.50 signature fixtures
+  // The 37 original UAS OUI, 22 v1.50 and 10 fork-only fixtures
   // use source-pinned vendor prefixes; other cases remain LAA/static random.
   // A synthetic prefix is never proof of an actual branded device.
   if (wifi && SquachDjiOuiLab::find(s->id)) {
@@ -421,7 +421,8 @@ static void cancelAll() {
 static bool isOuiOnly(const Scenario* s) {
   return s && (SquachDjiOuiLab::find(s->id)!=nullptr ||
                SquachUavVendorLab::find(s->id)!=nullptr ||
-               SquachV150OuiLab::find(s->id)!=nullptr);
+               SquachV150OuiLab::find(s->id)!=nullptr ||
+               SquachForkOuiLab::find(s->id)!=nullptr);
 }
 // CYD 3.2 time selection controls touchscreen RUN and every SUITE case.
 // Other boards keep their existing 12-second default.
