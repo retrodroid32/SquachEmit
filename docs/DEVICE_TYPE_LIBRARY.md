@@ -1,6 +1,6 @@
 # Device-type test library (CYD 3.2 LAB)
 
-## R14.36 LAB — upstream v1.50.0 plus fork-only signatures (248 fixtures)
+## R14.37 LAB — upstream v1.50.0 plus fork-only signatures (362 fixtures)
 
 This LAB extends the public 172-case catalog by 66 upstream-derived and
 10 fork-only synthetic fixtures, and corrects 24 expected labels against the pinned

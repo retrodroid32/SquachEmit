@@ -22,7 +22,7 @@ class WorkbenchPublishTests(unittest.TestCase):
                 self.assertGreater((workbench/name).stat().st_size,100,name)
             expected=json.loads((ROOT/"tests"/"cases.json").read_text())
             actual=json.loads((workbench/"cases.json").read_text())
-            self.assertEqual(len(actual),248)
+            self.assertEqual(len(actual),362)
             self.assertEqual(actual,expected)
             self.assertIn('id="emitConnect"',(workbench/"index.html").read_text())
             self.assertIn('id="recvConnect"',(workbench/"index.html").read_text())

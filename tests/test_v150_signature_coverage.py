@@ -29,7 +29,7 @@ class V150SignatureCoverage(unittest.TestCase):
         self.assertEqual(sum(expected.values()),220)
         represented=sum(bool(x["fixture_ids"]) for table in m["tables"].values() for x in table)
         self.assertEqual(m["table_covered_count"],represented)
-        self.assertGreaterEqual(represented,105)
+        self.assertEqual(represented,220)
         for table in m["tables"].values():
             for rule in table:
                 for id in rule["fixture_ids"]:
@@ -38,9 +38,9 @@ class V150SignatureCoverage(unittest.TestCase):
         self.assertEqual(m["physical_receiver_validation"],"NOT PERFORMED")
 
     def test_catalog_is_bounded_and_includes_new_family_tests(self):
-        self.assertEqual(len(self.cases),248)
-        self.assertEqual(len(self.byid),248)
-        self.assertEqual(len([x for x in self.cases if x["id"].startswith("V150-")]),66)
+        self.assertEqual(len(self.cases),362)
+        self.assertEqual(len(self.byid),362)
+        self.assertEqual(len([x for x in self.cases if x["id"].startswith("V150-")]),180)
         self.assertLessEqual(len(self.cases),65535)  # two-octet identity
         positive={c["expected"] for c in self.cases if c["expected"]!="NONE"}
         self.assertEqual(positive,{
