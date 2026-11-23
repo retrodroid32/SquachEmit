@@ -26,7 +26,7 @@ inline DeviceCategory deviceCategory(const Scenario& s) {
   const char* id=s.id;
   // New v1.50 category-specific fixtures preserve the exact expected
   // detector label, while negative controls stay with their signal family.
-  if(startsWith(id,"V150-")){
+  if(startsWith(id,"V150-")||startsWith(id,"FORK-OUI-")){
     if(strcmp(s.expected,"ALPR")==0)return DeviceCategory::Alpr;
     if(strcmp(s.expected,"CAMERA")==0)return DeviceCategory::Cameras;
     if(strcmp(s.expected,"LISTENER")==0)return DeviceCategory::Listeners;
