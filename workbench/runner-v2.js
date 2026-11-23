@@ -8,7 +8,8 @@
   if(root)root.SQETestSuiteV2=api;
 })(typeof window==='undefined'?null:window,function(){
   'use strict';
-  const MAX_CASES=238;
+  // Keep the checkpoint bound aligned with the firmware catalog; no auto-resume of RF.
+  const MAX_CASES=65535;
   const CASE_RE=/^[A-Z0-9][A-Z0-9_-]{1,100}$/;
   const VERSION=1;
   const KEY='sqe-test-suite-v2-checkpoint';
