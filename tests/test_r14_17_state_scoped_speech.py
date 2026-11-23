@@ -17,8 +17,9 @@ int main(){
   // Categories are the real scenario library's ten families, not carrier
   // types or whichever menu entry is currently highlighted.
   const Topic families[kDeviceCategoryCount]={
-    Topic::Axon, Topic::Drones, Topic::Flock, Topic::General,
-    Topic::Hacker, Topic::IBeacon, Topic::Raven, Topic::SerialModules,
+    Topic::General, Topic::Axon, Topic::General, Topic::Drones,
+    Topic::Flock, Topic::General, Topic::Hacker, Topic::IBeacon,
+    Topic::General, Topic::Raven, Topic::General, Topic::SerialModules,
     Topic::SmartGlasses, Topic::Trackers
   };
   size_t total=0;
@@ -34,7 +35,7 @@ int main(){
       assert(emitted==(roll<60?category:Topic::Transmitting));
     }
   }
-  assert(total==172);
+  assert(total==238);
   for(unsigned roll=0;roll<100;roll++){
     assert(stateTopic(false,Topic::Transmitting,roll)==Topic::Idle);
     assert(stateTopic(false,Topic::Ring,roll)==Topic::Idle);
