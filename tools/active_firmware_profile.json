@@ -12,7 +12,7 @@
     "cyd32-st7798": {
       "title": "SquachEmit v1.1.0 CYD 3.2 R14.36 LAB — SquachWatch v1.50 Coverage (248 Cases)",
       "version": "v1.1.0 MAINLINE · 248 cases",
-      "summary": "R14.36 LAB compares the pinned SquachWatch v1.50.0 detection library and expands SquachEmit from 172 to 248 synthetic BLE/Wi-Fi cases (66 added). Corrects 24 outdated expected labels, adds 22 OUI beacons, 24 SSID fixtures, 9 BLE UUID, 4 manufacturer and 7 special BLE payload cases. New categories include ALPR, CAMERA, RING, LISTENER and GOOGLE_TAG. Source matrix maps 105 of 220 explicit v1.50 table entries to candidate tests. Preserves R14.33 battery calibration and animations. Four-part SHA-256 packaging. Hardware reception NOT verified. Includes ten Sq Physical RF receiver validation pending.",
+      "summary": "R14.36 LAB compares the pinned SquachWatch v1.50.0 detection library and expands SquachEmit from 172 to 248 synthetic BLE/Wi-Fi cases (66 added). Corrects 24 outdated expected labels, adds 22 OUI beacons, 24 SSID fixtures, 9 BLE UUID, 4 manufacturer and 7 special BLE payload cases. New categories include ALPR, CAMERA, RING, LISTENER and GOOGLE_TAG. Source matrix maps 105 of 220 explicit v1.50 table entries to candidate tests. Preserves R14.33 battery calibration and animations. Four-part SHA-256 packaging. Hardware reception NOT verified. Inclu Hardware verification pending.",
       "highlights": [
         "66 new v1.50.0-derived synthetic signal fixtures, 248 total; original 172 stable IDs preserved. Includes 10 fork-only OUI tests.",
         "24 stale expected results corrected; negative-control detection prevents false positives.",
