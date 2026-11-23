@@ -111,7 +111,7 @@
     "id": "BLE-HACKER-MFG",
     "carrier": "BLE",
     "kind": "BleManufacturer",
-    "expected": "HACKER",
+    "expected": "NONE",
     "description": "Flipper company ID",
     "code": 3625,
     "text": null
@@ -480,7 +480,7 @@
     "id": "BLE-NEG-PENGUIN-9",
     "carrier": "BLE",
     "kind": "BleName",
-    "expected": "NONE",
+    "expected": "FLOCK",
     "description": "Nine-digit Penguin name must not match battery serial",
     "code": 0,
     "text": "Penguin-012345678"
@@ -498,7 +498,7 @@
     "id": "BLE-META-TECH",
     "carrier": "BLE",
     "kind": "BleManufacturer",
-    "expected": "META",
+    "expected": "NONE",
     "description": "Meta Technologies company ID; shared vendor evidence",
     "code": 1422,
     "text": null
@@ -660,7 +660,7 @@
     "id": "BLE-SKIM-BT05",
     "carrier": "BLE",
     "kind": "BleName",
-    "expected": "SKIMMER",
+    "expected": "NONE",
     "description": "Generic BT05 serial module; not proof of skimmer",
     "code": 0,
     "text": "BT05"
@@ -669,7 +669,7 @@
     "id": "BLE-SKIM-JDY08",
     "carrier": "BLE",
     "kind": "BleName",
-    "expected": "SKIMMER",
+    "expected": "NONE",
     "description": "Generic JDY-08 serial module; not proof of skimmer",
     "code": 0,
     "text": "JDY-08"
@@ -678,7 +678,7 @@
     "id": "BLE-SKIM-JDY16",
     "carrier": "BLE",
     "kind": "BleName",
-    "expected": "SKIMMER",
+    "expected": "NONE",
     "description": "Generic JDY-16 serial module; not proof of skimmer",
     "code": 0,
     "text": "JDY-16"
@@ -687,7 +687,7 @@
     "id": "BLE-SKIM-MLTBT",
     "carrier": "BLE",
     "kind": "BleName",
-    "expected": "SKIMMER",
+    "expected": "NONE",
     "description": "Generic MLT-BT serial module; not proof of skimmer",
     "code": 0,
     "text": "MLT-BT"
@@ -696,7 +696,7 @@
     "id": "BLE-SKIM-LINVOR",
     "carrier": "BLE",
     "kind": "BleName",
-    "expected": "SKIMMER",
+    "expected": "NONE",
     "description": "Generic linvor serial module; not proof of skimmer",
     "code": 0,
     "text": "linvor"
@@ -759,7 +759,7 @@
     "id": "WIFI-HACKER-PAGER1",
     "carrier": "WIFI",
     "kind": "WifiAp",
-    "expected": "HACKER",
+    "expected": "NONE",
     "description": "Exact Pineapple Pager SSID pager_open",
     "code": 1,
     "text": "pager_open"
@@ -768,7 +768,7 @@
     "id": "WIFI-HACKER-PAGER2",
     "carrier": "WIFI",
     "kind": "WifiAp",
-    "expected": "HACKER",
+    "expected": "NONE",
     "description": "Exact Pineapple Pager SSID pager-open",
     "code": 1,
     "text": "pager-open"
@@ -1308,7 +1308,7 @@
     "id": "OUI-AUTEL-18D7936",
     "carrier": "WIFI",
     "kind": "WifiAp",
-    "expected": "DRONE",
+    "expected": "NONE",
     "description": "Autel Intelligent 18D7936 | LAB OUI ONLY; NO RID",
     "code": 6,
     "text": "SQE-LAB-AUTEL-18D7936"
@@ -1317,7 +1317,7 @@
     "id": "OUI-AUTEL-EC5BCDE",
     "carrier": "WIFI",
     "kind": "WifiAp",
-    "expected": "DRONE",
+    "expected": "NONE",
     "description": "Autel Robotics USA EC5BCDE | LAB OUI ONLY; NO RID",
     "code": 6,
     "text": "SQE-LAB-AUTEL-EC5BCDE"
@@ -1398,7 +1398,7 @@
     "id": "OUI-QUANTUM-AC86D17",
     "carrier": "WIFI",
     "kind": "WifiAp",
-    "expected": "DRONE",
+    "expected": "NONE",
     "description": "Quantum-Systems AC86D17 | LAB OUI ONLY; NO RID",
     "code": 6,
     "text": "SQE-LAB-QUANTUM-AC86D17"
@@ -1407,7 +1407,7 @@
     "id": "OUI-INSITU-0050C2C35",
     "carrier": "WIFI",
     "kind": "WifiAp",
-    "expected": "DRONE",
+    "expected": "NONE",
     "description": "Insitu 0050C2C35 | LAB OUI ONLY; NO RID",
     "code": 6,
     "text": "SQE-LAB-INSITU-0050C2C35"
@@ -1416,7 +1416,7 @@
     "id": "OUI-INSITU-0050C2FD4",
     "carrier": "WIFI",
     "kind": "WifiAp",
-    "expected": "DRONE",
+    "expected": "NONE",
     "description": "Insitu 0050C2FD4 | LAB OUI ONLY; NO RID",
     "code": 6,
     "text": "SQE-LAB-INSITU-0050C2FD4"
@@ -1425,7 +1425,7 @@
     "id": "OUI-INSITU-70B3D57AD",
     "carrier": "WIFI",
     "kind": "WifiAp",
-    "expected": "DRONE",
+    "expected": "NONE",
     "description": "Insitu 70B3D57AD | LAB OUI ONLY; NO RID",
     "code": 6,
     "text": "SQE-LAB-INSITU-70B3D57AD"
@@ -1434,7 +1434,7 @@
     "id": "OUI-INSITU-70B3D5865",
     "carrier": "WIFI",
     "kind": "WifiAp",
-    "expected": "DRONE",
+    "expected": "NONE",
     "description": "Insitu 70B3D5865 | LAB OUI ONLY; NO RID",
     "code": 6,
     "text": "SQE-LAB-INSITU-70B3D5865"
@@ -1443,7 +1443,7 @@
     "id": "OUI-INSITU-70B3D5B3B",
     "carrier": "WIFI",
     "kind": "WifiAp",
-    "expected": "DRONE",
+    "expected": "NONE",
     "description": "Insitu 70B3D5B3B | LAB OUI ONLY; NO RID",
     "code": 6,
     "text": "SQE-LAB-INSITU-70B3D5B3B"
@@ -1452,7 +1452,7 @@
     "id": "OUI-INSITU-70B3D5D36",
     "carrier": "WIFI",
     "kind": "WifiAp",
-    "expected": "DRONE",
+    "expected": "NONE",
     "description": "Insitu 70B3D5D36 | LAB OUI ONLY; NO RID",
     "code": 6,
     "text": "SQE-LAB-INSITU-70B3D5D36"
@@ -1461,7 +1461,7 @@
     "id": "OUI-INSITU-70B3D5DD2",
     "carrier": "WIFI",
     "kind": "WifiAp",
-    "expected": "DRONE",
+    "expected": "NONE",
     "description": "Insitu 70B3D5DD2 | LAB OUI ONLY; NO RID",
     "code": 6,
     "text": "SQE-LAB-INSITU-70B3D5DD2"
@@ -1479,7 +1479,7 @@
     "id": "OUI-XAG-A45129",
     "carrier": "WIFI",
     "kind": "WifiAp",
-    "expected": "DRONE",
+    "expected": "NONE",
     "description": "XAG A45129 | LAB OUI ONLY; NO RID",
     "code": 6,
     "text": "SQE-LAB-XAG-A45129"
@@ -1524,7 +1524,7 @@
     "id": "OUI-HUBSAN-98AAFC7",
     "carrier": "WIFI",
     "kind": "WifiAp",
-    "expected": "DRONE",
+    "expected": "NONE",
     "description": "Hubsan 98AAFC7 | LAB OUI ONLY; NO RID",
     "code": 6,
     "text": "SQE-LAB-HUBSAN-98AAFC7"
@@ -1533,7 +1533,7 @@
     "id": "OUI-YUNEEC-E0B6F58",
     "carrier": "WIFI",
     "kind": "WifiAp",
-    "expected": "DRONE",
+    "expected": "NONE",
     "description": "Yuneec E0B6F58 | LAB OUI ONLY; NO RID",
     "code": 6,
     "text": "SQE-LAB-YUNEEC-E0B6F58"
@@ -1542,9 +1542,603 @@
     "id": "OUI-FIMI-6CDFFBE",
     "carrier": "WIFI",
     "kind": "WifiAp",
-    "expected": "DRONE",
+    "expected": "NONE",
     "description": "FIMI 6CDFFBE | LAB OUI ONLY; NO RID",
     "code": 6,
     "text": "SQE-LAB-FIMI-6CDFFBE"
+  },
+  {
+    "id": "V150-SSID-FLOCK-CAMERA",
+    "carrier": "WIFI",
+    "kind": "WifiAp",
+    "expected": "FLOCK",
+    "description": "Flock Camera setup network | SYNTHETIC v1.50 signature test; no authentic device RF",
+    "code": 6,
+    "text": "Flock Camera net."
+  },
+  {
+    "id": "V150-SSID-VIOFO-UNDER",
+    "carrier": "WIFI",
+    "kind": "WifiAp",
+    "expected": "CAMERA",
+    "description": "VIOFO dashcam | SYNTHETIC v1.50 signature test; no authentic device RF",
+    "code": 6,
+    "text": "VIOFO_SQE"
+  },
+  {
+    "id": "V150-SSID-VIOFO-DASH",
+    "carrier": "WIFI",
+    "kind": "WifiAp",
+    "expected": "CAMERA",
+    "description": "VIOFO dashcam alternate | SYNTHETIC v1.50 signature test; no authentic device RF",
+    "code": 6,
+    "text": "VIOFO-SQE"
+  },
+  {
+    "id": "V150-SSID-BLACKVUE",
+    "carrier": "WIFI",
+    "kind": "WifiAp",
+    "expected": "CAMERA",
+    "description": "BlackVue dashcam | SYNTHETIC v1.50 signature test; no authentic device RF",
+    "code": 6,
+    "text": "BlackVue_SQE"
+  },
+  {
+    "id": "V150-SSID-70MAI",
+    "carrier": "WIFI",
+    "kind": "WifiAp",
+    "expected": "CAMERA",
+    "description": "70mai dashcam | SYNTHETIC v1.50 signature test; no authentic device RF",
+    "code": 6,
+    "text": "70mai_SQE"
+  },
+  {
+    "id": "V150-SSID-THINKWARE",
+    "carrier": "WIFI",
+    "kind": "WifiAp",
+    "expected": "CAMERA",
+    "description": "Thinkware dashcam | SYNTHETIC v1.50 signature test; no authentic device RF",
+    "code": 6,
+    "text": "thinkware_SQE"
+  },
+  {
+    "id": "V150-SSID-NEXTBASE",
+    "carrier": "WIFI",
+    "kind": "WifiAp",
+    "expected": "CAMERA",
+    "description": "Nextbase dashcam | SYNTHETIC v1.50 signature test; no authentic device RF",
+    "code": 6,
+    "text": "NEXTBASE 312GW SQE"
+  },
+  {
+    "id": "V150-SSID-ROVE",
+    "carrier": "WIFI",
+    "kind": "WifiAp",
+    "expected": "CAMERA",
+    "description": "Rove dashcam | SYNTHETIC v1.50 signature test; no authentic device RF",
+    "code": 6,
+    "text": "ROVE_R_SQE"
+  },
+  {
+    "id": "V150-SSID-REDTIGER",
+    "carrier": "WIFI",
+    "kind": "WifiAp",
+    "expected": "CAMERA",
+    "description": "Redtiger dashcam | SYNTHETIC v1.50 signature test; no authentic device RF",
+    "code": 6,
+    "text": "REDTIGER_SQE"
+  },
+  {
+    "id": "V150-SSID-LYTX",
+    "carrier": "WIFI",
+    "kind": "WifiAp",
+    "expected": "CAMERA",
+    "description": "Lytx fleet camera | SYNTHETIC v1.50 signature test; no authentic device RF",
+    "code": 6,
+    "text": "AuxCamera_SQE"
+  },
+  {
+    "id": "V150-SSID-HDWIFI",
+    "carrier": "WIFI",
+    "kind": "WifiAp",
+    "expected": "CAMERA",
+    "description": "HDWifiCam setup | SYNTHETIC v1.50 signature test; no authentic device RF",
+    "code": 6,
+    "text": "DGK-SQE"
+  },
+  {
+    "id": "V150-SSID-LOOKCAM-ACCQ",
+    "carrier": "WIFI",
+    "kind": "WifiAp",
+    "expected": "CAMERA",
+    "description": "LookCam ACCQ | SYNTHETIC v1.50 signature test; no authentic device RF",
+    "code": 6,
+    "text": "ACCQ-SQE"
+  },
+  {
+    "id": "V150-SSID-LOOKCAM-BCCQ",
+    "carrier": "WIFI",
+    "kind": "WifiAp",
+    "expected": "CAMERA",
+    "description": "LookCam BCCQ | SYNTHETIC v1.50 signature test; no authentic device RF",
+    "code": 6,
+    "text": "BCCQ-SQE"
+  },
+  {
+    "id": "V150-SSID-LOOKCAM-XCCQ",
+    "carrier": "WIFI",
+    "kind": "WifiAp",
+    "expected": "CAMERA",
+    "description": "LookCam XCCQ | SYNTHETIC v1.50 signature test; no authentic device RF",
+    "code": 6,
+    "text": "XCCQ-SQE"
+  },
+  {
+    "id": "V150-SSID-TINYCAM",
+    "carrier": "WIFI",
+    "kind": "WifiAp",
+    "expected": "CAMERA",
+    "description": "TinyCam setup | SYNTHETIC v1.50 signature test; no authentic device RF",
+    "code": 6,
+    "text": "HCAM-SQE"
+  },
+  {
+    "id": "V150-SSID-YCC365",
+    "carrier": "WIFI",
+    "kind": "WifiAp",
+    "expected": "CAMERA",
+    "description": "YCC365 CloudCam | SYNTHETIC v1.50 signature test; no authentic device RF",
+    "code": 6,
+    "text": "CLOUDCAM_SQE"
+  },
+  {
+    "id": "V150-SSID-SRICAM",
+    "carrier": "WIFI",
+    "kind": "WifiAp",
+    "expected": "CAMERA",
+    "description": "Sricam setup | SYNTHETIC v1.50 signature test; no authentic device RF",
+    "code": 6,
+    "text": "MEYE_SQE"
+  },
+  {
+    "id": "V150-SSID-YOOSEE",
+    "carrier": "WIFI",
+    "kind": "WifiAp",
+    "expected": "CAMERA",
+    "description": "Yoosee camera | SYNTHETIC v1.50 signature test; no authentic device RF",
+    "code": 6,
+    "text": "GW_IPC_SQE"
+  },
+  {
+    "id": "V150-SSID-ZOSI",
+    "carrier": "WIFI",
+    "kind": "WifiAp",
+    "expected": "CAMERA",
+    "description": "Zosi setup | SYNTHETIC v1.50 signature test; no authentic device RF",
+    "code": 6,
+    "text": "IPC_AP_SQE"
+  },
+  {
+    "id": "V150-SSID-GOOGLEHOME",
+    "carrier": "WIFI",
+    "kind": "WifiAp",
+    "expected": "LISTENER",
+    "description": "Google speaker setup | SYNTHETIC v1.50 signature test; no authentic device RF",
+    "code": 6,
+    "text": "GoogleHome1234"
+  },
+  {
+    "id": "V150-SSID-P2PCAM",
+    "carrier": "WIFI",
+    "kind": "WifiAp",
+    "expected": "CAMERA",
+    "description": "P2P hidden camera setup | SYNTHETIC v1.50 signature test; no authentic device RF",
+    "code": 6,
+    "text": "ABC-123456-ABCDE"
+  },
+  {
+    "id": "V150-SSID-V380",
+    "carrier": "WIFI",
+    "kind": "WifiAp",
+    "expected": "CAMERA",
+    "description": "V380 camera setup | SYNTHETIC v1.50 signature test; no authentic device RF",
+    "code": 6,
+    "text": "MV12345678"
+  },
+  {
+    "id": "V150-SSID-VANTRUE",
+    "carrier": "WIFI",
+    "kind": "WifiAp",
+    "expected": "CAMERA",
+    "description": "Vantrue dashcam | SYNTHETIC v1.50 signature test; no authentic device RF",
+    "code": 6,
+    "text": "E1_VANTRUE_SQE"
+  },
+  {
+    "id": "V150-SSID-NEG-CAM-PREFIX",
+    "carrier": "WIFI",
+    "kind": "WifiAp",
+    "expected": "NONE",
+    "description": "Generic camera-like SSID control | SYNTHETIC v1.50 signature test; no authentic device RF",
+    "code": 6,
+    "text": "CAM-SQE"
+  },
+  {
+    "id": "V150-OUI-ALPR-00047D",
+    "carrier": "WIFI",
+    "kind": "WifiAp",
+    "expected": "ALPR",
+    "description": "ALPR-Mtrla v1.50 OUI 00047D | SYNTHETIC v1.50 signature test; no authentic device RF",
+    "code": 6,
+    "text": "SQE-V150-00047D"
+  },
+  {
+    "id": "V150-OUI-ALPR-001885",
+    "carrier": "WIFI",
+    "kind": "WifiAp",
+    "expected": "ALPR",
+    "description": "ALPR-Mtrla v1.50 OUI 001885 | SYNTHETIC v1.50 signature test; no authentic device RF",
+    "code": 6,
+    "text": "SQE-V150-001885"
+  },
+  {
+    "id": "V150-OUI-ALPR-00BF15",
+    "carrier": "WIFI",
+    "kind": "WifiAp",
+    "expected": "ALPR",
+    "description": "ALPR-Gentec v1.50 OUI 00BF15 | SYNTHETIC v1.50 signature test; no authentic device RF",
+    "code": 6,
+    "text": "SQE-V150-00BF15"
+  },
+  {
+    "id": "V150-OUI-CAMERA-002542",
+    "carrier": "WIFI",
+    "kind": "WifiAp",
+    "expected": "CAMERA",
+    "description": "BlackVue v1.50 OUI 002542 | SYNTHETIC v1.50 signature test; no authentic device RF",
+    "code": 6,
+    "text": "SQE-V150-002542"
+  },
+  {
+    "id": "V150-OUI-CAMERA-4427F3",
+    "carrier": "WIFI",
+    "kind": "WifiAp",
+    "expected": "CAMERA",
+    "description": "70mai v1.50 OUI 4427F3 | SYNTHETIC v1.50 signature test; no authentic device RF",
+    "code": 6,
+    "text": "SQE-V150-4427F3"
+  },
+  {
+    "id": "V150-OUI-CAMERA-001F4F",
+    "carrier": "WIFI",
+    "kind": "WifiAp",
+    "expected": "CAMERA",
+    "description": "Thinkware v1.50 OUI 001F4F | SYNTHETIC v1.50 signature test; no authentic device RF",
+    "code": 6,
+    "text": "SQE-V150-001F4F"
+  },
+  {
+    "id": "V150-OUI-CAMERA-F0C88B",
+    "carrier": "WIFI",
+    "kind": "WifiAp",
+    "expected": "CAMERA",
+    "description": "Wyze v1.50 OUI F0C88B | SYNTHETIC v1.50 signature test; no authentic device RF",
+    "code": 6,
+    "text": "SQE-V150-F0C88B"
+  },
+  {
+    "id": "V150-OUI-CAMERA-80482C",
+    "carrier": "WIFI",
+    "kind": "WifiAp",
+    "expected": "CAMERA",
+    "description": "Wyze v1.50 OUI 80482C | SYNTHETIC v1.50 signature test; no authentic device RF",
+    "code": 6,
+    "text": "SQE-V150-80482C"
+  },
+  {
+    "id": "V150-OUI-CAMERA-F85128",
+    "carrier": "WIFI",
+    "kind": "WifiAp",
+    "expected": "CAMERA",
+    "description": "SimpliSafe v1.50 OUI F85128 | SYNTHETIC v1.50 signature test; no authentic device RF",
+    "code": 6,
+    "text": "SQE-V150-F85128"
+  },
+  {
+    "id": "V150-OUI-CAMERA-FCDB21",
+    "carrier": "WIFI",
+    "kind": "WifiAp",
+    "expected": "CAMERA",
+    "description": "Samsara v1.50 OUI FCDB21 | SYNTHETIC v1.50 signature test; no authentic device RF",
+    "code": 6,
+    "text": "SQE-V150-FCDB21"
+  },
+  {
+    "id": "V150-OUI-CAMERA-0016B2",
+    "carrier": "WIFI",
+    "kind": "WifiAp",
+    "expected": "CAMERA",
+    "description": "Lytx v1.50 OUI 0016B2 | SYNTHETIC v1.50 signature test; no authentic device RF",
+    "code": 6,
+    "text": "SQE-V150-0016B2"
+  },
+  {
+    "id": "V150-OUI-RING-AC9FC3",
+    "carrier": "WIFI",
+    "kind": "WifiAp",
+    "expected": "RING",
+    "description": "Ring v1.50 OUI AC9FC3 | SYNTHETIC v1.50 signature test; no authentic device RF",
+    "code": 6,
+    "text": "SQE-V150-AC9FC3"
+  },
+  {
+    "id": "V150-OUI-RING-187F88",
+    "carrier": "WIFI",
+    "kind": "WifiAp",
+    "expected": "RING",
+    "description": "Ring v1.50 OUI 187F88 | SYNTHETIC v1.50 signature test; no authentic device RF",
+    "code": 6,
+    "text": "SQE-V150-187F88"
+  },
+  {
+    "id": "V150-OUI-RING-FC65DE",
+    "carrier": "WIFI",
+    "kind": "WifiAp",
+    "expected": "RING",
+    "description": "Ring v1.50 OUI FC65DE | SYNTHETIC v1.50 signature test; no authentic device RF",
+    "code": 6,
+    "text": "SQE-V150-FC65DE"
+  },
+  {
+    "id": "V150-OUI-RING-242BD6",
+    "carrier": "WIFI",
+    "kind": "WifiAp",
+    "expected": "RING",
+    "description": "Ring v1.50 OUI 242BD6 | SYNTHETIC v1.50 signature test; no authentic device RF",
+    "code": 6,
+    "text": "SQE-V150-242BD6"
+  },
+  {
+    "id": "V150-OUI-LISTENER-000E58",
+    "carrier": "WIFI",
+    "kind": "WifiAp",
+    "expected": "LISTENER",
+    "description": "Sonos v1.50 OUI 000E58 | SYNTHETIC v1.50 signature test; no authentic device RF",
+    "code": 6,
+    "text": "SQE-V150-000E58"
+  },
+  {
+    "id": "V150-OUI-LISTENER-347E5C",
+    "carrier": "WIFI",
+    "kind": "WifiAp",
+    "expected": "LISTENER",
+    "description": "Sonos v1.50 OUI 347E5C | SYNTHETIC v1.50 signature test; no authentic device RF",
+    "code": 6,
+    "text": "SQE-V150-347E5C"
+  },
+  {
+    "id": "V150-OUI-LISTENER-38420B",
+    "carrier": "WIFI",
+    "kind": "WifiAp",
+    "expected": "LISTENER",
+    "description": "Sonos v1.50 OUI 38420B | SYNTHETIC v1.50 signature test; no authentic device RF",
+    "code": 6,
+    "text": "SQE-V150-38420B"
+  },
+  {
+    "id": "V150-OUI-META-28E888",
+    "carrier": "WIFI",
+    "kind": "WifiAp",
+    "expected": "META",
+    "description": "Rokid v1.50 OUI 28E888 | SYNTHETIC v1.50 signature test; no authentic device RF",
+    "code": 6,
+    "text": "SQE-V150-28E888"
+  },
+  {
+    "id": "V150-OUI-META-98DA92",
+    "carrier": "WIFI",
+    "kind": "WifiAp",
+    "expected": "META",
+    "description": "Vuzix v1.50 OUI 98DA92 | SYNTHETIC v1.50 signature test; no authentic device RF",
+    "code": 6,
+    "text": "SQE-V150-98DA92"
+  },
+  {
+    "id": "V150-OUI-FLOCK-B41E52",
+    "carrier": "WIFI",
+    "kind": "WifiAp",
+    "expected": "FLOCK",
+    "description": "Flock-MA-L v1.50 OUI B41E52 | SYNTHETIC v1.50 signature test; no authentic device RF",
+    "code": 6,
+    "text": "SQE-V150-B41E52"
+  },
+  {
+    "id": "V150-OUI-AXON-0025DF",
+    "carrier": "WIFI",
+    "kind": "WifiAp",
+    "expected": "AXON",
+    "description": "Axon v1.50 OUI 0025DF | SYNTHETIC v1.50 signature test; no authentic device RF",
+    "code": 6,
+    "text": "SQE-V150-0025DF"
+  },
+  {
+    "id": "V150-BLE-GOOGLE-DULT",
+    "carrier": "BLE",
+    "kind": "BleUuid",
+    "expected": "GOOGLE_TAG",
+    "description": "DULT unwanted tracker service | SYNTHETIC v1.50 signature test; no authentic device RF",
+    "code": 64690,
+    "text": null
+  },
+  {
+    "id": "V150-BLE-GOOGLE-CHIPOLO1",
+    "carrier": "BLE",
+    "kind": "BleUuid",
+    "expected": "GOOGLE_TAG",
+    "description": "Chipolo tracker UUID FE33 | SYNTHETIC v1.50 signature test; no authentic device RF",
+    "code": 65075,
+    "text": null
+  },
+  {
+    "id": "V150-BLE-GOOGLE-CHIPOLO2",
+    "carrier": "BLE",
+    "kind": "BleUuid",
+    "expected": "GOOGLE_TAG",
+    "description": "Chipolo tracker UUID FE65 | SYNTHETIC v1.50 signature test; no authentic device RF",
+    "code": 65125,
+    "text": null
+  },
+  {
+    "id": "V150-BLE-SONOS-UUID",
+    "carrier": "BLE",
+    "kind": "BleUuid",
+    "expected": "LISTENER",
+    "description": "Sonos speaker service UUID | SYNTHETIC v1.50 signature test; no authentic device RF",
+    "code": 65031,
+    "text": null
+  },
+  {
+    "id": "V150-BLE-TILE-FD84",
+    "carrier": "BLE",
+    "kind": "BleUuid",
+    "expected": "TILE",
+    "description": "Tile tracker third service UUID | SYNTHETIC v1.50 signature test; no authentic device RF",
+    "code": 64900,
+    "text": null
+  },
+  {
+    "id": "V150-BLE-AXON-FC81",
+    "carrier": "BLE",
+    "kind": "BleUuid",
+    "expected": "AXON",
+    "description": "Axon service UUID FC81 | SYNTHETIC v1.50 signature test; no authentic device RF",
+    "code": 64641,
+    "text": null
+  },
+  {
+    "id": "V150-BLE-AXON-FE6B",
+    "carrier": "BLE",
+    "kind": "BleUuid",
+    "expected": "AXON",
+    "description": "Axon service UUID FE6B | SYNTHETIC v1.50 signature test; no authentic device RF",
+    "code": 65131,
+    "text": null
+  },
+  {
+    "id": "V150-BLE-META-FEB7",
+    "carrier": "BLE",
+    "kind": "BleUuid",
+    "expected": "META",
+    "description": "Meta service UUID FEB7 | SYNTHETIC v1.50 signature test; no authentic device RF",
+    "code": 65207,
+    "text": null
+  },
+  {
+    "id": "V150-BLE-SNAP-FE45",
+    "carrier": "BLE",
+    "kind": "BleUuid",
+    "expected": "META",
+    "description": "Snap glasses service UUID | SYNTHETIC v1.50 signature test; no authentic device RF",
+    "code": 65093,
+    "text": null
+  },
+  {
+    "id": "V150-BLE-SONOS-MFG",
+    "carrier": "BLE",
+    "kind": "BleManufacturer",
+    "expected": "LISTENER",
+    "description": "Sonos company identifier | SYNTHETIC v1.50 signature test; no authentic device RF",
+    "code": 1447,
+    "text": null
+  },
+  {
+    "id": "V150-BLE-CHIPOLO-MFG",
+    "carrier": "BLE",
+    "kind": "BleManufacturer",
+    "expected": "GOOGLE_TAG",
+    "description": "Chipolo company identifier | SYNTHETIC v1.50 signature test; no authentic device RF",
+    "code": 2243,
+    "text": null
+  },
+  {
+    "id": "V150-BLE-VUZIX-MFG",
+    "carrier": "BLE",
+    "kind": "BleManufacturer",
+    "expected": "META",
+    "description": "Vuzix company identifier | SYNTHETIC v1.50 signature test; no authentic device RF",
+    "code": 1548,
+    "text": null
+  },
+  {
+    "id": "V150-BLE-AXON-MFG",
+    "carrier": "BLE",
+    "kind": "BleManufacturer",
+    "expected": "AXON",
+    "description": "Axon company identifier | SYNTHETIC v1.50 signature test; no authentic device RF",
+    "code": 845,
+    "text": null
+  },
+  {
+    "id": "V150-BLE-AIRTAG-NEAR",
+    "carrier": "BLE",
+    "kind": "BleManufacturer",
+    "expected": "AIRTAG",
+    "description": "AirTag with owner nearby advertising frame | SYNTHETIC v1.50 signature test; no authentic device RF",
+    "code": 76,
+    "text": null
+  },
+  {
+    "id": "V150-BLE-AIRTAG-UNPAIRED",
+    "carrier": "BLE",
+    "kind": "BleManufacturer",
+    "expected": "AIRTAG",
+    "description": "AirTag not paired advertising frame | SYNTHETIC v1.50 signature test; no authentic device RF",
+    "code": 76,
+    "text": null
+  },
+  {
+    "id": "V150-BLE-AIRPODS-NEG",
+    "carrier": "BLE",
+    "kind": "BleManufacturer",
+    "expected": "NONE",
+    "description": "Apple AirPods pairing frame must not match AirTag | SYNTHETIC v1.50 signature test; no authentic device RF",
+    "code": 76,
+    "text": null
+  },
+  {
+    "id": "V150-BLE-HOMEPOD-SIRI",
+    "carrier": "BLE",
+    "kind": "BleManufacturer",
+    "expected": "LISTENER",
+    "description": "HomePod Hey Siri manufacturer payload | SYNTHETIC v1.50 signature test; no authentic device RF",
+    "code": 76,
+    "text": null
+  },
+  {
+    "id": "V150-BLE-GOOGLE-FMDN40",
+    "carrier": "BLE",
+    "kind": "BleUuid",
+    "expected": "GOOGLE_TAG",
+    "description": "Google Find Hub FMDN service-data frame 40 | SYNTHETIC v1.50 signature test; no authentic device RF",
+    "code": 65194,
+    "text": null
+  },
+  {
+    "id": "V150-BLE-GOOGLE-FMDN41",
+    "carrier": "BLE",
+    "kind": "BleUuid",
+    "expected": "GOOGLE_TAG",
+    "description": "Google Find Hub FMDN service-data frame 41 | SYNTHETIC v1.50 signature test; no authentic device RF",
+    "code": 65194,
+    "text": null
+  },
+  {
+    "id": "V150-BLE-AXON-BWC",
+    "carrier": "BLE",
+    "kind": "BleName",
+    "expected": "AXON",
+    "description": "Axon BodyWorn BWCDEVICE raw advertisement match | SYNTHETIC v1.50 signature test; no authentic device RF",
+    "code": 0,
+    "text": "BWCDEVICE"
   }
 ]
