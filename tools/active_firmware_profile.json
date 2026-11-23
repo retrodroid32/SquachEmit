@@ -2,7 +2,7 @@
   "schema": 1,
   "scenario_count": 248,
   "firmware_sources": {
-    "src": "44e0d21d6dae50f6af661e02646bbf2fe4540f49",
+    "src": "907ba5689188d176b965807769978d0d3c034d64",
     "include": "31ac84752e389e195a5f86e53f4a3d90534cd12d",
     "lib": "bbb71a1b441d98f3ada5d709c4b67a1c3395d161",
     "SquachEmit.ino": "90b4205813a2f7885bc1e12ce7431eebf7249f45",
@@ -12,9 +12,9 @@
     "cyd32-st7798": {
       "title": "SquachEmit v1.1.0 CYD 3.2 R14.36 LAB — SquachWatch v1.50 Coverage (248 Cases)",
       "version": "v1.1.0 MAINLINE · 248 cases",
-      "summary": "R14.36 LAB compares the pinned SquachWatch v1.50.0 detection library and expands SquachEmit from 172 to 248 synthetic BLE/Wi-Fi cases (66 added). Corrects 24 outdated expected labels, adds 22 OUI beacons, 24 SSID fixtures, 9 BLE UUID, 4 manufacturer and 7 special BLE payload cases. New categories include ALPR, CAMERA, RING, LISTENER and GOOGLE_TAG. Source matrix maps 105 of 220 explicit v1.50 table entries to candidate tests. Preserves R14.33 battery calibration and animations. Four-part SHA-256 packaging. Hardware reception NOT verified. Inclu Hardware verification pending.",
+      "summary": "R14.36 LAB compares the pinned SquachWatch v1.50.0 detection library and expands SquachEmit from 172 to 248 synthetic BLE/Wi-Fi cases (66 added). Corrects 24 outdated expected labels, adds 22 OUI beacons, 24 SSID fixtures, 9 BLE UUID, 4 manufacturer and 7 special BLE payload cases. New categories include ALPR, CAMERA, RING, LISTENER and GOOGLE_TAG. Source matrix maps 105 of 220 explicit v1.50 table entries to candidate tests. Preserves R14.33 battery calibration and animations. Four-part SHA-256 packaging. Hardware reception NOT verified. Inclu Hardware validation pending.",
       "highlights": [
-        "66 new v1.50.0-derived synthetic signal fixtures, 248 total; original 172 stable IDs preserved. Includes 10 fork-only OUI tests.",
+        "Hardware: active Wi-Fi BSSID readback with one bounded SoftAP recovery; 248 test cases.",
         "24 stale expected results corrected; negative-control detection prevents false positives.",
         "Camera/dashcam, Ring, ALPR, Listener, Google Find Hub, HomePod and AirTag tests added.",
         "22 temporary source-matched vendor-prefix AP MACs with synthetic suffixes; not authentic devices.",
@@ -28,7 +28,7 @@
       "version": "v1.1.0 MAINLINE · 248 cases",
       "summary": "R14.36 LAB shares the full 248-case synthetic BLE/Wi-Fi catalog and 14 device categories with the CYD3.2 and S3: 66 new SquachWatch v1.50 signal fixtures, 24 corrected expected classifications and a pinned signature-source audit. All 248 are manual, bounded TEST/RUN/STOP scenarios. Does not claim LoRaWAN or Wi-Fi deauth/EvilTwin validation. Four-part SHA-256 flashing preflight. Physical C5 verification pending. Includes ten SquachWatch fork-only OUI fixture tests (Flock, drones, skimmer and Flipper). Physical receiver verification pending.",
       "highlights": [
-        "248 bounded BLE and Wi-Fi synthetic test cases; 66 new v1.50 fixtures.",
+        "Hardware: active Wi-Fi BSSID readback with one bounded SoftAP recovery; 248 test cases.",
         "24 expected-label corrections and source-pinned signature matrix.",
         "14 alphabetically sorted device test categories.",
         "No actual vendor/device authentication; restricted to normal BLE and Wi-Fi test frames.",
@@ -42,7 +42,7 @@
       "version": "v1.1.0 MAINLINE · 248 cases",
       "summary": "R14.36 LAB provides 248 time-bounded synthetic BLE/Wi-Fi test scenarios on the ESP32-S3 serial development target, including 66 new upstream SquachWatch v1.50 signature fixtures and 24 corrected expected labels. The source matrix identifies candidate coverage for 105 of 220 v1.50 signature-table rules; no physical receiver results are claimed. No LoRaWAN/deauth/EvilTwin proof. Four-part SHA-256 verified flashing preflight; physical S3 verification pending. Includes ten SquachWatch fork-only OUI fixture tests (Flock, drones, skimmer and Flipper). Physical receiver verification pending.",
       "highlights": [
-        "248 manual RUN/STOP/SUITE scenarios, including 66 v1.50 synthetic additions.",
+        "Hardware: active Wi-Fi BSSID readback with one bounded SoftAP recovery; 248 test cases.",
         "Source-verified 24 corrected expected labels.",
         "BLE FMDN, HomePod and AirTag frame pattern tests; Wi-Fi camera/Ring/ALPR prefixes.",
         "No proprietary transmitter or authenticated device impersonation.",
