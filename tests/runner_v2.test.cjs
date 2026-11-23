@@ -23,7 +23,7 @@ test('reject unknown, malformed, missing and non-current catalogs',()=>{
   s.setItem(v2.KEY,'{broken json');assert.equal(v2.read(s,ids),null);
 });
 test('reject invalid durations, oversized queues and impossible progress',()=>{
-  for(const patch of [{index:239},{completed:12},{duration:2},{gap:31},
+  for(const patch of [{index:249},{completed:12},{duration:2},{gap:31},
     {index:-1},{queue:[]}]) {
     assert.throws(()=>v2.createSnapshot({...batch(),...patch}));
   }
