@@ -4,7 +4,7 @@
 
 // Default identities are deterministic, locally administered (Wi-Fi) or
 // static-random (BLE), with no modification of permanent eFuse addresses.
-// Catalog indices 0..171 fit the nonzero final-octet scheme (max 253).
+// 16-bit catalog index in the last two MAC octets (up to 65535 cases).\n// Preserve legacy addresses for indices 0..254; expand after 255 cases.
 // Exception: 37 named OUI-only Wi-Fi cases in src/main.cpp replace their
 // temporary SoftAP MAC's 24/28/36-bit prefix with a registered manufacturer
 // allocation. An OUI match is only a spoofable vendor clue, NOT device proof.
@@ -15,7 +15,7 @@ inline void derive(uint64_t efuse, size_t scenarioIndex, Radio radio, uint8_t ou
     out[1] = (uint8_t)(efuse);
     out[2] = (uint8_t)(efuse >> 8);
     out[3] = (uint8_t)(efuse >> 16);
-    out[4] = (uint8_t)(efuse >> 24);
+    out[4] = (uint8_t)((efuse >> 24) ^ ((scenarioIndex + 1) >> 8));
     out[5] = (uint8_t)(scenarioIndex + 1);
 }
 inline void text(const uint8_t addr[6], char out[18]) {
