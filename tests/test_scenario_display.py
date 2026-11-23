@@ -15,7 +15,7 @@ class ScenarioDisplayTests(unittest.TestCase):
 #include <cstdio>
 #include <cstring>
 int main() {
-    assert(kScenarioCount == 172);
+    assert(kScenarioCount == 238);
     for(size_t i=0;i<kScenarioCount;++i){
         char label[80]={0};
         scenarioDeviceName(kScenarios[i],label,sizeof label);
