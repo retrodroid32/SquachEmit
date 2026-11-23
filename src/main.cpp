@@ -11,6 +11,7 @@
 #include "identity.h"
 #include "dji_oui_lab.h"
 #include "uav_vendor_oui_lab.h"
+#include "squach_v150_oui_lab.h"
 #if defined(SQE_WAVESHARE_C5)
 #include "c5_ui.h"
 #elif defined(SQE_CYD32)
@@ -87,13 +88,17 @@ static bool deriveIdentity(const Scenario* s, bool wifi, uint8_t out[6]) {
   g_radioIdentity = (uint32_t)index + 1u;
   SquachIdentity::derive(ESP.getEfuseMac(), index,
         wifi ? SquachIdentity::Radio::Wifi : SquachIdentity::Radio::Ble, out);
-  // Only the 37 explicit OUI-only Wi-Fi cases use registered prefixes.
-  // Other Wi-Fi cases retain LAA; BLE retains a static-random address.
+  // The 37 original UAS OUI fixtures and 22 new v1.50 signature fixtures
+  // use source-pinned vendor prefixes; other cases remain LAA/static random.
+  // A synthetic prefix is never proof of an actual branded device.
   if (wifi && SquachDjiOuiLab::find(s->id)) {
     if (!SquachDjiOuiLab::apply(s->id,out)) return false;
   }
   if (wifi && SquachUavVendorLab::find(s->id)) {
     if (!SquachUavVendorLab::apply(s->id,out)) return false;
+  }
+  if (wifi && SquachV150OuiLab::find(s->id)) {
+    if (!SquachV150OuiLab::apply(s->id,out)) return false;
   }
   SquachIdentity::text(out, g_address);
   return true;
@@ -307,7 +312,13 @@ static bool advertiseBle(const Scenario* s) {
   bool ok = false;
   switch (s->kind) {
     case Kind::BleUuid:
-      ok = data.setCompleteServices(NimBLEUUID(s->code));
+      if (!strcmp(s->id,"V150-BLE-GOOGLE-FMDN40") ||
+          !strcmp(s->id,"V150-BLE-GOOGLE-FMDN41")) {
+        // Find Hub service data, not merely the ubiquitous Eddystone UUID.
+        const uint8_t value[]={ (uint8_t)(!strcmp(s->id,"V150-BLE-GOOGLE-FMDN40")?0x40:0x41),
+                                 0x53,0x51,0x45 };
+        ok=data.setServiceData(NimBLEUUID((uint16_t)0xFEAA),value,sizeof(value));
+      }else ok = data.setCompleteServices(NimBLEUUID(s->code));
       break;
     case Kind::BleName:
       ok = data.setName(s->text);
@@ -327,6 +338,24 @@ static bool advertiseBle(const Scenario* s) {
         // Test fixture, not a complete real AirTag state machine.
         const uint8_t payload[] = {0x4C, 0x00, 0x12, 0x19, 0x01, 0x02};
         ok = data.setManufacturerData(payload, sizeof(payload));
+      } else if (!strcmp(s->id,"V150-BLE-AIRTAG-NEAR")){
+        // Apple's FindMy owner-nearby pattern, not an actual key or identity.
+        const uint8_t payload[]={0x4C,0x00,0x12,0x02,0x20,0x53,0x51};
+        ok=data.setManufacturerData(payload,sizeof(payload));
+      } else if (!strcmp(s->id,"V150-BLE-AIRTAG-UNPAIRED")){
+        // Unpaired AirTag model 00 55; neighboring Apple headphone IDs
+        // must NOT be misclassified as tracking tags.
+        const uint8_t payload[]={0x4C,0x00,0x07,0x19,0x05,0x00,0x55,0x10,0x00};
+        ok=data.setManufacturerData(payload,sizeof(payload));
+      } else if (!strcmp(s->id,"V150-BLE-AIRPODS-NEG")){
+        const uint8_t payload[]={0x4C,0x00,0x07,0x19,0x05,0x00,0x0E,0x20,0x00};
+        ok=data.setManufacturerData(payload,sizeof(payload));
+      } else if (!strcmp(s->id,"V150-BLE-HOMEPOD-SIRI")){
+        // Apple's type 08, length 07 "Hey Siri" continuity event, HomePod
+        // class 0x0007. This does not claim a real microphone was activated.
+        const uint8_t payload[]={0x4C,0x00,0x08,0x07,0x01,0x02,0x03,
+                                 0x04,0x00,0x07,0x00};
+        ok=data.setManufacturerData(payload,sizeof(payload));
       } else if (strcmp(s->id, "BLE-IBEACON") == 0 ||
                  strcmp(s->id, "BLE-IBEACON-V2") == 0) {
         // 25-byte mfg data: Apple CID, iBeacon marker, 16-byte UUID,
@@ -387,7 +416,8 @@ static void cancelAll() {
 
 static bool isOuiOnly(const Scenario* s) {
   return s && (SquachDjiOuiLab::find(s->id)!=nullptr ||
-               SquachUavVendorLab::find(s->id)!=nullptr);
+               SquachUavVendorLab::find(s->id)!=nullptr ||
+               SquachV150OuiLab::find(s->id)!=nullptr);
 }
 // CYD 3.2 time selection controls touchscreen RUN and every SUITE case.
 // Other boards keep their existing 12-second default.
