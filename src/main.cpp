@@ -12,6 +12,7 @@
 #include "dji_oui_lab.h"
 #include "uav_vendor_oui_lab.h"
 #include "squach_v150_oui_lab.h"
+#include "squach_fork_oui_lab.h"
 #if defined(SQE_WAVESHARE_C5)
 #include "c5_ui.h"
 #elif defined(SQE_CYD32)
@@ -99,6 +100,9 @@ static bool deriveIdentity(const Scenario* s, bool wifi, uint8_t out[6]) {
   }
   if (wifi && SquachV150OuiLab::find(s->id)) {
     if (!SquachV150OuiLab::apply(s->id,out)) return false;
+  }
+  if (wifi && SquachForkOuiLab::find(s->id)) {
+    if (!SquachForkOuiLab::apply(s->id,out)) return false;
   }
   SquachIdentity::text(out, g_address);
   return true;
