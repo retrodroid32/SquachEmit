@@ -14,8 +14,8 @@ class ExtendedVendorOuiTests(unittest.TestCase):
   catalog=json.loads((ROOT/"tests/cases.json").read_text())
   by_id={x["id"]:x for x in catalog}
   self.assertEqual(len(entries),27)
-  self.assertEqual(len(catalog),172)
-  self.assertEqual(len(by_id),172)
+  self.assertEqual(len(catalog),238)
+  self.assertEqual(len(by_id),238)
   self.assertEqual(len({x["prefixHex"] for x in entries}),27)
   for item in entries:
    self.assertEqual(len(item["prefixHex"])*4,item["bits"])
