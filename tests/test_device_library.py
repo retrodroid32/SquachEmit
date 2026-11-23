@@ -55,8 +55,8 @@ int main() {
         self.assertEqual(category_names, sorted(category_names))
         self.assertEqual(len(grouped), 14)
         all_ids=[case for values in grouped.values() for case in values]
-        self.assertEqual(len(all_ids),248)
-        self.assertEqual(len(set(all_ids)),248)
+        self.assertEqual(len(all_ids),362)
+        self.assertEqual(len(set(all_ids)),362)
         self.assertEqual(set(all_ids),set(known))
         for cases in grouped.values():
             self.assertEqual(cases,sorted(cases))
@@ -69,7 +69,7 @@ int main() {
         self.assertIn("OUI-DJI-04A85A",drones)
         self.assertEqual(len([s for s in drones if s.startswith("OUI-DJI-")]),10)
         self.assertEqual(len([s for s in drones if s.startswith("OUI-")]),37)
-        self.assertTrue(all(s.startswith(("RID-","OUI-","FORK-OUI-")) or s in ("BLE-DRONE","BLE-NEG-DRONE-UUID") for s in drones))
+        self.assertTrue(all(s.startswith(("RID-","OUI-","FORK-OUI-","V150-")) or s in ("BLE-DRONE","BLE-NEG-DRONE-UUID") for s in drones))
         self.assertNotIn("BLE-DRONE",by_name["GENERAL / CONTROLS"])
         self.assertIn("FORK-OUI-DRONE-B030C8",drones)
         self.assertIn("FORK-OUI-FLOCK-3C71BF",by_name["FLOCK"])

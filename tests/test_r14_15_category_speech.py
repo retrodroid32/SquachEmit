@@ -32,7 +32,7 @@ int main(){
  size_t sum=0;
  for(size_t c=0;c<kDeviceCategoryCount;c++)
    sum+=deviceCategoryCaseCount((DeviceCategory)c);
- assert(sum==248);
+ assert(sum==362);
  for(size_t i=0;i<kScenarioCount;i++){
    assert((unsigned)deviceCategory(kScenarios[i])<kDeviceCategoryCount);
  }
