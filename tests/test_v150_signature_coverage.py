@@ -38,8 +38,8 @@ class V150SignatureCoverage(unittest.TestCase):
         self.assertEqual(m["physical_receiver_validation"],"NOT PERFORMED")
 
     def test_catalog_is_bounded_and_includes_new_family_tests(self):
-        self.assertEqual(len(self.cases),238)
-        self.assertEqual(len(self.byid),238)
+        self.assertEqual(len(self.cases),248)
+        self.assertEqual(len(self.byid),248)
         self.assertEqual(len([x for x in self.cases if x["id"].startswith("V150-")]),66)
         self.assertLess(len(self.cases),254)  # per-case identity index limit
         positive={c["expected"] for c in self.cases if c["expected"]!="NONE"}
