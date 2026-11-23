@@ -2,8 +2,8 @@
   "schema": 1,
   "scenario_count": 248,
   "firmware_sources": {
-    "src": "3c361c557a0062b66947b3a688ae76a36cc66898",
-    "include": "b0a2328b8edca7e9ae8c2bcff3e08d85a0a3cf20",
+    "src": "44e0d21d6dae50f6af661e02646bbf2fe4540f49",
+    "include": "31ac84752e389e195a5f86e53f4a3d90534cd12d",
     "lib": "bbb71a1b441d98f3ada5d709c4b67a1c3395d161",
     "SquachEmit.ino": "90b4205813a2f7885bc1e12ce7431eebf7249f45",
     "platformio.ini": "c3ff3725248b4c67d60da6903982515031c501f6"
