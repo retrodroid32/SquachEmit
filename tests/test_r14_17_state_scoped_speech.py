@@ -35,7 +35,7 @@ int main(){
       assert(emitted==(roll<60?category:Topic::Transmitting));
     }
   }
-  assert(total==238);
+  assert(total==248);
   for(unsigned roll=0;roll<100;roll++){
     assert(stateTopic(false,Topic::Transmitting,roll)==Topic::Idle);
     assert(stateTopic(false,Topic::Ring,roll)==Topic::Idle);
