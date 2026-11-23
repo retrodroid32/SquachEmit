@@ -2140,5 +2140,95 @@
     "description": "Axon BodyWorn BWCDEVICE raw advertisement match | SYNTHETIC v1.50 signature test; no authentic device RF",
     "code": 0,
     "text": "BWCDEVICE"
+  },
+  {
+    "id": "FORK-OUI-FLOCK-3C71BF",
+    "carrier": "WIFI",
+    "kind": "WifiAp",
+    "expected": "FLOCK",
+    "description": "Flock-Field fork-only OUI 3C71BF | SYNTHETIC; no authentic device RF",
+    "code": 6,
+    "text": "SQE-FORK-3C71BF"
+  },
+  {
+    "id": "FORK-OUI-FLOCK-4827EA",
+    "carrier": "WIFI",
+    "kind": "WifiAp",
+    "expected": "FLOCK",
+    "description": "Flock-Field fork-only OUI 4827EA | SYNTHETIC; no authentic device RF",
+    "code": 6,
+    "text": "SQE-FORK-4827EA"
+  },
+  {
+    "id": "FORK-OUI-FLOCK-A4CF12",
+    "carrier": "WIFI",
+    "kind": "WifiAp",
+    "expected": "FLOCK",
+    "description": "Flock-Field fork-only OUI A4CF12 | SYNTHETIC; no authentic device RF",
+    "code": 6,
+    "text": "SQE-FORK-A4CF12"
+  },
+  {
+    "id": "FORK-OUI-DRONE-B030C8",
+    "carrier": "WIFI",
+    "kind": "WifiAp",
+    "expected": "DRONE",
+    "description": "Teal fork-only OUI B030C8 | SYNTHETIC; no authentic device RF",
+    "code": 6,
+    "text": "SQE-FORK-B030C8"
+  },
+  {
+    "id": "FORK-OUI-DRONE-EC715E",
+    "carrier": "WIFI",
+    "kind": "WifiAp",
+    "expected": "DRONE",
+    "description": "Freefly fork-only OUI EC715E | SYNTHETIC; no authentic device RF",
+    "code": 6,
+    "text": "SQE-FORK-EC715E"
+  },
+  {
+    "id": "FORK-OUI-DRONE-001AF9",
+    "carrier": "WIFI",
+    "kind": "WifiAp",
+    "expected": "DRONE",
+    "description": "AeroViron fork-only OUI 001AF9 | SYNTHETIC; no authentic device RF",
+    "code": 6,
+    "text": "SQE-FORK-001AF9"
+  },
+  {
+    "id": "FORK-OUI-DRONE-547D40",
+    "carrier": "WIFI",
+    "kind": "WifiAp",
+    "expected": "DRONE",
+    "description": "PowerVis fork-only OUI 547D40 | SYNTHETIC; no authentic device RF",
+    "code": 6,
+    "text": "SQE-FORK-547D40"
+  },
+  {
+    "id": "FORK-OUI-DRONE-74B80F",
+    "carrier": "WIFI",
+    "kind": "WifiAp",
+    "expected": "DRONE",
+    "description": "Zipline fork-only OUI 74B80F | SYNTHETIC; no authentic device RF",
+    "code": 6,
+    "text": "SQE-FORK-74B80F"
+  },
+  {
+    "id": "FORK-OUI-SKIMMER-98D300",
+    "carrier": "WIFI",
+    "kind": "WifiAp",
+    "expected": "SKIMMER",
+    "description": "Skim-SPP fork-only OUI 98D300 | SYNTHETIC; no authentic device RF",
+    "code": 6,
+    "text": "SQE-FORK-98D300"
+  },
+  {
+    "id": "FORK-OUI-HACKER-0CFA22",
+    "carrier": "WIFI",
+    "kind": "WifiAp",
+    "expected": "HACKER",
+    "description": "Flipper fork-only OUI 0CFA22 | SYNTHETIC; no authentic device RF",
+    "code": 6,
+    "text": "SQE-FORK-0CFA22"
   }
 ]
