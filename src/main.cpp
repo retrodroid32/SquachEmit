@@ -729,14 +729,14 @@ void setup() {
   while (!Serial && millis() - t0 < 1800) delay(10);
   WiFi.mode(WIFI_OFF);
   #if defined(SQE_WAVESHARE_C5)
-  Serial.println("BOOT,SquachEmit,v1.1.0,ESP32-C5-Waveshare-2.8,172-CASES");
+  Serial.printf("BOOT,SquachEmit,v1.1.0,ESP32-C5-Waveshare-2.8,%u-CASES\n", (unsigned)kScenarioCount);
   c5UiBegin();
 #elif defined(SQE_CYD32)
-  Serial.println("BOOT,SquachEmit,v1.1.0,ESP32-2432S032R-ST7798,172-CASES-TXTIME");
+  Serial.printf("BOOT,SquachEmit,v1.1.0,ESP32-2432S032R-ST7798,%u-CASES-TXTIME\n", (unsigned)kScenarioCount);
   cyd32UiBegin();
   cyd32UiSetResetReason((unsigned)esp_reset_reason());
 #else
-  Serial.println("BOOT,SquachEmit,v1.1.0,ESP32-S3,172-CASES");
+  Serial.printf("BOOT,SquachEmit,v1.1.0,ESP32-S3,%u-CASES\n", (unsigned)kScenarioCount);
 #endif
   help();
 }
