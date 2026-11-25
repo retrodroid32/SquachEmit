@@ -1,4 +1,4 @@
-"""Audit actual on-air identity exceptions in the 172-case v1.1.0 catalog.
+"""Audit actual on-air identity exceptions in the 362-case v1.1.0 LAB catalog.
 
 This compiles the *same* C++ identity/registered-OUI helpers used by the
 firmware. It cannot prove physical RF reception or manufacturer authenticity.
@@ -18,7 +18,7 @@ class OnAirIdentityAudit(unittest.TestCase):
         cases=json.loads((ROOT/'tests/cases.json').read_text())
         ids=[x['id'] for x in cases]
         oui_cases=[x for x in cases if x['id'].startswith('OUI-')]
-        self.assertEqual(len(cases),172)
+        self.assertEqual(len(cases),362)
         self.assertEqual(len(ids),len(set(ids)))
         self.assertEqual(len(oui_cases),37)
         self.assertEqual(sum(x['id'].startswith('OUI-DJI-') for x in oui_cases),10)
@@ -41,6 +41,7 @@ class OnAirIdentityAudit(unittest.TestCase):
         if not compiler:self.skipTest('C++ compiler not installed')
         cpp=r'''
 #include "identity.h"
+#include "squach_fork_oui_lab.h"
 #include "dji_oui_lab.h"
 #include "uav_vendor_oui_lab.h"
 #include <cassert>
@@ -51,7 +52,7 @@ int main() {
  static_assert(SquachDjiOuiLab::kCount==10, "DJI count");
  static_assert(SquachUavVendorLab::kCount==27, "extended UAS count");
  std::set<std::string> ids;
- for(size_t i=0;i<172;++i) {
+ for(size_t i=0;i<362;++i) {
    uint8_t w[6],b[6];char tmp[18];
    SquachIdentity::derive(0x112233445566ULL,i,SquachIdentity::Radio::Wifi,w);
    SquachIdentity::derive(0x112233445566ULL,i,SquachIdentity::Radio::Ble,b);
@@ -59,7 +60,15 @@ int main() {
    SquachIdentity::text(w,tmp);assert(ids.insert(tmp).second);
    SquachIdentity::text(b,tmp);assert(ids.insert(tmp).second);
  }
- assert(ids.size()==344);
+ assert(ids.size()==724);
+ static_assert(SquachForkOuiLab::kCount==10,"fork-only count");
+ for(size_t i=0;i<SquachForkOuiLab::kCount;++i){
+   uint8_t a[6]={2,1,2,3,4,5};
+   const auto &entry=SquachForkOuiLab::kCases[i];
+   assert(SquachForkOuiLab::apply(entry.id,a));
+   assert(memcmp(a,entry.prefix,3)==0);
+   assert(a[3]==3&&a[4]==4&&a[5]==5);
+ }
  for(size_t i=0;i<SquachDjiOuiLab::kCount;++i) {
    const auto& e=SquachDjiOuiLab::kCases[i];
    uint8_t a[6],before[6];

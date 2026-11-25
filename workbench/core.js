@@ -10,7 +10,8 @@
     'emission','window','observed','latency_ms','notes'];
   var LABELS = ['NONE','FLOCK','DRONE','AXON','RAVEN','AIRTAG','TILE',
     'SAMSUNG_TAG','GOOGLE_TAG','META','IBEACON','SKIMMER','HACKER',
-    'ALPR','CAMERA','RING','DEAUTH','EVILTWIN','UNKNOWN'];
+    'ALPR','CAMERA','RING','LISTENER','LORAWAN','MINE',
+    'DEAUTH','EVILTWIN','UNKNOWN'];
   var HEX_SHA = /^[0-9a-f]{7,40}$/i;
   var CASE_ID = /^[A-Z0-9][A-Z0-9_-]{1,100}$/;
   function trim(x) { return x == null ? '' : String(x).trim(); }
@@ -308,7 +309,19 @@
     var device='',method='';
     // Explicit names for ALL fixture families, including negative controls.
     // These are recognizable test labels, never identity/authenticity claims.
-    if(id.startsWith('OUI-')) {
+    if(id.startsWith('V150-')) {
+      // Names come from the reviewed source-pinned fixture description,
+      // not an inferred actual device. Unknown IDs still fail closed.
+      device=desc.split('|')[0].trim();
+      if(!device||!(desc.includes('SYNTHETIC')||desc.includes('synthetic')))
+        throw Error('Missing v1.50 fixture label for '+id);
+      method='synthetic '+(c.carrier==='WIFI'?'Wi-Fi':'BLE')+
+             ' '+(c.kind==='WifiAp'?'beacon':'advertisement')+
+             '; v1.50 receiver category '+expected;
+    } else if(id.startsWith('FORK-OUI-')) {
+      device=desc.split('|')[0].trim();
+      method='synthetic fork-only manufacturer Wi-Fi MAC beacon; no Remote ID';
+    } else if(id.startsWith('OUI-')) {
       device=desc.split('|')[0].trim();
       method='synthetic manufacturer Wi-Fi MAC beacon; NO Remote ID';
     } else if(id.startsWith('RID-')) {
@@ -386,7 +399,7 @@
       method=desc+' (negative control)';
     } else {
       // Fail closed rather than silently displaying an anonymous case
-      // when the firmware catalog grows beyond the reviewed 172 names.
+      // when the firmware catalog grows beyond the reviewed v1.50 fixture names.
       throw Error('No device name mapped for signal '+id);
     }
     return device+' — '+method;

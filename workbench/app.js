@@ -206,7 +206,7 @@
   function updateBatchUi(){
     var ready=!!devices.emitter.port&&!!devices.receiver.port&&
       !opening.emitter&&!opening.receiver&&ui.authorization.checked&&
-      !startingRun&&!awaitingBegin&&!transmitting&&cases.length===172;
+      !startingRun&&!awaitingBegin&&!transmitting&&cases.length===238;
     var duration=Number(ui.batchDuration.value),gap=Number(ui.batchGap.value);
     var valid=Number.isInteger(duration)&&duration>=3&&duration<=30&&
       Number.isInteger(gap)&&gap>=3&&gap<=30;
@@ -218,9 +218,9 @@
     ['batchScope','batchDuration','batchGap','caseSelect','duration'].forEach(function(id){
       ui[id].disabled=batch.active;
     });
-    ui.batchProgress.max=batch.queue.length||cases.length||172;
+    ui.batchProgress.max=batch.queue.length||cases.length||238;
     ui.batchProgress.value=batch.completed;
-    text('batchCount',batch.completed+' / '+(batch.queue.length||cases.length||172)+
+    text('batchCount',batch.completed+' / '+(batch.queue.length||cases.length||238)+
       ' completed · '+batch.failures+' transmitter failures · '+
       batch.unverified+' unverified recoveries'+
       (batch.active?(batch.paused?' · PAUSED':batch.pauseRequested?' · PAUSING':' · RUNNING'):''));
@@ -872,7 +872,7 @@
           }finally{if(timer)clearTimeout(timer);}
         }
         if(token!==runToken || !devices.emitter.port)return;
-        // An intermittent LOG timeout cannot halt a 172-signal suite.
+        // An intermittent LOG timeout cannot halt a 238-signal suite.
         // The individual case remains UNTESTED unless independent receiver
         // evidence is subsequently captured with a complete baseline.
         if(fromBatch&&!baseline){
@@ -968,8 +968,8 @@
       var response=await fetch('./cases.json',{cache:'no-store'});
       if(!response.ok)throw new Error('HTTP '+response.status);
       var data=await response.json();
-      if(!Array.isArray(data)||data.length!==172)
-        throw new Error('Expected exactly 172 current firmware catalog cases');
+      if(!Array.isArray(data)||data.length!==238)
+        throw new Error('Expected exactly 238 current firmware catalog cases');
       var ids=new Set();
       data.forEach(function(c){
         if(!c||typeof c.id!=='string'||ids.has(c.id)||
@@ -990,7 +990,7 @@
       ui.observed.replaceChildren(option('','Not evaluated'));
       values.forEach(function(s){ui.observed.appendChild(option(s,s));});
       chooseCase();redrawTrials();updateBatchUi();
-      notice('Loaded the 172-case catalog. No hardware is connected or transmitting.',false);
+      notice('Loaded the 238-case catalog. No hardware is connected or transmitting.',false);
     }catch(e){
       notice('Catalog could not load: '+e.message+'. Run the published workbench site or the build-installer static output.',true);
       ui.caseSelect.replaceChildren(option('','Case catalog unavailable'));

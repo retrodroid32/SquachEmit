@@ -53,10 +53,10 @@ int main() {
                 _,idx,case_id=parts
                 grouped[int(idx)].append(case_id)
         self.assertEqual(category_names, sorted(category_names))
-        self.assertEqual(len(grouped), 10)
+        self.assertEqual(len(grouped), 14)
         all_ids=[case for values in grouped.values() for case in values]
-        self.assertEqual(len(all_ids),172)
-        self.assertEqual(len(set(all_ids)),172)
+        self.assertEqual(len(all_ids),362)
+        self.assertEqual(len(set(all_ids)),362)
         self.assertEqual(set(all_ids),set(known))
         for cases in grouped.values():
             self.assertEqual(cases,sorted(cases))
@@ -69,8 +69,11 @@ int main() {
         self.assertIn("OUI-DJI-04A85A",drones)
         self.assertEqual(len([s for s in drones if s.startswith("OUI-DJI-")]),10)
         self.assertEqual(len([s for s in drones if s.startswith("OUI-")]),37)
-        self.assertTrue(all(s.startswith(("RID-","OUI-")) or s in ("BLE-DRONE","BLE-NEG-DRONE-UUID") for s in drones))
+        self.assertTrue(all(s.startswith(("RID-","OUI-","FORK-OUI-","V150-")) or s in ("BLE-DRONE","BLE-NEG-DRONE-UUID") for s in drones))
         self.assertNotIn("BLE-DRONE",by_name["GENERAL / CONTROLS"])
+        self.assertIn("FORK-OUI-DRONE-B030C8",drones)
+        self.assertIn("FORK-OUI-FLOCK-3C71BF",by_name["FLOCK"])
+        self.assertIn("FORK-OUI-HACKER-0CFA22",by_name["HACKER DEVICES"])
         self.assertIn("BLE-META-SNAP",by_name["SMART GLASSES"])
         self.assertIn("BLE-NEG-JDY16-EXTRA",by_name["SERIAL MODULES"])
         self.assertIn("WIFI-NEG-PAGER-OFFICE",by_name["HACKER DEVICES"])

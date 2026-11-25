@@ -1,5 +1,22 @@
 # Device-type test library (CYD 3.2 LAB)
 
+## R14.37 LAB — upstream v1.50.0 plus fork-only signatures (362 fixtures)
+
+This LAB extends the public 172-case catalog by 66 upstream-derived and
+10 fork-only synthetic fixtures, and corrects 24 expected labels against the pinned
+SquachWatch v1.50.0 source. Its **14** alphabetic device libraries are:
+ALPR; AXON; CAMERAS / DASHCAMS; DRONES / REMOTE ID; FLOCK;
+GENERAL / CONTROLS; HACKER DEVICES; IBEACON; LISTENERS; RAVEN; RING;
+SERIAL MODULES; SMART GLASSES; TRACKERS.
+
+Every case remains in exactly one library. Presence of a vendor-looking
+SSID/BLE field/OUI is not authentication of any real device.
+R14.36 physical RF verification is **PENDING**. See
+[the complete pinned audit](SQUACHWATCH_V150_COVERAGE.md).
+
+---
+
+
 The test library is grouped by **device type**, not radio bearer.
 Categories, in alphabetical order:
 

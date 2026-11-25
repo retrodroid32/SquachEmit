@@ -11,6 +11,9 @@
 #include "identity.h"
 #include "dji_oui_lab.h"
 #include "uav_vendor_oui_lab.h"
+#include "squach_v150_oui_lab.h"
+#include "squach_v150_oui_extended.h"
+#include "squach_fork_oui_lab.h"
 #if defined(SQE_WAVESHARE_C5)
 #include "c5_ui.h"
 #elif defined(SQE_CYD32)
@@ -83,17 +86,27 @@ static bool deriveIdentity(const Scenario* s, bool wifi, uint8_t out[6]) {
   size_t index = kScenarioCount;
   for (size_t i=0; i<kScenarioCount; ++i)
     if (&kScenarios[i] == s) { index=i; break; }
-  if (index >= kScenarioCount || index >= 254) return false;
+  if (index >= kScenarioCount || index >= 65535) return false;
   g_radioIdentity = (uint32_t)index + 1u;
   SquachIdentity::derive(ESP.getEfuseMac(), index,
         wifi ? SquachIdentity::Radio::Wifi : SquachIdentity::Radio::Ble, out);
-  // Only the 37 explicit OUI-only Wi-Fi cases use registered prefixes.
-  // Other Wi-Fi cases retain LAA; BLE retains a static-random address.
+  // The 37 original UAS OUI, 22 v1.50 and 10 fork-only fixtures
+  // use source-pinned vendor prefixes; other cases remain LAA/static random.
+  // A synthetic prefix is never proof of an actual branded device.
   if (wifi && SquachDjiOuiLab::find(s->id)) {
     if (!SquachDjiOuiLab::apply(s->id,out)) return false;
   }
   if (wifi && SquachUavVendorLab::find(s->id)) {
     if (!SquachUavVendorLab::apply(s->id,out)) return false;
+  }
+  if (wifi && SquachV150OuiLab::find(s->id)) {
+    if (!SquachV150OuiLab::apply(s->id,out)) return false;
+  }
+  if (wifi && SquachV150OuiExtended::find(s->id)) {
+    if (!SquachV150OuiExtended::apply(s->id,out)) return false;
+  }
+  if (wifi && SquachForkOuiLab::find(s->id)) {
+    if (!SquachForkOuiLab::apply(s->id,out)) return false;
   }
   SquachIdentity::text(out, g_address);
   return true;
@@ -145,6 +158,27 @@ static bool beginWifiIdentity(const Scenario* s) {
     return false;
   }
   Serial.printf("RADIO,AP_MAC_READY,%s,%s\n",s->id,g_address);
+  return true;
+}
+
+// Check the active radio's AP MAC, not just the pre-start address.
+// SoftAP transitions can reset the BSSID, invalidating an OUI test.
+static bool verifyWifiApMac(const Scenario* s) {
+  uint8_t expected[6]={}, actual[6]={};
+  if (!deriveIdentity(s,true,expected)) {
+    wifiFailure("AP_MAC_EXPECTED",ESP_ERR_INVALID_ARG);return false;
+  }
+  const esp_err_t err=esp_wifi_get_mac(WIFI_IF_AP,actual);
+  if (err!=ESP_OK){wifiFailure("AP_MAC_READBACK",err);return false;}
+  if (memcmp(actual,expected,6)!=0) {
+    char observed[18]={};
+    SquachIdentity::text(actual,observed);
+    Serial.printf("ERROR,AP_MAC_MISMATCH,%s,expected=%s,actual=%s\n",
+                  s->id,g_address,observed);
+    wifiFailure("AP_MAC_MISMATCH",ESP_FAIL);
+    return false;
+  }
+  Serial.printf("RADIO,AP_MAC_CONFIRMED,%s,%s\n",s->id,g_address);
   return true;
 }
 
@@ -267,6 +301,7 @@ static bool startWifiRemote(const Scenario* s) {
                    "SquachLab2026!", channel, false, 1)) {
     wifiFailure("SOFTAP_START"); return false;
   }
+  if (!verifyWifiApMac(s)) return false;
   // Synthetic message pack: Basic ID, Location, System, Self-ID, Operator ID.
   // This tests complete receiver parsing but is not flight-compliant broadcast:
   // there is no true GNSS/UTC on the emitter and all identities are fictional.
@@ -307,7 +342,13 @@ static bool advertiseBle(const Scenario* s) {
   bool ok = false;
   switch (s->kind) {
     case Kind::BleUuid:
-      ok = data.setCompleteServices(NimBLEUUID(s->code));
+      if (!strcmp(s->id,"V150-BLE-GOOGLE-FMDN40") ||
+          !strcmp(s->id,"V150-BLE-GOOGLE-FMDN41")) {
+        // Find Hub service data, not merely the ubiquitous Eddystone UUID.
+        const uint8_t value[]={ (uint8_t)(!strcmp(s->id,"V150-BLE-GOOGLE-FMDN40")?0x40:0x41),
+                                 0x53,0x51,0x45 };
+        ok=data.setServiceData(NimBLEUUID((uint16_t)0xFEAA),value,sizeof(value));
+      }else ok = data.setCompleteServices(NimBLEUUID(s->code));
       break;
     case Kind::BleName:
       ok = data.setName(s->text);
@@ -327,6 +368,24 @@ static bool advertiseBle(const Scenario* s) {
         // Test fixture, not a complete real AirTag state machine.
         const uint8_t payload[] = {0x4C, 0x00, 0x12, 0x19, 0x01, 0x02};
         ok = data.setManufacturerData(payload, sizeof(payload));
+      } else if (!strcmp(s->id,"V150-BLE-AIRTAG-NEAR")){
+        // Apple's FindMy owner-nearby pattern, not an actual key or identity.
+        const uint8_t payload[]={0x4C,0x00,0x12,0x02,0x20,0x53,0x51};
+        ok=data.setManufacturerData(payload,sizeof(payload));
+      } else if (!strcmp(s->id,"V150-BLE-AIRTAG-UNPAIRED")){
+        // Unpaired AirTag model 00 55; neighboring Apple headphone IDs
+        // must NOT be misclassified as tracking tags.
+        const uint8_t payload[]={0x4C,0x00,0x07,0x19,0x05,0x00,0x55,0x10,0x00};
+        ok=data.setManufacturerData(payload,sizeof(payload));
+      } else if (!strcmp(s->id,"V150-BLE-AIRPODS-NEG")){
+        const uint8_t payload[]={0x4C,0x00,0x07,0x19,0x05,0x00,0x0E,0x20,0x00};
+        ok=data.setManufacturerData(payload,sizeof(payload));
+      } else if (!strcmp(s->id,"V150-BLE-HOMEPOD-SIRI")){
+        // Apple's type 08, length 07 "Hey Siri" continuity event, HomePod
+        // class 0x0007. This does not claim a real microphone was activated.
+        const uint8_t payload[]={0x4C,0x00,0x08,0x07,0x01,0x02,0x03,
+                                 0x04,0x00,0x07,0x00};
+        ok=data.setManufacturerData(payload,sizeof(payload));
       } else if (strcmp(s->id, "BLE-IBEACON") == 0 ||
                  strcmp(s->id, "BLE-IBEACON-V2") == 0) {
         // 25-byte mfg data: Apple CID, iBeacon marker, 16-byte UUID,
@@ -387,7 +446,10 @@ static void cancelAll() {
 
 static bool isOuiOnly(const Scenario* s) {
   return s && (SquachDjiOuiLab::find(s->id)!=nullptr ||
-               SquachUavVendorLab::find(s->id)!=nullptr);
+               SquachUavVendorLab::find(s->id)!=nullptr ||
+               SquachV150OuiLab::find(s->id)!=nullptr ||
+               SquachForkOuiLab::find(s->id)!=nullptr ||
+               SquachV150OuiExtended::find(s->id)!=nullptr);
 }
 // CYD 3.2 time selection controls touchscreen RUN and every SUITE case.
 // Other boards keep their existing 12-second default.
@@ -410,21 +472,28 @@ static bool startScenario(const Scenario* s, uint32_t duration = kDefaultMs) {
     const bool ouiTest=isOuiOnly(s);
     // The vendor-OUI fixtures contain NO Remote ID; the BSSID is the
     // selected registry prefix with a generated, synthetic 3-byte suffix.
-    if (!beginWifiIdentity(s)) {
-      if(ouiTest) {
-        Serial.printf("ERROR,WIFI_OUI_CASE,%s,%s,%d\n",
-                      s->id,g_wifiFailureStage,(int)g_wifiFailureCode);
-#if defined(SQE_CYD32)
-        cyd32UiSetRadioError(g_wifiFailureStage);
-#endif
+    // Radio-hardware recovery for every ordinary SoftAP signature case.
+    // Only BEGIN after the active AP BSSID matches the requested OUI.
+    const uint8_t channel=s->code ? static_cast<uint8_t>(s->code) : 1;
+    if(channel<1 || channel>11) wifiFailure("CHANNEL",ESP_ERR_INVALID_ARG);
+    else for(unsigned attempt=1;attempt<=2 && !ok;++attempt){
+      Serial.printf("RADIO,WIFI_AP_ATTEMPT,%s,%u\n",s->id,attempt);
+      g_wifiFailureStage="UNKNOWN";g_wifiFailureCode=ESP_OK;
+      if(beginWifiIdentity(s)){
+        if(WiFi.softAP(s->text ? s->text : "SQE-LAB-AP",
+                       "SquachLab2026!",channel,false,1))
+          ok=verifyWifiApMac(s);
+        else wifiFailure("SOFTAP_START");
       }
-      truth("ERROR",s,"identity_failed");stopTx();return false;
+      if(!ok && attempt==1){
+        Serial.printf("WARN,WIFI_AP_RETRY,%s,%s\n",s->id,g_wifiFailureStage);
+        stopTx();
+        delay(120);
+      }
     }
-    // Channel 0 is the legacy channel-1 profile; explicit 1..11 for LAB.
-    const uint8_t channel = s->code ? static_cast<uint8_t>(s->code) : 1;
-    if (channel >= 1 && channel <= 11)
-      ok = WiFi.softAP(s->text, "SquachLab2026!", channel, false, 1);
-    if(ouiTest && !ok) wifiFailure("SOFTAP_START");
+    if(ouiTest && !ok)
+      Serial.printf("ERROR,WIFI_OUI_CASE,%s,%s,%d\n",
+                    s->id,g_wifiFailureStage,(int)g_wifiFailureCode);
   } else if (s->kind == Kind::WifiRemoteId) {
     // One bounded recovery after a failed Wi-Fi mode transition.
     for(unsigned attempt=1; attempt<=2 && !ok; ++attempt){
@@ -660,14 +729,14 @@ void setup() {
   while (!Serial && millis() - t0 < 1800) delay(10);
   WiFi.mode(WIFI_OFF);
   #if defined(SQE_WAVESHARE_C5)
-  Serial.println("BOOT,SquachEmit,v1.1.0,ESP32-C5-Waveshare-2.8,172-CASES");
+  Serial.printf("BOOT,SquachEmit,v1.1.0,ESP32-C5-Waveshare-2.8,%u-CASES\n", (unsigned)kScenarioCount);
   c5UiBegin();
 #elif defined(SQE_CYD32)
-  Serial.println("BOOT,SquachEmit,v1.1.0,ESP32-2432S032R-ST7798,172-CASES-TXTIME");
+  Serial.printf("BOOT,SquachEmit,v1.1.0,ESP32-2432S032R-ST7798,%u-CASES-TXTIME\n", (unsigned)kScenarioCount);
   cyd32UiBegin();
   cyd32UiSetResetReason((unsigned)esp_reset_reason());
 #else
-  Serial.println("BOOT,SquachEmit,v1.1.0,ESP32-S3,172-CASES");
+  Serial.printf("BOOT,SquachEmit,v1.1.0,ESP32-S3,%u-CASES\n", (unsigned)kScenarioCount);
 #endif
   help();
 }

@@ -13,10 +13,11 @@ CXX=r'''
 int main(){
  using namespace SqeQuips;
  // Exactly 10 real user-facing groups, each populated.
- assert(kDeviceCategoryCount==10);
+ assert(kDeviceCategoryCount==14);
  Topic topics[]={
-   Topic::Axon,Topic::Drones,Topic::Flock,Topic::General,Topic::Hacker,
-   Topic::IBeacon,Topic::Raven,Topic::SerialModules,
+   Topic::General,Topic::Axon,Topic::General,Topic::Drones,
+   Topic::Flock,Topic::General,Topic::Hacker,Topic::IBeacon,
+   Topic::General,Topic::Raven,Topic::General,Topic::SerialModules,
    Topic::SmartGlasses,Topic::Trackers
  };
  for(size_t i=0;i<kDeviceCategoryCount;i++){
@@ -31,7 +32,7 @@ int main(){
  size_t sum=0;
  for(size_t c=0;c<kDeviceCategoryCount;c++)
    sum+=deviceCategoryCaseCount((DeviceCategory)c);
- assert(sum==172);
+ assert(sum==362);
  for(size_t i=0;i<kScenarioCount;i++){
    assert((unsigned)deviceCategory(kScenarios[i])<kDeviceCategoryCount);
  }

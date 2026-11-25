@@ -5,14 +5,15 @@
 // One authoritative device-type assignment per scenario, independent of
 // BLE/Wi-Fi carrier. Categories are alphabetized for the touch menu.
 enum class DeviceCategory : uint8_t {
-  Axon, Drones, Flock, General, Hacker, IBeacon, Raven,
-  SerialModules, SmartGlasses, Trackers, Count
+  Alpr, Axon, Cameras, Drones, Flock, General, Hacker, IBeacon,
+  Listeners, Raven, Ring, SerialModules, SmartGlasses, Trackers, Count
 };
 constexpr size_t kDeviceCategoryCount = static_cast<size_t>(DeviceCategory::Count);
 inline const char* deviceCategoryName(DeviceCategory c) {
   static const char* const names[] = {
-    "AXON", "DRONES / REMOTE ID", "FLOCK", "GENERAL / CONTROLS",
-    "HACKER DEVICES", "IBEACON", "RAVEN", "SERIAL MODULES",
+    "ALPR", "AXON", "CAMERAS / DASHCAMS", "DRONES / REMOTE ID",
+    "FLOCK", "GENERAL / CONTROLS", "HACKER DEVICES", "IBEACON",
+    "LISTENERS", "RAVEN", "RING", "SERIAL MODULES",
     "SMART GLASSES", "TRACKERS"
   };
   const size_t i=static_cast<size_t>(c);
@@ -23,6 +24,28 @@ inline bool startsWith(const char* s,const char* p) {
 }
 inline DeviceCategory deviceCategory(const Scenario& s) {
   const char* id=s.id;
+  // New v1.50 category-specific fixtures preserve the exact expected
+  // detector label, while negative controls stay with their signal family.
+  if(startsWith(id,"V150-")||startsWith(id,"FORK-OUI-")){
+    if(strcmp(s.expected,"ALPR")==0)return DeviceCategory::Alpr;
+    if(strcmp(s.expected,"CAMERA")==0)return DeviceCategory::Cameras;
+    if(strcmp(s.expected,"LISTENER")==0)return DeviceCategory::Listeners;
+    if(strcmp(s.expected,"RING")==0)return DeviceCategory::Ring;
+    if(strcmp(s.expected,"AXON")==0)return DeviceCategory::Axon;
+    if(strcmp(s.expected,"FLOCK")==0)return DeviceCategory::Flock;
+    if(strcmp(s.expected,"DRONE")==0)return DeviceCategory::Drones;
+    if(strcmp(s.expected,"RAVEN")==0)return DeviceCategory::Raven;
+    if(strcmp(s.expected,"META")==0)return DeviceCategory::SmartGlasses;
+    if(strcmp(s.expected,"SKIMMER")==0)return DeviceCategory::SerialModules;
+    if(strcmp(s.expected,"HACKER")==0)return DeviceCategory::Hacker;
+    if(strcmp(s.expected,"GOOGLE_TAG")==0 ||
+       strcmp(s.expected,"TILE")==0 ||
+       strcmp(s.expected,"AIRTAG")==0)return DeviceCategory::Trackers;
+    // Negative control remains beside the family it rules out.
+    if(strstr(id,"AIRPODS")||strstr(id,"GOOGLE-"))return DeviceCategory::Trackers;
+    if(strstr(id,"CAM-"))return DeviceCategory::Cameras;
+    return DeviceCategory::General;
+  }
   // Negative and malformed fixtures stay with the device family they test.
   if(startsWith(id,"RID-") || startsWith(id,"OUI-") ||
      strcmp(id,"BLE-DRONE")==0 ||

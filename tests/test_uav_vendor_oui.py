@@ -14,15 +14,21 @@ class ExtendedVendorOuiTests(unittest.TestCase):
   catalog=json.loads((ROOT/"tests/cases.json").read_text())
   by_id={x["id"]:x for x in catalog}
   self.assertEqual(len(entries),27)
-  self.assertEqual(len(catalog),172)
-  self.assertEqual(len(by_id),172)
+  self.assertEqual(len(catalog),362)
+  self.assertEqual(len(by_id),362)
   self.assertEqual(len({x["prefixHex"] for x in entries}),27)
   for item in entries:
    self.assertEqual(len(item["prefixHex"])*4,item["bits"])
    self.assertIn(item["bits"],(24,28,36))
    c=by_id[item["id"]]
-   self.assertEqual((c["carrier"],c["kind"],c["code"],c["expected"]),
-                    ("WIFI","WifiAp",6,item["expected"]))
+   self.assertEqual((c["carrier"],c["kind"],c["code"]),("WIFI","WifiAp",6))
+   # Legacy vendor allocations are preserved as negative v1.50 fixtures
+   # when the upstream OUI matcher has no matching DRONE entry.
+   manifest=json.loads((ROOT/"tests/squachwatch_v150_manifest.json").read_text())
+   oui_prefixes={x["key"] for x in manifest["tables"]["oui"]}
+   vendor_prefix=item["prefixHex"].upper()[:6]
+   expected=item["expected"] if vendor_prefix in oui_prefixes else "NONE"
+   self.assertEqual(c["expected"],expected)
    self.assertIn("OUI ONLY; NO RID",c["description"])
    self.assertTrue(c["text"].startswith("SQE-LAB-"))
    self.assertLessEqual(len(c["text"]),32)

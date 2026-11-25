@@ -38,7 +38,8 @@ class BatteryDisplayModeTests(unittest.TestCase):
         self.assertIn('button(163,287,74,30,batteryDisplayVolts?"SHOW V":"SHOW %");',src)
         self.assertIn('else if(x>=160)setBatteryDisplayVolts(!batteryDisplayVolts);',src)
         self.assertIn('else setBatteryDisplayVolts(!batteryDisplayVolts);',src)
-        self.assertIn('if(x<108){screen=Screen::Settings;settingsMore=false;redraw=true;}',src)
+        self.assertIn('if(x<108){backFromSettingsSubmenu();}',src)
+        self.assertIn('if(x<80){backFromSettingsSubmenu();}',src)
 
     def test_selected_mode_is_not_confused_with_calibration_or_percent_scale(self):
         self.assertIn("SqeBatteryCalibration::linearPercent(adjusted)",self.src)

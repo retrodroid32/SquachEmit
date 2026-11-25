@@ -92,6 +92,7 @@ unsigned playlistIndex=0,playlistTotal=0;
 uint8_t brightnessLevel=2,animationLevel=1,screenTimeout=0,themeLevel=0,fontMode=1;
 bool settingsMore=false;
 bool openedFromMainMenu=false;
+bool quickFromCategories=false;
 bool settingsSubmenuFlow=false;
 bool pcControl=false,screenDimmed=false;
 unsigned resetReasonCode=0;
@@ -587,6 +588,13 @@ long speechRandom(long lo,long hi){return random(lo,hi);}
 SqeQuips::Topic categoryTopic(const Scenario* sc){
   if(!sc)return SqeQuips::Topic::Idle;
   switch(deviceCategory(*sc)){
+    // New v1.50 category pages use generic speech until their own
+    // dedicated banks are validated. Never show an unrelated type quip.
+    case DeviceCategory::Alpr:
+    case DeviceCategory::Cameras:
+    case DeviceCategory::Listeners:
+    case DeviceCategory::Ring:
+      return SqeQuips::Topic::General;
     case DeviceCategory::Axon:return SqeQuips::Topic::Axon;
     case DeviceCategory::Drones:return SqeQuips::Topic::Drones;
     case DeviceCategory::Flock:return SqeQuips::Topic::Flock;
@@ -1224,7 +1232,7 @@ const char* const menuTitles[kMenuEntries]={
  "HEALTH / DIAGNOSTICS","SETTINGS","SQUACHY OUTFITS",
  "OTA UPDATES","TX ACTIVITY","HELP","RECOVERY","BACKGROUNDS"};
 const char* const menuHints[kMenuEntries]={
- "172 SYNTHETIC CASES","A-Z CASE FILTER","SAVED SIGNALS","LAST TRANSMISSIONS",
+ "362 SYNTHETIC CASES","A-Z CASE FILTER","SAVED SIGNALS","LAST TRANSMISSIONS",
  "HEAP, RADIO, UPTIME","DISPLAY, ROTATION, THEME","COSTUMES AND ANIMATION",
  "FIRMWARE UPDATE STATUS","DRIVER EVENTS","USAGE AND SAFETY","BOOT AND TOUCH","FIVE SCENES"};
 void mainMenuScreen(){
@@ -1541,6 +1549,12 @@ void startCal(){
   Serial.println("CYD32,TOUCH,CALIBRATED_LANDSCAPE");
 }
 void cycleBackground(int delta);
+// Main Menu (gear) entries return to their actual caller, not the
+// normal Home shortcut hierarchy. Preserve the menu page on return.
+void backToMenuOr(Screen fallback){
+  screen=openedFromMainMenu?Screen::MainMenu:fallback;
+  openedFromMainMenu=false;quickFromCategories=false;redraw=true;
+}
 Cyd32UiAction touchHome(int x,int y,bool active,bool suite){
   // Same gesture as SquachWatch CLEAR: outer 10% of the main scene.
   // Exclude top status bar, footer, and current transmit safety controls.
@@ -1549,7 +1563,7 @@ Cyd32UiAction touchHome(int x,int y,bool active,bool suite){
     return Cyd32UiAction::None;
   }
   if(y>=kFooterY){
-    if(x<108){screen=Screen::Categories;redraw=true;return Cyd32UiAction::None;}
+    if(x<108){openedFromMainMenu=false;quickFromCategories=false;screen=Screen::Categories;redraw=true;return Cyd32UiAction::None;}
     if(x<213)return (active||suite||playlistRunning)?Cyd32UiAction::Stop:Cyd32UiAction::Run;
     return playlistRunning?(playlistPaused?Cyd32UiAction::PlaylistResume:Cyd32UiAction::PlaylistPause):Cyd32UiAction::Suite;
   }
@@ -1571,9 +1585,9 @@ Cyd32UiAction touchHome(int x,int y,bool active,bool suite){
   return Cyd32UiAction::None;
 }
 Cyd32UiAction touchCategories(int x,int y){
-  if(x>=233&&y>=15&&y<43){screen=Screen::QuickFilter;filterPage=0;redraw=true;return Cyd32UiAction::None;}
+  if(x>=233&&y>=15&&y<43){quickFromCategories=true;screen=Screen::QuickFilter;filterPage=0;redraw=true;return Cyd32UiAction::None;}
   if(y>=kFooterY){
-    if(x<108){screen=Screen::Home;openedFromMainMenu=false;redraw=true;return Cyd32UiAction::None;}
+    if(x<108){backToMenuOr(Screen::Home);return Cyd32UiAction::None;}
     if(x<213){if(categoryPage>0){--categoryPage;redraw=true;}return Cyd32UiAction::None;}
     if((categoryPage+1)*kPageRows<kDeviceCategoryCount){++categoryPage;redraw=true;}
     return Cyd32UiAction::None;
@@ -1626,6 +1640,7 @@ Cyd32UiAction touchDuration(int x,int y){
   return Cyd32UiAction::None;
 }
 Cyd32UiAction touchDetails(int x,int y,bool active){
+  openedFromMainMenu=false;quickFromCategories=false;
   if(!active&&x>=230&&y>=20&&y<62){
     if(y<41){favoritesPage=0;screen=Screen::Favorites;}
     else {historyPage=0;screen=Screen::History;}
@@ -1659,12 +1674,19 @@ Cyd32UiAction touchEvidence(int x,int y){
   }
   return Cyd32UiAction::None;
 }
+void openSettingsSubmenu(Screen destination);
+void backFromSettingsSubmenu();
 Cyd32UiAction touchSettings(int x,int y){
   if(y>=kFooterY){
-    if(x<108){screen=Screen::MainMenu;settingsMore=false;settingsSubmenuFlow=false;}
+    if(x<108){
+      // BACK from DISPLAY returns to the first Settings page; only the
+      // first page exits to the main menu. Shared by landscape/portrait.
+      if(settingsMore){settingsMore=false;}
+      else {screen=Screen::MainMenu;settingsSubmenuFlow=false;}
+    }
     else if(x<213){settingsMore=!settingsMore;}
-    else if(settingsMore){settingsSubmenuFlow=true;screen=Screen::Help;settingsMore=false;}
-    else {screen=Screen::BatteryCalibration;}
+    else if(settingsMore){openSettingsSubmenu(Screen::Help);}
+    else {openSettingsSubmenu(Screen::BatteryCalibration);}
     redraw=true;return Cyd32UiAction::None;
   }
   if(y>=46&&y<201){
@@ -1672,7 +1694,7 @@ Cyd32UiAction touchSettings(int x,int y){
     if(settingsMore){
       if(row==0){themeLevel=(themeLevel+1)%3;applyTheme();persistUiSettings();}
       else if(row==1){fontMode=(fontMode+1)%2;persistUiSettings();}
-      else if(row==2){settingsSubmenuFlow=true;screen=Screen::Identity;}
+      else if(row==2){openSettingsSubmenu(Screen::Identity);}
       else if(row==3){calibratePortraitFromDevice();}
       redraw=true;return Cyd32UiAction::None;
     }
@@ -1687,7 +1709,7 @@ Cyd32UiAction touchSettings(int x,int y){
 }
 Cyd32UiAction touchBatteryCalibration(int x,int y){
   if(y>=kFooterY){
-    if(x<108){screen=Screen::Settings;settingsMore=false;redraw=true;}
+    if(x<108){backFromSettingsSubmenu();}
     else if(x<213)setBatteryOffsetMv(0);
     else setBatteryDisplayVolts(!batteryDisplayVolts);
     return Cyd32UiAction::None;
@@ -1699,9 +1721,28 @@ Cyd32UiAction touchBatteryCalibration(int x,int y){
   }
   return Cyd32UiAction::None;
 }
+// Explicit Settings origin for ALL child views, including Battery.
+// A child BACK always goes to the first Settings page; direct Main Menu
+// Help/Recovery retain their normal Main Menu return.
+void openSettingsSubmenu(Screen destination){
+  settingsSubmenuFlow=true;
+  screen=destination;
+  settingsMore=false;
+  redraw=true;
+}
+void backFromSettingsSubmenu(){
+  if(screen==Screen::BatteryCalibration||settingsSubmenuFlow){
+    screen=Screen::Settings;
+    settingsMore=false;
+    settingsSubmenuFlow=false;
+  }else{
+    screen=Screen::MainMenu;
+  }
+  redraw=true;
+}
 Cyd32UiAction touchHelp(int x,int y){
   if(y>=kFooterY){
-    if(x<108){screen=settingsSubmenuFlow?Screen::Settings:Screen::MainMenu;}
+    if(x<108)backFromSettingsSubmenu();
     else if(x<213)helpPage=(helpPage+1)%3;
     else screen=Screen::Recovery;
     redraw=true;
@@ -1710,7 +1751,7 @@ Cyd32UiAction touchHelp(int x,int y){
 }
 Cyd32UiAction touchIdentity(int x,int y){
   if(y>=kFooterY){
-    if(x<108)screen=settingsSubmenuFlow?Screen::Settings:Screen::MainMenu;
+    if(x<108)backFromSettingsSubmenu();
     else if(x<213)screen=Screen::Help;
     else screen=Screen::Recovery;
     redraw=true;
@@ -1723,9 +1764,9 @@ Cyd32UiAction touchRecovery(int x,int y){
     return Cyd32UiAction::None;
   }
   if(y>=kFooterY){
-    if(x<108)screen=settingsSubmenuFlow?Screen::Settings:Screen::MainMenu;
+    if(x<108)backFromSettingsSubmenu();
     else if(x<213)screen=Screen::Help;
-    else screen=Screen::Home;
+    else {screen=Screen::Home;settingsSubmenuFlow=false;settingsMore=false;}
     redraw=true;
   }
   return Cyd32UiAction::None;
@@ -1735,7 +1776,7 @@ Cyd32UiAction touchFavorites(int x,int y){
     screen=Screen::Home;redraw=true;return Cyd32UiAction::PlaylistStart;
   }
   if(y>=kFooterY){
-    if(x<108){screen=Screen::Details;openedFromMainMenu=false;redraw=true;}
+    if(x<108){backToMenuOr(Screen::Details);}
     else if(x<213){if(favoritesPage>0){--favoritesPage;redraw=true;}}
     else if((favoritesPage+1)*4<favoriteCount()){++favoritesPage;redraw=true;}
     return Cyd32UiAction::None;
@@ -1750,7 +1791,7 @@ Cyd32UiAction touchFavorites(int x,int y){
 }
 Cyd32UiAction touchHistory(int x,int y){
   if(y>=kFooterY){
-    if(x<108){screen=Screen::Details;openedFromMainMenu=false;redraw=true;}
+    if(x<108){backToMenuOr(Screen::Details);}
     else if(x<213){if(historyPage>0){--historyPage;redraw=true;}}
     else if((historyPage+1)*4<historyCount){++historyPage;redraw=true;}
   }
@@ -1758,7 +1799,7 @@ Cyd32UiAction touchHistory(int x,int y){
 }
 Cyd32UiAction touchQuickFilter(int x,int y){
   if(y>=kFooterY){
-    if(x<108){screen=Screen::Categories;openedFromMainMenu=false;redraw=true;}
+    if(x<108){if(quickFromCategories){quickFromCategories=false;screen=Screen::Categories;redraw=true;}else backToMenuOr(Screen::Categories);}
     else if(x<213){if(filterPage>0)--filterPage;redraw=true;}
     else{if((filterPage+1)*4<filterCount())++filterPage;redraw=true;}
     return Cyd32UiAction::None;
@@ -1879,7 +1920,7 @@ void portraitPage(const char* active,uint32_t remaining,bool suite){
     lcd.fillRoundRect(7,205,226,34,4,kTaskbar);
     lcd.drawRoundRect(7,205,226,34,4,kPink);
     const char* talk=active&&*active?"SYNTHETIC TX IN PROGRESS":
-      suite?"RUNNING FULL 172-CASE SUITE":"PICK A PROFILE. PRESS RUN!";
+      suite?"RUNNING FULL 362-CASE SUITE":"PICK A PROFILE. PRESS RUN!";
     fit(13,212,talk,212,kWhite,2);
     const Scenario* current=selected<kScenarioCount?&kScenarios[selected]:nullptr;
     fit(12,246,current?current->id:"NO PROFILE",216,kCyan);
@@ -2075,7 +2116,7 @@ Cyd32UiAction portraitTap(int x,int y,bool active,bool suite){
   // Keep top-right rotation separate from the Quick Filter's y>=29
   // control and don't intercept its text row.
   if(y<70&&x<90){
-    screen=Screen::MainMenu;menuPage=0;openedFromMainMenu=false;redraw=true;
+    screen=Screen::MainMenu;menuPage=0;openedFromMainMenu=false;quickFromCategories=false;settingsSubmenuFlow=false;redraw=true;
     if(portraitTouchTrace)Serial.printf("CYD32,TOUCH,MENU_OPEN,x=%d,y=%d\n",x,y);
     return Cyd32UiAction::None;
   }
@@ -2090,7 +2131,7 @@ Cyd32UiAction portraitTap(int x,int y,bool active,bool suite){
       cycleBackground(x<24?-1:+1);return Cyd32UiAction::None;
     }
     if(y>=287){
-      if(x<80){screen=Screen::Categories;redraw=true;return Cyd32UiAction::None;}
+      if(x<80){openedFromMainMenu=false;quickFromCategories=false;screen=Screen::Categories;redraw=true;return Cyd32UiAction::None;}
       if(x<160)return active||suite||playlistRunning?Cyd32UiAction::Stop:Cyd32UiAction::Run;
       return Cyd32UiAction::Suite;
     }
@@ -2108,7 +2149,7 @@ Cyd32UiAction portraitTap(int x,int y,bool active,bool suite){
   }
   if(screen==Screen::BatteryCalibration){
     if(y>=287){
-      if(x<80){screen=Screen::Settings;settingsMore=false;redraw=true;}
+      if(x<80){backFromSettingsSubmenu();}
       else if(x>=160)setBatteryDisplayVolts(!batteryDisplayVolts);
       else if(active||suite||playlistRunning)return Cyd32UiAction::Stop;
       else setBatteryOffsetMv(0);
@@ -2186,7 +2227,7 @@ Cyd32UiAction portraitTap(int x,int y,bool active,bool suite){
         Screen::Favorites,Screen::History,Screen::Diagnostics,Screen::Settings,
         Screen::Outfits,Screen::OtaInfo,Screen::Activity,Screen::Help,
         Screen::Recovery,Screen::Backgrounds};
-      openedFromMainMenu=true;settingsSubmenuFlow=false;screen=targets[n];redraw=true;
+      openedFromMainMenu=true;quickFromCategories=false;settingsSubmenuFlow=false;screen=targets[n];redraw=true;
     }
   }else if(screen==Screen::Categories)return touchCategories(150,48+i*39);
   else if(screen==Screen::Library)return touchLibrary(150,53+i*36,active);
@@ -2619,7 +2660,7 @@ Cyd32UiAction cyd32UiTick(const char* active,uint32_t remaining,bool suite){
     }else if(y<23&&x>=275){
       rotateCurrentScreen();
     }else if(y<23&&x<48){
-      screen=Screen::MainMenu;menuPage=0;openedFromMainMenu=false;redraw=true;
+      screen=Screen::MainMenu;menuPage=0;openedFromMainMenu=false;quickFromCategories=false;settingsSubmenuFlow=false;redraw=true;
     }else if(screen==Screen::MainMenu){
       if(y>=kFooterY){
         if(x<108)screen=Screen::Home;
@@ -2633,7 +2674,7 @@ Cyd32UiAction cyd32UiTick(const char* active,uint32_t remaining,bool suite){
             Screen::Favorites,Screen::History,Screen::Diagnostics,
             Screen::Settings,Screen::Outfits,Screen::OtaInfo,
             Screen::Activity,Screen::Help,Screen::Recovery,Screen::Backgrounds};
-          openedFromMainMenu=true;settingsSubmenuFlow=false;screen=targets[n];redraw=true;
+          openedFromMainMenu=true;quickFromCategories=false;settingsSubmenuFlow=false;screen=targets[n];redraw=true;
           if(screen==Screen::Favorites)favoritesPage=0;
           if(screen==Screen::History)historyPage=0;
           if(screen==Screen::QuickFilter)filterPage=0;

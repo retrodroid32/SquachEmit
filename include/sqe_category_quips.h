@@ -19,7 +19,7 @@ struct Bank { const char* const* lines; uint8_t count; };
 static const char* const kIdle[]={
  "READY FOR A SIGNAL CHECK!",
  "PICK A PROFILE. I WILL EMIT!",
- "172 TESTS. ONE LITTLE SQUACH.",
+ "SO MANY TESTS. ONE LITTLE SQUACH.",
  "NO RF UNTIL YOU PRESS RUN.",
  "LET US TEST THAT DETECTOR!",
  "WAKE ME WHEN WE TRANSMIT!",
