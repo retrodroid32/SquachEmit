@@ -361,10 +361,10 @@ V150-OUI-LISTENER-F85C24,,,
 V150-UUID-SKIMMER-1101,,,
 V150-UUID-AXON-FE6C,,,
 V150-UUID-META-FEB8,,,
-OUI-INSPFLIGHT-34B5F32,,,
-OUI-ZEROZERO-C863144,,,
-FORK-BLE-SKIM-BT04,,,
-FORK-BLE-SKIM-JDY09,,,
-FORK-BLE-SKIM-JDY10,,,
-FORK-BLE-SKIM-JDY17,,,
-FORK-BLE-SKIM-SPPC,,,
+OUI-INSPFLIGHT-34B5F32,DRONE,,"User reported detected; receiver latency and serial logs not supplied"
+OUI-ZEROZERO-C863144,DRONE,,"User reported detected; receiver latency and serial logs not supplied"
+FORK-BLE-SKIM-BT04,SKIMMER,,"User reported detected; Freenove popup each skimmer; CYD 2.8 pill after first popup"
+FORK-BLE-SKIM-JDY09,SKIMMER,,"User reported detected; Freenove popup each skimmer; CYD 2.8 pill after first popup"
+FORK-BLE-SKIM-JDY10,SKIMMER,,"User reported detected; Freenove popup each skimmer; CYD 2.8 pill after first popup"
+FORK-BLE-SKIM-JDY17,SKIMMER,,"User reported detected; Freenove popup each skimmer; CYD 2.8 pill after first popup"
+FORK-BLE-SKIM-SPPC,SKIMMER,,"User reported detected; Freenove popup each skimmer; CYD 2.8 pill after first popup"
