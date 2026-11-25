@@ -1232,7 +1232,7 @@ const char* const menuTitles[kMenuEntries]={
  "HEALTH / DIAGNOSTICS","SETTINGS","SQUACHY OUTFITS",
  "OTA UPDATES","TX ACTIVITY","HELP","RECOVERY","BACKGROUNDS"};
 const char* const menuHints[kMenuEntries]={
- "362 SYNTHETIC CASES","A-Z CASE FILTER","SAVED SIGNALS","LAST TRANSMISSIONS",
+ "369 SYNTHETIC CASES","A-Z CASE FILTER","SAVED SIGNALS","LAST TRANSMISSIONS",
  "HEAP, RADIO, UPTIME","DISPLAY, ROTATION, THEME","COSTUMES AND ANIMATION",
  "FIRMWARE UPDATE STATUS","DRIVER EVENTS","USAGE AND SAFETY","BOOT AND TOUCH","FIVE SCENES"};
 void mainMenuScreen(){
@@ -1920,7 +1920,7 @@ void portraitPage(const char* active,uint32_t remaining,bool suite){
     lcd.fillRoundRect(7,205,226,34,4,kTaskbar);
     lcd.drawRoundRect(7,205,226,34,4,kPink);
     const char* talk=active&&*active?"SYNTHETIC TX IN PROGRESS":
-      suite?"RUNNING FULL 362-CASE SUITE":"PICK A PROFILE. PRESS RUN!";
+      suite?"RUNNING FULL 369-CASE SUITE":"PICK A PROFILE. PRESS RUN!";
     fit(13,212,talk,212,kWhite,2);
     const Scenario* current=selected<kScenarioCount?&kScenarios[selected]:nullptr;
     fit(12,246,current?current->id:"NO PROFILE",216,kCyan);
