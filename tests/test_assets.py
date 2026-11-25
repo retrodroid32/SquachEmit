@@ -19,7 +19,7 @@ class TestFixtures(unittest.TestCase):
             self.assertIn(f'"{s["id"]}"', source)
             self.assertIn(f'"{s["expected"]}"', source)
         self.assertEqual(len({s['id'] for s in self.cases}), len(self.cases))
-        self.assertEqual(len(self.cases), 362)
+        self.assertEqual(len(self.cases), 369)
         self.assertEqual(len(self.cases), len(__import__('re').findall(r'^\s*\{"', source, __import__('re').M)))
         self.assertEqual(next(s for s in self.cases if s['id']=='BLE-GOOGLE')['expected'], 'NONE')
         self.assertLessEqual(len(self.cases), 65535)  # two-octet synthetic identity
