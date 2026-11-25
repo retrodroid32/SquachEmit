@@ -12,7 +12,7 @@
     "cyd32-st7798": {
       "title": "SquachEmit v1.1.0 CYD 3.2 R14.34 LAB — Settings BACK Page Fix (172 Cases)",
       "version": "v1.1.0 MAINLINE · 172 cases",
-      "summary": "R14.34 LAB fixes Settings navigation: BACK from Identity, Help and Recovery opened through Settings now returns to the FIRST Settings page, not the secondary Display page or global Main Menu. The helper clears stale submenu/page context. Direct Help from global Main Menu still returns there; Settings page cycling and battery calibration BACK are unchanged. Native touch and UI-state regression tests added. Preserves R14.33 calibrated battery readings, two-decimal volts, Squachy animation and all 172 RF cases. Four-part SHA-256 LAB firmware, physical validation required. Settings DISPLAY page BACK now returns to first Settings page rather than exiting directly to Main Menu; applies to both landscape and portrait controls.",
+      "summary": "R14.34 LAB Settings navigation correction: the DISPLAY page BACK returns to the first Settings page, and only the first Settings page BACK exits to Main Menu. Identity, Help and Recovery opened from Settings also return to the first Settings page. Direct Help from Main Menu still returns to Main Menu. Landscape and portrait share the corrected touch routing. Preserves battery voltage/percent options, calibration offset, original Squachy animation and 172 RF scenarios. Hardware verification pending.",
       "highlights": [
         "Settings > Display > Identity BACK now returns to main Settings page, not secondary Settings.",
         "Settings > Display > Help > Recovery BACK returns to first Settings page without stale context.",
@@ -20,8 +20,7 @@
         "Battery calibration BACK returns to first Settings; Settings page cycling unchanged.",
         "Native CYD3.2 touch regressions check Settings, Identity, Help, Recovery and battery flows.",
         "Preserves merged R14.33 calibration, two-decimal volts, Squachy art and 172 cases.",
-        "LAB only; four-part SHA-256 firmware packaging; physical CYD3.2 testing required.",
-        "Settings page-two BACK returns to the first Settings page; the first page BACK exits to Main Menu."
+        "Settings DISPLAY BACK returns to first Settings page before Main Menu."
       ]
     },
     "c5-waveshare-28": {
