@@ -1666,6 +1666,8 @@ Cyd32UiAction touchEvidence(int x,int y){
   }
   return Cyd32UiAction::None;
 }
+void openSettingsSubmenu(Screen destination);
+void backFromSettingsSubmenu();
 Cyd32UiAction touchSettings(int x,int y){
   if(y>=kFooterY){
     if(x<108){
@@ -1675,8 +1677,8 @@ Cyd32UiAction touchSettings(int x,int y){
       else {screen=Screen::MainMenu;settingsSubmenuFlow=false;}
     }
     else if(x<213){settingsMore=!settingsMore;}
-    else if(settingsMore){settingsSubmenuFlow=true;screen=Screen::Help;settingsMore=false;}
-    else {screen=Screen::BatteryCalibration;}
+    else if(settingsMore){openSettingsSubmenu(Screen::Help);}
+    else {openSettingsSubmenu(Screen::BatteryCalibration);}
     redraw=true;return Cyd32UiAction::None;
   }
   if(y>=46&&y<201){
@@ -1684,7 +1686,7 @@ Cyd32UiAction touchSettings(int x,int y){
     if(settingsMore){
       if(row==0){themeLevel=(themeLevel+1)%3;applyTheme();persistUiSettings();}
       else if(row==1){fontMode=(fontMode+1)%2;persistUiSettings();}
-      else if(row==2){settingsSubmenuFlow=true;screen=Screen::Identity;}
+      else if(row==2){openSettingsSubmenu(Screen::Identity);}
       else if(row==3){calibratePortraitFromDevice();}
       redraw=true;return Cyd32UiAction::None;
     }
@@ -1699,7 +1701,7 @@ Cyd32UiAction touchSettings(int x,int y){
 }
 Cyd32UiAction touchBatteryCalibration(int x,int y){
   if(y>=kFooterY){
-    if(x<108){screen=Screen::Settings;settingsMore=false;redraw=true;}
+    if(x<108){backFromSettingsSubmenu();}
     else if(x<213)setBatteryOffsetMv(0);
     else setBatteryDisplayVolts(!batteryDisplayVolts);
     return Cyd32UiAction::None;
@@ -1711,14 +1713,23 @@ Cyd32UiAction touchBatteryCalibration(int x,int y){
   }
   return Cyd32UiAction::None;
 }
-// Subpages opened through Settings return to the first Settings page.
-// Direct Main Menu entry preserves its own BACK destination.
+// Explicit Settings origin for ALL child views, including Battery.
+// A child BACK always goes to the first Settings page; direct Main Menu
+// Help/Recovery retain their normal Main Menu return.
+void openSettingsSubmenu(Screen destination){
+  settingsSubmenuFlow=true;
+  screen=destination;
+  settingsMore=false;
+  redraw=true;
+}
 void backFromSettingsSubmenu(){
-  if(settingsSubmenuFlow){
+  if(screen==Screen::BatteryCalibration||settingsSubmenuFlow){
     screen=Screen::Settings;
     settingsMore=false;
     settingsSubmenuFlow=false;
-  }else screen=Screen::MainMenu;
+  }else{
+    screen=Screen::MainMenu;
+  }
   redraw=true;
 }
 Cyd32UiAction touchHelp(int x,int y){
@@ -2130,7 +2141,7 @@ Cyd32UiAction portraitTap(int x,int y,bool active,bool suite){
   }
   if(screen==Screen::BatteryCalibration){
     if(y>=287){
-      if(x<80){screen=Screen::Settings;settingsMore=false;redraw=true;}
+      if(x<80){backFromSettingsSubmenu();}
       else if(x>=160)setBatteryDisplayVolts(!batteryDisplayVolts);
       else if(active||suite||playlistRunning)return Cyd32UiAction::Stop;
       else setBatteryOffsetMv(0);
