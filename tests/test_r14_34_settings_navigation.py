@@ -65,6 +65,8 @@ int main(){
   // Cycling Settings pages still works both ways without opening a submenu.
   touch(150,226);mark("settings2_cycle");
   touch(150,226);mark("settings1_cycle");
+  touch(150,226);mark("settings_second_for_back");
+  touch(50,226);mark("back_second_to_first");
 
   // Direct Help from global Main Menu must go back to Main Menu, NOT Settings.
   touch(50,226);mark("main_menu_from_settings");
@@ -111,6 +113,8 @@ int main(){
             "back_battery":("SETTINGS",0),
             "settings2_cycle":("SETTINGS",1),
             "settings1_cycle":("SETTINGS",0),
+            "settings_second_for_back":("SETTINGS",1),
+            "back_second_to_first":("SETTINGS",0),
             "main_menu_from_settings":("MENU",None),
             "direct_help":("HELP",0),
             "back_direct_help":("MENU",None),
@@ -120,6 +124,8 @@ int main(){
     def test_all_settings_origin_back_routes_share_single_reset(self):
         src=(ROOT/"src"/"cyd32_ui.cpp").read_text(encoding="utf-8")
         self.assertIn("void backFromSettingsSubmenu()",src)
+        self.assertIn("if(settingsMore){settingsMore=false;}",src)
+        self.assertIn("else {screen=Screen::MainMenu;settingsSubmenuFlow=false;}",src)
         self.assertIn("settingsMore=false;",src)
         self.assertIn("settingsSubmenuFlow=false;",src)
         self.assertEqual(src.count("if(x<108)backFromSettingsSubmenu();"),3)
