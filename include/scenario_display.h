@@ -82,7 +82,8 @@ inline void scenarioDeviceName(const Scenario& s,char* out,size_t cap){
   }else if(sqeStarts(id,"BLE-AXON")||sqeStarts(id,"WIFI-AXON")||
            sqeStarts(id,"WIFI-NEG-AXON")){
     name="Axon Body Camera";
-  }else if(sqeStarts(id,"BLE-SKIM")||std::strcmp(id,"BLE-NEG-JDY16-EXTRA")==0){
+  }else if(sqeStarts(id,"BLE-SKIM")||sqeStarts(id,"FORK-BLE-SKIM-")||
+           std::strcmp(id,"BLE-NEG-JDY16-EXTRA")==0){
     name=s.text?s.text:"Bluetooth Serial Module";
   }else if(sqeStarts(id,"BLE-NEG-UUID")||sqeStarts(id,"BLE-NEG-NAME")){
     name="Generic BLE device";
