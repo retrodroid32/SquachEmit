@@ -54,6 +54,30 @@ class ForkExtraEmissionTests(unittest.TestCase):
             self.assertEqual(self.profile["overrides"][id],fork)
             if kind=="BleName":self.assertEqual(case["text"],value)
             else:self.assertIn(value,case["description"])
+    def test_added_cases_group_under_correct_device_category(self):
+        cc=shutil.which("g++") or shutil.which("clang++")
+        if not cc:self.skipTest("No C++ compiler")
+        program=r"""
+#include "scenario_library.h"
+#include <assert.h>
+int main(){
+  assert(deviceCategory(*findScenario("OUI-INSPFLIGHT-34B5F32"))==DeviceCategory::Drones);
+  assert(deviceCategory(*findScenario("OUI-ZEROZERO-C863144"))==DeviceCategory::Drones);
+  assert(deviceCategory(*findScenario("FORK-BLE-SKIM-BT04"))==DeviceCategory::SerialModules);
+  assert(deviceCategory(*findScenario("FORK-BLE-SKIM-JDY09"))==DeviceCategory::SerialModules);
+  assert(deviceCategory(*findScenario("FORK-BLE-SKIM-JDY10"))==DeviceCategory::SerialModules);
+  assert(deviceCategory(*findScenario("FORK-BLE-SKIM-JDY17"))==DeviceCategory::SerialModules);
+  assert(deviceCategory(*findScenario("FORK-BLE-SKIM-SPPC"))==DeviceCategory::SerialModules);
+}
+"""
+        with tempfile.TemporaryDirectory() as folder:
+            path=pathlib.Path(folder)
+            (path/"test.cpp").write_text(program)
+            subprocess.run([cc,"-std=c++11","-Wall","-Wextra","-Werror",
+                "-I",str(ROOT/"include"),str(path/"test.cpp"),str(ROOT/"src/scenarios.cpp"),
+                "-o",str(path/"test")],check=True)
+            subprocess.run([str(path/"test")],check=True)
+
     def test_exact_28_bit_prefixes_are_emitted(self):
         cc=shutil.which("g++") or shutil.which("clang++")
         if not cc:self.skipTest("No C++ compiler")
