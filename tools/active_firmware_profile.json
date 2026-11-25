@@ -6,13 +6,13 @@
     "include": "cc1bb100ef4083fc3aacc1c8370c3fe4e259f74d",
     "lib": "bbb71a1b441d98f3ada5d709c4b67a1c3395d161",
     "platformio.ini": "c3ff3725248b4c67d60da6903982515031c501f6",
-    "src": "2f0bb644ea4d5f2387bf32ef32157565bab05b4c"
+    "src": "cd2abc406b25424de82eaaa98010be54980cb48b"
   },
   "builds": {
     "cyd32-st7798": {
-      "title": "SquachEmit v1.1.0 CYD 3.2 ST7798 R14.37 LAB — 362 RF Cases & Settings BACK",
+      "title": "SquachEmit CYD 3.2 R14.38 LAB — 362 RF Cases & Gear BACK Fix",
       "version": "v1.1.0 MAINLINE · 362 cases",
-      "summary": "R14.37 LAB: 362 bounded BLE/Wi-Fi synthetic RF test cases, with 220/220 upstream v1.50 static signature entries mapped to candidate emissions. Explicit Settings-origin navigation sends BACK from Battery, Identity, Help and Recovery to the FIRST Settings page, including repeated and chained submenu visits in portrait and landscape. DISPLAY BACK also returns to first Settings, and direct Main Menu Help returns to Main Menu. Synthetic RF outputs are not physical receiver validation. SHA-256 multi-part flashing for CYD 3.2 ST7798.",
+      "summary": "R14.38 LAB: 362 bounded synthetic BLE/Wi-Fi RF test cases. Corrected gear-menu navigation: BACK from Test Library, Quick Find, Favorites and TX History returns to the gear Main Menu, while nested library and home-origin paths retain their parent screen. Settings child BACK for Battery, Identity, Help, Recovery and Display returns to the first Settings page in both landscape and portrait. Upstream v1.50 static table 220/220 mapped to candidate emissions; receiver hardware validation remains pending. SHA-256 multi-part CYD 3.2 flashing.",
       "highlights": [
         "111 additional v1.50 Wi-Fi manufacturer-prefix SoftAP transmitters, individually selectable.",
         "3 additional BLE service UUID advertisements; full FFFA Remote ID emission already available.",
@@ -20,7 +20,7 @@
         "Active AP BSSID readback and bounded retry before reporting RF transmission.",
         "10 fork-only OUI cases retained; case-unique MACs support expanded fixture library.",
         "LAB only, physical receiver pass/fail unverified; no automatic RF transmission.",
-        "Explicit Settings-origin BACK handling covers Battery, Identity, Help and Recovery, including chained navigation."
+        "Gear-menu BACK routing for four entries plus nested category paths, tested in landscape and portrait."
       ]
     },
     "c5-waveshare-28": {
