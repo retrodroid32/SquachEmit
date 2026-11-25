@@ -10,7 +10,7 @@
   },
   "builds": {
     "cyd32-st7798": {
-      "title": "SquachEmit CYD 3.2 R14.38 LAB — 362 RF Cases & Gear BACK Fix",
+      "title": "SquachEmit v1.1.0 CYD 3.2 R14.38 LAB — 362 RF Cases & Gear BACK Fix",
       "version": "v1.1.0 MAINLINE · 362 cases",
       "summary": "R14.38 LAB: 362 bounded synthetic BLE/Wi-Fi RF test cases. Corrected gear-menu navigation: BACK from Test Library, Quick Find, Favorites and TX History returns to the gear Main Menu, while nested library and home-origin paths retain their parent screen. Settings child BACK for Battery, Identity, Help, Recovery and Display returns to the first Settings page in both landscape and portrait. Upstream v1.50 static table 220/220 mapped to candidate emissions; receiver hardware validation remains pending. SHA-256 multi-part CYD 3.2 flashing.",
       "highlights": [
