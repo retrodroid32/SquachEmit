@@ -1,4 +1,4 @@
-"""Audit actual on-air identity exceptions in the 362-case v1.1.0 LAB catalog.
+"""Audit actual on-air identity exceptions in the 369-case v1.1.0 LAB catalog.
 
 This compiles the *same* C++ identity/registered-OUI helpers used by the
 firmware. It cannot prove physical RF reception or manufacturer authenticity.
@@ -14,15 +14,15 @@ ROOT=Path(__file__).resolve().parents[1]
 
 
 class OnAirIdentityAudit(unittest.TestCase):
-    def test_catalog_contains_exactly_37_explicit_vendor_beacons(self):
+    def test_catalog_contains_exactly_39_explicit_vendor_beacons(self):
         cases=json.loads((ROOT/'tests/cases.json').read_text())
         ids=[x['id'] for x in cases]
         oui_cases=[x for x in cases if x['id'].startswith('OUI-')]
-        self.assertEqual(len(cases),362)
+        self.assertEqual(len(cases),369)
         self.assertEqual(len(ids),len(set(ids)))
-        self.assertEqual(len(oui_cases),37)
+        self.assertEqual(len(oui_cases),39)
         self.assertEqual(sum(x['id'].startswith('OUI-DJI-') for x in oui_cases),10)
-        self.assertEqual(sum(not x['id'].startswith('OUI-DJI-') for x in oui_cases),27)
+        self.assertEqual(sum(not x['id'].startswith('OUI-DJI-') for x in oui_cases),29)
         dji=(ROOT/'include/dji_oui_lab.h').read_text()
         other=(ROOT/'include/uav_vendor_oui_lab.h').read_text()
         for case in oui_cases:
@@ -50,9 +50,9 @@ class OnAirIdentityAudit(unittest.TestCase):
 #include <string>
 int main() {
  static_assert(SquachDjiOuiLab::kCount==10, "DJI count");
- static_assert(SquachUavVendorLab::kCount==27, "extended UAS count");
+ static_assert(SquachUavVendorLab::kCount==29, "extended UAS count");
  std::set<std::string> ids;
- for(size_t i=0;i<362;++i) {
+ for(size_t i=0;i<369;++i) {
    uint8_t w[6],b[6];char tmp[18];
    SquachIdentity::derive(0x112233445566ULL,i,SquachIdentity::Radio::Wifi,w);
    SquachIdentity::derive(0x112233445566ULL,i,SquachIdentity::Radio::Ble,b);
@@ -60,7 +60,7 @@ int main() {
    SquachIdentity::text(w,tmp);assert(ids.insert(tmp).second);
    SquachIdentity::text(b,tmp);assert(ids.insert(tmp).second);
  }
- assert(ids.size()==724);
+ assert(ids.size()==738);
  static_assert(SquachForkOuiLab::kCount==10,"fork-only count");
  for(size_t i=0;i<SquachForkOuiLab::kCount;++i){
    uint8_t a[6]={2,1,2,3,4,5};
@@ -114,8 +114,8 @@ int main() {
         notes=(ROOT/'docs/IDENTITY_AUDIT.md').read_text()
         limits=(ROOT/'docs/LIMITATIONS.md').read_text()
         dji=(ROOT/'docs/DJI_MODEL_PROFILES.md').read_text()
-        self.assertIn('37 deliberate exceptions',notes)
-        self.assertIn('37 bounded OUI-only',limits)
+        self.assertIn('39 deliberate exceptions',notes)
+        self.assertIn('39 bounded OUI-only',limits)
         self.assertIn('registered DJI /24',dji)
         self.assertNotIn('only by *offline*',limits)
 
