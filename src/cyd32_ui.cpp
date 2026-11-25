@@ -1661,7 +1661,12 @@ Cyd32UiAction touchEvidence(int x,int y){
 }
 Cyd32UiAction touchSettings(int x,int y){
   if(y>=kFooterY){
-    if(x<108){screen=Screen::MainMenu;settingsMore=false;settingsSubmenuFlow=false;}
+    if(x<108){
+      // BACK from DISPLAY returns to the first Settings page; only the
+      // first page exits to the main menu. Shared by landscape/portrait.
+      if(settingsMore){settingsMore=false;}
+      else {screen=Screen::MainMenu;settingsSubmenuFlow=false;}
+    }
     else if(x<213){settingsMore=!settingsMore;}
     else if(settingsMore){settingsSubmenuFlow=true;screen=Screen::Help;settingsMore=false;}
     else {screen=Screen::BatteryCalibration;}
