@@ -16,8 +16,8 @@ cases. C5 and S3 have successful CI builds, not complete physical validation.
 - **Wi-Fi SSID:** A single genuine, password-protected SoftAP tests prefixes,
   not camera hardware or OUI matching. One S3 cannot emit arbitrarily many
   independent concurrently active SSIDs/BSSIDs as a normal SoftAP.
-- **Wi-Fi OUIs:** Public v1.1.0 deliberately includes 37 bounded OUI-only
-  ordinary SoftAP beacon cases: 10 registered DJI /24 prefixes and 27 UAS
+- **Wi-Fi OUIs:** Public v1.1.0 deliberately includes 39 bounded OUI-only
+  ordinary SoftAP beacon cases: 10 registered DJI /24 prefixes and 29 UAS
   supplier allocations spanning /24, /28 and /36. Only those explicit cases
   override the default locally administered *temporary on-air* AP identity
   with a registered prefix and synthetic suffix. Many other vendor families
