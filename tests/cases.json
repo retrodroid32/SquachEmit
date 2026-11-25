@@ -3256,5 +3256,68 @@
     "description": "Meta v1.50 BLE UUID FEB8 | synthetic BLE service advertisement only",
     "code": 65208,
     "text": null
+  },
+  {
+    "id": "OUI-INSPFLIGHT-34B5F32",
+    "carrier": "WIFI",
+    "kind": "WifiAp",
+    "expected": "NONE",
+    "description": "Inspired Flight fork-only 28-bit MA-M DRONE signature; synthetic AP MAC, no Remote ID",
+    "code": 6,
+    "text": "SQE-LAB-IFLIGHT-34B5F32"
+  },
+  {
+    "id": "OUI-ZEROZERO-C863144",
+    "carrier": "WIFI",
+    "kind": "WifiAp",
+    "expected": "NONE",
+    "description": "ZeroZero fork-only 28-bit MA-M DRONE signature; synthetic AP MAC, no Remote ID",
+    "code": 6,
+    "text": "SQE-LAB-ZEROZERO-C863144"
+  },
+  {
+    "id": "FORK-BLE-SKIM-BT04",
+    "carrier": "BLE",
+    "kind": "BleName",
+    "expected": "NONE",
+    "description": "Fork-only exact Bluetooth serial-module name BT04; BLE name test, not Bluetooth Classic discovery",
+    "code": 0,
+    "text": "BT04"
+  },
+  {
+    "id": "FORK-BLE-SKIM-JDY09",
+    "carrier": "BLE",
+    "kind": "BleName",
+    "expected": "NONE",
+    "description": "Fork-only exact Bluetooth serial-module name JDY-09; BLE name test, not Bluetooth Classic discovery",
+    "code": 0,
+    "text": "JDY-09"
+  },
+  {
+    "id": "FORK-BLE-SKIM-JDY10",
+    "carrier": "BLE",
+    "kind": "BleName",
+    "expected": "NONE",
+    "description": "Fork-only exact Bluetooth serial-module name JDY-10; BLE name test, not Bluetooth Classic discovery",
+    "code": 0,
+    "text": "JDY-10"
+  },
+  {
+    "id": "FORK-BLE-SKIM-JDY17",
+    "carrier": "BLE",
+    "kind": "BleName",
+    "expected": "NONE",
+    "description": "Fork-only exact Bluetooth serial-module name JDY-17; BLE name test, not Bluetooth Classic discovery",
+    "code": 0,
+    "text": "JDY-17"
+  },
+  {
+    "id": "FORK-BLE-SKIM-SPPC",
+    "carrier": "BLE",
+    "kind": "BleName",
+    "expected": "NONE",
+    "description": "Fork-only exact Bluetooth serial-module name SPP-C; BLE name test, not Bluetooth Classic discovery",
+    "code": 0,
+    "text": "SPP-C"
   }
 ]
