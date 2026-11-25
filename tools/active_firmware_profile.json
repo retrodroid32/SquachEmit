@@ -1,54 +1,51 @@
 {
   "schema": 1,
-  "scenario_count": 362,
+  "scenario_count": 369,
   "firmware_sources": {
     "SquachEmit.ino": "90b4205813a2f7885bc1e12ce7431eebf7249f45",
-    "include": "cc1bb100ef4083fc3aacc1c8370c3fe4e259f74d",
+    "include": "3175c372e12d019133dac48f63c11d1bc300fe68",
     "lib": "bbb71a1b441d98f3ada5d709c4b67a1c3395d161",
     "platformio.ini": "c3ff3725248b4c67d60da6903982515031c501f6",
-    "src": "cd2abc406b25424de82eaaa98010be54980cb48b"
+    "src": "fa2df274a4d26ec5c2deb1fdcc1c54a548b6740a"
   },
   "builds": {
     "cyd32-st7798": {
-      "title": "SquachEmit v1.1.0 CYD 3.2 R14.38 LAB — 362 RF Cases & Gear BACK Fix",
-      "version": "v1.1.0 MAINLINE · 362 cases",
-      "summary": "R14.38 LAB: 362 bounded synthetic BLE/Wi-Fi RF test cases. Corrected gear-menu navigation: BACK from Test Library, Quick Find, Favorites and TX History returns to the gear Main Menu, while nested library and home-origin paths retain their parent screen. Settings child BACK for Battery, Identity, Help, Recovery and Display returns to the first Settings page in both landscape and portrait. Upstream v1.50 static table 220/220 mapped to candidate emissions; receiver hardware validation remains pending. SHA-256 multi-part CYD 3.2 flashing.",
+      "title": "SquachEmit v1.1.0 CYD 3.2 ST7798 R14.39 LAB — 369 Fork/Upstream RF Cases",
+      "version": "v1.1.0 LAB · 369 cases",
+      "summary": "R14.39 LAB 369 synthetic BLE/Wi-Fi cases. Adds two fork-specific 28-bit MA-M drone-prefix test beacons (Inspired Flight and ZeroZero) and five exact BLE serial-module-name advertisements. Keeps upstream v1.50 defaults and records 19 fork-specific expected results separately; source tests do not prove actual receiver detection. Preserves working R14.38 gear/settings BACK navigation. No unauthorized radio transmission. SHA-256 multi-part firmware flashing for CYD 3.2 ST7798.",
       "highlights": [
-        "111 additional v1.50 Wi-Fi manufacturer-prefix SoftAP transmitters, individually selectable.",
-        "3 additional BLE service UUID advertisements; full FFFA Remote ID emission already available.",
-        "220/220 upstream static lookup entries mapped to candidate emissions; 362 total cases.",
-        "Active AP BSSID readback and bounded retry before reporting RF transmission.",
-        "10 fork-only OUI cases retained; case-unique MACs support expanded fixture library.",
-        "LAB only, physical receiver pass/fail unverified; no automatic RF transmission.",
-        "Gear-menu BACK routing for four entries plus nested category paths, tested in landscape and portrait."
+        "369 selectable bounded RF tests: 362 prior fixtures plus two 28-bit drone prefixes and five BLE names.",
+        "Source-pinned upstream v1.50 220/220 static matches retained; 19 fork-only expectation overrides recorded separately.",
+        "Inspired Flight and ZeroZero 28-bit Wi-Fi AP MAC prefixes applied with exact high-nibble matching.",
+        "Five additional BLE advertised-name tests: BT04, JDY-09, JDY-10, JDY-17, SPP-C.",
+        "R14.38 navigation behavior unchanged; RF receiver testing still pending.",
+        "Case-unique addresses; transmitter remains operator-triggered and time-limited."
       ]
     },
     "c5-waveshare-28": {
-      "title": "SquachEmit v1.1.0 Waveshare ESP32-C5 2.8 R14.37 LAB — 362 Hardware RF Cases",
-      "version": "v1.1.0 MAINLINE · 362 cases",
-      "summary": "R14.37 LAB (boot catalog-count fix): 362 bounded synthetic on-air BLE/Wi-Fi cases. Added all 111 remaining v1.50 OUI-prefix SoftAP transmissions and 3 BLE UUID advertisements, preserving 10 fork-only cases and previous 238 fixtures. Hardware confirms active Wi-Fi AP MAC after startup; retries failed AP starts once. Upstream v1.50 source table mapping 220/220 candidate fixtures. Not a claim of complete parser/behavioral or physical receiver validation. SHA-256 multi-part flashing for Waveshare ESP32-C5 2.8.",
+      "title": "SquachEmit v1.1.0 Waveshare ESP32-C5 2.8 R14.39 LAB — 369 Fork/Upstream RF Cases",
+      "version": "v1.1.0 LAB · 369 cases",
+      "summary": "R14.39 LAB 369 synthetic BLE/Wi-Fi cases. Adds two fork-specific 28-bit MA-M drone-prefix test beacons (Inspired Flight and ZeroZero) and five exact BLE serial-module-name advertisements. Keeps upstream v1.50 defaults and records 19 fork-specific expected results separately; source tests do not prove actual receiver detection. Preserves working R14.38 gear/settings BACK navigation. No unauthorized radio transmission. SHA-256 multi-part firmware flashing for Waveshare ESP32-C5 2.8.",
       "highlights": [
-        "111 additional v1.50 Wi-Fi manufacturer-prefix SoftAP transmitters, individually selectable.",
-        "3 additional BLE service UUID advertisements; full FFFA Remote ID emission already available.",
-        "220/220 upstream static lookup entries mapped to candidate emissions; 362 total cases.",
-        "Active AP BSSID readback and bounded retry before reporting RF transmission.",
-        "10 fork-only OUI cases retained; case-unique MACs support expanded fixture library.",
-        "LAB only, physical receiver pass/fail unverified; no automatic RF transmission.",
-        "All three board boot banners now report the compiled scenario count rather than stale 172-case text."
+        "369 selectable bounded RF tests: 362 prior fixtures plus two 28-bit drone prefixes and five BLE names.",
+        "Source-pinned upstream v1.50 220/220 static matches retained; 19 fork-only expectation overrides recorded separately.",
+        "Inspired Flight and ZeroZero 28-bit Wi-Fi AP MAC prefixes applied with exact high-nibble matching.",
+        "Five additional BLE advertised-name tests: BT04, JDY-09, JDY-10, JDY-17, SPP-C.",
+        "R14.38 navigation behavior unchanged; RF receiver testing still pending.",
+        "Case-unique addresses; transmitter remains operator-triggered and time-limited."
       ]
     },
     "s3-devkit": {
-      "title": "SquachEmit v1.1.0 ESP32-S3 DevKit R14.37 LAB — 362 Hardware RF Cases",
-      "version": "v1.1.0 MAINLINE · 362 cases",
-      "summary": "R14.37 LAB (boot catalog-count fix): 362 bounded synthetic on-air BLE/Wi-Fi cases. Added all 111 remaining v1.50 OUI-prefix SoftAP transmissions and 3 BLE UUID advertisements, preserving 10 fork-only cases and previous 238 fixtures. Hardware confirms active Wi-Fi AP MAC after startup; retries failed AP starts once. Upstream v1.50 source table mapping 220/220 candidate fixtures. Not a claim of complete parser/behavioral or physical receiver validation. SHA-256 multi-part flashing for ESP32-S3 DevKit.",
+      "title": "SquachEmit v1.1.0 ESP32-S3 DevKit R14.39 LAB — 369 Fork/Upstream RF Cases",
+      "version": "v1.1.0 LAB · 369 cases",
+      "summary": "R14.39 LAB 369 synthetic BLE/Wi-Fi cases. Adds two fork-specific 28-bit MA-M drone-prefix test beacons (Inspired Flight and ZeroZero) and five exact BLE serial-module-name advertisements. Keeps upstream v1.50 defaults and records 19 fork-specific expected results separately; source tests do not prove actual receiver detection. Preserves working R14.38 gear/settings BACK navigation. No unauthorized radio transmission. SHA-256 multi-part firmware flashing for ESP32-S3 DevKit.",
       "highlights": [
-        "111 additional v1.50 Wi-Fi manufacturer-prefix SoftAP transmitters, individually selectable.",
-        "3 additional BLE service UUID advertisements; full FFFA Remote ID emission already available.",
-        "220/220 upstream static lookup entries mapped to candidate emissions; 362 total cases.",
-        "Active AP BSSID readback and bounded retry before reporting RF transmission.",
-        "10 fork-only OUI cases retained; case-unique MACs support expanded fixture library.",
-        "LAB only, physical receiver pass/fail unverified; no automatic RF transmission.",
-        "All three board boot banners now report the compiled scenario count rather than stale 172-case text."
+        "369 selectable bounded RF tests: 362 prior fixtures plus two 28-bit drone prefixes and five BLE names.",
+        "Source-pinned upstream v1.50 220/220 static matches retained; 19 fork-only expectation overrides recorded separately.",
+        "Inspired Flight and ZeroZero 28-bit Wi-Fi AP MAC prefixes applied with exact high-nibble matching.",
+        "Five additional BLE advertised-name tests: BT04, JDY-09, JDY-10, JDY-17, SPP-C.",
+        "R14.38 navigation behavior unchanged; RF receiver testing still pending.",
+        "Case-unique addresses; transmitter remains operator-triggered and time-limited."
       ]
     }
   }
