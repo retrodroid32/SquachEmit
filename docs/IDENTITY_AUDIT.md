@@ -6,17 +6,17 @@ SquachEmit's 172-case catalog begins with deterministic, chip/case-derived
 Wi-Fi locally administered unicast MACs (`02:`) and static-random BLE MACs.
 No path modifies the chip's permanent eFuse identity.
 
-There are **37 deliberate exceptions**, all ordinary, explicitly selected
+There are **39 deliberate exceptions**, all ordinary, explicitly selected
 2.4 GHz Wi-Fi SoftAP beacon scenarios:
 
 - 10 `OUI-DJI-*` cases use exact registered DJI **24-bit** MA-L blocks.
-- 27 additional `OUI-*` UAS/vendor cases use precise registered **24-bit,
+- 29 additional `OUI-*` UAS/vendor cases use precise registered **24-bit,
   28-bit or 36-bit** prefixes.
 - In those exceptions only, the temporary SoftAP MAC is replaced with the
   selected registered prefix and a *synthetic* remaining suffix. Each case
   has an `SQE-LAB-...` SSID and a `TEST,OUI_ONLY,...,NO_REMOTE_ID`
   serial truth marker.
-- None of these 37 beacons constitutes authentic vendor hardware, an
+- None of these 39 beacons constitutes authentic vendor hardware, an
   identified flying aircraft, a validated model, or an aviation Remote ID
   broadcast. Manufacturer-OUI lookup is trivially spoofable.
 
@@ -26,7 +26,7 @@ are added by this audit.
 
 ## Why this documentation was corrected
 
-The first 95-case public version did not contain the 37 on-air OUI
+The first 95-case public version did not contain the 39 on-air OUI
 exceptions. Later firmware added deliberately selected registered-prefix
 test cases, while historical documents and one DJI registry regression
 test still said all on-air MACs were locally administered. That was
@@ -40,7 +40,7 @@ on-air reception.
 ## Verification scope
 
 Run `python -m unittest discover -s tests -v`. The new audit compiles
-the actual C++ firmware prefix helpers and checks all 37 selected
+the actual C++ firmware prefix helpers and checks all 39 selected
 scenarios against the 172-case catalog, the DJI and extended vendor
 prefixes, and the bit boundaries of 24/28/36-bit allocations. Existing
 identity regression expands from 49 to all 172 default cases.
