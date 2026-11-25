@@ -3,7 +3,7 @@
   "scenario_count": 369,
   "firmware_sources": {
     "SquachEmit.ino": "90b4205813a2f7885bc1e12ce7431eebf7249f45",
-    "include": "3175c372e12d019133dac48f63c11d1bc300fe68",
+    "include": "d2e7067725ff413fbd00f1e19679898ad36b4bac",
     "lib": "bbb71a1b441d98f3ada5d709c4b67a1c3395d161",
     "platformio.ini": "c3ff3725248b4c67d60da6903982515031c501f6",
     "src": "fa2df274a4d26ec5c2deb1fdcc1c54a548b6740a"
@@ -17,7 +17,7 @@
         "369 selectable bounded RF tests: 362 prior fixtures plus two 28-bit drone prefixes and five BLE names.",
         "Source-pinned upstream v1.50 220/220 static matches retained; 19 fork-only expectation overrides recorded separately.",
         "Inspired Flight and ZeroZero 28-bit Wi-Fi AP MAC prefixes applied with exact high-nibble matching.",
-        "Five additional BLE advertised-name tests: BT04, JDY-09, JDY-10, JDY-17, SPP-C.",
+        "Five additional BLE-name tests under SERIAL MODULES: BT04, JDY-09, JDY-10, JDY-17, SPP-C.",
         "R14.38 navigation behavior unchanged; RF receiver testing still pending.",
         "Case-unique addresses; transmitter remains operator-triggered and time-limited."
       ]
@@ -30,7 +30,7 @@
         "369 selectable bounded RF tests: 362 prior fixtures plus two 28-bit drone prefixes and five BLE names.",
         "Source-pinned upstream v1.50 220/220 static matches retained; 19 fork-only expectation overrides recorded separately.",
         "Inspired Flight and ZeroZero 28-bit Wi-Fi AP MAC prefixes applied with exact high-nibble matching.",
-        "Five additional BLE advertised-name tests: BT04, JDY-09, JDY-10, JDY-17, SPP-C.",
+        "Five additional BLE-name tests under SERIAL MODULES: BT04, JDY-09, JDY-10, JDY-17, SPP-C.",
         "R14.38 navigation behavior unchanged; RF receiver testing still pending.",
         "Case-unique addresses; transmitter remains operator-triggered and time-limited."
       ]
@@ -43,7 +43,7 @@
         "369 selectable bounded RF tests: 362 prior fixtures plus two 28-bit drone prefixes and five BLE names.",
         "Source-pinned upstream v1.50 220/220 static matches retained; 19 fork-only expectation overrides recorded separately.",
         "Inspired Flight and ZeroZero 28-bit Wi-Fi AP MAC prefixes applied with exact high-nibble matching.",
-        "Five additional BLE advertised-name tests: BT04, JDY-09, JDY-10, JDY-17, SPP-C.",
+        "Five additional BLE-name tests under SERIAL MODULES: BT04, JDY-09, JDY-10, JDY-17, SPP-C.",
         "R14.38 navigation behavior unchanged; RF receiver testing still pending.",
         "Case-unique addresses; transmitter remains operator-triggered and time-limited."
       ]
