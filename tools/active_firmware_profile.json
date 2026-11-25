@@ -6,13 +6,13 @@
     "include": "cc1bb100ef4083fc3aacc1c8370c3fe4e259f74d",
     "lib": "bbb71a1b441d98f3ada5d709c4b67a1c3395d161",
     "platformio.ini": "c3ff3725248b4c67d60da6903982515031c501f6",
-    "src": "72fedc2a8bc126ef07c97ec979da474a383ec14d"
+    "src": "b33e6020e648e2b4b64ac800147407ef938c5faa"
   },
   "builds": {
     "cyd32-st7798": {
-      "title": "SquachEmit v1.1.0 CYD 3.2 ST7798 R14.37 LAB — 362 Hardware RF Cases",
+      "title": "SquachEmit v1.1.0 CYD 3.2 ST7798 R14.37 LAB — 362 RF Cases & Settings BACK",
       "version": "v1.1.0 MAINLINE · 362 cases",
-      "summary": "R14.37 LAB (boot catalog-count fix): 362 bounded synthetic on-air BLE/Wi-Fi cases. Added all 111 remaining v1.50 OUI-prefix SoftAP transmissions and 3 BLE UUID advertisements, preserving 10 fork-only cases and previous 238 fixtures. Hardware confirms active Wi-Fi AP MAC after startup; retries failed AP starts once. Upstream v1.50 source table mapping 220/220 candidate fixtures. Not a claim of complete parser/behavioral or physical receiver validation. SHA-256 multi-part flashing for CYD 3.2 ST7798.",
+      "summary": "R14.37 LAB (boot catalog-count fix): 362 bounded synthetic on-air BLE/Wi-Fi cases. Added all 111 remaining v1.50 OUI-prefix SoftAP transmissions and 3 BLE UUID advertisements, preserving 10 fork-only cases and previous 238 fixtures. Hardware confirms active Wi-Fi AP MAC after startup; retries failed AP starts once. Upstream v1.50 source table mapping 220/220 candidate fixtures. Not a claim of complete parser/behavioral or physical receiver validation. SHA-256 multi-part flashing for CYD 3.2 ST7798.  Settings navigation: DISPLAY BACK now returns to first Settings page; Identity/Help/R",
       "highlights": [
         "111 additional v1.50 Wi-Fi manufacturer-prefix SoftAP transmitters, individually selectable.",
         "3 additional BLE service UUID advertisements; full FFFA Remote ID emission already available.",
@@ -20,7 +20,7 @@
         "Active AP BSSID readback and bounded retry before reporting RF transmission.",
         "10 fork-only OUI cases retained; case-unique MACs support expanded fixture library.",
         "LAB only, physical receiver pass/fail unverified; no automatic RF transmission.",
-        "All three board boot banners now report the compiled scenario count rather than stale 172-case text."
+        "Settings submenu and DISPLAY page BACK routes corrected on landscape and portrait."
       ]
     },
     "c5-waveshare-28": {
