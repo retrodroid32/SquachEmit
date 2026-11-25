@@ -2,7 +2,7 @@
   "schema": 1,
   "scenario_count": 172,
   "firmware_sources": {
-    "src": "24c940821e2483a6473daa34af2b2f2eff68ec23",
+    "src": "11eff63685e0f631b7ecbb3e7b2dde98268b51de",
     "include": "a18e9329d0a653e5f2b4af11bab4c878727353f6",
     "lib": "bbb71a1b441d98f3ada5d709c4b67a1c3395d161",
     "SquachEmit.ino": "90b4205813a2f7885bc1e12ce7431eebf7249f45",
@@ -10,9 +10,9 @@
   },
   "builds": {
     "cyd32-st7798": {
-      "title": "SquachEmit v1.1.0 CYD 3.2 R14.34 LAB — Settings Submenu Back Fix (172 Cases)",
+      "title": "SquachEmit v1.1.0 CYD 3.2 R14.34 LAB — Settings BACK Page Fix (172 Cases)",
       "version": "v1.1.0 MAINLINE · 172 cases",
-      "summary": "R14.34 LAB fixes Settings navigation: BACK from Identity, Help and Recovery opened through Settings now returns to the FIRST Settings page, not the secondary Display page or global Main Menu. The helper clears stale submenu/page context. Direct Help from global Main Menu still returns there; Settings page cycling and battery calibration BACK are unchanged. Native touch and UI-state regression tests added. Preserves R14.33 calibrated battery readings, two-decimal volts, Squachy animation and all 172 RF cases. Four-part SHA-256 LAB firmware, physical validation required.",
+      "summary": "R14.34 LAB fixes Settings navigation: BACK from Identity, Help and Recovery opened through Settings now returns to the FIRST Settings page, not the secondary Display page or global Main Menu. The helper clears stale submenu/page context. Direct Help from global Main Menu still returns there; Settings page cycling and battery calibration BACK are unchanged. Native touch and UI-state regression tests added. Preserves R14.33 calibrated battery readings, two-decimal volts, Squachy animation and all 172 RF cases. Four-part SHA-256 LAB firmware, physical validation required. Settings DISPLAY page BACK now returns to first Settings page rather than exiting directly to Main Menu; applies to both landscape and portrait controls.",
       "highlights": [
         "Settings > Display > Identity BACK now returns to main Settings page, not secondary Settings.",
         "Settings > Display > Help > Recovery BACK returns to first Settings page without stale context.",
@@ -20,7 +20,8 @@
         "Battery calibration BACK returns to first Settings; Settings page cycling unchanged.",
         "Native CYD3.2 touch regressions check Settings, Identity, Help, Recovery and battery flows.",
         "Preserves merged R14.33 calibration, two-decimal volts, Squachy art and 172 cases.",
-        "LAB only; four-part SHA-256 firmware packaging; physical CYD3.2 testing required."
+        "LAB only; four-part SHA-256 firmware packaging; physical CYD3.2 testing required.",
+        "Settings page-two BACK returns to the first Settings page; the first page BACK exits to Main Menu."
       ]
     },
     "c5-waveshare-28": {
