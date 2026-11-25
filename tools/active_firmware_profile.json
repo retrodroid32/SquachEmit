@@ -12,7 +12,7 @@
     "cyd32-st7798": {
       "title": "SquachEmit v1.1.0 CYD 3.2 R14.34 LAB — Settings BACK Page Fix (172 Cases)",
       "version": "v1.1.0 MAINLINE · 172 cases",
-      "summary": "R14.34 LAB Settings navigation correction: the DISPLAY page BACK returns to the first Settings page, and only the first Settings page BACK exits to Main Menu. Identity, Help and Recovery opened from Settings also return to the first Settings page. Direct Help from Main Menu still returns to Main Menu. Landscape and portrait share the corrected touch routing. Preserves battery voltage/percent options, calibration offset, original Squachy animation and 172 RF scenarios. Hardware verification pending.",
+      "summary": "R14.34 LAB Settings navigation correction: the DISPLAY page BACK returns to the first Settings page, and only the first Settings page BACK exits to Main Menu. Identity, Help and Recovery opened from Settings also return to the first Settings page. Direct Help from Main Menu still returns to Main Menu. Landscape and portrait share the corrected touch routing. Preserves battery voltage/percent options, calibration offset, original Squachy animation and 172 RF scenarios. Hardware verification pending. SHA-256 verified multi-part flashing.",
       "highlights": [
         "Settings > Display > Identity BACK now returns to main Settings page, not secondary Settings.",
         "Settings > Display > Help > Recovery BACK returns to first Settings page without stale context.",
