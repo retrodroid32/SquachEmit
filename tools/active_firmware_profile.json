@@ -12,7 +12,7 @@
     "cyd32-st7798": {
       "title": "SquachEmit v1.1.0 CYD 3.2 ST7798 R14.37 LAB — 362 RF Cases & Settings BACK",
       "version": "v1.1.0 MAINLINE · 362 cases",
-      "summary": "R14.37 LAB (boot catalog-count fix): 362 bounded synthetic on-air BLE/Wi-Fi cases. Added all 111 remaining v1.50 OUI-prefix SoftAP transmissions and 3 BLE UUID advertisements, preserving 10 fork-only cases and previous 238 fixtures. Hardware confirms active Wi-Fi AP MAC after startup; retries failed AP starts once. Upstream v1.50 source table mapping 220/220 candidate fixtures. Not a claim of complete parser/behavioral or physical receiver validation. SHA-256 multi-part flashing for CYD 3.2 ST7798.  Settings navigation: DISPLAY BACK now returns to first Settings page; Identity/Help/R",
+      "summary": "R14.37 LAB: 362 bounded BLE/Wi-Fi synthetic transmission cases with 220/220 upstream v1.50 static signature entries mapped to candidate on-air fixtures. Includes fork-only cases, OUI SoftAP MAC readback, bounded startup retry, and original test library. Settings DISPLAY page BACK returns to the first Settings page before Main Menu; Help, Identity and Recovery opened from Settings also return to the first page. Navigation is shared by landscape and portrait. No physical RF receiver compatibility claimed. SHA-256 multi-part flashing for CYD 3.2 ST7798.",
       "highlights": [
         "111 additional v1.50 Wi-Fi manufacturer-prefix SoftAP transmitters, individually selectable.",
         "3 additional BLE service UUID advertisements; full FFFA Remote ID emission already available.",
