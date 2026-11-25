@@ -372,7 +372,7 @@
       device='OpenDroneID';method='synthetic BLE Remote ID';
     } else if(id.startsWith('BLE-AXON')||id.startsWith('WIFI-AXON')) {
       device='Axon body camera';method=desc;
-    } else if(id.startsWith('BLE-SKIM')||id==='BLE-SKIMMER') {
+    } else if(id.startsWith('BLE-SKIM')||id.startsWith('FORK-BLE-SKIM-')||id==='BLE-SKIMMER') {
       device=(c.text||id==='BLE-SKIMMER'&&'HC-05')||'Bluetooth serial module';
       method='generic Bluetooth module; not proof of card skimmer — '+desc;
     } else if(id.startsWith('BLE-NEG-')) {
