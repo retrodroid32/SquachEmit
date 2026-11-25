@@ -61,6 +61,16 @@ int main(){
 
   touch(270,226);mark("battery");
   touch(50,226);mark("back_battery");
+  // Repeat from the first Settings page: BACK must never exit to MENU.
+  touch(270,226);mark("battery_again");
+  touch(50,226);mark("back_battery_again");
+  // Bounce through Identity -> Help -> Recovery: origin must stay Settings.
+  touch(158,226);mark("display_for_identity_chain");
+  touch(155,132);mark("chain_identity");
+  touch(150,226);mark("chain_help");
+  touch(268,226);mark("chain_recovery");
+  touch(50,226);mark("chain_back_to_settings");
+
 
   // Cycling Settings pages still works both ways without opening a submenu.
   touch(150,226);mark("settings2_cycle");
@@ -111,6 +121,13 @@ int main(){
             "back_help":("SETTINGS",0),
             "battery":("BATCAL",None),
             "back_battery":("SETTINGS",0),
+            "battery_again":("BATCAL",None),
+            "back_battery_again":("SETTINGS",0),
+            "display_for_identity_chain":("SETTINGS",1),
+            "chain_identity":("IDENTITY",None),
+            "chain_help":("HELP",0),
+            "chain_recovery":("RECOVERY",0),
+            "chain_back_to_settings":("SETTINGS",0),
             "settings2_cycle":("SETTINGS",1),
             "settings1_cycle":("SETTINGS",0),
             "settings_second_for_back":("SETTINGS",1),
@@ -129,7 +146,13 @@ int main(){
         self.assertIn("settingsMore=false;",src)
         self.assertIn("settingsSubmenuFlow=false;",src)
         self.assertEqual(src.count("if(x<108)backFromSettingsSubmenu();"),3)
-        self.assertIn("if(x<108){screen=Screen::Settings;settingsMore=false;redraw=true;}",src)
+        self.assertIn("void openSettingsSubmenu(Screen destination)",src)
+        self.assertIn("openSettingsSubmenu(Screen::BatteryCalibration)",src)
+        self.assertIn("openSettingsSubmenu(Screen::Identity)",src)
+        self.assertIn("openSettingsSubmenu(Screen::Help)",src)
+        self.assertIn("if(screen==Screen::BatteryCalibration||settingsSubmenuFlow)",src)
+        self.assertIn("if(x<108){backFromSettingsSubmenu();}",src)
+        self.assertIn("if(x<80){backFromSettingsSubmenu();}",src)
         self.assertIn("return touchIdentity(50,218);",src)
         self.assertIn("return touchHelp(50,218);",src)
         self.assertIn("return touchRecovery(50,218);",src)
