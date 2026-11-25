@@ -3262,7 +3262,7 @@
     "carrier": "WIFI",
     "kind": "WifiAp",
     "expected": "NONE",
-    "description": "Inspired Flight fork-only 28-bit MA-M DRONE signature; synthetic AP MAC, no Remote ID",
+    "description": "Inspired Flight 34B5F32 | LAB OUI ONLY; NO RID | fork MA-M drone fixture",
     "code": 6,
     "text": "SQE-LAB-IFLIGHT-34B5F32"
   },
@@ -3271,7 +3271,7 @@
     "carrier": "WIFI",
     "kind": "WifiAp",
     "expected": "NONE",
-    "description": "ZeroZero fork-only 28-bit MA-M DRONE signature; synthetic AP MAC, no Remote ID",
+    "description": "ZeroZero C863144 | LAB OUI ONLY; NO RID | fork MA-M drone fixture",
     "code": 6,
     "text": "SQE-LAB-ZEROZERO-C863144"
   },
