@@ -372,7 +372,7 @@
       device='OpenDroneID';method='synthetic BLE Remote ID';
     } else if(id.startsWith('BLE-AXON')||id.startsWith('WIFI-AXON')) {
       device='Axon body camera';method=desc;
-    } else if(id.startsWith('BLE-SKIM')||id==='BLE-SKIMMER') {
+    } else if(id.startsWith('BLE-SKIM')||id.startsWith('FORK-BLE-SKIM-')||id==='BLE-SKIMMER') {
       device=(c.text||id==='BLE-SKIMMER'&&'HC-05')||'Bluetooth serial module';
       method='generic Bluetooth module; not proof of card skimmer — '+desc;
     } else if(id.startsWith('BLE-NEG-')) {
@@ -404,6 +404,29 @@
     }
     return device+' — '+method;
   }
+  // Source-pinned receiver expectation overlay. Never alter the actual signal
+  // or mutate the upstream v1.50 catalog; fork-only labels affect scoring.
+  function receiverCatalog(base, profile, forkRules) {
+    if(!Array.isArray(base)||!['fork','upstream'].includes(profile))
+      throw Error('Invalid receiver catalog or profile');
+    var entries=forkRules && forkRules.overrides;
+    if(!entries||typeof entries!=='object'||Array.isArray(entries))
+      throw Error('Missing fork receiver expectation table');
+    var index=Object.create(null);
+    base.forEach(function(c){
+      if(!c||typeof c.id!=='string'||index[c.id])
+        throw Error('Duplicate or missing scenario ID');
+      index[c.id]=true;
+    });
+    Object.keys(entries).forEach(function(id){
+      if(!index[id]||! /^[A-Z_]+$/.test(entries[id]))
+        throw Error('Unknown or invalid fork expectation '+id);
+    });
+    return base.map(function(c){
+      return Object.assign({},c,{expected: profile==='fork' && entries[c.id] ?
+        entries[c.id] : c.expected});
+    });
+  }
   function batchPlan(all,scope) {
     if(!['all','BLE','WIFI'].includes(scope))throw Error('Invalid batch scope');
     return (all||[]).filter(function(c){return scope==='all'||c.carrier===scope;})
@@ -416,7 +439,7 @@
     parseWatchLogRow:parseWatchLogRow,newWatchLogParser:newWatchLogParser,
     matchWatchDetection:matchWatchDetection,
     findUnverifiedWatchObservation:findUnverifiedWatchObservation,
-    signalName:signalName,batchPlan:batchPlan,
+    signalName:signalName,batchPlan:batchPlan,receiverCatalog:receiverCatalog,
     status:status,pendingReason:pendingReason,score:score,makeTrial:makeTrial,applyEnd:applyEnd,
     exportCsv:exportCsv,parseCsv:parseCsv};
 });
