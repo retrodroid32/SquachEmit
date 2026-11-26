@@ -29,7 +29,26 @@ class TestFixtures(unittest.TestCase):
         with (ROOT/'tests'/'observations.csv').open(newline='') as f:
             observed = list(csv.DictReader(f))
         self.assertEqual({s['id'] for s in observed}, {s['id'] for s in self.cases})
-        self.assertTrue(all(not s['observed'] for s in observed))
+        # Seven R14.39 receiver observations were provided by the owner.
+        # Preserve them as reported hardware detections rather than
+        # resetting evidence to make a template-only test pass.
+        confirmed = {
+            "OUI-INSPFLIGHT-34B5F32": "DRONE",
+            "OUI-ZEROZERO-C863144": "DRONE",
+            "FORK-BLE-SKIM-BT04": "SKIMMER",
+            "FORK-BLE-SKIM-JDY09": "SKIMMER",
+            "FORK-BLE-SKIM-JDY10": "SKIMMER",
+            "FORK-BLE-SKIM-JDY17": "SKIMMER",
+            "FORK-BLE-SKIM-SPPC": "SKIMMER",
+        }
+        found = {s["id"]: s["observed"] for s in observed if s["observed"]}
+        self.assertEqual(found, confirmed)
+        for row in observed:
+            if row["id"] in confirmed:
+                self.assertEqual(row["latency_ms"], "")
+                self.assertIn("User reported detected", row["notes"])
+            else:
+                self.assertEqual(row["observed"], "")
 
     def test_remote_id_31_bytes_and_fields(self):
         adv = advertisements()
