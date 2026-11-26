@@ -10,7 +10,7 @@
   if(!core||!runner) throw new Error('Workbench core or runner-v2.js missing');
   function byId(id){var el=document.getElementById(id);if(!el)throw new Error('Missing '+id);return el;}
   var ids=['securityNotice','scoredCount','pendingCount','recall','precision','latency',
-    'runId','receiverBoard','receiverSha','emitterSha','applyShas','shaNotice',
+    'runId','receiverBoard','receiverLibrary','receiverSha','emitterSha','applyShas','shaNotice',
     'emitState','emitConnect',
     'emitDisconnect','caseSelect','caseDetails','duration','authorization','runCase',
     'stopCase','runFeedback','emitLog','recvState','recvConnect','recvDisconnect','receiverBaud',
@@ -22,7 +22,7 @@
     'batchProgress','batchCount','batchCurrent'];
   var ui={};
   ids.forEach(function(id){ui[id]=byId(id);});
-  var catalog={},cases=[],trials=[],selectedTrial=-1;
+  var catalog={},cases=[],baseCases=[],forkProfile=null,trials=[],selectedTrial=-1;
   var devices={emitter:{port:null,reader:null,reading:null,buffer:'',log:'',baud:115200},
                receiver:{port:null,reader:null,reading:null,buffer:'',log:'',baud:2000000,
                  parser:core.newWatchLogParser(),lastSnapshot:null,pending:null,
@@ -72,7 +72,7 @@
     if(!c){text('caseDetails','Select a catalog case to inspect its expected classification.');}
     else{
       text('caseDetails',core.signalName(c)+'\nID: '+c.id+' · '+c.carrier+
-        '\nSQUACHWATCH EXPECTED: '+c.expected+
+        '\nSQUACHWATCH EXPECTED ('+ui.receiverLibrary.value.toUpperCase()+'): '+c.expected+
         '\n'+c.description+
         (c.id.startsWith('OUI-')?
         '\nCAUTION: selected case transmits a registered vendor MAC prefix; this is NOT proof of a genuine device or Remote ID.':''));
@@ -181,6 +181,7 @@
     ui.recvConnect.disabled=receiver||opening.receiver;
     ui.recvDisconnect.disabled=!receiver||opening.receiver;
     ui.receiverBaud.disabled=receiver||opening.receiver;
+    ui.receiverLibrary.disabled=trials.length>0 || batch.active || startingRun || transmitting || preparingBatch;
     ui.pollNow.disabled=!receiver;
     var duration=Number(ui.duration.value);
     ui.runCase.disabled=!connected||batch.active||startingRun||awaitingBegin||transmitting||
@@ -206,7 +207,7 @@
   function updateBatchUi(){
     var ready=!!devices.emitter.port&&!!devices.receiver.port&&
       !opening.emitter&&!opening.receiver&&ui.authorization.checked&&
-      !startingRun&&!awaitingBegin&&!transmitting&&cases.length===238;
+      !startingRun&&!awaitingBegin&&!transmitting&&cases.length===369;
     var duration=Number(ui.batchDuration.value),gap=Number(ui.batchGap.value);
     var valid=Number.isInteger(duration)&&duration>=3&&duration<=30&&
       Number.isInteger(gap)&&gap>=3&&gap<=30;
@@ -218,7 +219,7 @@
     ['batchScope','batchDuration','batchGap','caseSelect','duration'].forEach(function(id){
       ui[id].disabled=batch.active;
     });
-    ui.batchProgress.max=batch.queue.length||cases.length||238;
+    ui.batchProgress.max=batch.queue.length||cases.length||369;
     ui.batchProgress.value=batch.completed;
     text('batchCount',batch.completed+' / '+(batch.queue.length||cases.length||238)+
       ' completed · '+batch.failures+' transmitter failures · '+
@@ -872,7 +873,7 @@
           }finally{if(timer)clearTimeout(timer);}
         }
         if(token!==runToken || !devices.emitter.port)return;
-        // An intermittent LOG timeout cannot halt a 238-signal suite.
+        // An intermittent LOG timeout cannot halt a 369-signal suite.
         // The individual case remains UNTESTED unless independent receiver
         // evidence is subsequently captured with a complete baseline.
         if(fromBatch&&!baseline){
@@ -963,23 +964,37 @@
     document.body.appendChild(anchor);anchor.click();anchor.remove();
     setTimeout(function(){URL.revokeObjectURL(url);},1000);
   }
+  function applyReceiverLibrary(){
+    if(trials.length || batch.active)throw Error('Export and clear the existing trial ledger before switching receiver libraries');
+    if(!forkProfile || baseCases.length!==369)throw Error('Receiver catalog is not available');
+    cases=core.receiverCatalog(baseCases,ui.receiverLibrary.value,forkProfile);
+    cases.sort(function(a,b){return a.id.localeCompare(b.id);});
+    catalog={};
+    cases.forEach(function(c){catalog[c.id]=c;});
+  }
   async function loadCases(){
     try{
       var response=await fetch('./cases.json',{cache:'no-store'});
       if(!response.ok)throw new Error('HTTP '+response.status);
       var data=await response.json();
-      if(!Array.isArray(data)||data.length!==238)
-        throw new Error('Expected exactly 238 current firmware catalog cases');
+      var forkResponse=await fetch('./fork_expectations.json',{cache:'no-store'});
+      if(!forkResponse.ok)throw new Error('Missing source-pinned fork expectations (HTTP '+forkResponse.status+')');
+      forkProfile=await forkResponse.json();
+      if(forkProfile.schema!==1 || forkProfile.baseline_expected_source!=='tests/cases.json' ||
+         !forkProfile.signature_blob_sha || Object.keys(forkProfile.overrides||{}).length!==19)
+        throw new Error('Unexpected receiver fork expectation profile');
+      if(!Array.isArray(data)||data.length!==369)
+        throw new Error('Expected exactly 369 current firmware catalog cases');
       var ids=new Set();
       data.forEach(function(c){
         if(!c||typeof c.id!=='string'||ids.has(c.id)||
            !/^[A-Z0-9][A-Z0-9_-]{1,100}$/.test(c.id)||!c.expected)
           throw new Error('Invalid or duplicated case in catalog');
         core.signalName(c); // fail closed if device name is missing
-        ids.add(c.id);catalog[c.id]=c;
+        ids.add(c.id);
       });
-      cases=data;
-      cases.sort(function(a,b){return a.id.localeCompare(b.id);});
+      baseCases=data;
+      applyReceiverLibrary();
       desktopEvent('catalog',{cases:cases});
       ui.caseSelect.replaceChildren(option('','Choose a test case…'));
       cases.forEach(function(c){
@@ -990,7 +1005,7 @@
       ui.observed.replaceChildren(option('','Not evaluated'));
       values.forEach(function(s){ui.observed.appendChild(option(s,s));});
       chooseCase();redrawTrials();updateBatchUi();
-      notice('Loaded the 238-case catalog. No hardware is connected or transmitting.',false);
+      notice('Loaded 369 synthetic test cases for '+ui.receiverLibrary.options[ui.receiverLibrary.selectedIndex].text+'. Nothing is transmitting.',false);
     }catch(e){
       notice('Catalog could not load: '+e.message+'. Run the published workbench site or the build-installer static output.',true);
       ui.caseSelect.replaceChildren(option('','Case catalog unavailable'));
@@ -1029,6 +1044,33 @@
     notice('Verified firmware SHAs recorded for '+candidates.length+
       ' trial(s). Receiver results were preserved; no detections were invented.',false);
   }
+  // Fork's Freenove ESP32-S3 target is built with SERIAL_BAUD=115200.
+  // Preserve a connected receiver port's selected speed until disconnected.
+  ui.receiverBoard.addEventListener('change',function(){
+    if(devices.receiver.port || opening.receiver)return;
+    ui.receiverBaud.value=ui.receiverBoard.value==='FREENOVE-S3-3.5'?'115200':'2000000';
+    notice('Receiver selected: '+ui.receiverBoard.value+
+      ' · suggested serial baud '+ui.receiverBaud.value+
+      '. Confirm the receiver firmware settings before connecting.',false);
+    updateButtons();
+  });
+  ui.receiverLibrary.addEventListener('change',function(){
+    if(trials.length || batch.active || preparingBatch || transmitting){
+      notice('Export and clear trial ledger before switching receiver library.',true);
+      return;
+    }
+    if(!baseCases.length || !forkProfile)return;
+    var old=ui.caseSelect.value;
+    applyReceiverLibrary();
+    ui.caseSelect.replaceChildren(option('','Choose a test case…'));
+    cases.forEach(function(c){
+      ui.caseSelect.appendChild(option(c.id,core.signalName(c)+'  ['+c.id+']'));
+    });
+    if(catalog[old])ui.caseSelect.value=old;
+    chooseCase();redrawTrials();updateBatchUi();
+    notice('Receiver expectations set to '+ui.receiverLibrary.value+
+      '. Transmitted RF patterns and case IDs are unchanged.',false);
+  });
   ui.applyShas.addEventListener('click',applySessionShas);
   ['receiverSha','emitterSha'].forEach(function(id){
     ui[id].addEventListener('input',function(){
@@ -1113,9 +1155,12 @@
       var seen=new Set(trials.map(trialKey));
       var labels=new Set(cases.map(function(c){return c.expected;})
         .concat(['NONE','ALPR','CAMERA','DEAUTH','EVILTWIN','RING','AXON']));
+      if(ui.receiverLibrary.value==='fork' && imported.length &&
+         !window.confirm('Import '+imported.length+
+           ' records using fork-specific expectations? CSV files do not store receiver-library version. Only proceed if these records were captured against your fork.'))return;
       imported.forEach(function(row){
         if(!catalog[row.id])throw new Error('Unknown case: '+row.id);
-        if(!['CYD-2.8','CYD-3.2'].includes(row.receiver))
+        if(!['CYD-2.8','CYD-3.2','FREENOVE-S3-3.5'].includes(row.receiver))
           throw new Error('Unknown receiver board');
         if(!row.run_id)throw new Error('A run ID is required');
         if(row.observed&&!labels.has(row.observed))
