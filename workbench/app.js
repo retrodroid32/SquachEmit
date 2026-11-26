@@ -1044,6 +1044,16 @@
     notice('Verified firmware SHAs recorded for '+candidates.length+
       ' trial(s). Receiver results were preserved; no detections were invented.',false);
   }
+  // Fork's Freenove ESP32-S3 target is built with SERIAL_BAUD=115200.
+  // Preserve a connected receiver port's selected speed until disconnected.
+  ui.receiverBoard.addEventListener('change',function(){
+    if(devices.receiver.port || opening.receiver)return;
+    ui.receiverBaud.value=ui.receiverBoard.value==='FREENOVE-S3-3.5'?'115200':'2000000';
+    notice('Receiver selected: '+ui.receiverBoard.value+
+      ' · suggested serial baud '+ui.receiverBaud.value+
+      '. Confirm the receiver firmware settings before connecting.',false);
+    updateButtons();
+  });
   ui.receiverLibrary.addEventListener('change',function(){
     if(trials.length || batch.active || preparingBatch || transmitting){
       notice('Export and clear trial ledger before switching receiver library.',true);
