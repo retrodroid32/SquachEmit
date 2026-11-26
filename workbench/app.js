@@ -36,6 +36,7 @@
   var transmitting=false;
   var batch={active:false,queue:[],index:0,completed:0,current:null,
     duration:8,gap:5,timer:null,endTimer:null,failures:0,unverified:0,
+    receiverLogUnavailable:false,
     paused:false,pauseRequested:false,
     message:'Ready to start'};
   var emitterWrites=Promise.resolve();
@@ -223,7 +224,7 @@
     ui.batchProgress.value=batch.completed;
     text('batchCount',batch.completed+' / '+(batch.queue.length||cases.length||369)+
       ' completed · '+batch.failures+' transmitter failures · '+
-      batch.unverified+' unverified recoveries'+
+      batch.unverified+' unverified cases'+
       (batch.active?(batch.paused?' · PAUSED':batch.pauseRequested?' · PAUSING':' · RUNNING'):''));
     text('batchCurrent',batch.message);
   }
@@ -495,7 +496,7 @@
     if(batch.index>=batch.queue.length){
       endBatch('Automation complete: '+batch.completed+' cases; '+
         batch.failures+' transmitter failures; '+batch.unverified+
-        ' unverified recoveries. Review receiver evidence and export CSV.',false);
+        ' unverified cases. Review receiver evidence and export CSV.',false);
       return;
     }
     var c=batch.queue[batch.index];
@@ -505,7 +506,9 @@
     chooseCase();
     batch.message='CASE '+(batch.index+1)+' / '+batch.queue.length+
       '\n'+core.signalName(c)+'\n'+c.id+
-      '\nSquachWatch expected: '+c.expected+'\nPreparing receiver baseline…';
+      '\nSquachWatch expected: '+c.expected+'\n'+
+      (batch.receiverLogUnavailable?'UNVERIFIED MODE: receiver LOG unsupported/unavailable':
+        'Preparing receiver baseline…');
     updateBatchUi();
     void run(true);
   }
@@ -576,18 +579,22 @@
     const queue=core.batchPlan(cases,ui.batchScope.value);
     if(!queue.length)return;
     preparingBatch=true;
+    batch.receiverLogUnavailable=false;
     const token=runToken;
     updateBatchUi();
     try{
-      if(!await pauseReceiverMirrorForDetection()){
-        batch.message='Receiver mirror OFF could not be sent. Full automated '+
-          'accuracy testing requires actual receiver LOG evidence. '+
-          'Single-case RUN remains available.';
-        return;
+      var mirrorReady=await pauseReceiverMirrorForDetection();
+      if(!mirrorReady){
+        if(!window.confirm('SquachWatch mirror could not be paused. '+
+          'Its LOG data cannot be independently verified. Run the selected '+
+          'transmitter test sequence UNVERIFIED instead? No receiver PASS/FAIL '+
+          'will be inferred. Click Cancel to leave all RF transmissions off.'))return;
+        batch.receiverLogUnavailable=true;
+        stopWatchPolling();
       }
       if(token!==runToken||!devices.emitter.port||!devices.receiver.port)return;
-      let snapshot=devices.receiver.lastSnapshot;
-      if(!snapshot||Date.now()-snapshot.finishedAt>5000){
+      let snapshot=batch.receiverLogUnavailable?null:devices.receiver.lastSnapshot;
+      if(!batch.receiverLogUnavailable && (!snapshot||Date.now()-snapshot.finishedAt>5000)){
         batch.message='Requesting a fresh receiver LOG baseline after mirror pause...';
         updateBatchUi();
         let timer=null;
@@ -598,9 +605,14 @@
           ]);
         }finally{if(timer!==null)clearTimeout(timer);}
         if(!snapshot){
-          batch.message='SquachWatch LOG unavailable after automatic mirror pause. '+
-            'Check receiver USB, or run a single signal without verified scoring.';
-          return;
+          batch.message='SquachWatch USB is connected but no valid structured LOG '+
+            'snapshot arrived. Check baud and receiver firmware LOG command support.';
+          updateBatchUi();
+          if(!window.confirm(batch.message+' Continue as TRANSMITTER-ONLY / '+
+            'UNVERIFIED batch? RF signals will transmit but receiver PASS/FAIL '+
+            'cannot be scored. Click Cancel to leave all transmitters idle.'))return;
+          batch.receiverLogUnavailable=true;
+          stopWatchPolling();
         }
       }
       if(token!==runToken||!devices.emitter.port||!devices.receiver.port)return;
@@ -613,6 +625,11 @@
       batch.queue=queue;batch.index=0;batch.completed=0;batch.failures=0;batch.unverified=0;
       batch.duration=duration;batch.gap=gap;batch.active=true;batch.current=null;
       batch.paused=false;batch.pauseRequested=false;saveBatchCheckpoint();
+      if(batch.receiverLogUnavailable){
+        batch.message='UNVERIFIED TRANSMITTER-ONLY MODE. Receiver LOG is unavailable. '+
+          'Check each detection on SquachWatch manually; exported trials remain UNTESTED.';
+        autoStatus(batch.message);
+      }
       startBatchStep();
     }finally{preparingBatch=false;updateBatchUi();}
   }
@@ -695,7 +712,8 @@
       }
       redrawTrials();selectTrial();
       if(event.event==='END'&&event.status==='ok'&&
-         devices.receiver.port&&!receiverMirror){
+         devices.receiver.port&&!receiverMirror&&
+         !(batch.active&&batch.receiverLogUnavailable)){
         // Explicit post-transmit snapshot: an RF hit may only reach the
         // receiver LOG near the end of an 8-second test. A row marked
         // "gone" is still useful evidence when it appeared after baseline.
@@ -850,7 +868,11 @@
     runProgress('Preparing to transmit '+c.id+'…');
     try{
       var receiver=devices.receiver,baseline=null;
-      var receiverLogsReady=await pauseReceiverMirrorForDetection();
+      // A receiver firmware lacking structured LOG cannot verify RF hits.
+      // A user-approved transmitter-only batch skips repeated 3.8s LOG
+      // timeouts, and explicitly denies any stale snapshot as a baseline.
+      var noBatchLog=!!(fromBatch&&batch.receiverLogUnavailable);
+      var receiverLogsReady=noBatchLog?false:await pauseReceiverMirrorForDetection();
       if(token!==runToken||!devices.emitter.port)return;
       if(receiver.port&&receiverLogsReady){
         var now=Date.now();
@@ -890,7 +912,8 @@
             'its detection cannot be auto-scored without a fresh baseline.');
         }
       }else{
-        receiver.preRun=null;
+        receiver.preRun=noBatchLog?{id:c.id,snapshot:null,expiresAt:Date.now()+5000}:null;
+        if(fromBatch&&noBatchLog && batch.current)batch.current.noBaseline=true;
         if(receiver.port&&!receiverLogsReady)
           autoStatus('RUN permitted without verified LOG: receiver classification '+
             'remains UNTESTED without independent detection evidence.');
@@ -1111,6 +1134,9 @@
     if(!window.confirm('Resume '+(cp.ids.length-cp.index)+' cases? Previous receiver observations are not restored. Confirm authorized attended testing.'))return;
     batch.queue=cp.ids.map(id=>catalog[id]);batch.index=cp.index;batch.completed=cp.completed;
     batch.duration=cp.duration;batch.gap=cp.gap;batch.failures=cp.failures;batch.unverified=cp.unverified;
+    batch.receiverLogUnavailable=!devices.receiver.lastSnapshot;
+    if(batch.receiverLogUnavailable && !window.confirm('Receiver LOG is unavailable. ' +
+      'Resume this checkpoint as TRANSMITTER-ONLY / UNVERIFIED?'))return;
     batch.active=true;batch.paused=false;batch.pauseRequested=false;batch.current=null;
     batch.message='Manual checkpoint resume; new receiver baseline required';
     saveBatchCheckpoint();startBatchStep();

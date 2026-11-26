@@ -232,3 +232,26 @@ doesn't invent millisecond latency from poll timestamps. Both firmware
 SHAs are still required for scored performance metrics. Changes in this
 PR affect **only SquachEmit's browser Workbench**, not SquachWatch or the
 public v1.1.0 firmware.
+
+
+## Receiver LOG unsupported — Workbench hotfix
+
+The Workbench can connect to a USB serial port even when the SquachWatch
+firmware **does not implement the structured serial `LOG` command**. A
+successfully opened serial port or receiver-screen detection pill does not
+prove that the browser received a machine-readable detection. The public
+Workbench now distinguishes this from an RF-transmitter failure.
+
+If no valid fresh receiver `LOG` response arrives after the mirror-off
+preflight, the Workbench offers an explicit, attended **TRANSMITTER-ONLY /
+UNVERIFIED** batch. **Cancel** starts no transmissions. **Continue** runs
+selected SquachEmit signals using the normal time limits, without attaching
+stale receiver baselines or fabricating detections. Every such case is
+UNTESTED for receiver accuracy and the progress counter marks it unverified.
+The operator can still view the SquachWatch pill/LOG screen and manually
+record observations. The normal strict exact-MAC baseline mechanism remains
+unchanged for compatible receiver firmware.
+
+For full automatic scoring, the installed SquachWatch firmware must implement
+the structured serial `LOG` response accepted by `workbench/core.js`.
+No SquachWatch firmware was modified by this Workbench change.
