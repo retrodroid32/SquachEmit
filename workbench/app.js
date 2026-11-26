@@ -221,7 +221,7 @@
     });
     ui.batchProgress.max=batch.queue.length||cases.length||369;
     ui.batchProgress.value=batch.completed;
-    text('batchCount',batch.completed+' / '+(batch.queue.length||cases.length||238)+
+    text('batchCount',batch.completed+' / '+(batch.queue.length||cases.length||369)+
       ' completed · '+batch.failures+' transmitter failures · '+
       batch.unverified+' unverified recoveries'+
       (batch.active?(batch.paused?' · PAUSED':batch.pauseRequested?' · PAUSING':' · RUNNING'):''));
