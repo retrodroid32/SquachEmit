@@ -9,7 +9,7 @@
   <link rel="stylesheet" href="./style.css?v=r14-40-369">
   <script src="./core.js?v=r14-40-369" defer></script>
   <script src="./runner-v2.js?v=r14-40-369" defer></script>
-  <script src="./app.js?v=r14-40-369" defer></script>
+  <script src="./app.js?v=r14-40-369-logfix" defer></script>
 </head>
 <body>
   <header class="topbar">
@@ -77,7 +77,7 @@
         <div class="sectionhead"><span class="num">03</span><div><h2 id="receivertitle">Receiver evidence</h2><p>SquachWatch · Web Serial · typically 2,000,000 baud</p></div></div>
         <div class="connection"><span id="recvState" class="state">DISCONNECTED</span><div class="buttons"><button id="recvConnect" class="outlined">Connect</button><button id="recvDisconnect" disabled>Disconnect</button></div></div>
         <div class="formrow"><label for="receiverBaud">Receiver baud</label><select id="receiverBaud"><option value="2000000">2,000,000 (CYD default)</option><option value="921600">921,600 (alternative, check receiver firmware)</option><option value="115200">115,200</option><option value="1000000">1,000,000</option></select></div>
-        <div class="footnote">After you connect SquachWatch, the Workbench automatically polls its structured <code>LOG</code> table. The ACTUAL column shows receiver classifications tied to the exact emitted MAC, including entries marked <code>gone</code> after the signal stops. A fresh or reappearing entry after a valid pre-test baseline can be scored. If the baseline is missing or the entry already existed unchanged, ACTUAL may still be populated but the result remains UNTESTED. Other devices with the same category are never assumed to be the transmitter. No SquachWatch firmware change is required.</div>
+        <div class="footnote">After you connect SquachWatch, the Workbench requests its structured <code>LOG</code> table. <strong>USB connected does not mean the receiver firmware supports the LOG serial command.</strong> If LOG is unavailable, you may explicitly run an unverified transmitter-only batch; no receiver PASS/FAIL will be invented. The ACTUAL column shows receiver classifications tied to the exact emitted MAC, including entries marked <code>gone</code> after the signal stops. A fresh or reappearing entry after a valid pre-test baseline can be scored. If the baseline is missing or the entry already existed unchanged, ACTUAL may still be populated but the result remains UNTESTED. Other devices with the same category are never assumed to be the transmitter. No SquachWatch firmware change is required.</div>
         <div class="auto-log"><div class="mini">AUTOMATIC RECEIVER DETECTION</div><div id="autoLogState" role="status">Connect SquachWatch to begin LOG polling.</div><button id="pollNow" class="outlined" type="button" disabled>Poll LOG now</button></div>
         <label class="loglabel" for="autoDetectionFeed">Matched receiver events</label>
         <pre id="autoDetectionFeed" class="terminal" aria-label="Automatically matched SquachWatch detections">No matched SquachWatch detections recorded yet.</pre>
