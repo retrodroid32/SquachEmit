@@ -427,6 +427,17 @@
         entries[c.id] : c.expected});
     });
   }
+  // Resume a partially observed hardware campaign without repeating cases
+  // whose emitter has already independently reported TRUTH END (ok).
+  // Receiver accuracy is deliberately NOT inferred from this selection.
+  function remainingEmitterPlan(all,rows) {
+    if(!Array.isArray(rows))throw Error('Invalid trial ledger');
+    var done=new Set(rows.filter(function(t){
+      return t && trim(t.emission).toLowerCase()==='ok' &&
+        typeof t.id==='string';
+    }).map(function(t){return t.id;}));
+    return batchPlan(all,'all').filter(function(c){return !done.has(c.id);});
+  }
   function batchPlan(all,scope) {
     if(!['all','BLE','WIFI'].includes(scope))throw Error('Invalid batch scope');
     return (all||[]).filter(function(c){return scope==='all'||c.carrier===scope;})
@@ -439,7 +450,7 @@
     parseWatchLogRow:parseWatchLogRow,newWatchLogParser:newWatchLogParser,
     matchWatchDetection:matchWatchDetection,
     findUnverifiedWatchObservation:findUnverifiedWatchObservation,
-    signalName:signalName,batchPlan:batchPlan,receiverCatalog:receiverCatalog,
+    signalName:signalName,batchPlan:batchPlan,remainingEmitterPlan:remainingEmitterPlan,receiverCatalog:receiverCatalog,
     status:status,pendingReason:pendingReason,score:score,makeTrial:makeTrial,applyEnd:applyEnd,
     exportCsv:exportCsv,parseCsv:parseCsv};
 });
