@@ -265,13 +265,13 @@ assert.match(html,/id="runFeedback"/);
 assert.match(html,/id="receiverSha"/);
 assert.match(html,/id="emitterSha"/);
 assert.match(html,/id="recvConnect"/);
-assert.match(html,/FREENOVE-S3-3\\.5/);
+assert.match(html,/FREENOVE-S3-3\.5/);
 assert.match(html,/id="receiverLibrary"/);
 assert.match(html,/369 cases/);
-assert.match(app,/fork_expectations\\.json/);
-assert.match(app,/FREENOVE-S3-3\\.5/);
-assert.match(app,/cases\\.length===369/);
-assert.match(app,/ui\\.receiverBoard\\.value==='FREENOVE-S3-3\\.5'\\?'115200':'2000000'/);
+assert.match(app,/fork_expectations\.json/);
+assert.match(app,/FREENOVE-S3-3\.5/);
+assert.match(app,/cases\.length===369/);
+assert.match(app,/ui\.receiverBoard\.value==='FREENOVE-S3-3\.5'\?'115200':'2000000'/);
 
 assert.match(html,/id="emitConnect"/);
 assert.match(html,/id="observed"/);
