@@ -579,6 +579,7 @@
     const queue=core.batchPlan(cases,ui.batchScope.value);
     if(!queue.length)return;
     preparingBatch=true;
+    batch.receiverLogUnavailable=false;
     const token=runToken;
     updateBatchUi();
     try{
