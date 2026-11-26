@@ -255,7 +255,7 @@ assert.ok(app.includes('var receiverWrites=Promise.resolve()'),
   'LOG polling and Windows GUI commands must share one serialized receiver writer');
 assert.ok(app.includes('batch.receiverLogUnavailable=true'),
   'a missing SquachWatch LOG response must require an explicit unverified batch choice');
-assert.ok(app.includes('TRANSMITTER-ONLY / UNVERIFIED batch'),
+assert.ok(app.includes('TRANSMITTER-ONLY / ') && app.includes('UNVERIFIED batch?'),
   'unverified RF permission prompt must distinguish transmission from detection proof');
 assert.ok(app.includes('noBatchLog?{id:c.id,snapshot:null'),
   'unverified batch must prevent stale baseline fallback and false scoring');
