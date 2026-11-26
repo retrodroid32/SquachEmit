@@ -223,7 +223,7 @@
     ui.batchProgress.max=batch.queue.length||cases.length||369;
     ui.batchProgress.value=batch.completed;
     text('batchCount',batch.completed+' / '+(batch.queue.length||cases.length||369)+
-      ' completed · '+batch.failures+' transmitter failures · '+
+      ' completed · '+batch.failures+' failed attempts · '+
       batch.unverified+' unverified cases'+
       (batch.active?(batch.paused?' · PAUSED':batch.pauseRequested?' · PAUSING':' · RUNNING'):''));
     text('batchCurrent',batch.message);
@@ -494,7 +494,8 @@
       endBatch('Automation stopped: device disconnected.',true);return;
     }
     if(batch.index>=batch.queue.length){
-      endBatch('Automation complete: '+batch.completed+' cases; '+
+      endBatch('Automation complete: '+batch.completed+' / '+batch.queue.length+
+        ' cases with confirmed SquachEmit TRUTH END; '+
         batch.failures+' transmitter failures; '+batch.unverified+
         ' unverified cases. Review receiver evidence and export CSV.',false);
       return;
@@ -517,10 +518,23 @@
     runToken++; // cancel stale asynchronous preflight before any next case
     var last=batch.current;
     if(last.finished)return;
+    // Do not silently skip a test when the transmitter never confirms RUN,
+    // reports an error, or fails to finish. The CSV is created from actual
+    // TRUTH records, whereas the queue index represents attempted cases.
+    // Advancing on failure previously made "369 complete" possible with
+    // substantially fewer transmitted trials in the exported CSV.
+    if(failed){
+      batch.failures++;
+      endBatch('AUTOMATION HALTED at case '+(batch.index+1)+' / '+
+        batch.queue.length+' ('+last.id+'): '+reason+
+        '. This signal is NOT counted as complete. The checkpoint retains '+
+        'this case for an explicit retry after checking the transmitter. '+
+        'Export the trial CSV before resuming.',true);
+      return;
+    }
     last.finished=true;
     if(batch.endTimer!==null){clearTimeout(batch.endTimer);batch.endTimer=null;}
-    if(failed)batch.failures++;
-    if(last.noBaseline||failed)batch.unverified++;
+    if(last.noBaseline)batch.unverified++;
     batch.completed++;batch.index++;batch.current=null;
     saveBatchCheckpoint();
     // Missing BEGIN/END is not evidence that RF was never on. Request an
