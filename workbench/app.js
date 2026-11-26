@@ -496,7 +496,7 @@
     if(batch.index>=batch.queue.length){
       endBatch('Automation complete: '+batch.completed+' / '+batch.queue.length+
         ' cases with confirmed SquachEmit TRUTH END; '+
-        batch.failures+' transmitter failures; '+batch.unverified+
+        batch.failures+' failed attempts (including earlier retries); '+batch.unverified+
         ' unverified cases. Review receiver evidence and export CSV.',false);
       return;
     }
@@ -590,8 +590,24 @@
     const duration=Number(ui.batchDuration.value),gap=Number(ui.batchGap.value);
     if(!Number.isInteger(duration)||duration<3||duration>30||
        !Number.isInteger(gap)||gap<3||gap>30)return;
-    const queue=core.batchPlan(cases,ui.batchScope.value);
-    if(!queue.length)return;
+    if(ui.batchScope.value==='missing' && !trials.length){
+      batch.message='Import your previous trial CSV first. Remaining cases '+
+        'are calculated only from observed successful transmitter END events.';
+      updateBatchUi();return;
+    }
+    const queue=ui.batchScope.value==='missing' ?
+      core.remainingEmitterPlan(cases,trials):
+      core.batchPlan(cases,ui.batchScope.value);
+    if(!queue.length){
+      batch.message='No remaining cases in the selected scope. Check imported CSV.';
+      updateBatchUi();return;
+    }
+    if(ui.batchScope.value==='missing' && !window.confirm(
+      'Run '+queue.length+' remaining transmitter cases out of '+cases.length+
+      '? This omits case IDs with recorded TRUTH END ok from the current/imported '+
+      'ledger, regardless of the receiver label. Confirm the imported CSV was '+
+      'captured with the intended SquachEmit firmware and hardware. Receiver '+
+      'detection results are not inferred.'))return;
     preparingBatch=true;
     batch.receiverLogUnavailable=false;
     const token=runToken;
