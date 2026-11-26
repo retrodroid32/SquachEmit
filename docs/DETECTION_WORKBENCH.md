@@ -255,3 +255,30 @@ unchanged for compatible receiver firmware.
 For full automatic scoring, the installed SquachWatch firmware must implement
 the structured serial `LOG` response accepted by `workbench/core.js`.
 No SquachWatch firmware was modified by this Workbench change.
+
+## Public Workbench: unconfirmed RUN handling and missing-only recovery
+
+The batch runner now **halts** on a missing transmitter `TRUTH BEGIN`,
+missing `TRUTH END`, serial RUN write error or reported transmitter
+failure. These are not counted as completed cases. The local browser
+checkpoint retains the failed case for explicit retry after checking
+the transmitter and USB connections; the transmitter is sent `STOP`
+as a safety precaution. Previously the counter could advance on failures
+while no CSV trial was created (the CSV ledger starts only after a real
+transmitter `TRUTH BEGIN`), so a nominally completed 369-case queue
+could yield fewer than 369 confirmed transmitter results.
+
+The **Remaining (not END ok in imported/current trial ledger)** test set
+lets an operator resume an interrupted test campaign. First import the
+exported CSV, verify it belongs to the actual emitter firmware, select
+the correct receiver and fork/upstream library, then choose Remaining.
+It excludes only IDs where at least one trial has `emission=ok`, even if
+receiver detection evidence is missing. Cases with missing `END`,
+failures or no trial record are retained for re-testing. For example
+300 unique successful cases out of 369 leave **69** remaining. Do not
+conflate a recorded emitter `END ok` with a verified receiver detection:
+all normal exact-MAC and receiver SHA scoring requirements remain intact.
+
+CSV files created by earlier Workbench versions may label a Freenove
+receiver as CYD 2.8 due to the receiver menu selection; correct receiver
+metadata and use the actually flashed firmware SHAs before scoring.
