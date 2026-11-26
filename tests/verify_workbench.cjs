@@ -57,6 +57,20 @@ assert.equal(core.batchPlan(allCases,'WIFI').length,253);
 assert.equal(new Set(fullPlan.map(x=>x.id)).size,369);
 assert.deepEqual(fullPlan.map(x=>x.id),core.batchPlan(allCases,'all').map(x=>x.id));
 assert.throws(()=>core.batchPlan(allCases,'unknown'),/scope/);
+const alreadyTransmitted=[
+  {id:fullPlan[0].id,emission:'ok'},
+  {id:fullPlan[1].id,emission:'pending'},
+  {id:fullPlan[2].id,emission:'failed'}
+];
+const outstanding=core.remainingEmitterPlan(allCases,alreadyTransmitted);
+assert.equal(outstanding.length,368);
+assert.ok(!outstanding.some(x=>x.id===fullPlan[0].id));
+assert.ok(outstanding.some(x=>x.id===fullPlan[1].id));
+assert.ok(outstanding.some(x=>x.id===fullPlan[2].id));
+const completed300=fullPlan.slice(0,300).map(x=>({id:x.id,emission:'ok'}));
+assert.equal(core.remainingEmitterPlan(allCases,completed300).length,69,
+  '300 successful transmissions must leave 69 to test, not 68');
+assert.throws(()=>core.remainingEmitterPlan(allCases,{}),/Invalid trial ledger/);
 const sha='a'.repeat(40);
 const sample={event:'BEGIN',id:'BLE-FLOCK-MFG',expected:'FLOCK',
   seq:42,ms:1200,carrier:'BLE',mac:'C2:00:01:02:03:04',status:'ok'};
@@ -268,6 +282,14 @@ assert.ok(app.includes("if(!(await sendReceiver('LOG')))"),
 assert.ok(!app.includes('RUN not sent.'),'receiver LOG timeout must not suppress a user RUN');
 assert.ok(app.includes("if(!baseline){\n          autoStatus("),
   'missing receiver baseline should downgrade automatic scoring, not prevent RUN');
+assert.ok(app.includes("endBatch('AUTOMATION HALTED at case '"),
+  'unconfirmed transmitter attempts must HALT with a resumable checkpoint');
+assert.ok(app.includes("This signal is NOT counted as complete"),
+  'failed attempts must not increment the completed counter');
+assert.ok(app.includes("core.remainingEmitterPlan(cases,trials)"),
+  'remaining-run UI must use successful TRUTH END records from trial ledger');
+assert.ok(app.includes("if(ui.batchScope.value==='missing' && !trials.length)"),
+  'remaining-run UI must require a prior ledger import');
 const html=fs.readFileSync('workbench/index.html','utf8');
 assert.match(html,/id="applyShas"/);
 assert.match(html,/id="shaNotice"/);
@@ -278,6 +300,7 @@ assert.match(html,/id="recvConnect"/);
 assert.match(html,/FREENOVE-S3-3\.5/);
 assert.match(html,/id="receiverLibrary"/);
 assert.match(html,/369 cases/);
+assert.match(html,/Remaining \(not END ok in imported\/current trial ledger\)/);
 assert.match(app,/fork_expectations\.json/);
 assert.match(app,/FREENOVE-S3-3\.5/);
 assert.match(app,/cases\.length===369/);

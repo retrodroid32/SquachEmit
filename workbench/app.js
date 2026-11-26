@@ -223,7 +223,7 @@
     ui.batchProgress.max=batch.queue.length||cases.length||369;
     ui.batchProgress.value=batch.completed;
     text('batchCount',batch.completed+' / '+(batch.queue.length||cases.length||369)+
-      ' completed · '+batch.failures+' transmitter failures · '+
+      ' completed · '+batch.failures+' failed attempts · '+
       batch.unverified+' unverified cases'+
       (batch.active?(batch.paused?' · PAUSED':batch.pauseRequested?' · PAUSING':' · RUNNING'):''));
     text('batchCurrent',batch.message);
@@ -494,8 +494,9 @@
       endBatch('Automation stopped: device disconnected.',true);return;
     }
     if(batch.index>=batch.queue.length){
-      endBatch('Automation complete: '+batch.completed+' cases; '+
-        batch.failures+' transmitter failures; '+batch.unverified+
+      endBatch('Automation complete: '+batch.completed+' / '+batch.queue.length+
+        ' cases with confirmed SquachEmit TRUTH END; '+
+        batch.failures+' failed attempts (including earlier retries); '+batch.unverified+
         ' unverified cases. Review receiver evidence and export CSV.',false);
       return;
     }
@@ -517,10 +518,23 @@
     runToken++; // cancel stale asynchronous preflight before any next case
     var last=batch.current;
     if(last.finished)return;
+    // Do not silently skip a test when the transmitter never confirms RUN,
+    // reports an error, or fails to finish. The CSV is created from actual
+    // TRUTH records, whereas the queue index represents attempted cases.
+    // Advancing on failure previously made "369 complete" possible with
+    // substantially fewer transmitted trials in the exported CSV.
+    if(failed){
+      batch.failures++;
+      endBatch('AUTOMATION HALTED at case '+(batch.index+1)+' / '+
+        batch.queue.length+' ('+last.id+'): '+reason+
+        '. This signal is NOT counted as complete. The checkpoint retains '+
+        'this case for an explicit retry after checking the transmitter. '+
+        'Export the trial CSV before resuming.',true);
+      return;
+    }
     last.finished=true;
     if(batch.endTimer!==null){clearTimeout(batch.endTimer);batch.endTimer=null;}
-    if(failed)batch.failures++;
-    if(last.noBaseline||failed)batch.unverified++;
+    if(last.noBaseline)batch.unverified++;
     batch.completed++;batch.index++;batch.current=null;
     saveBatchCheckpoint();
     // Missing BEGIN/END is not evidence that RF was never on. Request an
@@ -576,8 +590,24 @@
     const duration=Number(ui.batchDuration.value),gap=Number(ui.batchGap.value);
     if(!Number.isInteger(duration)||duration<3||duration>30||
        !Number.isInteger(gap)||gap<3||gap>30)return;
-    const queue=core.batchPlan(cases,ui.batchScope.value);
-    if(!queue.length)return;
+    if(ui.batchScope.value==='missing' && !trials.length){
+      batch.message='Import your previous trial CSV first. Remaining cases '+
+        'are calculated only from observed successful transmitter END events.';
+      updateBatchUi();return;
+    }
+    const queue=ui.batchScope.value==='missing' ?
+      core.remainingEmitterPlan(cases,trials):
+      core.batchPlan(cases,ui.batchScope.value);
+    if(!queue.length){
+      batch.message='No remaining cases in the selected scope. Check imported CSV.';
+      updateBatchUi();return;
+    }
+    if(ui.batchScope.value==='missing' && !window.confirm(
+      'Run '+queue.length+' remaining transmitter cases out of '+cases.length+
+      '? This omits case IDs with recorded TRUTH END ok from the current/imported '+
+      'ledger, regardless of the receiver label. Confirm the imported CSV was '+
+      'captured with the intended SquachEmit firmware and hardware. Receiver '+
+      'detection results are not inferred.'))return;
     preparingBatch=true;
     batch.receiverLogUnavailable=false;
     const token=runToken;
