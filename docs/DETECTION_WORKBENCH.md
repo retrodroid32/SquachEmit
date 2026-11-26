@@ -232,3 +232,44 @@ doesn't invent millisecond latency from poll timestamps. Both firmware
 SHAs are still required for scored performance metrics. Changes in this
 PR affect **only SquachEmit's browser Workbench**, not SquachWatch or the
 public v1.1.0 firmware.
+
+## R14.40 — R14.39 369-case emitter and Freenove SquachWatch receiver
+
+The Workbench published static output now contains all **369** SquachEmit
+R14.39 synthetic transmission cases (116 BLE / 253 Wi-Fi), including the
+seven new fork-specific cases. Both `cases.json` and
+`fork_expectations.json` are generated from source-pinned test data by
+`tools/build_installer_site.py`; no separate stale web catalog is maintained.
+
+Select the physical receiver in **SquachWatch receiver**: CYD 2.8, CYD 3.2,
+or **Freenove ESP32-S3 3.5 Capacitive**. Freenove firmware built using
+`env:freenove-s3` in the SquachWatch fork specifies
+`SERIAL_BAUD=115200`; the receiver selector suggests 115200, while CYD
+defaults to 2000000. Always confirm the firmware configuration, because
+another build can use another baud rate. A separate USB/Web Serial connection
+is necessary for each device, and the receiver must respond to the existing
+structured `LOG` command. No receiver firmware change is made.
+
+**Receiver detection library** selects either the fork (default) or upstream
+v1.50. The choice changes expected labels for the **19 fork-specific override
+cases** but **does not modify** any emitted radio packet, synthetic MAC, or
+scenario identifier. The profile selector locks as soon as trials exist:
+export and clear the trial ledger before changing profiles. Existing CSV
+imports do not carry a dedicated detection-library field. When importing
+under the fork profile, the Workbench asks for confirmation that the recorded
+observations were made against the fork; never mix upstream and fork trials
+in one scored ledger.
+
+The automated sequence requires **both** serial ports connected, explicit
+RF authorization, and a user click on **Start automated tests**.
+The Workbench compares fresh SquachWatch `LOG` snapshots with the exact
+emitter `TRUTH` MAC; a receiver popup is not the evidence source.
+A missing baseline, unrelated/ambiguous MAC, or absence of a receiver LOG
+hit is **UNTESTED**, not an invented FAIL. Verify negative controls and
+window completeness manually. The Freenove popup-per-skimmer vs CYD 2.8
+first-popup-only difference does not change detection scoring so long as
+each matching detection is represented in the structured LOG.
+
+This is a **SquachEmit-only** Workbench change. SquachWatch firmware and held
+Windows mirror PRs remain untouched. Browser hardware and real RF validation
+on Freenove remain necessary after host/CI checks.
