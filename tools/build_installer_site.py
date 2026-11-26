@@ -236,16 +236,36 @@ def publish_workbench(output: Path) -> None:
         if not path.is_file() or path.stat().st_size < 100:
             raise ValueError(f'missing workbench asset: {path}')
         shutil.copyfile(path, out / name)
-    cases = root / 'tests' / 'cases.json'
+    # The public page verifies LAB transmitter firmware as well as stable.
+    # Keep the stable firmware's 362-case manifest unchanged. Pin the site
+    # catalog separately to the reviewed R14.39 369-case source so a public
+    # Workbench deployment never silently changes stable firmware metadata.
+    cases = root / 'workbench' / 'catalog-369.json'
     content = json.loads(cases.read_text(encoding='utf-8'))
+    stable = json.loads((root / 'tests' / 'cases.json').read_text(encoding='utf-8'))
     profile = json.loads((root / 'tools' / 'active_firmware_profile.json').read_text(encoding='utf-8'))
-    expected_count = profile.get('scenario_count')
-    if not isinstance(content, list) or not isinstance(expected_count, int) or len(content) != expected_count:
-        raise ValueError(f'Workbench catalog mismatch: reviewed profile requires {expected_count} cases')
+    if not isinstance(content,list) or len(content) != 369:
+        raise ValueError('Workbench requires all 369 reviewed R14.39 signal cases')
+    if not isinstance(stable,list) or len(stable) != profile.get('scenario_count'):
+        raise ValueError('Stable firmware catalog must retain its own verified profile')
     ids = [case.get('id') for case in content]
     if len(ids) != len(set(ids)):
         raise ValueError('Duplicate case IDs in workbench catalog')
-    shutil.copyfile(cases, out / 'cases.json')
+    by_id = {case['id']:case for case in content}
+    if any(by_id.get(case['id']) != case for case in stable):
+        raise ValueError('Public Workbench must preserve all stable case records unchanged')
+    shutil.copyfile(cases,out / 'cases.json')
+    fork = root / 'workbench' / 'fork_expectations.json'
+    fork_data = json.loads(fork.read_text(encoding='utf-8'))
+    if fork_data.get('schema') != 1 or fork_data.get('baseline_expected_source') != 'tests/cases.json':
+        raise ValueError('Invalid receiver fork expectation profile')
+    overrides = fork_data.get('overrides')
+    if not isinstance(overrides,dict) or len(overrides) != 19:
+        raise ValueError('Expected 19 fork-only receiver overrides')
+    if any(case_id not in by_id or expected not in {'DRONE','SKIMMER','META','HACKER'}
+           for case_id,expected in overrides.items()):
+        raise ValueError('Invalid fork detection expectation')
+    shutil.copyfile(fork,out / 'fork_expectations.json')
 
 
 def build(source_manifest: Path, output: Path) -> dict:

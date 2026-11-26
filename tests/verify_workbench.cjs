@@ -8,10 +8,10 @@ const catalog={
   'BLE-NEG-DRONE-UUID':{id:'BLE-NEG-DRONE-UUID',expected:'NONE'},
   'OUI-DJI-04A85A':{id:'OUI-DJI-04A85A',expected:'DRONE'}
 };
-// Every one of the firmware's 362 reviewed signal IDs must have a descriptive
+// Every one of the LAB R14.39 firmware's 369 reviewed signal IDs must have a descriptive
 // device-first label, including vendor-OUI and negative-control fixtures.
-const allCases=JSON.parse(fs.readFileSync('tests/cases.json','utf8'));
-assert.equal(allCases.length,362);
+const allCases=JSON.parse(fs.readFileSync('workbench/catalog-369.json','utf8'));
+assert.equal(allCases.length,369);
 const names=new Map();
 for(const c of allCases){
   const name=core.signalName(c);
@@ -27,11 +27,34 @@ assert.match(names.get('BLE-META-LUXOTTICA'),/^Luxottica \/ Ray-Ban —/);
 assert.match(names.get('OUI-AUTEL-18D7936'),/^Autel Intelligent/);
 assert.match(names.get('BLE-NEG-FLIP-MFG'),/^Flipper Zero —/);
 assert.throws(()=>core.signalName({id:'BLE-UNKNOWN-NEW',description:'x'}),/No device name/);
+const forkProfile=JSON.parse(fs.readFileSync('workbench/fork_expectations.json','utf8'));
+const upstreamCases=core.receiverCatalog(allCases,'upstream',forkProfile);
+const forkCases=core.receiverCatalog(allCases,'fork',forkProfile);
+assert.equal(upstreamCases.length,369);
+assert.equal(forkCases.length,369);
+assert.equal(Object.keys(forkProfile.overrides).length,19);
+const upstreamById=Object.fromEntries(upstreamCases.map(x=>[x.id,x]));
+const forkById=Object.fromEntries(forkCases.map(x=>[x.id,x]));
+for(const [id,want] of Object.entries(forkProfile.overrides)){
+  assert.equal(forkById[id].expected,want,'fork receiver expectation '+id);
+  assert.equal(upstreamById[id].expected,'NONE','upstream untouched '+id);
+}
+assert.equal(forkById['FORK-BLE-SKIM-BT04'].expected,'SKIMMER');
+assert.equal(upstreamById['FORK-BLE-SKIM-BT04'].expected,'NONE');
+assert.equal(forkById['OUI-INSPFLIGHT-34B5F32'].expected,'DRONE');
+assert.equal(upstreamById['OUI-INSPFLIGHT-34B5F32'].expected,'NONE');
+assert.equal(allCases.find(x=>x.id==='FORK-BLE-SKIM-BT04').expected,'NONE',
+  'profiles must not mutate raw signal data');
+assert.throws(()=>core.receiverCatalog(allCases,'fork',{overrides:{'NOT-A-CASE':'DRONE'}}),/Unknown/);
+const receiverTrial={id:'FORK-BLE-SKIM-BT04',emission:'ok',window:'complete',
+  observed:'SKIMMER',receiver_sha:'a'.repeat(40),emitter_sha:'b'.repeat(40)};
+assert.equal(core.status(receiverTrial,forkById),'TP');
+assert.equal(core.status(receiverTrial,upstreamById),'FP');
 const fullPlan=core.batchPlan(allCases,'all');
-assert.equal(fullPlan.length,362);
-assert.equal(core.batchPlan(allCases,'BLE').length,111);
-assert.equal(core.batchPlan(allCases,'WIFI').length,251);
-assert.equal(new Set(fullPlan.map(x=>x.id)).size,362);
+assert.equal(fullPlan.length,369);
+assert.equal(core.batchPlan(allCases,'BLE').length,116);
+assert.equal(core.batchPlan(allCases,'WIFI').length,253);
+assert.equal(new Set(fullPlan.map(x=>x.id)).size,369);
 assert.deepEqual(fullPlan.map(x=>x.id),core.batchPlan(allCases,'all').map(x=>x.id));
 assert.throws(()=>core.batchPlan(allCases,'unknown'),/scope/);
 const sha='a'.repeat(40);
@@ -242,6 +265,14 @@ assert.match(html,/id="runFeedback"/);
 assert.match(html,/id="receiverSha"/);
 assert.match(html,/id="emitterSha"/);
 assert.match(html,/id="recvConnect"/);
+assert.match(html,/FREENOVE-S3-3\.5/);
+assert.match(html,/id="receiverLibrary"/);
+assert.match(html,/369 cases/);
+assert.match(app,/fork_expectations\.json/);
+assert.match(app,/FREENOVE-S3-3\.5/);
+assert.match(app,/cases\.length===369/);
+assert.match(app,/ui\.receiverBoard\.value==='FREENOVE-S3-3\.5'\?'115200':'2000000'/);
+
 assert.match(html,/id="emitConnect"/);
 assert.match(html,/id="observed"/);
 assert.match(html,/id="trialRows"/);

@@ -1,0 +1,3323 @@
+[
+  {
+    "id": "BLE-FLOCK-MFG",
+    "carrier": "BLE",
+    "kind": "BleManufacturer",
+    "expected": "FLOCK",
+    "description": "Flock supplier company ID 0x09C8",
+    "code": 2504,
+    "text": null
+  },
+  {
+    "id": "BLE-FLOCK-NAME",
+    "carrier": "BLE",
+    "kind": "BleName",
+    "expected": "FLOCK",
+    "description": "Synthetic Penguin battery name",
+    "code": 0,
+    "text": "Penguin-0123456789"
+  },
+  {
+    "id": "BLE-META-UUID",
+    "carrier": "BLE",
+    "kind": "BleUuid",
+    "expected": "META",
+    "description": "Ray-Ban Meta service UUID",
+    "code": 64863,
+    "text": null
+  },
+  {
+    "id": "BLE-META-MFG",
+    "carrier": "BLE",
+    "kind": "BleManufacturer",
+    "expected": "META",
+    "description": "Meta company ID",
+    "code": 427,
+    "text": null
+  },
+  {
+    "id": "BLE-SKIMMER",
+    "carrier": "BLE",
+    "kind": "BleName",
+    "expected": "SKIMMER",
+    "description": "HC-05-like BLE name; NOT Bluetooth Classic",
+    "code": 0,
+    "text": "HC-05"
+  },
+  {
+    "id": "BLE-RAVEN",
+    "carrier": "BLE",
+    "kind": "BleUuid",
+    "expected": "RAVEN",
+    "description": "Raven service UUID",
+    "code": 12544,
+    "text": null
+  },
+  {
+    "id": "BLE-AIRTAG",
+    "carrier": "BLE",
+    "kind": "BleManufacturer",
+    "expected": "AIRTAG",
+    "description": "Synthetic Apple Find My pattern",
+    "code": 76,
+    "text": null
+  },
+  {
+    "id": "BLE-DRONE",
+    "carrier": "BLE",
+    "kind": "BleRemoteId",
+    "expected": "DRONE",
+    "description": "Three synthetic OpenDroneID Basic/Location/System frames",
+    "code": 65530,
+    "text": null
+  },
+  {
+    "id": "BLE-SAMSUNG",
+    "carrier": "BLE",
+    "kind": "BleUuid",
+    "expected": "SAMSUNG_TAG",
+    "description": "Samsung SmartTag service UUID",
+    "code": 64858,
+    "text": null
+  },
+  {
+    "id": "BLE-GOOGLE",
+    "carrier": "BLE",
+    "kind": "BleUuid",
+    "expected": "NONE",
+    "description": "Generic Eddystone UUID alone is not a Google FMDN tracker",
+    "code": 65194,
+    "text": null
+  },
+  {
+    "id": "BLE-TILE",
+    "carrier": "BLE",
+    "kind": "BleUuid",
+    "expected": "TILE",
+    "description": "Tile service UUID",
+    "code": 65261,
+    "text": null
+  },
+  {
+    "id": "BLE-HACKER-UUID",
+    "carrier": "BLE",
+    "kind": "BleUuid",
+    "expected": "HACKER",
+    "description": "Flipper signature UUID",
+    "code": 12417,
+    "text": null
+  },
+  {
+    "id": "BLE-HACKER-MFG",
+    "carrier": "BLE",
+    "kind": "BleManufacturer",
+    "expected": "NONE",
+    "description": "Flipper company ID",
+    "code": 3625,
+    "text": null
+  },
+  {
+    "id": "BLE-IBEACON",
+    "carrier": "BLE",
+    "kind": "BleManufacturer",
+    "expected": "IBEACON",
+    "description": "Synthetic iBeacon; enable IBEACON in SquachWatch first",
+    "code": 76,
+    "text": null
+  },
+  {
+    "id": "BLE-NEG-APPLE",
+    "carrier": "BLE",
+    "kind": "BleAppleNegative",
+    "expected": "NONE",
+    "description": "Apple company ID without Find My/iBeacon structure",
+    "code": 76,
+    "text": null
+  },
+  {
+    "id": "BLE-NEG-UUID",
+    "carrier": "BLE",
+    "kind": "BleUuid",
+    "expected": "NONE",
+    "description": "Unknown service UUID",
+    "code": 42919,
+    "text": null
+  },
+  {
+    "id": "BLE-NEG-NAME",
+    "carrier": "BLE",
+    "kind": "BleName",
+    "expected": "NONE",
+    "description": "Ordinary BLE device name",
+    "code": 0,
+    "text": "SQE-BENIGN"
+  },
+  {
+    "id": "WIFI-AXON",
+    "carrier": "WIFI",
+    "kind": "WifiAp",
+    "expected": "AXON",
+    "description": "Body-camera pairing SSID prefix",
+    "code": 0,
+    "text": "AB2-SQE-TEST"
+  },
+  {
+    "id": "WIFI-FLOCK",
+    "carrier": "WIFI",
+    "kind": "WifiAp",
+    "expected": "FLOCK",
+    "description": "Flock test SSID prefix",
+    "code": 0,
+    "text": "FLOCK-SQE-TEST"
+  },
+  {
+    "id": "WIFI-HACKER-PINE",
+    "carrier": "WIFI",
+    "kind": "WifiAp",
+    "expected": "HACKER",
+    "description": "Wi-Fi Pineapple SSID pattern",
+    "code": 0,
+    "text": "Pineapple_SQE"
+  },
+  {
+    "id": "WIFI-HACKER-PWN",
+    "carrier": "WIFI",
+    "kind": "WifiAp",
+    "expected": "HACKER",
+    "description": "Deauther management SSID pattern; no attacks",
+    "code": 0,
+    "text": "pwned-SQE-TEST"
+  },
+  {
+    "id": "WIFI-NEG",
+    "carrier": "WIFI",
+    "kind": "WifiAp",
+    "expected": "NONE",
+    "description": "Ordinary WPA2 SoftAP; negative control",
+    "code": 0,
+    "text": "SQE-BENIGN"
+  },
+  {
+    "id": "BLE-IBEACON-V2",
+    "carrier": "BLE",
+    "kind": "BleManufacturer",
+    "expected": "IBEACON",
+    "description": "Second synthetic iBeacon UUID/major/minor identity",
+    "code": 76,
+    "text": null
+  },
+  {
+    "id": "BLE-NEG-IBEACON-SHORT",
+    "carrier": "BLE",
+    "kind": "BleAppleNegative",
+    "expected": "NONE",
+    "description": "Truncated Apple iBeacon structure; reject as incomplete",
+    "code": 76,
+    "text": null
+  },
+  {
+    "id": "BLE-NEG-DRONE-UUID",
+    "carrier": "BLE",
+    "kind": "BleUuid",
+    "expected": "NONE",
+    "description": "OpenDroneID UUID as service list only; NOT Remote ID data",
+    "code": 65530,
+    "text": null
+  },
+  {
+    "id": "BLE-NEG-META-ADJ",
+    "carrier": "BLE",
+    "kind": "BleUuid",
+    "expected": "NONE",
+    "description": "Adjacent non-Meta service UUID should not classify",
+    "code": 64862,
+    "text": null
+  },
+  {
+    "id": "WIFI-AXON-CH6",
+    "carrier": "WIFI",
+    "kind": "WifiAp",
+    "expected": "AXON",
+    "description": "Controlled Axon SSID on Wi-Fi channel 6",
+    "code": 6,
+    "text": "AB2-SQE-TEST"
+  },
+  {
+    "id": "WIFI-AXON-CH11",
+    "carrier": "WIFI",
+    "kind": "WifiAp",
+    "expected": "AXON",
+    "description": "Controlled Axon SSID on Wi-Fi channel 11",
+    "code": 11,
+    "text": "AB2-SQE-TEST"
+  },
+  {
+    "id": "WIFI-FLOCK-CH6",
+    "carrier": "WIFI",
+    "kind": "WifiAp",
+    "expected": "FLOCK",
+    "description": "Controlled Flock SSID on Wi-Fi channel 6",
+    "code": 6,
+    "text": "FLOCK-SQE-TEST"
+  },
+  {
+    "id": "WIFI-NEG-CH6",
+    "carrier": "WIFI",
+    "kind": "WifiAp",
+    "expected": "NONE",
+    "description": "Benign WPA2 AP on Wi-Fi channel 6",
+    "code": 6,
+    "text": "SQE-BENIGN"
+  },
+  {
+    "id": "WIFI-NEG-CH11",
+    "carrier": "WIFI",
+    "kind": "WifiAp",
+    "expected": "NONE",
+    "description": "Benign WPA2 AP on Wi-Fi channel 11",
+    "code": 11,
+    "text": "SQE-BENIGN"
+  },
+  {
+    "id": "RID-DJI-MINI",
+    "carrier": "BLE",
+    "kind": "BleRemoteId",
+    "expected": "DRONE",
+    "description": "DJI Mini family | GENERIC SYNTHETIC BLE4; no model RF",
+    "code": 0,
+    "text": "SQE-DJI-MINI-LAB01"
+  },
+  {
+    "id": "RID-DJI-AIR",
+    "carrier": "BLE",
+    "kind": "BleRemoteId",
+    "expected": "DRONE",
+    "description": "DJI Air family | GENERIC SYNTHETIC BLE4; no model RF",
+    "code": 0,
+    "text": "SQE-DJI-AIR-LAB001"
+  },
+  {
+    "id": "RID-DJI-MAVIC",
+    "carrier": "BLE",
+    "kind": "BleRemoteId",
+    "expected": "DRONE",
+    "description": "DJI Mavic family | GENERIC SYNTHETIC BLE4; no model RF",
+    "code": 0,
+    "text": "SQE-DJI-MAVIC-LAB1"
+  },
+  {
+    "id": "RID-DJI-PHANTOM",
+    "carrier": "BLE",
+    "kind": "BleRemoteId",
+    "expected": "DRONE",
+    "description": "DJI Phantom family | GENERIC SYNTHETIC BLE4; no model RF",
+    "code": 0,
+    "text": "SQE-DJI-PHANTOM-L1"
+  },
+  {
+    "id": "RID-DJI-MATRICE",
+    "carrier": "BLE",
+    "kind": "BleRemoteId",
+    "expected": "DRONE",
+    "description": "DJI Matrice family | GENERIC SYNTHETIC BLE4; no model RF",
+    "code": 0,
+    "text": "SQE-DJI-MATRICE-L1"
+  },
+  {
+    "id": "RID-AUTEL-EVO2",
+    "carrier": "BLE",
+    "kind": "BleRemoteId",
+    "expected": "DRONE",
+    "description": "LAB Autel EVO II Remote ID profile (synthetic, not real aircraft)",
+    "code": 0,
+    "text": "SQE-AUTEL-EVO2-L1"
+  },
+  {
+    "id": "RID-AUTEL-EVOMAX",
+    "carrier": "BLE",
+    "kind": "BleRemoteId",
+    "expected": "DRONE",
+    "description": "LAB Autel EVO Max Remote ID profile (synthetic, not real aircraft)",
+    "code": 0,
+    "text": "SQE-AUTEL-MAX-L01"
+  },
+  {
+    "id": "RID-AUTEL-EVOLITE",
+    "carrier": "BLE",
+    "kind": "BleRemoteId",
+    "expected": "DRONE",
+    "description": "LAB Autel EVO Lite Remote ID profile (synthetic, not real aircraft)",
+    "code": 0,
+    "text": "SQE-AUTEL-LITE-L1"
+  },
+  {
+    "id": "RID-PARROT-ANAFI",
+    "carrier": "BLE",
+    "kind": "BleRemoteId",
+    "expected": "DRONE",
+    "description": "LAB Parrot ANAFI Remote ID profile (synthetic, not real aircraft)",
+    "code": 0,
+    "text": "SQE-PARROT-ANAFI1"
+  },
+  {
+    "id": "RID-PARROT-ANAFIUSA",
+    "carrier": "BLE",
+    "kind": "BleRemoteId",
+    "expected": "DRONE",
+    "description": "LAB Parrot ANAFI USA Remote ID profile (synthetic, not real aircraft)",
+    "code": 0,
+    "text": "SQE-PARROT-USA-L01"
+  },
+  {
+    "id": "RID-GENERIC-BLE4",
+    "carrier": "BLE",
+    "kind": "BleRemoteId",
+    "expected": "DRONE",
+    "description": "Generic BLE4 Remote ID test profile with Self ID",
+    "code": 0,
+    "text": "SQE-GENERIC-BLE4-L1"
+  },
+  {
+    "id": "RID-WIFI-BEACON",
+    "carrier": "WIFI",
+    "kind": "WifiRemoteId",
+    "expected": "DRONE",
+    "description": "2.4GHz Wi-Fi beacon with ASTM Remote ID vendor IE",
+    "code": 6,
+    "text": "SQE-RID-GENERIC"
+  },
+  {
+    "id": "RID-WIFI-PARROT",
+    "carrier": "WIFI",
+    "kind": "WifiRemoteId",
+    "expected": "DRONE",
+    "description": "2.4GHz Wi-Fi beacon with Parrot Remote ID vendor IE",
+    "code": 6,
+    "text": "SQE-RID-PARROT"
+  },
+  {
+    "id": "RID-NEG-APP",
+    "carrier": "BLE",
+    "kind": "BleRemoteNegative",
+    "expected": "NONE",
+    "description": "BLE Remote ID UUID with wrong application code",
+    "code": 1,
+    "text": null
+  },
+  {
+    "id": "RID-NEG-SHORT",
+    "carrier": "BLE",
+    "kind": "BleRemoteNegative",
+    "expected": "NONE",
+    "description": "BLE Remote ID service data one byte too short",
+    "code": 2,
+    "text": null
+  },
+  {
+    "id": "RID-NO-OPERATOR",
+    "carrier": "BLE",
+    "kind": "BleRemoteId",
+    "expected": "DRONE",
+    "description": "Valid Basic+Location; omit System/operator data",
+    "code": 0,
+    "text": "SQE-NO-OP-LAB00001"
+  },
+  {
+    "id": "RID-STALE-LOC",
+    "carrier": "BLE",
+    "kind": "BleRemoteId",
+    "expected": "DRONE",
+    "description": "Valid Remote ID with old location time-of-hour (not a receiver clock test)",
+    "code": 0,
+    "text": "SQE-STALE-LOC-LAB1"
+  },
+  {
+    "id": "RID-BAD-SERIAL",
+    "carrier": "BLE",
+    "kind": "BleRemoteId",
+    "expected": "DRONE",
+    "description": "Valid Remote ID transport with invalid synthetic Basic ID text",
+    "code": 0,
+    "text": "SQE-BAD-SERIAL-LAB"
+  },
+  {
+    "id": "BLE-FLOCK-BATTERY",
+    "carrier": "BLE",
+    "kind": "BleName",
+    "expected": "FLOCK",
+    "description": "Flock external battery accessory name",
+    "code": 0,
+    "text": "FS Ext Battery"
+  },
+  {
+    "id": "BLE-FLOCK-SETUP",
+    "carrier": "BLE",
+    "kind": "BleName",
+    "expected": "FLOCK",
+    "description": "Flock setup accessory name",
+    "code": 0,
+    "text": "Flock_Setup"
+  },
+  {
+    "id": "BLE-FLOCK-BARE10",
+    "carrier": "BLE",
+    "kind": "BleName",
+    "expected": "FLOCK",
+    "description": "Flock battery bare ten-digit name",
+    "code": 0,
+    "text": "0123456789"
+  },
+  {
+    "id": "BLE-FLOCK-PIGVISION",
+    "carrier": "BLE",
+    "kind": "BleName",
+    "expected": "FLOCK",
+    "description": "Flock Pigvision accessory name",
+    "code": 0,
+    "text": "Pigvision-SQE"
+  },
+  {
+    "id": "BLE-NEG-PENGUIN-9",
+    "carrier": "BLE",
+    "kind": "BleName",
+    "expected": "FLOCK",
+    "description": "Nine-digit Penguin name must not match battery serial",
+    "code": 0,
+    "text": "Penguin-012345678"
+  },
+  {
+    "id": "BLE-NEG-BARE9",
+    "carrier": "BLE",
+    "kind": "BleName",
+    "expected": "NONE",
+    "description": "Nine-digit bare number must not match Flock battery serial",
+    "code": 0,
+    "text": "012345678"
+  },
+  {
+    "id": "BLE-META-TECH",
+    "carrier": "BLE",
+    "kind": "BleManufacturer",
+    "expected": "NONE",
+    "description": "Meta Technologies company ID; shared vendor evidence",
+    "code": 1422,
+    "text": null
+  },
+  {
+    "id": "BLE-META-LUXOTTICA",
+    "carrier": "BLE",
+    "kind": "BleManufacturer",
+    "expected": "META",
+    "description": "Luxottica company ID; not proof of glasses",
+    "code": 3411,
+    "text": null
+  },
+  {
+    "id": "BLE-META-SNAP",
+    "carrier": "BLE",
+    "kind": "BleManufacturer",
+    "expected": "META",
+    "description": "Snap company ID; not proof of Spectacles",
+    "code": 962,
+    "text": null
+  },
+  {
+    "id": "BLE-NEG-SNAP-ADJ",
+    "carrier": "BLE",
+    "kind": "BleManufacturer",
+    "expected": "NONE",
+    "description": "Adjacent manufacturer ID must not mean glasses",
+    "code": 963,
+    "text": null
+  },
+  {
+    "id": "BLE-RAVEN-3200",
+    "carrier": "BLE",
+    "kind": "BleUuid",
+    "expected": "RAVEN",
+    "description": "Raven alternate service UUID 3200",
+    "code": 12800,
+    "text": null
+  },
+  {
+    "id": "BLE-RAVEN-3300",
+    "carrier": "BLE",
+    "kind": "BleUuid",
+    "expected": "RAVEN",
+    "description": "Raven alternate service UUID 3300",
+    "code": 13056,
+    "text": null
+  },
+  {
+    "id": "BLE-RAVEN-3400",
+    "carrier": "BLE",
+    "kind": "BleUuid",
+    "expected": "RAVEN",
+    "description": "Raven alternate service UUID 3400",
+    "code": 13312,
+    "text": null
+  },
+  {
+    "id": "BLE-RAVEN-3500",
+    "carrier": "BLE",
+    "kind": "BleUuid",
+    "expected": "RAVEN",
+    "description": "Raven alternate service UUID 3500",
+    "code": 13568,
+    "text": null
+  },
+  {
+    "id": "BLE-NEG-RAVEN-3600",
+    "carrier": "BLE",
+    "kind": "BleUuid",
+    "expected": "NONE",
+    "description": "Adjacent UUID must not match Raven",
+    "code": 13824,
+    "text": null
+  },
+  {
+    "id": "BLE-TILE-FEEC",
+    "carrier": "BLE",
+    "kind": "BleUuid",
+    "expected": "TILE",
+    "description": "Tile secondary assigned service UUID",
+    "code": 65260,
+    "text": null
+  },
+  {
+    "id": "BLE-HACKER-3082",
+    "carrier": "BLE",
+    "kind": "BleUuid",
+    "expected": "HACKER",
+    "description": "Flipper alternate UUID 3082",
+    "code": 12418,
+    "text": null
+  },
+  {
+    "id": "BLE-HACKER-3083",
+    "carrier": "BLE",
+    "kind": "BleUuid",
+    "expected": "HACKER",
+    "description": "Flipper alternate UUID 3083",
+    "code": 12419,
+    "text": null
+  },
+  {
+    "id": "BLE-HACKER-NAME",
+    "carrier": "BLE",
+    "kind": "BleName",
+    "expected": "HACKER",
+    "description": "Synthetic Flipper name; not proof of genuine device",
+    "code": 0,
+    "text": "Flipper SQE"
+  },
+  {
+    "id": "BLE-NEG-FLIP-MFG",
+    "carrier": "BLE",
+    "kind": "BleManufacturer",
+    "expected": "NONE",
+    "description": "Cosonic company ID must not mean Flipper",
+    "code": 4026,
+    "text": null
+  },
+  {
+    "id": "BLE-SKIM-HC03",
+    "carrier": "BLE",
+    "kind": "BleName",
+    "expected": "SKIMMER",
+    "description": "Generic HC-03 serial module; not proof of skimmer",
+    "code": 0,
+    "text": "HC-03"
+  },
+  {
+    "id": "BLE-SKIM-HC06",
+    "carrier": "BLE",
+    "kind": "BleName",
+    "expected": "SKIMMER",
+    "description": "Generic HC-06 serial module; not proof of skimmer",
+    "code": 0,
+    "text": "HC-06"
+  },
+  {
+    "id": "BLE-SKIM-RN42",
+    "carrier": "BLE",
+    "kind": "BleName",
+    "expected": "SKIMMER",
+    "description": "Generic RN42 serial module; not proof of skimmer",
+    "code": 0,
+    "text": "RN42"
+  },
+  {
+    "id": "BLE-SKIM-BT04A",
+    "carrier": "BLE",
+    "kind": "BleName",
+    "expected": "SKIMMER",
+    "description": "Generic BT04-A serial module; not proof of skimmer",
+    "code": 0,
+    "text": "BT04-A"
+  },
+  {
+    "id": "BLE-SKIM-BT05",
+    "carrier": "BLE",
+    "kind": "BleName",
+    "expected": "NONE",
+    "description": "Generic BT05 serial module; not proof of skimmer",
+    "code": 0,
+    "text": "BT05"
+  },
+  {
+    "id": "BLE-SKIM-JDY08",
+    "carrier": "BLE",
+    "kind": "BleName",
+    "expected": "NONE",
+    "description": "Generic JDY-08 serial module; not proof of skimmer",
+    "code": 0,
+    "text": "JDY-08"
+  },
+  {
+    "id": "BLE-SKIM-JDY16",
+    "carrier": "BLE",
+    "kind": "BleName",
+    "expected": "NONE",
+    "description": "Generic JDY-16 serial module; not proof of skimmer",
+    "code": 0,
+    "text": "JDY-16"
+  },
+  {
+    "id": "BLE-SKIM-MLTBT",
+    "carrier": "BLE",
+    "kind": "BleName",
+    "expected": "NONE",
+    "description": "Generic MLT-BT serial module; not proof of skimmer",
+    "code": 0,
+    "text": "MLT-BT"
+  },
+  {
+    "id": "BLE-SKIM-LINVOR",
+    "carrier": "BLE",
+    "kind": "BleName",
+    "expected": "NONE",
+    "description": "Generic linvor serial module; not proof of skimmer",
+    "code": 0,
+    "text": "linvor"
+  },
+  {
+    "id": "BLE-NEG-JDY16-EXTRA",
+    "carrier": "BLE",
+    "kind": "BleName",
+    "expected": "NONE",
+    "description": "JDY-16 suffix should not match exact module name",
+    "code": 0,
+    "text": "JDY-16-EXTRA"
+  },
+  {
+    "id": "BLE-AXON-NAME",
+    "carrier": "BLE",
+    "kind": "BleName",
+    "expected": "AXON",
+    "description": "Axon name candidate; not authenticated camera",
+    "code": 0,
+    "text": "Axon SQE"
+  },
+  {
+    "id": "WIFI-AXON-AB3",
+    "carrier": "WIFI",
+    "kind": "WifiAp",
+    "expected": "AXON",
+    "description": "Axon Body 3 pairing SSID",
+    "code": 1,
+    "text": "AB3-SQE-TEST"
+  },
+  {
+    "id": "WIFI-AXON-AB4",
+    "carrier": "WIFI",
+    "kind": "WifiAp",
+    "expected": "AXON",
+    "description": "Axon Body 4 pairing SSID",
+    "code": 1,
+    "text": "AB4-SQE-TEST"
+  },
+  {
+    "id": "WIFI-AXON-FIELD",
+    "carrier": "WIFI",
+    "kind": "WifiAp",
+    "expected": "AXON",
+    "description": "Axon Field pairing SSID",
+    "code": 1,
+    "text": "AXON-SQE-TEST"
+  },
+  {
+    "id": "WIFI-FLOCK-BARE",
+    "carrier": "WIFI",
+    "kind": "WifiAp",
+    "expected": "FLOCK",
+    "description": "Exact bare Flock SSID",
+    "code": 1,
+    "text": "Flock"
+  },
+  {
+    "id": "WIFI-HACKER-PAGER1",
+    "carrier": "WIFI",
+    "kind": "WifiAp",
+    "expected": "NONE",
+    "description": "Exact Pineapple Pager SSID pager_open",
+    "code": 1,
+    "text": "pager_open"
+  },
+  {
+    "id": "WIFI-HACKER-PAGER2",
+    "carrier": "WIFI",
+    "kind": "WifiAp",
+    "expected": "NONE",
+    "description": "Exact Pineapple Pager SSID pager-open",
+    "code": 1,
+    "text": "pager-open"
+  },
+  {
+    "id": "WIFI-NEG-PAGER-SUFFIX",
+    "carrier": "WIFI",
+    "kind": "WifiAp",
+    "expected": "NONE",
+    "description": "Pager suffix must not match exact Pager rule",
+    "code": 1,
+    "text": "pager_open_guest"
+  },
+  {
+    "id": "WIFI-NEG-PAGER-OFFICE",
+    "carrier": "WIFI",
+    "kind": "WifiAp",
+    "expected": "NONE",
+    "description": "Pager-office is not exact Pager default",
+    "code": 1,
+    "text": "pager-office"
+  },
+  {
+    "id": "WIFI-NEG-FLOCKHART",
+    "carrier": "WIFI",
+    "kind": "WifiAp",
+    "expected": "NONE",
+    "description": "Unrelated Flockhart SSID not Flock",
+    "code": 1,
+    "text": "Flockhart-SQE"
+  },
+  {
+    "id": "WIFI-NEG-AXON-NOHYPHEN",
+    "carrier": "WIFI",
+    "kind": "WifiAp",
+    "expected": "NONE",
+    "description": "Axon SSID without delimiter must not match",
+    "code": 1,
+    "text": "AB3SQE"
+  },
+  {
+    "id": "WIFI-AXON-CH3",
+    "carrier": "WIFI",
+    "kind": "WifiAp",
+    "expected": "AXON",
+    "description": "Axon Body 3 SSID on channel 3",
+    "code": 3,
+    "text": "AB3-SQE-TEST"
+  },
+  {
+    "id": "WIFI-AXON-CH9",
+    "carrier": "WIFI",
+    "kind": "WifiAp",
+    "expected": "AXON",
+    "description": "Axon Body 4 SSID on channel 9",
+    "code": 9,
+    "text": "AB4-SQE-TEST"
+  },
+  {
+    "id": "WIFI-FLOCK-CH11",
+    "carrier": "WIFI",
+    "kind": "WifiAp",
+    "expected": "FLOCK",
+    "description": "Flock SSID on channel 11",
+    "code": 11,
+    "text": "FLOCK-SQE-TEST"
+  },
+  {
+    "id": "RID-WIFI-CH1",
+    "carrier": "WIFI",
+    "kind": "WifiRemoteId",
+    "expected": "DRONE",
+    "description": "Remote ID Wi-Fi beacon channel 1",
+    "code": 1,
+    "text": "SQE-RID-CH1"
+  },
+  {
+    "id": "RID-WIFI-CH11",
+    "carrier": "WIFI",
+    "kind": "WifiRemoteId",
+    "expected": "DRONE",
+    "description": "Remote ID Wi-Fi beacon channel 11",
+    "code": 11,
+    "text": "SQE-RID-CH11"
+  },
+  {
+    "id": "RID-DJI-AIR2S",
+    "carrier": "BLE",
+    "kind": "BleRemoteId",
+    "expected": "DRONE",
+    "description": "DJI Air 2S | SYNTHETIC BLE4; not actual DJI RF",
+    "code": 0,
+    "text": "SQE-DJI-AIR2S-B"
+  },
+  {
+    "id": "RID-WIFI-DJI-AIR2S",
+    "carrier": "WIFI",
+    "kind": "WifiRemoteId",
+    "expected": "DRONE",
+    "description": "DJI Air 2S | SYNTHETIC WIFI BEACON Basic ID; not actual DJI RF",
+    "code": 6,
+    "text": "SQE-DJI-AIR2S-W"
+  },
+  {
+    "id": "RID-DJI-AIR3",
+    "carrier": "BLE",
+    "kind": "BleRemoteId",
+    "expected": "DRONE",
+    "description": "DJI Air 3 | SYNTHETIC BLE4; not actual DJI RF",
+    "code": 0,
+    "text": "SQE-DJI-AIR3-B"
+  },
+  {
+    "id": "RID-WIFI-DJI-AIR3",
+    "carrier": "WIFI",
+    "kind": "WifiRemoteId",
+    "expected": "DRONE",
+    "description": "DJI Air 3 | SYNTHETIC WIFI BEACON Basic ID; not actual DJI RF",
+    "code": 6,
+    "text": "SQE-DJI-AIR3-W"
+  },
+  {
+    "id": "RID-DJI-AVATA",
+    "carrier": "BLE",
+    "kind": "BleRemoteId",
+    "expected": "DRONE",
+    "description": "DJI Avata | SYNTHETIC BLE4; not actual DJI RF",
+    "code": 0,
+    "text": "SQE-DJI-AVATA-B"
+  },
+  {
+    "id": "RID-WIFI-DJI-AVATA",
+    "carrier": "WIFI",
+    "kind": "WifiRemoteId",
+    "expected": "DRONE",
+    "description": "DJI Avata | SYNTHETIC WIFI BEACON Basic ID; not actual DJI RF",
+    "code": 6,
+    "text": "SQE-DJI-AVATA-W"
+  },
+  {
+    "id": "RID-DJI-FPV",
+    "carrier": "BLE",
+    "kind": "BleRemoteId",
+    "expected": "DRONE",
+    "description": "DJI FPV | SYNTHETIC BLE4; not actual DJI RF",
+    "code": 0,
+    "text": "SQE-DJI-FPV-B"
+  },
+  {
+    "id": "RID-WIFI-DJI-FPV",
+    "carrier": "WIFI",
+    "kind": "WifiRemoteId",
+    "expected": "DRONE",
+    "description": "DJI FPV | SYNTHETIC WIFI BEACON Basic ID; not actual DJI RF",
+    "code": 6,
+    "text": "SQE-DJI-FPV-W"
+  },
+  {
+    "id": "RID-DJI-MATRICE300RTK",
+    "carrier": "BLE",
+    "kind": "BleRemoteId",
+    "expected": "DRONE",
+    "description": "DJI Matrice 300 RTK | SYNTHETIC BLE4; not actual DJI RF",
+    "code": 0,
+    "text": "SQE-DJI-M300-B"
+  },
+  {
+    "id": "RID-WIFI-DJI-MATRICE300RTK",
+    "carrier": "WIFI",
+    "kind": "WifiRemoteId",
+    "expected": "DRONE",
+    "description": "DJI Matrice 300 RTK | SYNTHETIC WIFI BEACON Basic ID; not actual DJI RF",
+    "code": 6,
+    "text": "SQE-DJI-M300-W"
+  },
+  {
+    "id": "RID-DJI-MATRICE30",
+    "carrier": "BLE",
+    "kind": "BleRemoteId",
+    "expected": "DRONE",
+    "description": "DJI Matrice 30 | SYNTHETIC BLE4; not actual DJI RF",
+    "code": 0,
+    "text": "SQE-DJI-M30-B"
+  },
+  {
+    "id": "RID-WIFI-DJI-MATRICE30",
+    "carrier": "WIFI",
+    "kind": "WifiRemoteId",
+    "expected": "DRONE",
+    "description": "DJI Matrice 30 | SYNTHETIC WIFI BEACON Basic ID; not actual DJI RF",
+    "code": 6,
+    "text": "SQE-DJI-M30-W"
+  },
+  {
+    "id": "RID-DJI-MATRICE350RTK",
+    "carrier": "BLE",
+    "kind": "BleRemoteId",
+    "expected": "DRONE",
+    "description": "DJI Matrice 350 RTK | SYNTHETIC BLE4; not actual DJI RF",
+    "code": 0,
+    "text": "SQE-DJI-M350-B"
+  },
+  {
+    "id": "RID-WIFI-DJI-MATRICE350RTK",
+    "carrier": "WIFI",
+    "kind": "WifiRemoteId",
+    "expected": "DRONE",
+    "description": "DJI Matrice 350 RTK | SYNTHETIC WIFI BEACON Basic ID; not actual DJI RF",
+    "code": 6,
+    "text": "SQE-DJI-M350-W"
+  },
+  {
+    "id": "RID-DJI-MAVIC2EA",
+    "carrier": "BLE",
+    "kind": "BleRemoteId",
+    "expected": "DRONE",
+    "description": "DJI Mavic 2 Enterprise Advanced | SYNTHETIC BLE4; not actual DJI RF",
+    "code": 0,
+    "text": "SQE-DJI-M2EA-B"
+  },
+  {
+    "id": "RID-WIFI-DJI-MAVIC2EA",
+    "carrier": "WIFI",
+    "kind": "WifiRemoteId",
+    "expected": "DRONE",
+    "description": "DJI Mavic 2 Enterprise Advanced | SYNTHETIC WIFI BEACON Basic ID; not actual DJI RF",
+    "code": 6,
+    "text": "SQE-DJI-M2EA-W"
+  },
+  {
+    "id": "RID-DJI-MAVIC2PRO",
+    "carrier": "BLE",
+    "kind": "BleRemoteId",
+    "expected": "DRONE",
+    "description": "DJI Mavic 2 Pro | SYNTHETIC BLE4; not actual DJI RF",
+    "code": 0,
+    "text": "SQE-DJI-M2PRO-B"
+  },
+  {
+    "id": "RID-WIFI-DJI-MAVIC2PRO",
+    "carrier": "WIFI",
+    "kind": "WifiRemoteId",
+    "expected": "DRONE",
+    "description": "DJI Mavic 2 Pro | SYNTHETIC WIFI BEACON Basic ID; not actual DJI RF",
+    "code": 6,
+    "text": "SQE-DJI-M2PRO-W"
+  },
+  {
+    "id": "RID-DJI-MAVIC2ZOOM",
+    "carrier": "BLE",
+    "kind": "BleRemoteId",
+    "expected": "DRONE",
+    "description": "DJI Mavic 2 Zoom | SYNTHETIC BLE4; not actual DJI RF",
+    "code": 0,
+    "text": "SQE-DJI-M2ZOOM-B"
+  },
+  {
+    "id": "RID-WIFI-DJI-MAVIC2ZOOM",
+    "carrier": "WIFI",
+    "kind": "WifiRemoteId",
+    "expected": "DRONE",
+    "description": "DJI Mavic 2 Zoom | SYNTHETIC WIFI BEACON Basic ID; not actual DJI RF",
+    "code": 6,
+    "text": "SQE-DJI-M2ZOOM-W"
+  },
+  {
+    "id": "RID-DJI-MAVIC3",
+    "carrier": "BLE",
+    "kind": "BleRemoteId",
+    "expected": "DRONE",
+    "description": "DJI Mavic 3 | SYNTHETIC BLE4; not actual DJI RF",
+    "code": 0,
+    "text": "SQE-DJI-M3-B"
+  },
+  {
+    "id": "RID-WIFI-DJI-MAVIC3",
+    "carrier": "WIFI",
+    "kind": "WifiRemoteId",
+    "expected": "DRONE",
+    "description": "DJI Mavic 3 | SYNTHETIC WIFI BEACON Basic ID; not actual DJI RF",
+    "code": 6,
+    "text": "SQE-DJI-M3-W"
+  },
+  {
+    "id": "RID-DJI-MAVIC3CLASSIC",
+    "carrier": "BLE",
+    "kind": "BleRemoteId",
+    "expected": "DRONE",
+    "description": "DJI Mavic 3 Classic | SYNTHETIC BLE4; not actual DJI RF",
+    "code": 0,
+    "text": "SQE-DJI-M3CL-B"
+  },
+  {
+    "id": "RID-WIFI-DJI-MAVIC3CLASSIC",
+    "carrier": "WIFI",
+    "kind": "WifiRemoteId",
+    "expected": "DRONE",
+    "description": "DJI Mavic 3 Classic | SYNTHETIC WIFI BEACON Basic ID; not actual DJI RF",
+    "code": 6,
+    "text": "SQE-DJI-M3CL-W"
+  },
+  {
+    "id": "RID-DJI-MAVIC3E",
+    "carrier": "BLE",
+    "kind": "BleRemoteId",
+    "expected": "DRONE",
+    "description": "DJI Mavic 3 Enterprise | SYNTHETIC BLE4; not actual DJI RF",
+    "code": 0,
+    "text": "SQE-DJI-M3E-B"
+  },
+  {
+    "id": "RID-WIFI-DJI-MAVIC3E",
+    "carrier": "WIFI",
+    "kind": "WifiRemoteId",
+    "expected": "DRONE",
+    "description": "DJI Mavic 3 Enterprise | SYNTHETIC WIFI BEACON Basic ID; not actual DJI RF",
+    "code": 6,
+    "text": "SQE-DJI-M3E-W"
+  },
+  {
+    "id": "RID-DJI-MAVIC3PRO",
+    "carrier": "BLE",
+    "kind": "BleRemoteId",
+    "expected": "DRONE",
+    "description": "DJI Mavic 3 Pro | SYNTHETIC BLE4; not actual DJI RF",
+    "code": 0,
+    "text": "SQE-DJI-M3PRO-B"
+  },
+  {
+    "id": "RID-WIFI-DJI-MAVIC3PRO",
+    "carrier": "WIFI",
+    "kind": "WifiRemoteId",
+    "expected": "DRONE",
+    "description": "DJI Mavic 3 Pro | SYNTHETIC WIFI BEACON Basic ID; not actual DJI RF",
+    "code": 6,
+    "text": "SQE-DJI-M3PRO-W"
+  },
+  {
+    "id": "RID-DJI-MAVIC3T",
+    "carrier": "BLE",
+    "kind": "BleRemoteId",
+    "expected": "DRONE",
+    "description": "DJI Mavic 3 Thermal | SYNTHETIC BLE4; not actual DJI RF",
+    "code": 0,
+    "text": "SQE-DJI-M3T-B"
+  },
+  {
+    "id": "RID-WIFI-DJI-MAVIC3T",
+    "carrier": "WIFI",
+    "kind": "WifiRemoteId",
+    "expected": "DRONE",
+    "description": "DJI Mavic 3 Thermal | SYNTHETIC WIFI BEACON Basic ID; not actual DJI RF",
+    "code": 6,
+    "text": "SQE-DJI-M3T-W"
+  },
+  {
+    "id": "RID-DJI-MINI3",
+    "carrier": "BLE",
+    "kind": "BleRemoteId",
+    "expected": "DRONE",
+    "description": "DJI Mini 3 | SYNTHETIC BLE4; not actual DJI RF",
+    "code": 0,
+    "text": "SQE-DJI-MINI3-B"
+  },
+  {
+    "id": "RID-WIFI-DJI-MINI3",
+    "carrier": "WIFI",
+    "kind": "WifiRemoteId",
+    "expected": "DRONE",
+    "description": "DJI Mini 3 | SYNTHETIC WIFI BEACON Basic ID; not actual DJI RF",
+    "code": 6,
+    "text": "SQE-DJI-MINI3-W"
+  },
+  {
+    "id": "RID-DJI-MINI3PRO",
+    "carrier": "BLE",
+    "kind": "BleRemoteId",
+    "expected": "DRONE",
+    "description": "DJI Mini 3 Pro | SYNTHETIC BLE4; not actual DJI RF",
+    "code": 0,
+    "text": "SQE-DJI-MINI3P-B"
+  },
+  {
+    "id": "RID-WIFI-DJI-MINI3PRO",
+    "carrier": "WIFI",
+    "kind": "WifiRemoteId",
+    "expected": "DRONE",
+    "description": "DJI Mini 3 Pro | SYNTHETIC WIFI BEACON Basic ID; not actual DJI RF",
+    "code": 6,
+    "text": "SQE-DJI-MINI3P-W"
+  },
+  {
+    "id": "RID-DJI-MINI4PRO",
+    "carrier": "BLE",
+    "kind": "BleRemoteId",
+    "expected": "DRONE",
+    "description": "DJI Mini 4 Pro | SYNTHETIC BLE4; not actual DJI RF",
+    "code": 0,
+    "text": "SQE-DJI-MINI4P-B"
+  },
+  {
+    "id": "RID-WIFI-DJI-MINI4PRO",
+    "carrier": "WIFI",
+    "kind": "WifiRemoteId",
+    "expected": "DRONE",
+    "description": "DJI Mini 4 Pro | SYNTHETIC WIFI BEACON Basic ID; not actual DJI RF",
+    "code": 6,
+    "text": "SQE-DJI-MINI4P-W"
+  },
+  {
+    "id": "RID-DJI-P4PROV2",
+    "carrier": "BLE",
+    "kind": "BleRemoteId",
+    "expected": "DRONE",
+    "description": "DJI Phantom 4 Pro V2.0 | SYNTHETIC BLE4; not actual DJI RF",
+    "code": 0,
+    "text": "SQE-DJI-P4PROV2-B"
+  },
+  {
+    "id": "RID-WIFI-DJI-P4PROV2",
+    "carrier": "WIFI",
+    "kind": "WifiRemoteId",
+    "expected": "DRONE",
+    "description": "DJI Phantom 4 Pro V2.0 | SYNTHETIC WIFI BEACON Basic ID; not actual DJI RF",
+    "code": 6,
+    "text": "SQE-DJI-P4PROV2-W"
+  },
+  {
+    "id": "RID-DJI-P4RTK",
+    "carrier": "BLE",
+    "kind": "BleRemoteId",
+    "expected": "DRONE",
+    "description": "DJI Phantom 4 RTK | SYNTHETIC BLE4; not actual DJI RF",
+    "code": 0,
+    "text": "SQE-DJI-P4RTK-B"
+  },
+  {
+    "id": "RID-WIFI-DJI-P4RTK",
+    "carrier": "WIFI",
+    "kind": "WifiRemoteId",
+    "expected": "DRONE",
+    "description": "DJI Phantom 4 RTK | SYNTHETIC WIFI BEACON Basic ID; not actual DJI RF",
+    "code": 6,
+    "text": "SQE-DJI-P4RTK-W"
+  },
+  {
+    "id": "OUI-DJI-04A85A",
+    "carrier": "WIFI",
+    "kind": "WifiAp",
+    "expected": "DRONE",
+    "description": "DJI OUI 04:A8:5A | LAB WIFI MAC ONLY; NO RID",
+    "code": 6,
+    "text": "SQE-LAB-DJI-04A85A"
+  },
+  {
+    "id": "OUI-DJI-0C9AE6",
+    "carrier": "WIFI",
+    "kind": "WifiAp",
+    "expected": "DRONE",
+    "description": "DJI OUI 0C:9A:E6 | LAB WIFI MAC ONLY; NO RID",
+    "code": 6,
+    "text": "SQE-LAB-DJI-0C9AE6"
+  },
+  {
+    "id": "OUI-DJI-34D262",
+    "carrier": "WIFI",
+    "kind": "WifiAp",
+    "expected": "DRONE",
+    "description": "DJI OUI 34:D2:62 | LAB WIFI MAC ONLY; NO RID",
+    "code": 6,
+    "text": "SQE-LAB-DJI-34D262"
+  },
+  {
+    "id": "OUI-DJI-481CB9",
+    "carrier": "WIFI",
+    "kind": "WifiAp",
+    "expected": "DRONE",
+    "description": "DJI OUI 48:1C:B9 | LAB WIFI MAC ONLY; NO RID",
+    "code": 6,
+    "text": "SQE-LAB-DJI-481CB9"
+  },
+  {
+    "id": "OUI-DJI-4C43F6",
+    "carrier": "WIFI",
+    "kind": "WifiAp",
+    "expected": "DRONE",
+    "description": "DJI OUI 4C:43:F6 | LAB WIFI MAC ONLY; NO RID",
+    "code": 6,
+    "text": "SQE-LAB-DJI-4C43F6"
+  },
+  {
+    "id": "OUI-DJI-58B858",
+    "carrier": "WIFI",
+    "kind": "WifiAp",
+    "expected": "DRONE",
+    "description": "DJI OUI 58:B8:58 | LAB WIFI MAC ONLY; NO RID",
+    "code": 6,
+    "text": "SQE-LAB-DJI-58B858"
+  },
+  {
+    "id": "OUI-DJI-60601F",
+    "carrier": "WIFI",
+    "kind": "WifiAp",
+    "expected": "DRONE",
+    "description": "DJI OUI 60:60:1F | LAB WIFI MAC ONLY; NO RID",
+    "code": 6,
+    "text": "SQE-LAB-DJI-60601F"
+  },
+  {
+    "id": "OUI-DJI-882985",
+    "carrier": "WIFI",
+    "kind": "WifiAp",
+    "expected": "DRONE",
+    "description": "DJI OUI 88:29:85 | LAB WIFI MAC ONLY; NO RID",
+    "code": 6,
+    "text": "SQE-LAB-DJI-882985"
+  },
+  {
+    "id": "OUI-DJI-8C5823",
+    "carrier": "WIFI",
+    "kind": "WifiAp",
+    "expected": "DRONE",
+    "description": "DJI OUI 8C:58:23 | LAB WIFI MAC ONLY; NO RID",
+    "code": 6,
+    "text": "SQE-LAB-DJI-8C5823"
+  },
+  {
+    "id": "OUI-DJI-E47A2C",
+    "carrier": "WIFI",
+    "kind": "WifiAp",
+    "expected": "DRONE",
+    "description": "DJI OUI E4:7A:2C | LAB WIFI MAC ONLY; NO RID",
+    "code": 6,
+    "text": "SQE-LAB-DJI-E47A2C"
+  },
+  {
+    "id": "OUI-AUTEL-18D7936",
+    "carrier": "WIFI",
+    "kind": "WifiAp",
+    "expected": "NONE",
+    "description": "Autel Intelligent 18D7936 | LAB OUI ONLY; NO RID",
+    "code": 6,
+    "text": "SQE-LAB-AUTEL-18D7936"
+  },
+  {
+    "id": "OUI-AUTEL-EC5BCDE",
+    "carrier": "WIFI",
+    "kind": "WifiAp",
+    "expected": "NONE",
+    "description": "Autel Robotics USA EC5BCDE | LAB OUI ONLY; NO RID",
+    "code": 6,
+    "text": "SQE-LAB-AUTEL-EC5BCDE"
+  },
+  {
+    "id": "OUI-PARROT-00121C",
+    "carrier": "WIFI",
+    "kind": "WifiAp",
+    "expected": "DRONE",
+    "description": "Parrot SA 00121C | LAB OUI ONLY; NO RID",
+    "code": 6,
+    "text": "SQE-LAB-PARROT-00121C"
+  },
+  {
+    "id": "OUI-PARROT-00267E",
+    "carrier": "WIFI",
+    "kind": "WifiAp",
+    "expected": "DRONE",
+    "description": "Parrot SA 00267E | LAB OUI ONLY; NO RID",
+    "code": 6,
+    "text": "SQE-LAB-PARROT-00267E"
+  },
+  {
+    "id": "OUI-PARROT-9003B7",
+    "carrier": "WIFI",
+    "kind": "WifiAp",
+    "expected": "DRONE",
+    "description": "Parrot SA 9003B7 | LAB OUI ONLY; NO RID",
+    "code": 6,
+    "text": "SQE-LAB-PARROT-9003B7"
+  },
+  {
+    "id": "OUI-PARROT-903AE6",
+    "carrier": "WIFI",
+    "kind": "WifiAp",
+    "expected": "DRONE",
+    "description": "Parrot SA 903AE6 | LAB OUI ONLY; NO RID",
+    "code": 6,
+    "text": "SQE-LAB-PARROT-903AE6"
+  },
+  {
+    "id": "OUI-PARROT-A0143D",
+    "carrier": "WIFI",
+    "kind": "WifiAp",
+    "expected": "DRONE",
+    "description": "Parrot SA A0143D | LAB OUI ONLY; NO RID",
+    "code": 6,
+    "text": "SQE-LAB-PARROT-A0143D"
+  },
+  {
+    "id": "OUI-SKYDIO-381D14",
+    "carrier": "WIFI",
+    "kind": "WifiAp",
+    "expected": "DRONE",
+    "description": "Skydio Inc. 381D14 | LAB OUI ONLY; NO RID",
+    "code": 6,
+    "text": "SQE-LAB-SKYDIO-381D14"
+  },
+  {
+    "id": "OUI-DJIB-9C5A8A",
+    "carrier": "WIFI",
+    "kind": "WifiAp",
+    "expected": "DRONE",
+    "description": "DJI Baiwang 9C5A8A | LAB OUI ONLY; NO RID",
+    "code": 6,
+    "text": "SQE-LAB-DJIB-9C5A8A"
+  },
+  {
+    "id": "OUI-DJIB-EC72F7",
+    "carrier": "WIFI",
+    "kind": "WifiAp",
+    "expected": "DRONE",
+    "description": "DJI Baiwang EC72F7 | LAB OUI ONLY; NO RID",
+    "code": 6,
+    "text": "SQE-LAB-DJIB-EC72F7"
+  },
+  {
+    "id": "OUI-QUANTUM-AC86D17",
+    "carrier": "WIFI",
+    "kind": "WifiAp",
+    "expected": "NONE",
+    "description": "Quantum-Systems AC86D17 | LAB OUI ONLY; NO RID",
+    "code": 6,
+    "text": "SQE-LAB-QUANTUM-AC86D17"
+  },
+  {
+    "id": "OUI-INSITU-0050C2C35",
+    "carrier": "WIFI",
+    "kind": "WifiAp",
+    "expected": "NONE",
+    "description": "Insitu 0050C2C35 | LAB OUI ONLY; NO RID",
+    "code": 6,
+    "text": "SQE-LAB-INSITU-0050C2C35"
+  },
+  {
+    "id": "OUI-INSITU-0050C2FD4",
+    "carrier": "WIFI",
+    "kind": "WifiAp",
+    "expected": "NONE",
+    "description": "Insitu 0050C2FD4 | LAB OUI ONLY; NO RID",
+    "code": 6,
+    "text": "SQE-LAB-INSITU-0050C2FD4"
+  },
+  {
+    "id": "OUI-INSITU-70B3D57AD",
+    "carrier": "WIFI",
+    "kind": "WifiAp",
+    "expected": "NONE",
+    "description": "Insitu 70B3D57AD | LAB OUI ONLY; NO RID",
+    "code": 6,
+    "text": "SQE-LAB-INSITU-70B3D57AD"
+  },
+  {
+    "id": "OUI-INSITU-70B3D5865",
+    "carrier": "WIFI",
+    "kind": "WifiAp",
+    "expected": "NONE",
+    "description": "Insitu 70B3D5865 | LAB OUI ONLY; NO RID",
+    "code": 6,
+    "text": "SQE-LAB-INSITU-70B3D5865"
+  },
+  {
+    "id": "OUI-INSITU-70B3D5B3B",
+    "carrier": "WIFI",
+    "kind": "WifiAp",
+    "expected": "NONE",
+    "description": "Insitu 70B3D5B3B | LAB OUI ONLY; NO RID",
+    "code": 6,
+    "text": "SQE-LAB-INSITU-70B3D5B3B"
+  },
+  {
+    "id": "OUI-INSITU-70B3D5D36",
+    "carrier": "WIFI",
+    "kind": "WifiAp",
+    "expected": "NONE",
+    "description": "Insitu 70B3D5D36 | LAB OUI ONLY; NO RID",
+    "code": 6,
+    "text": "SQE-LAB-INSITU-70B3D5D36"
+  },
+  {
+    "id": "OUI-INSITU-70B3D5DD2",
+    "carrier": "WIFI",
+    "kind": "WifiAp",
+    "expected": "NONE",
+    "description": "Insitu 70B3D5DD2 | LAB OUI ONLY; NO RID",
+    "code": 6,
+    "text": "SQE-LAB-INSITU-70B3D5DD2"
+  },
+  {
+    "id": "OUI-FLIR-00407F",
+    "carrier": "WIFI",
+    "kind": "WifiAp",
+    "expected": "NONE",
+    "description": "FLIR Systems 00407F | LAB OUI ONLY; NO RID",
+    "code": 6,
+    "text": "SQE-LAB-FLIR-00407F"
+  },
+  {
+    "id": "OUI-XAG-A45129",
+    "carrier": "WIFI",
+    "kind": "WifiAp",
+    "expected": "NONE",
+    "description": "XAG A45129 | LAB OUI ONLY; NO RID",
+    "code": 6,
+    "text": "SQE-LAB-XAG-A45129"
+  },
+  {
+    "id": "OUI-UAVNAV-B44D43A",
+    "carrier": "WIFI",
+    "kind": "WifiAp",
+    "expected": "NONE",
+    "description": "UAV Navigation B44D43A | LAB OUI ONLY; NO RID",
+    "code": 6,
+    "text": "SQE-LAB-UAVNAV-B44D43A"
+  },
+  {
+    "id": "OUI-UAVIONIX-04714B1",
+    "carrier": "WIFI",
+    "kind": "WifiAp",
+    "expected": "NONE",
+    "description": "uAvionix 04714B1 | LAB OUI ONLY; NO RID",
+    "code": 6,
+    "text": "SQE-LAB-UAVIONIX-04714B1"
+  },
+  {
+    "id": "OUI-UAVIONIX-546F71",
+    "carrier": "WIFI",
+    "kind": "WifiAp",
+    "expected": "NONE",
+    "description": "uAvionix 546F71 | LAB OUI ONLY; NO RID",
+    "code": 6,
+    "text": "SQE-LAB-UAVIONIX-546F71"
+  },
+  {
+    "id": "OUI-MICROH-000F92",
+    "carrier": "WIFI",
+    "kind": "WifiAp",
+    "expected": "NONE",
+    "description": "Microhard Systems 000F92 | LAB OUI ONLY; NO RID",
+    "code": 6,
+    "text": "SQE-LAB-MICROH-000F92"
+  },
+  {
+    "id": "OUI-HUBSAN-98AAFC7",
+    "carrier": "WIFI",
+    "kind": "WifiAp",
+    "expected": "NONE",
+    "description": "Hubsan 98AAFC7 | LAB OUI ONLY; NO RID",
+    "code": 6,
+    "text": "SQE-LAB-HUBSAN-98AAFC7"
+  },
+  {
+    "id": "OUI-YUNEEC-E0B6F58",
+    "carrier": "WIFI",
+    "kind": "WifiAp",
+    "expected": "NONE",
+    "description": "Yuneec E0B6F58 | LAB OUI ONLY; NO RID",
+    "code": 6,
+    "text": "SQE-LAB-YUNEEC-E0B6F58"
+  },
+  {
+    "id": "OUI-FIMI-6CDFFBE",
+    "carrier": "WIFI",
+    "kind": "WifiAp",
+    "expected": "NONE",
+    "description": "FIMI 6CDFFBE | LAB OUI ONLY; NO RID",
+    "code": 6,
+    "text": "SQE-LAB-FIMI-6CDFFBE"
+  },
+  {
+    "id": "V150-SSID-FLOCK-CAMERA",
+    "carrier": "WIFI",
+    "kind": "WifiAp",
+    "expected": "FLOCK",
+    "description": "Flock Camera setup network | SYNTHETIC v1.50 signature test; no authentic device RF",
+    "code": 6,
+    "text": "Flock Camera net."
+  },
+  {
+    "id": "V150-SSID-VIOFO-UNDER",
+    "carrier": "WIFI",
+    "kind": "WifiAp",
+    "expected": "CAMERA",
+    "description": "VIOFO dashcam | SYNTHETIC v1.50 signature test; no authentic device RF",
+    "code": 6,
+    "text": "VIOFO_SQE"
+  },
+  {
+    "id": "V150-SSID-VIOFO-DASH",
+    "carrier": "WIFI",
+    "kind": "WifiAp",
+    "expected": "CAMERA",
+    "description": "VIOFO dashcam alternate | SYNTHETIC v1.50 signature test; no authentic device RF",
+    "code": 6,
+    "text": "VIOFO-SQE"
+  },
+  {
+    "id": "V150-SSID-BLACKVUE",
+    "carrier": "WIFI",
+    "kind": "WifiAp",
+    "expected": "CAMERA",
+    "description": "BlackVue dashcam | SYNTHETIC v1.50 signature test; no authentic device RF",
+    "code": 6,
+    "text": "BlackVue_SQE"
+  },
+  {
+    "id": "V150-SSID-70MAI",
+    "carrier": "WIFI",
+    "kind": "WifiAp",
+    "expected": "CAMERA",
+    "description": "70mai dashcam | SYNTHETIC v1.50 signature test; no authentic device RF",
+    "code": 6,
+    "text": "70mai_SQE"
+  },
+  {
+    "id": "V150-SSID-THINKWARE",
+    "carrier": "WIFI",
+    "kind": "WifiAp",
+    "expected": "CAMERA",
+    "description": "Thinkware dashcam | SYNTHETIC v1.50 signature test; no authentic device RF",
+    "code": 6,
+    "text": "thinkware_SQE"
+  },
+  {
+    "id": "V150-SSID-NEXTBASE",
+    "carrier": "WIFI",
+    "kind": "WifiAp",
+    "expected": "CAMERA",
+    "description": "Nextbase dashcam | SYNTHETIC v1.50 signature test; no authentic device RF",
+    "code": 6,
+    "text": "NEXTBASE 312GW SQE"
+  },
+  {
+    "id": "V150-SSID-ROVE",
+    "carrier": "WIFI",
+    "kind": "WifiAp",
+    "expected": "CAMERA",
+    "description": "Rove dashcam | SYNTHETIC v1.50 signature test; no authentic device RF",
+    "code": 6,
+    "text": "ROVE_R_SQE"
+  },
+  {
+    "id": "V150-SSID-REDTIGER",
+    "carrier": "WIFI",
+    "kind": "WifiAp",
+    "expected": "CAMERA",
+    "description": "Redtiger dashcam | SYNTHETIC v1.50 signature test; no authentic device RF",
+    "code": 6,
+    "text": "REDTIGER_SQE"
+  },
+  {
+    "id": "V150-SSID-LYTX",
+    "carrier": "WIFI",
+    "kind": "WifiAp",
+    "expected": "CAMERA",
+    "description": "Lytx fleet camera | SYNTHETIC v1.50 signature test; no authentic device RF",
+    "code": 6,
+    "text": "AuxCamera_SQE"
+  },
+  {
+    "id": "V150-SSID-HDWIFI",
+    "carrier": "WIFI",
+    "kind": "WifiAp",
+    "expected": "CAMERA",
+    "description": "HDWifiCam setup | SYNTHETIC v1.50 signature test; no authentic device RF",
+    "code": 6,
+    "text": "DGK-SQE"
+  },
+  {
+    "id": "V150-SSID-LOOKCAM-ACCQ",
+    "carrier": "WIFI",
+    "kind": "WifiAp",
+    "expected": "CAMERA",
+    "description": "LookCam ACCQ | SYNTHETIC v1.50 signature test; no authentic device RF",
+    "code": 6,
+    "text": "ACCQ-SQE"
+  },
+  {
+    "id": "V150-SSID-LOOKCAM-BCCQ",
+    "carrier": "WIFI",
+    "kind": "WifiAp",
+    "expected": "CAMERA",
+    "description": "LookCam BCCQ | SYNTHETIC v1.50 signature test; no authentic device RF",
+    "code": 6,
+    "text": "BCCQ-SQE"
+  },
+  {
+    "id": "V150-SSID-LOOKCAM-XCCQ",
+    "carrier": "WIFI",
+    "kind": "WifiAp",
+    "expected": "CAMERA",
+    "description": "LookCam XCCQ | SYNTHETIC v1.50 signature test; no authentic device RF",
+    "code": 6,
+    "text": "XCCQ-SQE"
+  },
+  {
+    "id": "V150-SSID-TINYCAM",
+    "carrier": "WIFI",
+    "kind": "WifiAp",
+    "expected": "CAMERA",
+    "description": "TinyCam setup | SYNTHETIC v1.50 signature test; no authentic device RF",
+    "code": 6,
+    "text": "HCAM-SQE"
+  },
+  {
+    "id": "V150-SSID-YCC365",
+    "carrier": "WIFI",
+    "kind": "WifiAp",
+    "expected": "CAMERA",
+    "description": "YCC365 CloudCam | SYNTHETIC v1.50 signature test; no authentic device RF",
+    "code": 6,
+    "text": "CLOUDCAM_SQE"
+  },
+  {
+    "id": "V150-SSID-SRICAM",
+    "carrier": "WIFI",
+    "kind": "WifiAp",
+    "expected": "CAMERA",
+    "description": "Sricam setup | SYNTHETIC v1.50 signature test; no authentic device RF",
+    "code": 6,
+    "text": "MEYE_SQE"
+  },
+  {
+    "id": "V150-SSID-YOOSEE",
+    "carrier": "WIFI",
+    "kind": "WifiAp",
+    "expected": "CAMERA",
+    "description": "Yoosee camera | SYNTHETIC v1.50 signature test; no authentic device RF",
+    "code": 6,
+    "text": "GW_IPC_SQE"
+  },
+  {
+    "id": "V150-SSID-ZOSI",
+    "carrier": "WIFI",
+    "kind": "WifiAp",
+    "expected": "CAMERA",
+    "description": "Zosi setup | SYNTHETIC v1.50 signature test; no authentic device RF",
+    "code": 6,
+    "text": "IPC_AP_SQE"
+  },
+  {
+    "id": "V150-SSID-GOOGLEHOME",
+    "carrier": "WIFI",
+    "kind": "WifiAp",
+    "expected": "LISTENER",
+    "description": "Google speaker setup | SYNTHETIC v1.50 signature test; no authentic device RF",
+    "code": 6,
+    "text": "GoogleHome1234"
+  },
+  {
+    "id": "V150-SSID-P2PCAM",
+    "carrier": "WIFI",
+    "kind": "WifiAp",
+    "expected": "CAMERA",
+    "description": "P2P hidden camera setup | SYNTHETIC v1.50 signature test; no authentic device RF",
+    "code": 6,
+    "text": "ABC-123456-ABCDE"
+  },
+  {
+    "id": "V150-SSID-V380",
+    "carrier": "WIFI",
+    "kind": "WifiAp",
+    "expected": "CAMERA",
+    "description": "V380 camera setup | SYNTHETIC v1.50 signature test; no authentic device RF",
+    "code": 6,
+    "text": "MV12345678"
+  },
+  {
+    "id": "V150-SSID-VANTRUE",
+    "carrier": "WIFI",
+    "kind": "WifiAp",
+    "expected": "CAMERA",
+    "description": "Vantrue dashcam | SYNTHETIC v1.50 signature test; no authentic device RF",
+    "code": 6,
+    "text": "E1_VANTRUE_SQE"
+  },
+  {
+    "id": "V150-SSID-NEG-CAM-PREFIX",
+    "carrier": "WIFI",
+    "kind": "WifiAp",
+    "expected": "NONE",
+    "description": "Generic camera-like SSID control | SYNTHETIC v1.50 signature test; no authentic device RF",
+    "code": 6,
+    "text": "CAM-SQE"
+  },
+  {
+    "id": "V150-OUI-ALPR-00047D",
+    "carrier": "WIFI",
+    "kind": "WifiAp",
+    "expected": "ALPR",
+    "description": "ALPR-Mtrla v1.50 OUI 00047D | SYNTHETIC v1.50 signature test; no authentic device RF",
+    "code": 6,
+    "text": "SQE-V150-00047D"
+  },
+  {
+    "id": "V150-OUI-ALPR-001885",
+    "carrier": "WIFI",
+    "kind": "WifiAp",
+    "expected": "ALPR",
+    "description": "ALPR-Mtrla v1.50 OUI 001885 | SYNTHETIC v1.50 signature test; no authentic device RF",
+    "code": 6,
+    "text": "SQE-V150-001885"
+  },
+  {
+    "id": "V150-OUI-ALPR-00BF15",
+    "carrier": "WIFI",
+    "kind": "WifiAp",
+    "expected": "ALPR",
+    "description": "ALPR-Gentec v1.50 OUI 00BF15 | SYNTHETIC v1.50 signature test; no authentic device RF",
+    "code": 6,
+    "text": "SQE-V150-00BF15"
+  },
+  {
+    "id": "V150-OUI-CAMERA-002542",
+    "carrier": "WIFI",
+    "kind": "WifiAp",
+    "expected": "CAMERA",
+    "description": "BlackVue v1.50 OUI 002542 | SYNTHETIC v1.50 signature test; no authentic device RF",
+    "code": 6,
+    "text": "SQE-V150-002542"
+  },
+  {
+    "id": "V150-OUI-CAMERA-4427F3",
+    "carrier": "WIFI",
+    "kind": "WifiAp",
+    "expected": "CAMERA",
+    "description": "70mai v1.50 OUI 4427F3 | SYNTHETIC v1.50 signature test; no authentic device RF",
+    "code": 6,
+    "text": "SQE-V150-4427F3"
+  },
+  {
+    "id": "V150-OUI-CAMERA-001F4F",
+    "carrier": "WIFI",
+    "kind": "WifiAp",
+    "expected": "CAMERA",
+    "description": "Thinkware v1.50 OUI 001F4F | SYNTHETIC v1.50 signature test; no authentic device RF",
+    "code": 6,
+    "text": "SQE-V150-001F4F"
+  },
+  {
+    "id": "V150-OUI-CAMERA-F0C88B",
+    "carrier": "WIFI",
+    "kind": "WifiAp",
+    "expected": "CAMERA",
+    "description": "Wyze v1.50 OUI F0C88B | SYNTHETIC v1.50 signature test; no authentic device RF",
+    "code": 6,
+    "text": "SQE-V150-F0C88B"
+  },
+  {
+    "id": "V150-OUI-CAMERA-80482C",
+    "carrier": "WIFI",
+    "kind": "WifiAp",
+    "expected": "CAMERA",
+    "description": "Wyze v1.50 OUI 80482C | SYNTHETIC v1.50 signature test; no authentic device RF",
+    "code": 6,
+    "text": "SQE-V150-80482C"
+  },
+  {
+    "id": "V150-OUI-CAMERA-F85128",
+    "carrier": "WIFI",
+    "kind": "WifiAp",
+    "expected": "CAMERA",
+    "description": "SimpliSafe v1.50 OUI F85128 | SYNTHETIC v1.50 signature test; no authentic device RF",
+    "code": 6,
+    "text": "SQE-V150-F85128"
+  },
+  {
+    "id": "V150-OUI-CAMERA-FCDB21",
+    "carrier": "WIFI",
+    "kind": "WifiAp",
+    "expected": "CAMERA",
+    "description": "Samsara v1.50 OUI FCDB21 | SYNTHETIC v1.50 signature test; no authentic device RF",
+    "code": 6,
+    "text": "SQE-V150-FCDB21"
+  },
+  {
+    "id": "V150-OUI-CAMERA-0016B2",
+    "carrier": "WIFI",
+    "kind": "WifiAp",
+    "expected": "CAMERA",
+    "description": "Lytx v1.50 OUI 0016B2 | SYNTHETIC v1.50 signature test; no authentic device RF",
+    "code": 6,
+    "text": "SQE-V150-0016B2"
+  },
+  {
+    "id": "V150-OUI-RING-AC9FC3",
+    "carrier": "WIFI",
+    "kind": "WifiAp",
+    "expected": "RING",
+    "description": "Ring v1.50 OUI AC9FC3 | SYNTHETIC v1.50 signature test; no authentic device RF",
+    "code": 6,
+    "text": "SQE-V150-AC9FC3"
+  },
+  {
+    "id": "V150-OUI-RING-187F88",
+    "carrier": "WIFI",
+    "kind": "WifiAp",
+    "expected": "RING",
+    "description": "Ring v1.50 OUI 187F88 | SYNTHETIC v1.50 signature test; no authentic device RF",
+    "code": 6,
+    "text": "SQE-V150-187F88"
+  },
+  {
+    "id": "V150-OUI-RING-FC65DE",
+    "carrier": "WIFI",
+    "kind": "WifiAp",
+    "expected": "RING",
+    "description": "Ring v1.50 OUI FC65DE | SYNTHETIC v1.50 signature test; no authentic device RF",
+    "code": 6,
+    "text": "SQE-V150-FC65DE"
+  },
+  {
+    "id": "V150-OUI-RING-242BD6",
+    "carrier": "WIFI",
+    "kind": "WifiAp",
+    "expected": "RING",
+    "description": "Ring v1.50 OUI 242BD6 | SYNTHETIC v1.50 signature test; no authentic device RF",
+    "code": 6,
+    "text": "SQE-V150-242BD6"
+  },
+  {
+    "id": "V150-OUI-LISTENER-000E58",
+    "carrier": "WIFI",
+    "kind": "WifiAp",
+    "expected": "LISTENER",
+    "description": "Sonos v1.50 OUI 000E58 | SYNTHETIC v1.50 signature test; no authentic device RF",
+    "code": 6,
+    "text": "SQE-V150-000E58"
+  },
+  {
+    "id": "V150-OUI-LISTENER-347E5C",
+    "carrier": "WIFI",
+    "kind": "WifiAp",
+    "expected": "LISTENER",
+    "description": "Sonos v1.50 OUI 347E5C | SYNTHETIC v1.50 signature test; no authentic device RF",
+    "code": 6,
+    "text": "SQE-V150-347E5C"
+  },
+  {
+    "id": "V150-OUI-LISTENER-38420B",
+    "carrier": "WIFI",
+    "kind": "WifiAp",
+    "expected": "LISTENER",
+    "description": "Sonos v1.50 OUI 38420B | SYNTHETIC v1.50 signature test; no authentic device RF",
+    "code": 6,
+    "text": "SQE-V150-38420B"
+  },
+  {
+    "id": "V150-OUI-META-28E888",
+    "carrier": "WIFI",
+    "kind": "WifiAp",
+    "expected": "META",
+    "description": "Rokid v1.50 OUI 28E888 | SYNTHETIC v1.50 signature test; no authentic device RF",
+    "code": 6,
+    "text": "SQE-V150-28E888"
+  },
+  {
+    "id": "V150-OUI-META-98DA92",
+    "carrier": "WIFI",
+    "kind": "WifiAp",
+    "expected": "META",
+    "description": "Vuzix v1.50 OUI 98DA92 | SYNTHETIC v1.50 signature test; no authentic device RF",
+    "code": 6,
+    "text": "SQE-V150-98DA92"
+  },
+  {
+    "id": "V150-OUI-FLOCK-B41E52",
+    "carrier": "WIFI",
+    "kind": "WifiAp",
+    "expected": "FLOCK",
+    "description": "Flock-MA-L v1.50 OUI B41E52 | SYNTHETIC v1.50 signature test; no authentic device RF",
+    "code": 6,
+    "text": "SQE-V150-B41E52"
+  },
+  {
+    "id": "V150-OUI-AXON-0025DF",
+    "carrier": "WIFI",
+    "kind": "WifiAp",
+    "expected": "AXON",
+    "description": "Axon v1.50 OUI 0025DF | SYNTHETIC v1.50 signature test; no authentic device RF",
+    "code": 6,
+    "text": "SQE-V150-0025DF"
+  },
+  {
+    "id": "V150-BLE-GOOGLE-DULT",
+    "carrier": "BLE",
+    "kind": "BleUuid",
+    "expected": "GOOGLE_TAG",
+    "description": "DULT unwanted tracker service | SYNTHETIC v1.50 signature test; no authentic device RF",
+    "code": 64690,
+    "text": null
+  },
+  {
+    "id": "V150-BLE-GOOGLE-CHIPOLO1",
+    "carrier": "BLE",
+    "kind": "BleUuid",
+    "expected": "GOOGLE_TAG",
+    "description": "Chipolo tracker UUID FE33 | SYNTHETIC v1.50 signature test; no authentic device RF",
+    "code": 65075,
+    "text": null
+  },
+  {
+    "id": "V150-BLE-GOOGLE-CHIPOLO2",
+    "carrier": "BLE",
+    "kind": "BleUuid",
+    "expected": "GOOGLE_TAG",
+    "description": "Chipolo tracker UUID FE65 | SYNTHETIC v1.50 signature test; no authentic device RF",
+    "code": 65125,
+    "text": null
+  },
+  {
+    "id": "V150-BLE-SONOS-UUID",
+    "carrier": "BLE",
+    "kind": "BleUuid",
+    "expected": "LISTENER",
+    "description": "Sonos speaker service UUID | SYNTHETIC v1.50 signature test; no authentic device RF",
+    "code": 65031,
+    "text": null
+  },
+  {
+    "id": "V150-BLE-TILE-FD84",
+    "carrier": "BLE",
+    "kind": "BleUuid",
+    "expected": "TILE",
+    "description": "Tile tracker third service UUID | SYNTHETIC v1.50 signature test; no authentic device RF",
+    "code": 64900,
+    "text": null
+  },
+  {
+    "id": "V150-BLE-AXON-FC81",
+    "carrier": "BLE",
+    "kind": "BleUuid",
+    "expected": "AXON",
+    "description": "Axon service UUID FC81 | SYNTHETIC v1.50 signature test; no authentic device RF",
+    "code": 64641,
+    "text": null
+  },
+  {
+    "id": "V150-BLE-AXON-FE6B",
+    "carrier": "BLE",
+    "kind": "BleUuid",
+    "expected": "AXON",
+    "description": "Axon service UUID FE6B | SYNTHETIC v1.50 signature test; no authentic device RF",
+    "code": 65131,
+    "text": null
+  },
+  {
+    "id": "V150-BLE-META-FEB7",
+    "carrier": "BLE",
+    "kind": "BleUuid",
+    "expected": "META",
+    "description": "Meta service UUID FEB7 | SYNTHETIC v1.50 signature test; no authentic device RF",
+    "code": 65207,
+    "text": null
+  },
+  {
+    "id": "V150-BLE-SNAP-FE45",
+    "carrier": "BLE",
+    "kind": "BleUuid",
+    "expected": "META",
+    "description": "Snap glasses service UUID | SYNTHETIC v1.50 signature test; no authentic device RF",
+    "code": 65093,
+    "text": null
+  },
+  {
+    "id": "V150-BLE-SONOS-MFG",
+    "carrier": "BLE",
+    "kind": "BleManufacturer",
+    "expected": "LISTENER",
+    "description": "Sonos company identifier | SYNTHETIC v1.50 signature test; no authentic device RF",
+    "code": 1447,
+    "text": null
+  },
+  {
+    "id": "V150-BLE-CHIPOLO-MFG",
+    "carrier": "BLE",
+    "kind": "BleManufacturer",
+    "expected": "GOOGLE_TAG",
+    "description": "Chipolo company identifier | SYNTHETIC v1.50 signature test; no authentic device RF",
+    "code": 2243,
+    "text": null
+  },
+  {
+    "id": "V150-BLE-VUZIX-MFG",
+    "carrier": "BLE",
+    "kind": "BleManufacturer",
+    "expected": "META",
+    "description": "Vuzix company identifier | SYNTHETIC v1.50 signature test; no authentic device RF",
+    "code": 1548,
+    "text": null
+  },
+  {
+    "id": "V150-BLE-AXON-MFG",
+    "carrier": "BLE",
+    "kind": "BleManufacturer",
+    "expected": "AXON",
+    "description": "Axon company identifier | SYNTHETIC v1.50 signature test; no authentic device RF",
+    "code": 845,
+    "text": null
+  },
+  {
+    "id": "V150-BLE-AIRTAG-NEAR",
+    "carrier": "BLE",
+    "kind": "BleManufacturer",
+    "expected": "AIRTAG",
+    "description": "AirTag with owner nearby advertising frame | SYNTHETIC v1.50 signature test; no authentic device RF",
+    "code": 76,
+    "text": null
+  },
+  {
+    "id": "V150-BLE-AIRTAG-UNPAIRED",
+    "carrier": "BLE",
+    "kind": "BleManufacturer",
+    "expected": "AIRTAG",
+    "description": "AirTag not paired advertising frame | SYNTHETIC v1.50 signature test; no authentic device RF",
+    "code": 76,
+    "text": null
+  },
+  {
+    "id": "V150-BLE-AIRPODS-NEG",
+    "carrier": "BLE",
+    "kind": "BleManufacturer",
+    "expected": "NONE",
+    "description": "Apple AirPods pairing frame must not match AirTag | SYNTHETIC v1.50 signature test; no authentic device RF",
+    "code": 76,
+    "text": null
+  },
+  {
+    "id": "V150-BLE-HOMEPOD-SIRI",
+    "carrier": "BLE",
+    "kind": "BleManufacturer",
+    "expected": "LISTENER",
+    "description": "HomePod Hey Siri manufacturer payload | SYNTHETIC v1.50 signature test; no authentic device RF",
+    "code": 76,
+    "text": null
+  },
+  {
+    "id": "V150-BLE-GOOGLE-FMDN40",
+    "carrier": "BLE",
+    "kind": "BleUuid",
+    "expected": "GOOGLE_TAG",
+    "description": "Google Find Hub FMDN service-data frame 40 | SYNTHETIC v1.50 signature test; no authentic device RF",
+    "code": 65194,
+    "text": null
+  },
+  {
+    "id": "V150-BLE-GOOGLE-FMDN41",
+    "carrier": "BLE",
+    "kind": "BleUuid",
+    "expected": "GOOGLE_TAG",
+    "description": "Google Find Hub FMDN service-data frame 41 | SYNTHETIC v1.50 signature test; no authentic device RF",
+    "code": 65194,
+    "text": null
+  },
+  {
+    "id": "V150-BLE-AXON-BWC",
+    "carrier": "BLE",
+    "kind": "BleName",
+    "expected": "AXON",
+    "description": "Axon BodyWorn BWCDEVICE raw advertisement match | SYNTHETIC v1.50 signature test; no authentic device RF",
+    "code": 0,
+    "text": "BWCDEVICE"
+  },
+  {
+    "id": "FORK-OUI-FLOCK-3C71BF",
+    "carrier": "WIFI",
+    "kind": "WifiAp",
+    "expected": "FLOCK",
+    "description": "Flock-Field fork-only OUI 3C71BF | SYNTHETIC; no authentic device RF",
+    "code": 6,
+    "text": "SQE-FORK-3C71BF"
+  },
+  {
+    "id": "FORK-OUI-FLOCK-4827EA",
+    "carrier": "WIFI",
+    "kind": "WifiAp",
+    "expected": "FLOCK",
+    "description": "Flock-Field fork-only OUI 4827EA | SYNTHETIC; no authentic device RF",
+    "code": 6,
+    "text": "SQE-FORK-4827EA"
+  },
+  {
+    "id": "FORK-OUI-FLOCK-A4CF12",
+    "carrier": "WIFI",
+    "kind": "WifiAp",
+    "expected": "FLOCK",
+    "description": "Flock-Field fork-only OUI A4CF12 | SYNTHETIC; no authentic device RF",
+    "code": 6,
+    "text": "SQE-FORK-A4CF12"
+  },
+  {
+    "id": "FORK-OUI-DRONE-B030C8",
+    "carrier": "WIFI",
+    "kind": "WifiAp",
+    "expected": "DRONE",
+    "description": "Teal fork-only OUI B030C8 | SYNTHETIC; no authentic device RF",
+    "code": 6,
+    "text": "SQE-FORK-B030C8"
+  },
+  {
+    "id": "FORK-OUI-DRONE-EC715E",
+    "carrier": "WIFI",
+    "kind": "WifiAp",
+    "expected": "DRONE",
+    "description": "Freefly fork-only OUI EC715E | SYNTHETIC; no authentic device RF",
+    "code": 6,
+    "text": "SQE-FORK-EC715E"
+  },
+  {
+    "id": "FORK-OUI-DRONE-001AF9",
+    "carrier": "WIFI",
+    "kind": "WifiAp",
+    "expected": "DRONE",
+    "description": "AeroViron fork-only OUI 001AF9 | SYNTHETIC; no authentic device RF",
+    "code": 6,
+    "text": "SQE-FORK-001AF9"
+  },
+  {
+    "id": "FORK-OUI-DRONE-547D40",
+    "carrier": "WIFI",
+    "kind": "WifiAp",
+    "expected": "DRONE",
+    "description": "PowerVis fork-only OUI 547D40 | SYNTHETIC; no authentic device RF",
+    "code": 6,
+    "text": "SQE-FORK-547D40"
+  },
+  {
+    "id": "FORK-OUI-DRONE-74B80F",
+    "carrier": "WIFI",
+    "kind": "WifiAp",
+    "expected": "DRONE",
+    "description": "Zipline fork-only OUI 74B80F | SYNTHETIC; no authentic device RF",
+    "code": 6,
+    "text": "SQE-FORK-74B80F"
+  },
+  {
+    "id": "FORK-OUI-SKIMMER-98D300",
+    "carrier": "WIFI",
+    "kind": "WifiAp",
+    "expected": "SKIMMER",
+    "description": "Skim-SPP fork-only OUI 98D300 | SYNTHETIC; no authentic device RF",
+    "code": 6,
+    "text": "SQE-FORK-98D300"
+  },
+  {
+    "id": "FORK-OUI-HACKER-0CFA22",
+    "carrier": "WIFI",
+    "kind": "WifiAp",
+    "expected": "HACKER",
+    "description": "Flipper fork-only OUI 0CFA22 | SYNTHETIC; no authentic device RF",
+    "code": 6,
+    "text": "SQE-FORK-0CFA22"
+  },
+  {
+    "id": "V150-OUI-AXON-E40540",
+    "carrier": "WIFI",
+    "kind": "WifiAp",
+    "expected": "AXON",
+    "description": "Axon-Body upstream v1.50 OUI E40540 | SYNTHETIC; MAC only; no device authentication",
+    "code": 6,
+    "text": "SQE-150-E40540"
+  },
+  {
+    "id": "V150-OUI-AXON-2824FF",
+    "carrier": "WIFI",
+    "kind": "WifiAp",
+    "expected": "AXON",
+    "description": "Axon-Signal upstream v1.50 OUI 2824FF | SYNTHETIC; MAC only; no device authentication",
+    "code": 6,
+    "text": "SQE-150-2824FF"
+  },
+  {
+    "id": "V150-OUI-AXON-001D96",
+    "carrier": "WIFI",
+    "kind": "WifiAp",
+    "expected": "AXON",
+    "description": "WatchGuard upstream v1.50 OUI 001D96 | SYNTHETIC; MAC only; no device authentication",
+    "code": 6,
+    "text": "SQE-150-001D96"
+  },
+  {
+    "id": "V150-OUI-AXON-0023BD",
+    "carrier": "WIFI",
+    "kind": "WifiAp",
+    "expected": "AXON",
+    "description": "DigitalAlly upstream v1.50 OUI 0023BD | SYNTHETIC; MAC only; no device authentication",
+    "code": 6,
+    "text": "SQE-150-0023BD"
+  },
+  {
+    "id": "V150-OUI-AXON-003044",
+    "carrier": "WIFI",
+    "kind": "WifiAp",
+    "expected": "AXON",
+    "description": "Cradlepoint upstream v1.50 OUI 003044 | SYNTHETIC; MAC only; no device authentication",
+    "code": 6,
+    "text": "SQE-150-003044"
+  },
+  {
+    "id": "V150-OUI-AXON-00E01C",
+    "carrier": "WIFI",
+    "kind": "WifiAp",
+    "expected": "AXON",
+    "description": "Cradlepoint upstream v1.50 OUI 00E01C | SYNTHETIC; MAC only; no device authentication",
+    "code": 6,
+    "text": "SQE-150-00E01C"
+  },
+  {
+    "id": "V150-OUI-AXON-00A0D5",
+    "carrier": "WIFI",
+    "kind": "WifiAp",
+    "expected": "AXON",
+    "description": "AirLink upstream v1.50 OUI 00A0D5 | SYNTHETIC; MAC only; no device authentication",
+    "code": 6,
+    "text": "SQE-150-00A0D5"
+  },
+  {
+    "id": "V150-OUI-AXON-28A331",
+    "carrier": "WIFI",
+    "kind": "WifiAp",
+    "expected": "AXON",
+    "description": "AirLink upstream v1.50 OUI 28A331 | SYNTHETIC; MAC only; no device authentication",
+    "code": 6,
+    "text": "SQE-150-28A331"
+  },
+  {
+    "id": "V150-OUI-AXON-50139D",
+    "carrier": "WIFI",
+    "kind": "WifiAp",
+    "expected": "AXON",
+    "description": "AirLink upstream v1.50 OUI 50139D | SYNTHETIC; MAC only; no device authentication",
+    "code": 6,
+    "text": "SQE-150-50139D"
+  },
+  {
+    "id": "V150-OUI-AXON-64CE6E",
+    "carrier": "WIFI",
+    "kind": "WifiAp",
+    "expected": "AXON",
+    "description": "AirLink upstream v1.50 OUI 64CE6E | SYNTHETIC; MAC only; no device authentication",
+    "code": 6,
+    "text": "SQE-150-64CE6E"
+  },
+  {
+    "id": "V150-OUI-AXON-84DB2F",
+    "carrier": "WIFI",
+    "kind": "WifiAp",
+    "expected": "AXON",
+    "description": "AirLink upstream v1.50 OUI 84DB2F | SYNTHETIC; MAC only; no device authentication",
+    "code": 6,
+    "text": "SQE-150-84DB2F"
+  },
+  {
+    "id": "V150-OUI-AXON-CC934A",
+    "carrier": "WIFI",
+    "kind": "WifiAp",
+    "expected": "AXON",
+    "description": "AirLink upstream v1.50 OUI CC934A | SYNTHETIC; MAC only; no device authentication",
+    "code": 6,
+    "text": "SQE-150-CC934A"
+  },
+  {
+    "id": "V150-OUI-RAVEN-D411D6",
+    "carrier": "WIFI",
+    "kind": "WifiAp",
+    "expected": "RAVEN",
+    "description": "ShotSpotter upstream v1.50 OUI D411D6 | SYNTHETIC; MAC only; no device authentication",
+    "code": 6,
+    "text": "SQE-150-D411D6"
+  },
+  {
+    "id": "V150-OUI-FLOCK-24B2B9",
+    "carrier": "WIFI",
+    "kind": "WifiAp",
+    "expected": "FLOCK",
+    "description": "Flock-Liteo upstream v1.50 OUI 24B2B9 | SYNTHETIC; MAC only; no device authentication",
+    "code": 6,
+    "text": "SQE-150-24B2B9"
+  },
+  {
+    "id": "V150-OUI-FLOCK-D03957",
+    "carrier": "WIFI",
+    "kind": "WifiAp",
+    "expected": "FLOCK",
+    "description": "Flock upstream v1.50 OUI D03957 | SYNTHETIC; MAC only; no device authentication",
+    "code": 6,
+    "text": "SQE-150-D03957"
+  },
+  {
+    "id": "V150-OUI-FLOCK-00F48D",
+    "carrier": "WIFI",
+    "kind": "WifiAp",
+    "expected": "FLOCK",
+    "description": "Flock upstream v1.50 OUI 00F48D | SYNTHETIC; MAC only; no device authentication",
+    "code": 6,
+    "text": "SQE-150-00F48D"
+  },
+  {
+    "id": "V150-OUI-FLOCK-145AFC",
+    "carrier": "WIFI",
+    "kind": "WifiAp",
+    "expected": "FLOCK",
+    "description": "Flock upstream v1.50 OUI 145AFC | SYNTHETIC; MAC only; no device authentication",
+    "code": 6,
+    "text": "SQE-150-145AFC"
+  },
+  {
+    "id": "V150-OUI-FLOCK-803049",
+    "carrier": "WIFI",
+    "kind": "WifiAp",
+    "expected": "FLOCK",
+    "description": "Flock upstream v1.50 OUI 803049 | SYNTHETIC; MAC only; no device authentication",
+    "code": 6,
+    "text": "SQE-150-803049"
+  },
+  {
+    "id": "V150-OUI-FLOCK-E00AF6",
+    "carrier": "WIFI",
+    "kind": "WifiAp",
+    "expected": "FLOCK",
+    "description": "Flock upstream v1.50 OUI E00AF6 | SYNTHETIC; MAC only; no device authentication",
+    "code": 6,
+    "text": "SQE-150-E00AF6"
+  },
+  {
+    "id": "V150-OUI-FLOCK-70C94E",
+    "carrier": "WIFI",
+    "kind": "WifiAp",
+    "expected": "FLOCK",
+    "description": "Flock upstream v1.50 OUI 70C94E | SYNTHETIC; MAC only; no device authentication",
+    "code": 6,
+    "text": "SQE-150-70C94E"
+  },
+  {
+    "id": "V150-OUI-FLOCK-3C9180",
+    "carrier": "WIFI",
+    "kind": "WifiAp",
+    "expected": "FLOCK",
+    "description": "Flock upstream v1.50 OUI 3C9180 | SYNTHETIC; MAC only; no device authentication",
+    "code": 6,
+    "text": "SQE-150-3C9180"
+  },
+  {
+    "id": "V150-OUI-FLOCK-D8F3BC",
+    "carrier": "WIFI",
+    "kind": "WifiAp",
+    "expected": "FLOCK",
+    "description": "Flock upstream v1.50 OUI D8F3BC | SYNTHETIC; MAC only; no device authentication",
+    "code": 6,
+    "text": "SQE-150-D8F3BC"
+  },
+  {
+    "id": "V150-OUI-FLOCK-B83532",
+    "carrier": "WIFI",
+    "kind": "WifiAp",
+    "expected": "FLOCK",
+    "description": "Flock upstream v1.50 OUI B83532 | SYNTHETIC; MAC only; no device authentication",
+    "code": 6,
+    "text": "SQE-150-B83532"
+  },
+  {
+    "id": "V150-OUI-FLOCK-826BF2",
+    "carrier": "WIFI",
+    "kind": "WifiAp",
+    "expected": "FLOCK",
+    "description": "Flock-DeFlk upstream v1.50 OUI 826BF2 | SYNTHETIC; MAC only; no device authentication",
+    "code": 6,
+    "text": "SQE-150-826BF2"
+  },
+  {
+    "id": "V150-OUI-FLOCK-744CA1",
+    "carrier": "WIFI",
+    "kind": "WifiAp",
+    "expected": "FLOCK",
+    "description": "Flock-Liteo upstream v1.50 OUI 744CA1 | SYNTHETIC; MAC only; no device authentication",
+    "code": 6,
+    "text": "SQE-150-744CA1"
+  },
+  {
+    "id": "V150-OUI-FLOCK-9C2F9D",
+    "carrier": "WIFI",
+    "kind": "WifiAp",
+    "expected": "FLOCK",
+    "description": "Flock-Liteo upstream v1.50 OUI 9C2F9D | SYNTHETIC; MAC only; no device authentication",
+    "code": 6,
+    "text": "SQE-150-9C2F9D"
+  },
+  {
+    "id": "V150-OUI-FLOCK-C03532",
+    "carrier": "WIFI",
+    "kind": "WifiAp",
+    "expected": "FLOCK",
+    "description": "Flock-Liteo upstream v1.50 OUI C03532 | SYNTHETIC; MAC only; no device authentication",
+    "code": 6,
+    "text": "SQE-150-C03532"
+  },
+  {
+    "id": "V150-OUI-FLOCK-940853",
+    "carrier": "WIFI",
+    "kind": "WifiAp",
+    "expected": "FLOCK",
+    "description": "Flock-Liteo upstream v1.50 OUI 940853 | SYNTHETIC; MAC only; no device authentication",
+    "code": 6,
+    "text": "SQE-150-940853"
+  },
+  {
+    "id": "V150-OUI-FLOCK-E4AAEA",
+    "carrier": "WIFI",
+    "kind": "WifiAp",
+    "expected": "FLOCK",
+    "description": "Flock-Liteo upstream v1.50 OUI E4AAEA | SYNTHETIC; MAC only; no device authentication",
+    "code": 6,
+    "text": "SQE-150-E4AAEA"
+  },
+  {
+    "id": "V150-OUI-FLOCK-F46ADD",
+    "carrier": "WIFI",
+    "kind": "WifiAp",
+    "expected": "FLOCK",
+    "description": "Flock-Liteo upstream v1.50 OUI F46ADD | SYNTHETIC; MAC only; no device authentication",
+    "code": 6,
+    "text": "SQE-150-F46ADD"
+  },
+  {
+    "id": "V150-OUI-FLOCK-E8D0FC",
+    "carrier": "WIFI",
+    "kind": "WifiAp",
+    "expected": "FLOCK",
+    "description": "Flock-Liteo upstream v1.50 OUI E8D0FC | SYNTHETIC; MAC only; no device authentication",
+    "code": 6,
+    "text": "SQE-150-E8D0FC"
+  },
+  {
+    "id": "V150-OUI-FLOCK-B81EA4",
+    "carrier": "WIFI",
+    "kind": "WifiAp",
+    "expected": "FLOCK",
+    "description": "Flock-Liteo upstream v1.50 OUI B81EA4 | SYNTHETIC; MAC only; no device authentication",
+    "code": 6,
+    "text": "SQE-150-B81EA4"
+  },
+  {
+    "id": "V150-OUI-FLOCK-700894",
+    "carrier": "WIFI",
+    "kind": "WifiAp",
+    "expected": "FLOCK",
+    "description": "Flock-Liteo upstream v1.50 OUI 700894 | SYNTHETIC; MAC only; no device authentication",
+    "code": 6,
+    "text": "SQE-150-700894"
+  },
+  {
+    "id": "V150-OUI-FLOCK-5800E3",
+    "carrier": "WIFI",
+    "kind": "WifiAp",
+    "expected": "FLOCK",
+    "description": "Flock-Liteo upstream v1.50 OUI 5800E3 | SYNTHETIC; MAC only; no device authentication",
+    "code": 6,
+    "text": "SQE-150-5800E3"
+  },
+  {
+    "id": "V150-OUI-FLOCK-5C93A2",
+    "carrier": "WIFI",
+    "kind": "WifiAp",
+    "expected": "FLOCK",
+    "description": "Flock-Liteo upstream v1.50 OUI 5C93A2 | SYNTHETIC; MAC only; no device authentication",
+    "code": 6,
+    "text": "SQE-150-5C93A2"
+  },
+  {
+    "id": "V150-OUI-FLOCK-646E69",
+    "carrier": "WIFI",
+    "kind": "WifiAp",
+    "expected": "FLOCK",
+    "description": "Flock-Liteo upstream v1.50 OUI 646E69 | SYNTHETIC; MAC only; no device authentication",
+    "code": 6,
+    "text": "SQE-150-646E69"
+  },
+  {
+    "id": "V150-OUI-FLOCK-14B5CD",
+    "carrier": "WIFI",
+    "kind": "WifiAp",
+    "expected": "FLOCK",
+    "description": "Flock-Liteo upstream v1.50 OUI 14B5CD | SYNTHETIC; MAC only; no device authentication",
+    "code": 6,
+    "text": "SQE-150-14B5CD"
+  },
+  {
+    "id": "V150-OUI-FLOCK-083A88",
+    "carrier": "WIFI",
+    "kind": "WifiAp",
+    "expected": "FLOCK",
+    "description": "Flock-UGSI upstream v1.50 OUI 083A88 | SYNTHETIC; MAC only; no device authentication",
+    "code": 6,
+    "text": "SQE-150-083A88"
+  },
+  {
+    "id": "V150-OUI-FLOCK-E04F43",
+    "carrier": "WIFI",
+    "kind": "WifiAp",
+    "expected": "FLOCK",
+    "description": "Flock-UGSI upstream v1.50 OUI E04F43 | SYNTHETIC; MAC only; no device authentication",
+    "code": 6,
+    "text": "SQE-150-E04F43"
+  },
+  {
+    "id": "V150-OUI-FLOCK-588E81",
+    "carrier": "WIFI",
+    "kind": "WifiAp",
+    "expected": "FLOCK",
+    "description": "Flock-SiLab upstream v1.50 OUI 588E81 | SYNTHETIC; MAC only; no device authentication",
+    "code": 6,
+    "text": "SQE-150-588E81"
+  },
+  {
+    "id": "V150-OUI-FLOCK-EC1BBD",
+    "carrier": "WIFI",
+    "kind": "WifiAp",
+    "expected": "FLOCK",
+    "description": "Flock-SiLab upstream v1.50 OUI EC1BBD | SYNTHETIC; MAC only; no device authentication",
+    "code": 6,
+    "text": "SQE-150-EC1BBD"
+  },
+  {
+    "id": "V150-OUI-FLOCK-9035EA",
+    "carrier": "WIFI",
+    "kind": "WifiAp",
+    "expected": "FLOCK",
+    "description": "Flock-SiLab upstream v1.50 OUI 9035EA | SYNTHETIC; MAC only; no device authentication",
+    "code": 6,
+    "text": "SQE-150-9035EA"
+  },
+  {
+    "id": "V150-OUI-FLOCK-00037F",
+    "carrier": "WIFI",
+    "kind": "WifiAp",
+    "expected": "FLOCK",
+    "description": "Flock-QCA upstream v1.50 OUI 00037F | SYNTHETIC; MAC only; no device authentication",
+    "code": 6,
+    "text": "SQE-150-00037F"
+  },
+  {
+    "id": "V150-OUI-FLOCK-00A0D8",
+    "carrier": "WIFI",
+    "kind": "WifiAp",
+    "expected": "FLOCK",
+    "description": "Flock-OEM upstream v1.50 OUI 00A0D8 | SYNTHETIC; MAC only; no device authentication",
+    "code": 6,
+    "text": "SQE-150-00A0D8"
+  },
+  {
+    "id": "V150-OUI-ALPR-001F92",
+    "carrier": "WIFI",
+    "kind": "WifiAp",
+    "expected": "ALPR",
+    "description": "ALPR-Mtrla upstream v1.50 OUI 001F92 | SYNTHETIC; MAC only; no device authentication",
+    "code": 6,
+    "text": "SQE-150-001F92"
+  },
+  {
+    "id": "V150-OUI-ALPR-4CCC34",
+    "carrier": "WIFI",
+    "kind": "WifiAp",
+    "expected": "ALPR",
+    "description": "ALPR-Mtrla upstream v1.50 OUI 4CCC34 | SYNTHETIC; MAC only; no device authentication",
+    "code": 6,
+    "text": "SQE-150-4CCC34"
+  },
+  {
+    "id": "V150-OUI-ALPR-B8E28C",
+    "carrier": "WIFI",
+    "kind": "WifiAp",
+    "expected": "ALPR",
+    "description": "ALPR-Mtrla upstream v1.50 OUI B8E28C | SYNTHETIC; MAC only; no device authentication",
+    "code": 6,
+    "text": "SQE-150-B8E28C"
+  },
+  {
+    "id": "V150-OUI-ALPR-0CBF15",
+    "carrier": "WIFI",
+    "kind": "WifiAp",
+    "expected": "ALPR",
+    "description": "ALPR-Gentec upstream v1.50 OUI 0CBF15 | SYNTHETIC; MAC only; no device authentication",
+    "code": 6,
+    "text": "SQE-150-0CBF15"
+  },
+  {
+    "id": "V150-OUI-SKIMMER-201300",
+    "carrier": "WIFI",
+    "kind": "WifiAp",
+    "expected": "SKIMMER",
+    "description": "Skim-Linvor upstream v1.50 OUI 201300 | SYNTHETIC; MAC only; no device authentication",
+    "code": 6,
+    "text": "SQE-150-201300"
+  },
+  {
+    "id": "V150-OUI-SKIMMER-98D331",
+    "carrier": "WIFI",
+    "kind": "WifiAp",
+    "expected": "SKIMMER",
+    "description": "Skim-HC05 upstream v1.50 OUI 98D331 | SYNTHETIC; MAC only; no device authentication",
+    "code": 6,
+    "text": "SQE-150-98D331"
+  },
+  {
+    "id": "V150-OUI-SKIMMER-001A7D",
+    "carrier": "WIFI",
+    "kind": "WifiAp",
+    "expected": "SKIMMER",
+    "description": "Skim-CSR upstream v1.50 OUI 001A7D | SYNTHETIC; MAC only; no device authentication",
+    "code": 6,
+    "text": "SQE-150-001A7D"
+  },
+  {
+    "id": "V150-OUI-CAMERA-2CAA8E",
+    "carrier": "WIFI",
+    "kind": "WifiAp",
+    "expected": "CAMERA",
+    "description": "Wyze upstream v1.50 OUI 2CAA8E | SYNTHETIC; MAC only; no device authentication",
+    "code": 6,
+    "text": "SQE-150-2CAA8E"
+  },
+  {
+    "id": "V150-OUI-CAMERA-D03F27",
+    "carrier": "WIFI",
+    "kind": "WifiAp",
+    "expected": "CAMERA",
+    "description": "Wyze upstream v1.50 OUI D03F27 | SYNTHETIC; MAC only; no device authentication",
+    "code": 6,
+    "text": "SQE-150-D03F27"
+  },
+  {
+    "id": "V150-OUI-CAMERA-7C78B2",
+    "carrier": "WIFI",
+    "kind": "WifiAp",
+    "expected": "CAMERA",
+    "description": "Wyze upstream v1.50 OUI 7C78B2 | SYNTHETIC; MAC only; no device authentication",
+    "code": 6,
+    "text": "SQE-150-7C78B2"
+  },
+  {
+    "id": "V150-OUI-CAMERA-B8D7AF",
+    "carrier": "WIFI",
+    "kind": "WifiAp",
+    "expected": "CAMERA",
+    "description": "Wyze-Mod upstream v1.50 OUI B8D7AF | SYNTHETIC; MAC only; no device authentication",
+    "code": 6,
+    "text": "SQE-150-B8D7AF"
+  },
+  {
+    "id": "V150-OUI-CAMERA-34D270",
+    "carrier": "WIFI",
+    "kind": "WifiAp",
+    "expected": "CAMERA",
+    "description": "Amazon upstream v1.50 OUI 34D270 | SYNTHETIC; MAC only; no device authentication",
+    "code": 6,
+    "text": "SQE-150-34D270"
+  },
+  {
+    "id": "V150-OUI-CAMERA-F0272D",
+    "carrier": "WIFI",
+    "kind": "WifiAp",
+    "expected": "CAMERA",
+    "description": "Amazon upstream v1.50 OUI F0272D | SYNTHETIC; MAC only; no device authentication",
+    "code": 6,
+    "text": "SQE-150-F0272D"
+  },
+  {
+    "id": "V150-OUI-CAMERA-C056E3",
+    "carrier": "WIFI",
+    "kind": "WifiAp",
+    "expected": "CAMERA",
+    "description": "Hikvision upstream v1.50 OUI C056E3 | SYNTHETIC; MAC only; no device authentication",
+    "code": 6,
+    "text": "SQE-150-C056E3"
+  },
+  {
+    "id": "V150-OUI-CAMERA-4419B6",
+    "carrier": "WIFI",
+    "kind": "WifiAp",
+    "expected": "CAMERA",
+    "description": "Hikvision upstream v1.50 OUI 4419B6 | SYNTHETIC; MAC only; no device authentication",
+    "code": 6,
+    "text": "SQE-150-4419B6"
+  },
+  {
+    "id": "V150-OUI-CAMERA-2857BE",
+    "carrier": "WIFI",
+    "kind": "WifiAp",
+    "expected": "CAMERA",
+    "description": "Hikvision upstream v1.50 OUI 2857BE | SYNTHETIC; MAC only; no device authentication",
+    "code": 6,
+    "text": "SQE-150-2857BE"
+  },
+  {
+    "id": "V150-OUI-CAMERA-00E04C",
+    "carrier": "WIFI",
+    "kind": "WifiAp",
+    "expected": "CAMERA",
+    "description": "Realtek upstream v1.50 OUI 00E04C | SYNTHETIC; MAC only; no device authentication",
+    "code": 6,
+    "text": "SQE-150-00E04C"
+  },
+  {
+    "id": "V150-OUI-CAMERA-FC9C98",
+    "carrier": "WIFI",
+    "kind": "WifiAp",
+    "expected": "CAMERA",
+    "description": "Arlo upstream v1.50 OUI FC9C98 | SYNTHETIC; MAC only; no device authentication",
+    "code": 6,
+    "text": "SQE-150-FC9C98"
+  },
+  {
+    "id": "V150-OUI-CAMERA-486264",
+    "carrier": "WIFI",
+    "kind": "WifiAp",
+    "expected": "CAMERA",
+    "description": "Arlo upstream v1.50 OUI 486264 | SYNTHETIC; MAC only; no device authentication",
+    "code": 6,
+    "text": "SQE-150-486264"
+  },
+  {
+    "id": "V150-OUI-CAMERA-A41162",
+    "carrier": "WIFI",
+    "kind": "WifiAp",
+    "expected": "CAMERA",
+    "description": "Arlo upstream v1.50 OUI A41162 | SYNTHETIC; MAC only; no device authentication",
+    "code": 6,
+    "text": "SQE-150-A41162"
+  },
+  {
+    "id": "V150-OUI-CAMERA-4C6905",
+    "carrier": "WIFI",
+    "kind": "WifiAp",
+    "expected": "CAMERA",
+    "description": "Blink upstream v1.50 OUI 4C6905 | SYNTHETIC; MAC only; no device authentication",
+    "code": 6,
+    "text": "SQE-150-4C6905"
+  },
+  {
+    "id": "V150-OUI-CAMERA-A4C138",
+    "carrier": "WIFI",
+    "kind": "WifiAp",
+    "expected": "CAMERA",
+    "description": "Tuya upstream v1.50 OUI A4C138 | SYNTHETIC; MAC only; no device authentication",
+    "code": 6,
+    "text": "SQE-150-A4C138"
+  },
+  {
+    "id": "V150-OUI-CAMERA-3CA070",
+    "carrier": "WIFI",
+    "kind": "WifiAp",
+    "expected": "CAMERA",
+    "description": "Blink upstream v1.50 OUI 3CA070 | SYNTHETIC; MAC only; no device authentication",
+    "code": 6,
+    "text": "SQE-150-3CA070"
+  },
+  {
+    "id": "V150-OUI-CAMERA-70AD43",
+    "carrier": "WIFI",
+    "kind": "WifiAp",
+    "expected": "CAMERA",
+    "description": "Blink upstream v1.50 OUI 70AD43 | SYNTHETIC; MAC only; no device authentication",
+    "code": 6,
+    "text": "SQE-150-70AD43"
+  },
+  {
+    "id": "V150-OUI-CAMERA-741348",
+    "carrier": "WIFI",
+    "kind": "WifiAp",
+    "expected": "CAMERA",
+    "description": "Blink upstream v1.50 OUI 741348 | SYNTHETIC; MAC only; no device authentication",
+    "code": 6,
+    "text": "SQE-150-741348"
+  },
+  {
+    "id": "V150-OUI-CAMERA-74AB93",
+    "carrier": "WIFI",
+    "kind": "WifiAp",
+    "expected": "CAMERA",
+    "description": "Blink upstream v1.50 OUI 74AB93 | SYNTHETIC; MAC only; no device authentication",
+    "code": 6,
+    "text": "SQE-150-74AB93"
+  },
+  {
+    "id": "V150-OUI-CAMERA-C819D8",
+    "carrier": "WIFI",
+    "kind": "WifiAp",
+    "expected": "CAMERA",
+    "description": "Blink upstream v1.50 OUI C819D8 | SYNTHETIC; MAC only; no device authentication",
+    "code": 6,
+    "text": "SQE-150-C819D8"
+  },
+  {
+    "id": "V150-OUI-CAMERA-F074C1",
+    "carrier": "WIFI",
+    "kind": "WifiAp",
+    "expected": "CAMERA",
+    "description": "Blink upstream v1.50 OUI F074C1 | SYNTHETIC; MAC only; no device authentication",
+    "code": 6,
+    "text": "SQE-150-F074C1"
+  },
+  {
+    "id": "V150-OUI-CAMERA-D42DC5",
+    "carrier": "WIFI",
+    "kind": "WifiAp",
+    "expected": "CAMERA",
+    "description": "i-PRO upstream v1.50 OUI D42DC5 | SYNTHETIC; MAC only; no device authentication",
+    "code": 6,
+    "text": "SQE-150-D42DC5"
+  },
+  {
+    "id": "V150-OUI-RING-6837E9",
+    "carrier": "WIFI",
+    "kind": "WifiAp",
+    "expected": "RING",
+    "description": "Ring upstream v1.50 OUI 6837E9 | SYNTHETIC; MAC only; no device authentication",
+    "code": 6,
+    "text": "SQE-150-6837E9"
+  },
+  {
+    "id": "V150-OUI-RING-343EA4",
+    "carrier": "WIFI",
+    "kind": "WifiAp",
+    "expected": "RING",
+    "description": "Ring upstream v1.50 OUI 343EA4 | SYNTHETIC; MAC only; no device authentication",
+    "code": 6,
+    "text": "SQE-150-343EA4"
+  },
+  {
+    "id": "V150-OUI-RING-54E019",
+    "carrier": "WIFI",
+    "kind": "WifiAp",
+    "expected": "RING",
+    "description": "Ring upstream v1.50 OUI 54E019 | SYNTHETIC; MAC only; no device authentication",
+    "code": 6,
+    "text": "SQE-150-54E019"
+  },
+  {
+    "id": "V150-OUI-RING-5C475E",
+    "carrier": "WIFI",
+    "kind": "WifiAp",
+    "expected": "RING",
+    "description": "Ring upstream v1.50 OUI 5C475E | SYNTHETIC; MAC only; no device authentication",
+    "code": 6,
+    "text": "SQE-150-5C475E"
+  },
+  {
+    "id": "V150-OUI-RING-649A63",
+    "carrier": "WIFI",
+    "kind": "WifiAp",
+    "expected": "RING",
+    "description": "Ring upstream v1.50 OUI 649A63 | SYNTHETIC; MAC only; no device authentication",
+    "code": 6,
+    "text": "SQE-150-649A63"
+  },
+  {
+    "id": "V150-OUI-RING-90486C",
+    "carrier": "WIFI",
+    "kind": "WifiAp",
+    "expected": "RING",
+    "description": "Ring upstream v1.50 OUI 90486C | SYNTHETIC; MAC only; no device authentication",
+    "code": 6,
+    "text": "SQE-150-90486C"
+  },
+  {
+    "id": "V150-OUI-RING-9C7613",
+    "carrier": "WIFI",
+    "kind": "WifiAp",
+    "expected": "RING",
+    "description": "Ring upstream v1.50 OUI 9C7613 | SYNTHETIC; MAC only; no device authentication",
+    "code": 6,
+    "text": "SQE-150-9C7613"
+  },
+  {
+    "id": "V150-OUI-RING-CC3BFB",
+    "carrier": "WIFI",
+    "kind": "WifiAp",
+    "expected": "RING",
+    "description": "Ring upstream v1.50 OUI CC3BFB | SYNTHETIC; MAC only; no device authentication",
+    "code": 6,
+    "text": "SQE-150-CC3BFB"
+  },
+  {
+    "id": "V150-OUI-RING-C4DBAD",
+    "carrier": "WIFI",
+    "kind": "WifiAp",
+    "expected": "RING",
+    "description": "Ring upstream v1.50 OUI C4DBAD | SYNTHETIC; MAC only; no device authentication",
+    "code": 6,
+    "text": "SQE-150-C4DBAD"
+  },
+  {
+    "id": "V150-OUI-RING-00B463",
+    "carrier": "WIFI",
+    "kind": "WifiAp",
+    "expected": "RING",
+    "description": "Ring upstream v1.50 OUI 00B463 | SYNTHETIC; MAC only; no device authentication",
+    "code": 6,
+    "text": "SQE-150-00B463"
+  },
+  {
+    "id": "V150-OUI-RING-50E467",
+    "carrier": "WIFI",
+    "kind": "WifiAp",
+    "expected": "RING",
+    "description": "Ring upstream v1.50 OUI 50E467 | SYNTHETIC; MAC only; no device authentication",
+    "code": 6,
+    "text": "SQE-150-50E467"
+  },
+  {
+    "id": "V150-OUI-CAMERA-E0A700",
+    "carrier": "WIFI",
+    "kind": "WifiAp",
+    "expected": "CAMERA",
+    "description": "Verkada upstream v1.50 OUI E0A700 | SYNTHETIC; MAC only; no device authentication",
+    "code": 6,
+    "text": "SQE-150-E0A700"
+  },
+  {
+    "id": "V150-OUI-CAMERA-701AD5",
+    "carrier": "WIFI",
+    "kind": "WifiAp",
+    "expected": "CAMERA",
+    "description": "Avigilon upstream v1.50 OUI 701AD5 | SYNTHETIC; MAC only; no device authentication",
+    "code": 6,
+    "text": "SQE-150-701AD5"
+  },
+  {
+    "id": "V150-OUI-CAMERA-00408C",
+    "carrier": "WIFI",
+    "kind": "WifiAp",
+    "expected": "CAMERA",
+    "description": "Axis upstream v1.50 OUI 00408C | SYNTHETIC; MAC only; no device authentication",
+    "code": 6,
+    "text": "SQE-150-00408C"
+  },
+  {
+    "id": "V150-OUI-CAMERA-B8A44F",
+    "carrier": "WIFI",
+    "kind": "WifiAp",
+    "expected": "CAMERA",
+    "description": "Axis upstream v1.50 OUI B8A44F | SYNTHETIC; MAC only; no device authentication",
+    "code": 6,
+    "text": "SQE-150-B8A44F"
+  },
+  {
+    "id": "V150-OUI-CAMERA-B859C8",
+    "carrier": "WIFI",
+    "kind": "WifiAp",
+    "expected": "CAMERA",
+    "description": "70mai upstream v1.50 OUI B859C8 | SYNTHETIC; MAC only; no device authentication",
+    "code": 6,
+    "text": "SQE-150-B859C8"
+  },
+  {
+    "id": "V150-OUI-CAMERA-2C4205",
+    "carrier": "WIFI",
+    "kind": "WifiAp",
+    "expected": "CAMERA",
+    "description": "Lytx upstream v1.50 OUI 2C4205 | SYNTHETIC; MAC only; no device authentication",
+    "code": 6,
+    "text": "SQE-150-2C4205"
+  },
+  {
+    "id": "V150-OUI-CAMERA-50DF95",
+    "carrier": "WIFI",
+    "kind": "WifiAp",
+    "expected": "CAMERA",
+    "description": "Lytx upstream v1.50 OUI 50DF95 | SYNTHETIC; MAC only; no device authentication",
+    "code": 6,
+    "text": "SQE-150-50DF95"
+  },
+  {
+    "id": "V150-OUI-CAMERA-70E46E",
+    "carrier": "WIFI",
+    "kind": "WifiAp",
+    "expected": "CAMERA",
+    "description": "Lytx upstream v1.50 OUI 70E46E | SYNTHETIC; MAC only; no device authentication",
+    "code": 6,
+    "text": "SQE-150-70E46E"
+  },
+  {
+    "id": "V150-OUI-CAMERA-58A748",
+    "carrier": "WIFI",
+    "kind": "WifiAp",
+    "expected": "CAMERA",
+    "description": "Lytx upstream v1.50 OUI 58A748 | SYNTHETIC; MAC only; no device authentication",
+    "code": 6,
+    "text": "SQE-150-58A748"
+  },
+  {
+    "id": "V150-OUI-CAMERA-28EA5B",
+    "carrier": "WIFI",
+    "kind": "WifiAp",
+    "expected": "CAMERA",
+    "description": "Samsara upstream v1.50 OUI 28EA5B | SYNTHETIC; MAC only; no device authentication",
+    "code": 6,
+    "text": "SQE-150-28EA5B"
+  },
+  {
+    "id": "V150-OUI-META-985949",
+    "carrier": "WIFI",
+    "kind": "WifiAp",
+    "expected": "META",
+    "description": "Luxottica upstream v1.50 OUI 985949 | SYNTHETIC; MAC only; no device authentication",
+    "code": 6,
+    "text": "SQE-150-985949"
+  },
+  {
+    "id": "V150-OUI-DRONE-3491F0",
+    "carrier": "WIFI",
+    "kind": "WifiAp",
+    "expected": "DRONE",
+    "description": "DJI-BW upstream v1.50 OUI 3491F0 | SYNTHETIC; MAC only; no device authentication",
+    "code": 6,
+    "text": "SQE-150-3491F0"
+  },
+  {
+    "id": "V150-OUI-DRONE-C8A162",
+    "carrier": "WIFI",
+    "kind": "WifiAp",
+    "expected": "DRONE",
+    "description": "DJI-BW upstream v1.50 OUI C8A162 | SYNTHETIC; MAC only; no device authentication",
+    "code": 6,
+    "text": "SQE-150-C8A162"
+  },
+  {
+    "id": "V150-OUI-HACKER-02C0CA",
+    "carrier": "WIFI",
+    "kind": "WifiAp",
+    "expected": "HACKER",
+    "description": "Hak5-LA upstream v1.50 OUI 02C0CA | SYNTHETIC; MAC only; no device authentication",
+    "code": 6,
+    "text": "SQE-150-02C0CA"
+  },
+  {
+    "id": "V150-OUI-HACKER-021337",
+    "carrier": "WIFI",
+    "kind": "WifiAp",
+    "expected": "HACKER",
+    "description": "Hak5-LA upstream v1.50 OUI 021337 | SYNTHETIC; MAC only; no device authentication",
+    "code": 6,
+    "text": "SQE-150-021337"
+  },
+  {
+    "id": "V150-OUI-LISTENER-48A6B8",
+    "carrier": "WIFI",
+    "kind": "WifiAp",
+    "expected": "LISTENER",
+    "description": "Sonos upstream v1.50 OUI 48A6B8 | SYNTHETIC; MAC only; no device authentication",
+    "code": 6,
+    "text": "SQE-150-48A6B8"
+  },
+  {
+    "id": "V150-OUI-LISTENER-542A1B",
+    "carrier": "WIFI",
+    "kind": "WifiAp",
+    "expected": "LISTENER",
+    "description": "Sonos upstream v1.50 OUI 542A1B | SYNTHETIC; MAC only; no device authentication",
+    "code": 6,
+    "text": "SQE-150-542A1B"
+  },
+  {
+    "id": "V150-OUI-LISTENER-5CAAFD",
+    "carrier": "WIFI",
+    "kind": "WifiAp",
+    "expected": "LISTENER",
+    "description": "Sonos upstream v1.50 OUI 5CAAFD | SYNTHETIC; MAC only; no device authentication",
+    "code": 6,
+    "text": "SQE-150-5CAAFD"
+  },
+  {
+    "id": "V150-OUI-LISTENER-60F620",
+    "carrier": "WIFI",
+    "kind": "WifiAp",
+    "expected": "LISTENER",
+    "description": "Sonos upstream v1.50 OUI 60F620 | SYNTHETIC; MAC only; no device authentication",
+    "code": 6,
+    "text": "SQE-150-60F620"
+  },
+  {
+    "id": "V150-OUI-LISTENER-74CA60",
+    "carrier": "WIFI",
+    "kind": "WifiAp",
+    "expected": "LISTENER",
+    "description": "Sonos upstream v1.50 OUI 74CA60 | SYNTHETIC; MAC only; no device authentication",
+    "code": 6,
+    "text": "SQE-150-74CA60"
+  },
+  {
+    "id": "V150-OUI-LISTENER-7828CA",
+    "carrier": "WIFI",
+    "kind": "WifiAp",
+    "expected": "LISTENER",
+    "description": "Sonos upstream v1.50 OUI 7828CA | SYNTHETIC; MAC only; no device authentication",
+    "code": 6,
+    "text": "SQE-150-7828CA"
+  },
+  {
+    "id": "V150-OUI-LISTENER-804AF2",
+    "carrier": "WIFI",
+    "kind": "WifiAp",
+    "expected": "LISTENER",
+    "description": "Sonos upstream v1.50 OUI 804AF2 | SYNTHETIC; MAC only; no device authentication",
+    "code": 6,
+    "text": "SQE-150-804AF2"
+  },
+  {
+    "id": "V150-OUI-LISTENER-949F3E",
+    "carrier": "WIFI",
+    "kind": "WifiAp",
+    "expected": "LISTENER",
+    "description": "Sonos upstream v1.50 OUI 949F3E | SYNTHETIC; MAC only; no device authentication",
+    "code": 6,
+    "text": "SQE-150-949F3E"
+  },
+  {
+    "id": "V150-OUI-LISTENER-B8E937",
+    "carrier": "WIFI",
+    "kind": "WifiAp",
+    "expected": "LISTENER",
+    "description": "Sonos upstream v1.50 OUI B8E937 | SYNTHETIC; MAC only; no device authentication",
+    "code": 6,
+    "text": "SQE-150-B8E937"
+  },
+  {
+    "id": "V150-OUI-LISTENER-C43875",
+    "carrier": "WIFI",
+    "kind": "WifiAp",
+    "expected": "LISTENER",
+    "description": "Sonos upstream v1.50 OUI C43875 | SYNTHETIC; MAC only; no device authentication",
+    "code": 6,
+    "text": "SQE-150-C43875"
+  },
+  {
+    "id": "V150-OUI-LISTENER-F0F6C1",
+    "carrier": "WIFI",
+    "kind": "WifiAp",
+    "expected": "LISTENER",
+    "description": "Sonos upstream v1.50 OUI F0F6C1 | SYNTHETIC; MAC only; no device authentication",
+    "code": 6,
+    "text": "SQE-150-F0F6C1"
+  },
+  {
+    "id": "V150-OUI-LISTENER-F85C24",
+    "carrier": "WIFI",
+    "kind": "WifiAp",
+    "expected": "LISTENER",
+    "description": "Sonos upstream v1.50 OUI F85C24 | SYNTHETIC; MAC only; no device authentication",
+    "code": 6,
+    "text": "SQE-150-F85C24"
+  },
+  {
+    "id": "V150-UUID-SKIMMER-1101",
+    "carrier": "BLE",
+    "kind": "BleUuid",
+    "expected": "SKIMMER",
+    "description": "Skim-SPP v1.50 BLE UUID 1101 | synthetic BLE service advertisement only",
+    "code": 4353,
+    "text": null
+  },
+  {
+    "id": "V150-UUID-AXON-FE6C",
+    "carrier": "BLE",
+    "kind": "BleUuid",
+    "expected": "AXON",
+    "description": "Axon v1.50 BLE UUID FE6C | synthetic BLE service advertisement only",
+    "code": 65132,
+    "text": null
+  },
+  {
+    "id": "V150-UUID-META-FEB8",
+    "carrier": "BLE",
+    "kind": "BleUuid",
+    "expected": "META",
+    "description": "Meta v1.50 BLE UUID FEB8 | synthetic BLE service advertisement only",
+    "code": 65208,
+    "text": null
+  },
+  {
+    "id": "OUI-INSPFLIGHT-34B5F32",
+    "carrier": "WIFI",
+    "kind": "WifiAp",
+    "expected": "NONE",
+    "description": "Inspired Flight 34B5F32 | LAB OUI ONLY; NO RID | fork MA-M drone fixture",
+    "code": 6,
+    "text": "SQE-LAB-IFLIGHT-34B5F32"
+  },
+  {
+    "id": "OUI-ZEROZERO-C863144",
+    "carrier": "WIFI",
+    "kind": "WifiAp",
+    "expected": "NONE",
+    "description": "ZeroZero C863144 | LAB OUI ONLY; NO RID | fork MA-M drone fixture",
+    "code": 6,
+    "text": "SQE-LAB-ZEROZERO-C863144"
+  },
+  {
+    "id": "FORK-BLE-SKIM-BT04",
+    "carrier": "BLE",
+    "kind": "BleName",
+    "expected": "NONE",
+    "description": "Fork-only exact Bluetooth serial-module name BT04; BLE name test, not Bluetooth Classic discovery",
+    "code": 0,
+    "text": "BT04"
+  },
+  {
+    "id": "FORK-BLE-SKIM-JDY09",
+    "carrier": "BLE",
+    "kind": "BleName",
+    "expected": "NONE",
+    "description": "Fork-only exact Bluetooth serial-module name JDY-09; BLE name test, not Bluetooth Classic discovery",
+    "code": 0,
+    "text": "JDY-09"
+  },
+  {
+    "id": "FORK-BLE-SKIM-JDY10",
+    "carrier": "BLE",
+    "kind": "BleName",
+    "expected": "NONE",
+    "description": "Fork-only exact Bluetooth serial-module name JDY-10; BLE name test, not Bluetooth Classic discovery",
+    "code": 0,
+    "text": "JDY-10"
+  },
+  {
+    "id": "FORK-BLE-SKIM-JDY17",
+    "carrier": "BLE",
+    "kind": "BleName",
+    "expected": "NONE",
+    "description": "Fork-only exact Bluetooth serial-module name JDY-17; BLE name test, not Bluetooth Classic discovery",
+    "code": 0,
+    "text": "JDY-17"
+  },
+  {
+    "id": "FORK-BLE-SKIM-SPPC",
+    "carrier": "BLE",
+    "kind": "BleName",
+    "expected": "NONE",
+    "description": "Fork-only exact Bluetooth serial-module name SPP-C; BLE name test, not Bluetooth Classic discovery",
+    "code": 0,
+    "text": "SPP-C"
+  }
+]
