@@ -246,6 +246,18 @@ def publish_workbench(output: Path) -> None:
     if len(ids) != len(set(ids)):
         raise ValueError('Duplicate case IDs in workbench catalog')
     shutil.copyfile(cases, out / 'cases.json')
+    fork = root / 'tests' / 'squachwatch_fork_expectations.json'
+    fork_data = json.loads(fork.read_text(encoding='utf-8'))
+    if fork_data.get('schema') != 1 or fork_data.get('baseline_expected_source') != 'tests/cases.json':
+        raise ValueError('Invalid source-pinned fork expectation profile')
+    overrides = fork_data.get('overrides')
+    if not isinstance(overrides, dict) or len(overrides) != 19:
+        raise ValueError('Expected 19 fork-only detection overrides')
+    allowed = {'DRONE', 'SKIMMER', 'META', 'HACKER'}
+    if any(case_id not in ids or expected not in allowed
+           for case_id, expected in overrides.items()):
+        raise ValueError('Fork expectation references invalid case or category')
+    shutil.copyfile(fork, out / 'fork_expectations.json')
 
 
 def build(source_manifest: Path, output: Path) -> dict:
