@@ -9,7 +9,7 @@
   <link rel="stylesheet" href="./style.css?v=r14-40-369">
   <script src="./core.js?v=r14-40-369" defer></script>
   <script src="./runner-v2.js?v=r14-40-369" defer></script>
-  <script src="./app.js?v=r14-40-369-logfix" defer></script>
+  <script src="./app.js?v=r14-40-batch-truthfix" defer></script>
 </head>
 <body>
   <header class="topbar">
@@ -56,7 +56,7 @@
         <section class="batch-panel" aria-labelledby="batchTitle">
           <div class="mini">AUTOMATED TEST SEQUENCE</div>
           <h3 id="batchTitle">Run every selected signal</h3>
-          <p class="footnote">One explicit start, then sequential RUN commands from the real 369-case catalog. The next test only starts after the previous transmitter's TRUTH END or ERROR. No transmission starts on page load.</p>
+          <p class="footnote">One explicit start, then sequential RUN commands from the real 369-case catalog. The next test starts only after a confirmed successful transmitter TRUTH END. Missing BEGIN, END, or failed transmission HALTS automation and preserves a resumable checkpoint or ERROR. No transmission starts on page load.</p>
           <div class="batch-settings">
             <label for="batchScope">Test set<select id="batchScope"><option value="all">All 369 cases (BLE + Wi-Fi, including OUI-only tests)</option><option value="BLE">BLE signals only</option><option value="WIFI">Wi-Fi signals only</option></select></label>
             <label for="batchDuration">Each signal (seconds)<input id="batchDuration" type="number" min="3" max="30" step="1" value="8"></label>
