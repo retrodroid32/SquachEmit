@@ -224,7 +224,7 @@
     ui.batchProgress.value=batch.completed;
     text('batchCount',batch.completed+' / '+(batch.queue.length||cases.length||369)+
       ' completed · '+batch.failures+' transmitter failures · '+
-      batch.unverified+' unverified recoveries'+
+      batch.unverified+' unverified cases'+
       (batch.active?(batch.paused?' · PAUSED':batch.pauseRequested?' · PAUSING':' · RUNNING'):''));
     text('batchCurrent',batch.message);
   }
@@ -496,7 +496,7 @@
     if(batch.index>=batch.queue.length){
       endBatch('Automation complete: '+batch.completed+' cases; '+
         batch.failures+' transmitter failures; '+batch.unverified+
-        ' unverified recoveries. Review receiver evidence and export CSV.',false);
+        ' unverified cases. Review receiver evidence and export CSV.',false);
       return;
     }
     var c=batch.queue[batch.index];
