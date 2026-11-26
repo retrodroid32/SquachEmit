@@ -112,20 +112,28 @@ Coverage notes: [original 95-case detection matrix](docs/DETECTION_MATRIX_95.md)
 
 **Interpretation matters:** A generic Bluetooth serial module is not necessarily a card skimmer. A Meta company ID is not proof of camera glasses. The generic Eddystone UUID `0xFEAA` alone is **not** proof of a Google tracker. Negative cases exist to catch such false positives.
 
-## Detection Workbench (separate development PR)
+## Detection Workbench (R14.40 LAB candidate)
 
 The [web-based Detection Workbench](https://retrodroid32.github.io/SquachEmit/workbench/)
-pairs **SquachEmit serial TRUTH BEGIN/END** with actual SquachWatch detections.
-It opens independent Web Serial connections and **automatically polls SquachWatch's
-built-in `LOG` command every 1.5 seconds**, comparing exact transmitter MACs
-against fresh receiver records after a pre-test baseline. New matched detections
-automatically populate the observation, RSSI and expected-class accuracy result
-after a successful emitter END. Existing/stale entries and missing detections
-still require manual review; the tool does **not** fabricate a negative result
-or treat transmitter intent as proof of receiving. Includes TP/TN/FP/FN scoring
-and CSV import/export compatible with `tools/score_trials.py`.
-This UI is under development in PR #36 and will not appear on the live
-installer until approved and deployed. See [setup and limitations](docs/DETECTION_WORKBENCH.md).
+pairs **SquachEmit serial TRUTH BEGIN/END** with independent SquachWatch
+`LOG` snapshots approximately every 1.5 seconds. Its R14.40 development
+version runs all **369 R14.39 test cases** in an attended, operator-started
+automated sequence (116 BLE and 253 Wi-Fi cases), supports **CYD 2.8**,
+**CYD 3.2**, and **Freenove ESP32-S3 3.5** SquachWatch receivers, and offers
+separate **upstream v1.50** / **retrodroid32 fork** expected classifications.
+The Freenove board profile suggests 115200 serial baud; confirm the actual
+receiver firmware baud. The transmitter runs at 115200.
+
+Receiver hits are matched to exact emitted MACs using a fresh pre-run LOG
+baseline. Existing/stale entries, absent responses and ambiguous matches
+remain unverified, never fabricated as detections or negatives. Firmware
+SHAs are required for scored trials. Export or clear the ledger before
+switching receiver libraries; CSV files do not store that profile.
+TP/TN/FP/FN scoring and CSV export remain available. This LAB update is
+tracked in [draft PR #114](https://github.com/retrodroid32/SquachEmit/pull/114),
+stacked on [R14.39 #113](https://github.com/retrodroid32/SquachEmit/pull/113).
+The public website may still run an older version until the workbench update
+is approved and deployed. See [setup and limitations](docs/DETECTION_WORKBENCH.md).
 
 ## Running a test
 
