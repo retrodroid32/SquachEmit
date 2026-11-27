@@ -167,6 +167,10 @@ assert.equal(parsed[0].id,'BLE-FLOCK-MFG');
 assert.equal(parsed[1].observed,'NONE');
 assert.throws(()=>core.parseCsv('bad,header\n1,2\n'),/Missing CSV column/);
 assert.throws(()=>core.parseCsv(csv.replace('emission','oops')),/Missing CSV column/);
+assert.throws(()=>core.parseCsv(csv.replace('emission,','emission,emission,')),
+  /Duplicate CSV column|CSV field count/,'duplicate evidence columns are not valid');
+assert.throws(()=>core.parseCsv(csv.replace('BLE-FLOCK-MFG','"BLE-FLOCK-MFG"FAKE')),
+  /Invalid text after quoted CSV field/,'trailing text after quoted evidence must fail');
 // Actual SquachWatch master LOG command response, not arbitrary debug-text guesses.
 assert.equal(core.parseWatchLogCount('[log] 2 rows, newest first'),2);
 assert.equal(core.parseWatchLogCount('[log] 0 rows, newest first'),0);
