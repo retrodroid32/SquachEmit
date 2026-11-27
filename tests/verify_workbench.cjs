@@ -304,6 +304,15 @@ assert.ok(app.includes("endBatch('AUTOMATION HALTED at case '"),
   'unconfirmed transmitter attempts must HALT with a resumable checkpoint');
 assert.ok(app.includes("This signal is NOT counted as complete"),
   'failed attempts must not increment the completed counter');
+assert.ok(app.includes("footerCount!==null") && app.includes("footerHash"),
+  'new emitter LIST streams must verify count and hash before authorizing RF');
+assert.ok(app.includes("await sendEmitter('BUILD')") &&
+  app.includes("await sendEmitter('CATALOG')"),
+  'connected emitter must expose build and catalog identity when available');
+assert.ok(app.includes("Emitter SHA does not match connected firmware"),
+  'do not start a batch when connected source SHA contradicts the user entry');
+assert.ok(app.includes("USB LOG snapshots during run"),
+  'unverified trial records should preserve receiver LOG transport diagnostics');
 assert.ok(app.includes("probeEmitterCatalog()") && app.includes("sendEmitter('LIST')"),
   'batch and individual tests must check actual transmitter capabilities');
 assert.ok(app.includes("core.receiverRetestPlan(cases,trials)"),
