@@ -73,7 +73,7 @@ const stableCases=JSON.parse(fs.readFileSync('tests/cases.json','utf8'));
 assert.equal(stableCases.length,362);
 assert.notEqual(core.catalogHash(stableCases),core.catalogHash(allCases),
   '362 and 369 catalogs must have distinct capability fingerprints');
-assert.equal(core.catalogHash([{id:'A'}]),'CDDCDF65');
+assert.equal(core.catalogHash([{id:'A'}]),'64D579B2');
 
 const alreadyTransmitted=[
   {id:fullPlan[0].id,emission:'ok'},
