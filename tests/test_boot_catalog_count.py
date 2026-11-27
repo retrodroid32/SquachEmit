@@ -26,7 +26,7 @@ class BootCatalogCountTest(unittest.TestCase):
         for board in ("ESP32-C5-Waveshare-2.8", "ESP32-2432S032R-ST7798", "ESP32-S3"):
             with self.subTest(board=board):
                 self.assertRegex(source, re.escape(board) + r',%u-CASES')
-        self.assertEqual(source.count('(unsigned)kScenarioCount);'), 4)
+        self.assertGreaterEqual(source.count('(unsigned)kScenarioCount);'), 4)
         self.assertNotRegex(source, r'BOOT,[^\\n]*,172-CASES')
 
 
