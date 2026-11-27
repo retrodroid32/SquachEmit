@@ -186,7 +186,7 @@
     ui.receiverLibrary.disabled=trials.length>0 || batch.active || startingRun || transmitting || preparingBatch;
     ui.pollNow.disabled=!receiver;
     var duration=Number(ui.duration.value);
-    ui.runCase.disabled=!connected||batch.active||startingRun||awaitingBegin||transmitting||
+    ui.runCase.disabled=!connected||batch.active||preparingBatch||startingRun||awaitingBegin||transmitting||
       !catalog[ui.caseSelect.value]||!ui.authorization.checked||
       !Number.isInteger(duration)||duration<3||duration>30;
     ui.runCase.textContent=startingRun?'Preparing receiver…':
@@ -946,7 +946,7 @@
     if(batch.active)endBatch('Automation stopped: '+role+' disconnected.',role==='receiver');
     if(role==='receiver')stopWatchPolling();
     if(role==='emitter'){
-      emitterCatalogIds=null;emitterCatalogProbe=null;
+      emitterCatalogIds=null;emitterCatalogProbe=null;emitterBuildSha=null;
       runToken++;devices.receiver.preRun=null;
       transmitting=false;cancelRunAck();
       runProgress('Transmitter disconnected. Connect again to run a case.');
@@ -984,7 +984,7 @@
     // Legacy and new firmware both provide LIST; never trust an entered SHA
     // as a substitute for real connected transmitter case capabilities.
     const probe={ids:new Set(),lastLineAt:0,promise:null,
-      footerCount:null,footerHash:null,newProtocol:false};
+      footerCount:null,footerHash:null,newProtocol:!!emitterBuildSha};
     emitterCatalogProbe=probe;
     probe.promise=(async function(){
       // New firmware reports its actual CI source SHA. Older versions will
@@ -1019,7 +1019,7 @@
     finally{if(emitterCatalogProbe===probe)emitterCatalogProbe=null;}
   }
   async function run(fromBatch){
-    if(batch.active&&!fromBatch)return;
+    if((batch.active||preparingBatch)&&!fromBatch)return;
     if(fromBatch&&(!batch.active||!batch.current||batch.current.id!==ui.caseSelect.value))return;
     var c=catalog[ui.caseSelect.value],duration=Number(ui.duration.value);
     if(startingRun||awaitingBegin||transmitting||!c||!ui.authorization.checked||
