@@ -559,6 +559,9 @@ static void listCases() {
                   (kScenarios[i].kind == Kind::WifiAp ||
                    kScenarios[i].kind == Kind::WifiRemoteId) ? "WIFI" : "BLE",
                   kScenarios[i].expected, kScenarios[i].description);
+  // A complete LIST ends in a count and ordered-ID fingerprint.
+  Serial.printf("LIST_END,%u,%08lX\n",(unsigned)kScenarioCount,
+    (unsigned long)catalogHash());
 }
 
 static void help() {
