@@ -1,37 +1,34 @@
-# SquachEmit Detection Workbench (PR #36)
+# SquachEmit Detection Workbench
 
-The [Detection Workbench](https://retrodroid32.github.io/SquachEmit/workbench/)
-is a proposed **static, browser-local** test dashboard for measuring how often
-SquachWatch actually detects SquachEmit test scenarios. The GitHub Pages URL
-will become available **only after this PR is approved and merged**, followed by
-a successful Pages deployment. No server receives logs, MAC addresses,
-device serial numbers, or other captured RF information.
+The [public Detection Workbench](https://retrodroid32.github.io/SquachEmit/workbench/)
+is a browser-local tool for conducting controlled synthetic SquachEmit RF tests
+against SquachWatch receivers. It is already publicly deployed. Trial records,
+MAC addresses, receiver observations and firmware SHAs remain in the local
+browser unless the operator explicitly exports a CSV.
 
-## Testing this draft PR before merge
+## Local preview of an unmerged SquachEmit PR
 
-GitHub CI on PR #36 creates the downloadable artifact
-`squachemit-detection-workbench-review-preview`. Open the PR's successful
-Actions run, download that artifact and extract it to a folder on your PC.
-From **PowerShell**, inside the extracted folder, run:
+For an unmerged change, check out that SquachEmit branch and, from the project
+root, run:
 
 ```powershell
 py -m http.server 8000
 ```
 
-Open `http://localhost:8000/workbench/` in desktop Chrome or Edge.
-Localhost is a trustworthy origin for Web Serial. This preview intentionally
-does **not** change or deploy the public firmware installer, and it includes
-**no firmware binaries**. Disconnect any other serial console before
-connecting either board.
+Then open `http://localhost:8000/workbench/` in desktop Chrome or Edge.
+The local page loads Workbench source from the checked-out branch; the public
+website continues to serve the latest approved deployment. No RF transmission
+starts merely by opening either page.
 
 ## Hardware and browser
 
 - Desktop Chrome or Edge, HTTPS (or localhost), USB data cables.
 - Connect **SquachEmit** over Web Serial at **115,200 baud**.
-- Connect a *separate* **SquachWatch** at **2,000,000 baud** (selectable).
-  Its existing firmware supports the read-only serial **`LOG`** command,
-  returning a structured table of type, MAC, RSSI, hits, state and first-seen
-  time. **No SquachWatch firmware change is required.**
+- Connect a *separate* **SquachWatch** receiver at its firmware's actual baud:
+  **2,000,000 for CYD 2.8** or **115,200 for Freenove 3.5** in the tested setup.
+  The read-only **`LOG`** command must return a structured table of real type,
+  MAC, RSSI, hits, state and first-seen time; some older firmware does not
+  implement that interface. This PR changes SquachEmit only.
 - Once connected, the Workbench automatically requests a `LOG` snapshot
   approximately every 1.5 seconds. It displays matched receiver evidence
   and automatically fills the observed type if a **new** table row has the
