@@ -618,6 +618,12 @@
     const duration=Number(ui.batchDuration.value),gap=Number(ui.batchGap.value);
     if(!Number.isInteger(duration)||duration<3||duration>30||
        !Number.isInteger(gap)||gap<3||gap>30)return;
+    if(ui.batchScope.value==='unverified' &&
+       (!validSha(ui.receiverSha.value)||!validSha(ui.emitterSha.value))){
+      batch.message='Receiver-unverified retest requires both firmware SHAs, so results '+
+        'from a different receiver or firmware are not silently excluded.';
+      updateBatchUi();return;
+    }
     if((ui.batchScope.value==='missing'||ui.batchScope.value==='unverified') && !trials.length){
       batch.message='Import your previous trial CSV first. Remaining cases '+
         'are calculated only from observed successful transmitter END events.';
@@ -625,7 +631,8 @@
     }
     const queue=ui.batchScope.value==='missing' ?
       core.remainingEmitterPlan(cases,trials):
-      ui.batchScope.value==='unverified' ? core.receiverRetestPlan(cases,trials) :
+      ui.batchScope.value==='unverified' ? core.receiverRetestPlan(cases,trials,{receiver:ui.receiverBoard.value,
+        receiverSha:ui.receiverSha.value.trim(),emitterSha:ui.emitterSha.value.trim()}) :
       core.batchPlan(cases,ui.batchScope.value);
     if(!queue.length){
       batch.message='No remaining cases in the selected scope. Check imported CSV.';
@@ -1131,6 +1138,12 @@
       observed:ui.observed.value,latency_ms:ui.latencyMs.value.trim(),
       notes:ui.evidenceNotes.value.trim()
     });
+    if(result.window==='complete'&&result.emission==='ok'&&
+       result.observed==='NONE' && result.notes.length<24){
+      text('observationNotice','Before scoring NONE, document that the receiver was '+
+        'scanning throughout the full test window and how the absence was confirmed.');
+      return;
+    }
     if(result.window==='complete'&&result.emission==='ok'&&!result.observed){
       text('observationNotice','Choose a receiver classification or NONE for a complete listening window.');return;
     }
