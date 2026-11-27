@@ -263,27 +263,30 @@
   function parseCsv(data) {
     if (typeof data!=='string'|| data.length>4000000)
       throw new Error('CSV must be under 4 MB.');
-    var all=[],row=[],val='',quoted=false;
+    var all=[],row=[],val='',quoted=false,afterQuote=false;
     var src=data.replace(/^\uFEFF/,'');
     for(var i=0;i<src.length;i++){
       var c=src[i];
       if(quoted){
         if(c==='"'&&src[i+1]==='"'){val+='"';i++;}
-        else if(c==='"')quoted=false;
+        else if(c==='"'){quoted=false;afterQuote=true;}
         else val+=c;
-      }else if(c==='"'){if(val)throw new Error('Invalid quote position.');quoted=true;}
-      else if(c===','){row.push(val);val='';}
+      }else if(c==='"'){if(val||afterQuote)throw new Error('Invalid quote position.');quoted=true;}
+      else if(c===','){row.push(val);val='';afterQuote=false;}
       else if(c==='\n'||c==='\r'){
         if(c==='\r'&&src[i+1]==='\n')i++;
-        row.push(val);val='';
+        row.push(val);val='';afterQuote=false;
         if(row.length>1||row[0])all.push(row);
         row=[];
-      }else val+=c;
+      }else if(afterQuote)throw new Error('Invalid text after quoted CSV field.');
+      else val+=c;
     }
     if(quoted)throw new Error('Unclosed CSV quote.');
     if(row.length||val){row.push(val);all.push(row);}
     if(all.length===0)throw new Error('Empty CSV.');
     var header=all.shift();
+    if(new Set(header).size!==header.length)
+      throw new Error('Duplicate CSV column.');
     CSV_HEADER.forEach(function(k){if(!header.includes(k))throw new Error('Missing CSV column '+k);});
     if(all.length>5000)throw new Error('Import limited to 5,000 trials.');
     return all.map(function(cells,i){
