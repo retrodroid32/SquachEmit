@@ -27,6 +27,7 @@
   for(const role of ['receiver','emitter']){
     mirrors[role]={active:false,waiting:false,lastFrame:false,lastFrameSequence:0,failures:0,
       assembler:new codec.MirrorAssembler(),timeout:null,next:null,handshake:null,animation:null,ready:false,
+      frameStartedAt:0,lastRowAt:0,
       touchDown:false,touchAt:0,touchTimer:null,pendingUp:null,lastPoint:{x:0,y:0},
       lastMove:0};
   }
@@ -109,6 +110,7 @@
     const s=mirrors[role];
     cancelFrameTimers(role);
     s.active=false;s.waiting=false;s.ready=false;s.failures=0;
+    s.frameStartedAt=0;s.lastRowAt=0;
     s.lastFrame=false;s.lastFrameSequence=0;
     s.assembler.reset();
     if(role==='emitter'){local.model=null;local.receivedAt=0;}
@@ -159,7 +161,7 @@
     const s=mirrors[role],state=api.getState();
     if(!s.active||!s.ready||s.waiting||!isConnected(role,state)||
        (role==='receiver'&&state.testActive))return;
-    s.waiting=true;
+    s.waiting=true;s.frameStartedAt=Date.now();s.lastRowAt=s.frameStartedAt;
     // Firmware sends a full keyframe unless it recognizes the last complete
     // screen the PC actually accepted. A dropped frame can never corrupt
     // a later delta. SquachWatch's existing firmware retains FRAME syntax.
@@ -172,9 +174,19 @@
       return;
     }
     if(!s.active)return;
-    s.timeout=setTimeout(()=>{
+    const watchdog=()=>{
       if(!s.active||!s.waiting)return;
+      const now=Date.now(), absolute=now-s.frameStartedAt, idle=now-s.lastRowAt;
+      // Large authentic LCD keyframes take longer than one fixed timeout.
+      // Continue only while genuine row progress arrives, with a hard ceiling.
+      if(absolute<120000 && idle<30000){
+        s.timeout=setTimeout(watchdog,Math.max(1000,Math.min(5000,30000-idle)));
+        return;
+      }
       s.assembler.reset();s.waiting=false;s.failures++;
+      s.lastFrameSequence=0;s.lastFrame=false;
+      get('dc-canvas-'+role).hidden=true;
+      get('dc-placeholder-'+role).hidden=false;
       if(s.failures>=3){
         info(role,'No complete LCD frame after three requests. Confirm firmware MIRROR support, '+
           'receiver PIN unlock, TFT framebuffer availability and serial baud.');
@@ -184,7 +196,8 @@
       mirrorNote(role,'No complete LCD pixels; retrying frame ('+
         s.failures+'/3). Check device mirror firmware and TFT readback.');
       s.next=setTimeout(()=>void requestMirrorFrame(role),700);
-    },role==='emitter'?(state.emitterBaud===115200?45000:16000):12000);
+    };
+    s.timeout=setTimeout(watchdog,5000);
   }
   async function startMirror(role){
     if(role==='receiver'&&receiverUi.enabled){
@@ -274,6 +287,9 @@
     }
     if(result.kind==='error'){
       cancelFrameTimers(role);s.waiting=false;s.failures++;
+      s.lastFrameSequence=0;s.lastFrame=false;
+      get('dc-canvas-'+role).hidden=true;
+      get('dc-placeholder-'+role).hidden=false;
       info(role,result.message);
       if(/LCD_READ_UNAVAILABLE|LCD_NOT_READY|BAD_DISPLAY_SIZE/.test(result.message)){
         void stopMirror(role,true).then(()=>{
@@ -293,6 +309,7 @@
       return;
     }
     if(result.kind==='row'){
+      s.lastRowAt=Date.now();
       if(result.rows===result.total||result.rows%64===0){
         mirrorNote(role,'LCD capture '+result.rows+'/'+result.total+' rows…');
       }
@@ -300,6 +317,7 @@
     }
     if(result.kind==='frame'){
       cancelFrameTimers(role);s.waiting=false;s.failures=0;
+      s.frameStartedAt=0;s.lastRowAt=0;
       drawRealFrame(role,result.frame);
       // Continuous polling with device-side backpressure: changed-row
       // frames are much cheaper than full RGB565 screenshots.
