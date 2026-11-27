@@ -266,7 +266,10 @@
     t.notes='AUTO SquachWatch LOG: fresh exact MAC '+t._autoHit.mac+
       ', class '+t._autoHit.observed+', RSSI '+t._autoHit.rssi+
       ' dBm, hits '+t._autoHit.hits+', receiver snapshot '+new Date(t._autoHit.finishedAt).toISOString()+
-      '. Emission END ok reported; polling cadence is not precise detection latency.'+
+      '. Emission END ok reported; receiver snapshot is a host-side '+
+      'detection observation, not a synchronized first-hit timestamp. '+
+      'Host-observed response bound: '+Math.max(0,t._autoHit.finishedAt-t._startedAt)+
+      ' ms (includes BLE/Wi-Fi scan and USB LOG polling delay; NOT true RF latency).'+
       logEvidenceSummary(t);
     return true;
   }
