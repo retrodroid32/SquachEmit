@@ -330,6 +330,9 @@ assert.ok(app.includes("await sendEmitter('BUILD')") &&
   'connected emitter must expose build and catalog identity when available');
 assert.ok(app.includes("Emitter SHA does not match connected firmware"),
   'do not start a batch when connected source SHA contradicts the user entry');
+assert.ok(app.includes("Receiver LOG baseline late; retrying once") &&
+  app.includes("baseline=await requestWatchSnapshot()"),
+  'batch must retry an unavailable receiver LOG baseline once without inventing a hit');
 assert.ok(app.includes("USB LOG snapshots during run"),
   'unverified trial records should preserve receiver LOG transport diagnostics');
 assert.ok(app.includes("probeEmitterCatalog()") && app.includes("sendEmitter('LIST')"),
