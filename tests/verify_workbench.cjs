@@ -8,9 +8,9 @@ const catalog={
   'BLE-NEG-DRONE-UUID':{id:'BLE-NEG-DRONE-UUID',expected:'NONE'},
   'OUI-DJI-04A85A':{id:'OUI-DJI-04A85A',expected:'DRONE'}
 };
-// Every one of the firmware's 369 reviewed signal IDs must have a descriptive
+// Every one of the LAB R14.39 firmware's 369 reviewed signal IDs must have a descriptive
 // device-first label, including vendor-OUI and negative-control fixtures.
-const allCases=JSON.parse(fs.readFileSync('tests/cases.json','utf8'));
+const allCases=JSON.parse(fs.readFileSync('workbench/catalog-369.json','utf8'));
 assert.equal(allCases.length,369);
 const names=new Map();
 for(const c of allCases){
@@ -27,6 +27,29 @@ assert.match(names.get('BLE-META-LUXOTTICA'),/^Luxottica \/ Ray-Ban —/);
 assert.match(names.get('OUI-AUTEL-18D7936'),/^Autel Intelligent/);
 assert.match(names.get('BLE-NEG-FLIP-MFG'),/^Flipper Zero —/);
 assert.throws(()=>core.signalName({id:'BLE-UNKNOWN-NEW',description:'x'}),/No device name/);
+const forkProfile=JSON.parse(fs.readFileSync('workbench/fork_expectations.json','utf8'));
+const upstreamCases=core.receiverCatalog(allCases,'upstream',forkProfile);
+const forkCases=core.receiverCatalog(allCases,'fork',forkProfile);
+assert.equal(upstreamCases.length,369);
+assert.equal(forkCases.length,369);
+assert.equal(Object.keys(forkProfile.overrides).length,19);
+const upstreamById=Object.fromEntries(upstreamCases.map(x=>[x.id,x]));
+const forkById=Object.fromEntries(forkCases.map(x=>[x.id,x]));
+for(const [id,want] of Object.entries(forkProfile.overrides)){
+  assert.equal(forkById[id].expected,want,'fork receiver expectation '+id);
+  assert.equal(upstreamById[id].expected,'NONE','upstream untouched '+id);
+}
+assert.equal(forkById['FORK-BLE-SKIM-BT04'].expected,'SKIMMER');
+assert.equal(upstreamById['FORK-BLE-SKIM-BT04'].expected,'NONE');
+assert.equal(forkById['OUI-INSPFLIGHT-34B5F32'].expected,'DRONE');
+assert.equal(upstreamById['OUI-INSPFLIGHT-34B5F32'].expected,'NONE');
+assert.equal(allCases.find(x=>x.id==='FORK-BLE-SKIM-BT04').expected,'NONE',
+  'profiles must not mutate raw signal data');
+assert.throws(()=>core.receiverCatalog(allCases,'fork',{overrides:{'NOT-A-CASE':'DRONE'}}),/Unknown/);
+const receiverTrial={id:'FORK-BLE-SKIM-BT04',emission:'ok',window:'complete',
+  observed:'SKIMMER',receiver_sha:'a'.repeat(40),emitter_sha:'b'.repeat(40)};
+assert.equal(core.status(receiverTrial,forkById),'TP');
+assert.equal(core.status(receiverTrial,upstreamById),'FP');
 const fullPlan=core.batchPlan(allCases,'all');
 assert.equal(fullPlan.length,369);
 assert.equal(core.batchPlan(allCases,'BLE').length,116);
@@ -34,6 +57,55 @@ assert.equal(core.batchPlan(allCases,'WIFI').length,253);
 assert.equal(new Set(fullPlan.map(x=>x.id)).size,369);
 assert.deepEqual(fullPlan.map(x=>x.id),core.batchPlan(allCases,'all').map(x=>x.id));
 assert.throws(()=>core.batchPlan(allCases,'unknown'),/scope/);
+const retestRows=[
+  {id:fullPlan[0].id,emission:'ok',window:'complete',observed:'DRONE'},
+  {id:fullPlan[1].id,emission:'ok',window:'',observed:'DRONE'},
+  {id:fullPlan[2].id,emission:'ok',window:'',observed:''},
+  {id:fullPlan[3].id,emission:'pending',window:'',observed:''}
+];
+const needsReceiver=core.receiverRetestPlan(allCases,retestRows);
+assert.equal(needsReceiver.length,368);
+const sameHardware={receiver:'FREENOVE-S3-3.5',receiverSha:'a'.repeat(40),emitterSha:'b'.repeat(40)};
+const mixed=[
+  {id:fullPlan[0].id,emission:'ok',window:'complete',observed:'DRONE',
+   receiver:'CYD-2.8',receiver_sha:'a'.repeat(40),emitter_sha:'b'.repeat(40)},
+  {id:fullPlan[1].id,emission:'ok',window:'complete',observed:'DRONE',
+   receiver:'FREENOVE-S3-3.5',receiver_sha:'a'.repeat(40),emitter_sha:'b'.repeat(40)},
+  {id:fullPlan[2].id,emission:'ok',window:'complete',observed:'DRONE',
+   receiver:'FREENOVE-S3-3.5',receiver_sha:'f'.repeat(40),emitter_sha:'b'.repeat(40)}
+];
+const exactReceiver=core.receiverRetestPlan(allCases,mixed,sameHardware);
+assert.equal(exactReceiver.length,368);
+assert.ok(exactReceiver.some(c=>c.id===fullPlan[0].id),
+  'another receiver must not suppress the Freenove retest');
+assert.ok(!exactReceiver.some(c=>c.id===fullPlan[1].id));
+assert.ok(exactReceiver.some(c=>c.id===fullPlan[2].id),
+  'another firmware SHA must not suppress the Freenove retest');
+
+assert.ok(!needsReceiver.some(c=>c.id===fullPlan[0].id));
+assert.ok(needsReceiver.some(c=>c.id===fullPlan[1].id));
+assert.ok(needsReceiver.some(c=>c.id===fullPlan[2].id));
+assert.ok(needsReceiver.some(c=>c.id===fullPlan[3].id));
+const stableCases=JSON.parse(fs.readFileSync('tests/cases.json','utf8'));
+assert.equal(stableCases.length,369);
+assert.equal(core.catalogHash(stableCases),core.catalogHash(allCases),
+  'R14.41 LAB firmware and Workbench catalog must have identical IDs');
+assert.equal(core.catalogHash([{id:'AA'}]),'FD815B47');
+
+const alreadyTransmitted=[
+  {id:fullPlan[0].id,emission:'ok'},
+  {id:fullPlan[1].id,emission:'pending'},
+  {id:fullPlan[2].id,emission:'failed'}
+];
+const outstanding=core.remainingEmitterPlan(allCases,alreadyTransmitted);
+assert.equal(outstanding.length,368);
+assert.ok(!outstanding.some(x=>x.id===fullPlan[0].id));
+assert.ok(outstanding.some(x=>x.id===fullPlan[1].id));
+assert.ok(outstanding.some(x=>x.id===fullPlan[2].id));
+const completed300=fullPlan.slice(0,300).map(x=>({id:x.id,emission:'ok'}));
+assert.equal(core.remainingEmitterPlan(allCases,completed300).length,69,
+  '300 successful transmissions must leave 69 to test, not 68');
+assert.throws(()=>core.remainingEmitterPlan(allCases,{}),/Invalid trial ledger/);
 const sha='a'.repeat(40);
 const sample={event:'BEGIN',id:'BLE-FLOCK-MFG',expected:'FLOCK',
   seq:42,ms:1200,carrier:'BLE',mac:'C2:00:01:02:03:04',status:'ok'};
@@ -230,11 +302,49 @@ for(const required of [
 }
 assert.ok(app.includes('var receiverWrites=Promise.resolve()'),
   'LOG polling and Windows GUI commands must share one serialized receiver writer');
+assert.ok(app.includes('batch.receiverLogUnavailable=true'),
+  'a missing SquachWatch LOG response must require an explicit unverified batch choice');
+assert.ok(app.includes('TRANSMITTER-ONLY / ') && app.includes('UNVERIFIED batch?'),
+  'unverified RF permission prompt must distinguish transmission from detection proof');
+assert.ok(app.includes('noBatchLog?{id:c.id,snapshot:null'),
+  'unverified batch must prevent stale baseline fallback and false scoring');
+assert.ok(app.includes('batch.current.noBaseline=true'),
+  'every unverified batch case must contribute to unverified count');
+assert.ok(!app.includes('LOG unavailable after automatic mirror pause. Check receiver USB'),
+  'old generic blocking message must be removed');
 assert.ok(app.includes("if(!(await sendReceiver('LOG')))"),
   'automatic receiver polling must use the queued serial LOG path');
 assert.ok(!app.includes('RUN not sent.'),'receiver LOG timeout must not suppress a user RUN');
 assert.ok(app.includes("if(!baseline){\n          autoStatus("),
   'missing receiver baseline should downgrade automatic scoring, not prevent RUN');
+assert.ok(app.includes("endBatch('AUTOMATION HALTED at case '"),
+  'unconfirmed transmitter attempts must HALT with a resumable checkpoint');
+assert.ok(app.includes("This signal is NOT counted as complete"),
+  'failed attempts must not increment the completed counter');
+assert.ok(app.includes("if((batch.active||preparingBatch)&&!fromBatch)return"),
+  'a manual RUN must not race a batch still preparing receiver/emitter preflight');
+assert.ok(app.includes("footerCount!==null") && app.includes("footerHash"),
+  'new emitter LIST streams must verify count and hash before authorizing RF');
+assert.ok(app.includes("await sendEmitter('BUILD')") &&
+  app.includes("await sendEmitter('CATALOG')"),
+  'connected emitter must expose build and catalog identity when available');
+assert.ok(app.includes("Emitter SHA does not match connected firmware"),
+  'do not start a batch when connected source SHA contradicts the user entry');
+assert.ok(app.includes("Receiver LOG baseline late; retrying once") &&
+  app.includes("baseline=await requestWatchSnapshot()"),
+  'batch must retry an unavailable receiver LOG baseline once without inventing a hit');
+assert.ok(app.includes("USB LOG snapshots during run"),
+  'unverified trial records should preserve receiver LOG transport diagnostics');
+assert.ok(app.includes("probeEmitterCatalog()") && app.includes("sendEmitter('LIST')"),
+  'batch and individual tests must check actual transmitter capabilities');
+assert.ok(app.includes("core.receiverRetestPlan(cases,trials,{receiver:ui.receiverBoard.value"),
+  'operator must be able to retest emission-successful but unverified receiver cases with board-specific provenance');
+assert.ok(app.includes("receiver:old.receiver||ui.receiverBoard.value"),
+  'manual edits must not relabel imported hardware evidence');
+assert.ok(app.includes("core.remainingEmitterPlan(cases,trials)"),
+  'remaining-run UI must use successful TRUTH END records from trial ledger');
+assert.ok(app.includes("if((ui.batchScope.value==='missing'||ui.batchScope.value==='unverified') && !trials.length)"),
+  'remaining-run UI must require a prior ledger import');
 const html=fs.readFileSync('workbench/index.html','utf8');
 assert.match(html,/id="applyShas"/);
 assert.match(html,/id="shaNotice"/);
@@ -242,6 +352,16 @@ assert.match(html,/id="runFeedback"/);
 assert.match(html,/id="receiverSha"/);
 assert.match(html,/id="emitterSha"/);
 assert.match(html,/id="recvConnect"/);
+assert.match(html,/FREENOVE-S3-3\.5/);
+assert.match(html,/id="receiverLibrary"/);
+assert.match(html,/369 cases/);
+assert.match(html,/Remaining \(not END ok in imported\/current trial ledger\)/);
+assert.match(html,/Retest receiver-unverified/);
+assert.match(app,/fork_expectations\.json/);
+assert.match(app,/FREENOVE-S3-3\.5/);
+assert.match(app,/cases\.length===369/);
+assert.match(app,/ui\.receiverBoard\.value==='FREENOVE-S3-3\.5'\?'115200':'2000000'/);
+
 assert.match(html,/id="emitConnect"/);
 assert.match(html,/id="observed"/);
 assert.match(html,/id="trialRows"/);
