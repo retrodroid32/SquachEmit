@@ -20,10 +20,7 @@
         "111 additional v1.50 Wi-Fi manufacturer-prefix SoftAP transmitters, individually selectable.",
         "3 additional BLE service UUID advertisements; full FFFA Remote ID emission already available.",
         "220/220 upstream static lookup entries mapped to candidate emissions; 362 total cases.",
-        "Active AP BSSID readback and bounded retry before reporting RF transmission.",
-        "10 fork-only OUI cases retained; case-unique MACs support expanded fixture library.",
-        "LAB only, physical receiver pass/fail unverified; no automatic RF transmission.",
-        "Gear-menu BACK routing for four entries plus nested category paths, tested in landscape and portrait."
+        "Active AP BSSID readback and bounded retry before reporting RF transmission."
       ]
     },
     "c5-waveshare-28": {
@@ -37,10 +34,7 @@
         "111 additional v1.50 Wi-Fi manufacturer-prefix SoftAP transmitters, individually selectable.",
         "3 additional BLE service UUID advertisements; full FFFA Remote ID emission already available.",
         "220/220 upstream static lookup entries mapped to candidate emissions; 362 total cases.",
-        "Active AP BSSID readback and bounded retry before reporting RF transmission.",
-        "10 fork-only OUI cases retained; case-unique MACs support expanded fixture library.",
-        "LAB only, physical receiver pass/fail unverified; no automatic RF transmission.",
-        "All three board boot banners now report the compiled scenario count rather than stale 172-case text."
+        "Active AP BSSID readback and bounded retry before reporting RF transmission."
       ]
     },
     "s3-devkit": {
@@ -54,10 +48,7 @@
         "111 additional v1.50 Wi-Fi manufacturer-prefix SoftAP transmitters, individually selectable.",
         "3 additional BLE service UUID advertisements; full FFFA Remote ID emission already available.",
         "220/220 upstream static lookup entries mapped to candidate emissions; 362 total cases.",
-        "Active AP BSSID readback and bounded retry before reporting RF transmission.",
-        "10 fork-only OUI cases retained; case-unique MACs support expanded fixture library.",
-        "LAB only, physical receiver pass/fail unverified; no automatic RF transmission.",
-        "All three board boot banners now report the compiled scenario count rather than stale 172-case text."
+        "Active AP BSSID readback and bounded retry before reporting RF transmission."
       ]
     }
   }
