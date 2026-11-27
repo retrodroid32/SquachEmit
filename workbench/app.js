@@ -253,6 +253,11 @@
     ui.autoDetectionFeed.textContent=d.autoLog;
     ui.autoDetectionFeed.scrollTop=ui.autoDetectionFeed.scrollHeight;
   }
+  function logEvidenceSummary(t) {
+    return ' USB LOG snapshots during run: '+(t._logSnapshots||0)+
+      '; timeouts: '+(t._logTimeouts||0)+
+      '; pre-run baseline: '+(t._baseline?'present':'missing')+'.';
+  }
   function finishAutoMatch(t) {
     if(!t._autoHit || t._autoCandidate || t._manual || t.emission!=='ok')return false;
     t.observed=t._autoHit.observed;
@@ -261,12 +266,24 @@
     t.notes='AUTO SquachWatch LOG: fresh exact MAC '+t._autoHit.mac+
       ', class '+t._autoHit.observed+', RSSI '+t._autoHit.rssi+
       ' dBm, hits '+t._autoHit.hits+', receiver snapshot '+new Date(t._autoHit.finishedAt).toISOString()+
-      '. Emission END ok reported; polling cadence is not precise detection latency.';
+      '. Emission END ok reported; polling cadence is not precise detection latency.'+
+      logEvidenceSummary(t);
     return true;
   }
   function onWatchSnapshot(snapshot) {
     var d=devices.receiver;
     d.lastSnapshot=snapshot;
+    // LOG completion is evidence of transport availability, not automatic
+    // proof that a receiver's Wi-Fi/BLE scanning was healthy.
+    for(var j=trials.length-1;j>=0;j--){
+      var active=trials[j];
+      if(active._epoch===epoch && active._receiverSession===d.session &&
+         active._startedAt && snapshot.requestedAt>=active._startedAt &&
+         (!active._endedAt||snapshot.requestedAt<=active._endedAt+5000)){
+        active._logSnapshots=(active._logSnapshots||0)+1;
+        break;
+      }
+    }
     desktopEvent('snapshot',{rows:snapshot.rows.slice(0,20).map(function(r){
       return {type:r.type,mac:r.mac,rssi:r.rssi,hits:r.hits,state:r.state};
     }),rowCount:snapshot.rows.length,when:snapshot.finishedAt});
@@ -329,7 +346,8 @@
           ' dBm, state '+hit.state+'; '+(usableBaseline?
             'entry already existed in the baseline without proof of a new hit. ':
             'pre-test LOG baseline unavailable. ')+
-          'Receiver classification observed, but this run is NOT scored.';
+          'Receiver classification observed, but this run is NOT scored.'+
+          logEvidenceSummary(t);
       }
       matchedLog(new Date(hit.finishedAt).toLocaleTimeString()+
         '  '+t.id+'  ACTUAL '+hit.observed+'  MAC '+hit.mac+
@@ -421,6 +439,15 @@
       if(d.pending===pending){
         d.pending=null;d.parser.cancel();
         autoStatus('LOG response timed out. Confirm SquachWatch serial baud and connection.');
+        for(var n=trials.length-1;n>=0;n--){
+          var t=trials[n];
+          if(t._epoch===epoch && t._receiverSession===d.session &&
+             t._startedAt && Date.now()>=t._startedAt &&
+             (!t._endedAt||Date.now()<=t._endedAt+5000)){
+            t._logTimeouts=(t._logTimeouts||0)+1;
+            break;
+          }
+        }
         pending.resolve(null);
       }
     },3800);
@@ -700,6 +727,7 @@
       t._receiverSession=devices.receiver.port?devices.receiver.session:-1;
       t._mac=core.normalizeMac(event.mac);
       t._startedAt=Date.now();
+      t._logSnapshots=0;t._logTimeouts=0;
       var receiver=devices.receiver;
       // UI-controlled runs have a dedicated LOG preflight baseline.
       // Externally started tests can use a recently completed poll.
@@ -735,6 +763,7 @@
           }
           trials[i]._endedAt=Date.now();
           if(trials[i].emission==='failed')trials[i].window='incomplete';
+          if(!provisionalNotes)trials[i].notes+=logEvidenceSummary(trials[i]);
           else if(finishAutoMatch(trials[i])){
             matchedLog(new Date().toLocaleTimeString()+'  '+trials[i].id+
               '  FINAL '+core.status(trials[i],catalog)+
