@@ -97,7 +97,7 @@
         <div class="formrow"><label for="latencyMs">Latency to first confirmed hit</label><div class="inline"><input type="number" id="latencyMs" min="0" step="1" placeholder="Optional, TP only"><span>milliseconds</span></div></div>
         <div class="formrow"><label for="evidenceNotes">Observation notes</label><textarea id="evidenceNotes" rows="3" maxlength="700" placeholder="Where in the receiver log? Evidence code, confidence, missing scans, interference…"></textarea></div>
         <button id="saveObservation" class="primary full" disabled>Save verified observation</button>
-        <p class="footnote" id="observationNotice" role="status">Fresh exact-MAC SquachWatch hits are auto-recorded. Use NONE only after manually verifying a complete listening window; absence from one LOG snapshot does not prove no detection.</p>
+        <p class="footnote" id="observationNotice" role="status">Fresh exact-MAC SquachWatch hits are auto-recorded. Use NONE only after verifying uninterrupted receiver scanning throughout the entire test and add notes beginning SCAN-VERIFIED: followed by the independent scan evidence. Empty LOG snapshots do not prove NONE.</p>
       </section>
     </div>
 
