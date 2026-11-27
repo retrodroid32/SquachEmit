@@ -321,6 +321,8 @@ assert.ok(app.includes("endBatch('AUTOMATION HALTED at case '"),
   'unconfirmed transmitter attempts must HALT with a resumable checkpoint');
 assert.ok(app.includes("This signal is NOT counted as complete"),
   'failed attempts must not increment the completed counter');
+assert.ok(app.includes("if((batch.active||preparingBatch)&&!fromBatch)return"),
+  'a manual RUN must not race a batch still preparing receiver/emitter preflight');
 assert.ok(app.includes("footerCount!==null") && app.includes("footerHash"),
   'new emitter LIST streams must verify count and hash before authorizing RF');
 assert.ok(app.includes("await sendEmitter('BUILD')") &&
