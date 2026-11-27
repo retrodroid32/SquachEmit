@@ -1059,7 +1059,7 @@
           baseline=receiver.lastSnapshot;
           runProgress('Using fresh SquachWatch baseline; sending RUN…');
         }else{
-          runProgress('Refreshing SquachWatch LOG baseline (max 1.2 seconds)…');
+          runProgress('Refreshing SquachWatch LOG baseline (1.2s manual / 4.2s batch)…');
           var timer;
           try{
             baseline=await Promise.race([
@@ -1069,6 +1069,13 @@
               })
             ]);
           }finally{if(timer)clearTimeout(timer);}
+          // One bounded recovery before giving up on this case's baseline.
+          // This improves scoreability when the Freenove LOG response was
+          // delayed by scanning/UI work. A retry never creates evidence.
+          if(fromBatch && !baseline && token===runToken && receiver.port){
+            runProgress('Receiver LOG baseline late; retrying once (max 3.8 seconds)…');
+            baseline=await requestWatchSnapshot();
+          }
         }
         if(token!==runToken || !devices.emitter.port)return;
         // An intermittent LOG timeout cannot halt a 369-signal suite.
