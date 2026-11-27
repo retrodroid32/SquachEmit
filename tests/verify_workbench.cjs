@@ -65,6 +65,23 @@ const retestRows=[
 ];
 const needsReceiver=core.receiverRetestPlan(allCases,retestRows);
 assert.equal(needsReceiver.length,368);
+const sameHardware={receiver:'FREENOVE-S3-3.5',receiverSha:'a'.repeat(40),emitterSha:'b'.repeat(40)};
+const mixed=[
+  {id:fullPlan[0].id,emission:'ok',window:'complete',observed:'DRONE',
+   receiver:'CYD-2.8',receiver_sha:'a'.repeat(40),emitter_sha:'b'.repeat(40)},
+  {id:fullPlan[1].id,emission:'ok',window:'complete',observed:'DRONE',
+   receiver:'FREENOVE-S3-3.5',receiver_sha:'a'.repeat(40),emitter_sha:'b'.repeat(40)},
+  {id:fullPlan[2].id,emission:'ok',window:'complete',observed:'DRONE',
+   receiver:'FREENOVE-S3-3.5',receiver_sha:'f'.repeat(40),emitter_sha:'b'.repeat(40)}
+];
+const exactReceiver=core.receiverRetestPlan(allCases,mixed,sameHardware);
+assert.equal(exactReceiver.length,368);
+assert.ok(exactReceiver.some(c=>c.id===fullPlan[0].id),
+  'another receiver must not suppress the Freenove retest');
+assert.ok(!exactReceiver.some(c=>c.id===fullPlan[1].id));
+assert.ok(exactReceiver.some(c=>c.id===fullPlan[2].id),
+  'another firmware SHA must not suppress the Freenove retest');
+
 assert.ok(!needsReceiver.some(c=>c.id===fullPlan[0].id));
 assert.ok(needsReceiver.some(c=>c.id===fullPlan[1].id));
 assert.ok(needsReceiver.some(c=>c.id===fullPlan[2].id));
@@ -315,8 +332,8 @@ assert.ok(app.includes("USB LOG snapshots during run"),
   'unverified trial records should preserve receiver LOG transport diagnostics');
 assert.ok(app.includes("probeEmitterCatalog()") && app.includes("sendEmitter('LIST')"),
   'batch and individual tests must check actual transmitter capabilities');
-assert.ok(app.includes("core.receiverRetestPlan(cases,trials)"),
-  'operator must be able to retest emission-successful but unverified receiver cases');
+assert.ok(app.includes("core.receiverRetestPlan(cases,trials,{receiver:ui.receiverBoard.value"),
+  'operator must be able to retest emission-successful but unverified receiver cases with board-specific provenance');
 assert.ok(app.includes("receiver:old.receiver||ui.receiverBoard.value"),
   'manual edits must not relabel imported hardware evidence');
 assert.ok(app.includes("core.remainingEmitterPlan(cases,trials)"),
