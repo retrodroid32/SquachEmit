@@ -43,7 +43,7 @@
   var receiverWrites=Promise.resolve();
   var receiverMirror=false;
   var preparingBatch=false;
-  var emitterCatalogIds=null,emitterCatalogProbe=null;
+  var emitterCatalogIds=null,emitterCatalogProbe=null,emitterBuildSha=null;
   var desktopMode=(new URLSearchParams(window.location.search)).get('desktop')==='1';
   function desktopEvent(type,detail){
     if(desktopMode)window.dispatchEvent(new CustomEvent('sqe:'+type,{detail:detail}));
@@ -620,6 +620,11 @@
     try{
       const supported=await probeEmitterCatalog();
       if(!supported){batch.message='Connected emitter LIST unavailable; no RF sent.';updateBatchUi();return;}
+      if(emitterBuildSha && ui.emitterSha.value.trim() &&
+          ui.emitterSha.value.trim().toLowerCase()!==emitterBuildSha){
+        batch.message='Emitter SHA does not match connected firmware; no RF started.';
+        notice(batch.message,true);updateBatchUi();return;
+      }
       const missing=queue.filter(c=>!supported.has(c.id));
       if(missing.length){
         batch.message='Firmware catalog mismatch: connected transmitter supports '+supported.size+
@@ -784,6 +789,18 @@
       append(role,'[serial line too long; discarded incomplete row]\n');
     }
     lines.forEach(function(line){
+      if(role==='emitter'){
+        const build=/^BUILD,SHA,([a-fA-F0-9]{40}|UNSTAMPED)$/.exec(line.trim());
+        if(build){
+          emitterBuildSha=build[1]==='UNSTAMPED'?null:build[1].toLowerCase();
+          if(emitterBuildSha){
+            if(!ui.emitterSha.value.trim())ui.emitterSha.value=emitterBuildSha;
+            else if(ui.emitterSha.value.trim().toLowerCase()!==emitterBuildSha)
+              notice('Emitter SHA mismatch: entered '+ui.emitterSha.value.trim()+
+                ' but connected hardware reports '+emitterBuildSha+'. Correct SHA before scoring.',true);
+          }
+        }
+      }
       if(role==='emitter' && emitterCatalogProbe){
         const match=/^CASE,([A-Z0-9_-]+),/.exec(line);
         if(match){
@@ -857,7 +874,7 @@
       var d=devices[role];d.port=port;d.baud=baud;d.buffer='';
       if(role==='emitter'){
          epoch++;transmitting=false;cancelRunAck();
-         emitterCatalogIds=null;emitterCatalogProbe=null;
+         emitterCatalogIds=null;emitterCatalogProbe=null;emitterBuildSha=null;
        }
       else d.session++;
       opening[role]=false;updateButtons();
@@ -920,6 +937,9 @@
     const probe={ids:new Set(),lastLineAt:0,promise:null};
     emitterCatalogProbe=probe;
     probe.promise=(async function(){
+      // New firmware reports its actual CI source SHA. Older versions will
+      // ignore BUILD; LIST remains compatible with both catalog sizes.
+      await sendEmitter('BUILD');
       if(!(await sendEmitter('LIST')))return null;
       const begun=Date.now();
       while(Date.now()-begun<8000){
@@ -948,6 +968,12 @@
     try{
       const supported=await probeEmitterCatalog();
       if(token!==runToken||!devices.emitter.port)return;
+      if(emitterBuildSha && ui.emitterSha.value.trim() &&
+          ui.emitterSha.value.trim().toLowerCase()!==emitterBuildSha){
+        runProgress('Entered emitter SHA differs from connected firmware; no RF sent.');
+        if(fromBatch)advanceBatch('Emitter SHA mismatch',true,true);
+        return;
+      }
       if(!supported||!supported.has(c.id)){
         runProgress(!supported?'Emitter LIST unavailable; no RF sent.':
           'Selected case is unsupported by connected emitter; no RF sent.');
@@ -1128,6 +1154,10 @@
   function applySessionShas(){
     var receiverSha=ui.receiverSha.value.trim();
     var emitterSha=ui.emitterSha.value.trim();
+    if(emitterBuildSha && emitterSha.toLowerCase()!==emitterBuildSha){
+      text('shaNotice','Connected emitter reports '+emitterBuildSha+
+        ', not '+emitterSha+'. Do not overwrite trial provenance.');return;
+    }
     if(!validSha(receiverSha)||!validSha(emitterSha)){
       text('shaNotice','Enter real 7–40-character hexadecimal commit SHAs for both boards first.');
       return;
