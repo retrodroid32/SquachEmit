@@ -1149,10 +1149,19 @@
       notes:ui.evidenceNotes.value.trim()
     });
     if(result.window==='complete'&&result.emission==='ok'&&
-       result.observed==='NONE' && result.notes.length<24){
-      text('observationNotice','Before scoring NONE, document that the receiver was '+
-        'scanning throughout the full test window and how the absence was confirmed.');
-      return;
+       result.observed==='NONE'){
+      if(old._autoHit){
+        text('observationNotice','Cannot set NONE: an attributable verified '+
+          'exact-MAC receiver detection already exists for this trial.');
+        return;
+      }
+      // Emitter-generated notes are NOT manual scan-health evidence.
+      if(!/SCAN-VERIFIED:\s*.{20,}/i.test(result.notes)){
+        text('observationNotice','To score NONE, append SCAN-VERIFIED: followed '+
+          'by at least 20 characters of independent uninterrupted scan-window '+
+          'evidence. An empty LOG alone does not qualify.');
+        return;
+      }
     }
     if(result.window==='complete'&&result.emission==='ok'&&!result.observed){
       text('observationNotice','Choose a receiver classification or NONE for a complete listening window.');return;
