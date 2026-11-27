@@ -7,9 +7,9 @@
   <meta name="description" content="SquachEmit Detection Workbench: pair transmitter truth with independently observed SquachWatch detections.">
   <title>SquachEmit // Detection Workbench</title>
   <link rel="stylesheet" href="./style.css?v=r14-40-369">
-  <script src="./core.js?v=r14-40-remaining" defer></script>
+  <script src="./core.js?v=r14-41-auditfix" defer></script>
   <script src="./runner-v2.js?v=r14-40-369" defer></script>
-  <script src="./app.js?v=r14-40-batch-truthfix" defer></script>
+  <script src="./app.js?v=r14-41-auditfix" defer></script>
 </head>
 <body>
   <header class="topbar">
@@ -55,19 +55,19 @@
         <p class="footnote" id="runFeedback" role="status">One click sends RUN after a short receiver-baseline check; a receiver timeout cannot silently cancel transmission.</p>
         <section class="batch-panel" aria-labelledby="batchTitle">
           <div class="mini">AUTOMATED TEST SEQUENCE</div>
-          <h3 id="batchTitle">Run every selected signal</h3>
+          <h3 id="batchTitle">Run supported signals</h3>
           <p class="footnote">One explicit start, then sequential RUN commands from the real 369-case catalog. The next test starts only after a confirmed successful transmitter TRUTH END. Missing BEGIN, END, or failed transmission HALTS automation and preserves a resumable checkpoint or ERROR. No transmission starts on page load.</p>
           <div class="batch-settings">
-            <label for="batchScope">Test set<select id="batchScope"><option value="all">All 369 cases (BLE + Wi-Fi, including OUI-only tests)</option><option value="missing">Remaining (not END ok in imported/current trial ledger)</option><option value="BLE">BLE signals only</option><option value="WIFI">Wi-Fi signals only</option></select></label>
+            <label for="batchScope">Test set<select id="batchScope"><option value="all">All 369 cases (BLE + Wi-Fi, including OUI-only tests)</option><option value="missing">Remaining (not END ok in imported/current trial ledger)</option><option value="unverified">Retest receiver-unverified (no complete classified listening window)</option><option value="BLE">BLE signals only</option><option value="WIFI">Wi-Fi signals only</option></select></label>
             <label for="batchDuration">Each signal (seconds)<input id="batchDuration" type="number" min="3" max="30" step="1" value="8"></label>
             <label for="batchGap">Off-air cooldown (seconds)<input id="batchGap" type="number" min="3" max="30" step="1" value="5"></label>
           </div>
           <div class="buttons wide"><button id="batchStart" class="primary" type="button" disabled>Start automated tests</button><button id="batchPause" type="button" disabled>Pause after current case</button><button id="batchRestore" type="button" disabled>Restore checkpoint (manual)</button><button id="batchStop" class="danger" type="button" disabled>■ Stop automation</button></div>
-          <p class="footnote">Remaining excludes only case IDs with a prior successful SquachEmit TRUTH END in this browser ledger. Import your previous CSV first; verify the same firmware, target receiver and test settings. Missing receiver detections do not affect this selection.</p>
+          <p class="footnote">Remaining excludes case IDs with previous transmitter TRUTH END ok. Receiver-unverified reruns IDs without a complete classified receiver window. Import your previous CSV first; verify the same firmware, target receiver and test settings. Missing receiver detections do not affect this selection.</p>
           <progress id="batchProgress" max="369" value="0"></progress>
           <p id="batchCount" class="batch-meta" role="status">0 / 369 completed</p>
           <div id="batchCurrent" class="casebox">Ready to run. Connect both devices and check authorized testing first.</div>
-          <p class="footnote">Keep the browser awake, both USB connections open, and RF testing attended. A USB disconnection stops the sequence; a missing TRUTH END is marked as a transmitter failure and the automated batch continues after a controlled cooldown. No receiver detection is ever invented from silence. Checkpoints save queue progress but not detection evidence. Restoring requires an explicit operator action, connected hardware and fresh receiver baseline; no automatic RF transmission on page load. Export your CSV before closing.</p>
+          <p class="footnote">Keep the browser awake, both USB connections open, and RF testing attended. A USB disconnection stops the sequence; a missing TRUTH END halts automation with a checkpoint at the unconfirmed case. No receiver detection is ever invented from silence. Checkpoints save queue progress but not detection evidence. Restoring requires an explicit operator action, connected hardware and fresh receiver baseline; no automatic RF transmission on page load. Export your CSV before closing.</p>
         </section>
 
         <label class="loglabel" for="emitLog">Transmitter serial log</label>
