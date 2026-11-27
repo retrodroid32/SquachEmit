@@ -6,7 +6,7 @@
     "include": "197cd2716d1e7586dd3669b17cdec1758d58981d",
     "lib": "bbb71a1b441d98f3ada5d709c4b67a1c3395d161",
     "platformio.ini": "c3ff3725248b4c67d60da6903982515031c501f6",
-    "src": "b0bfee93e10583a2157480f7db219062665ac4e7"
+    "src": "3e4eb99e492407451b8ab45c575e9de353928370"
   },
   "builds": {
     "cyd32-st7798": {
@@ -14,6 +14,7 @@
       "version": "v1.1.0 MAINLINE · 362 cases",
       "summary": "R14.41 audit correction: source-SHA-stamped CI firmware with BUILD/SHA and CATALOG ID-count/digest commands, strict RUN 3–30s decimal-token validation, and transmitter END reported only after radio shutdown is requested. R14.38 LAB: 362 bounded synthetic BLE/Wi-Fi RF test cases. Corrected gear-menu navigation: BACK from Test Library, Quick Find, Favorites and TX History returns to the gear Main Menu, while nested library and home-origin paths retain their parent screen. Settings child BACK for Battery, Identity, Help, Recovery and Display returns to the first Settings page in both landscape and portrait. Upstream v1.50 static table 220/220 mapped to candidate emissions; receiver hardware validation remains pending. SHA-256 multi-part CYD 3.2 flashing.",
       "highlights": [
+        "Firmware LIST_END confirms full case-list transfer with count and FNV-1a fingerprint.",
         "R14.41: CI build identity, catalog verification telemetry, strict serial RUN parser and post-stop TRUTH END ordering.",
         "111 additional v1.50 Wi-Fi manufacturer-prefix SoftAP transmitters, individually selectable.",
         "3 additional BLE service UUID advertisements; full FFFA Remote ID emission already available.",
@@ -29,6 +30,7 @@
       "version": "v1.1.0 MAINLINE · 362 cases",
       "summary": "R14.41 audit correction: source-SHA-stamped CI firmware with BUILD/SHA and CATALOG ID-count/digest commands, strict RUN 3–30s decimal-token validation, and transmitter END reported only after radio shutdown is requested. R14.37 LAB (boot catalog-count fix): 362 bounded synthetic on-air BLE/Wi-Fi cases. Added all 111 remaining v1.50 OUI-prefix SoftAP transmissions and 3 BLE UUID advertisements, preserving 10 fork-only cases and previous 238 fixtures. Hardware confirms active Wi-Fi AP MAC after startup; retries failed AP starts once. Upstream v1.50 source table mapping 220/220 candidate fixtures. Not a claim of complete parser/behavioral or physical receiver validation. SHA-256 multi-part flashing for Waveshare ESP32-C5 2.8.",
       "highlights": [
+        "Firmware LIST_END confirms full case-list transfer with count and FNV-1a fingerprint.",
         "R14.41: CI build identity, catalog verification telemetry, strict serial RUN parser and post-stop TRUTH END ordering.",
         "111 additional v1.50 Wi-Fi manufacturer-prefix SoftAP transmitters, individually selectable.",
         "3 additional BLE service UUID advertisements; full FFFA Remote ID emission already available.",
@@ -44,6 +46,7 @@
       "version": "v1.1.0 MAINLINE · 362 cases",
       "summary": "R14.41 audit correction: source-SHA-stamped CI firmware with BUILD/SHA and CATALOG ID-count/digest commands, strict RUN 3–30s decimal-token validation, and transmitter END reported only after radio shutdown is requested. R14.37 LAB (boot catalog-count fix): 362 bounded synthetic on-air BLE/Wi-Fi cases. Added all 111 remaining v1.50 OUI-prefix SoftAP transmissions and 3 BLE UUID advertisements, preserving 10 fork-only cases and previous 238 fixtures. Hardware confirms active Wi-Fi AP MAC after startup; retries failed AP starts once. Upstream v1.50 source table mapping 220/220 candidate fixtures. Not a claim of complete parser/behavioral or physical receiver validation. SHA-256 multi-part flashing for ESP32-S3 DevKit.",
       "highlights": [
+        "Firmware LIST_END confirms full case-list transfer with count and FNV-1a fingerprint.",
         "R14.41: CI build identity, catalog verification telemetry, strict serial RUN parser and post-stop TRUTH END ordering.",
         "111 additional v1.50 Wi-Fi manufacturer-prefix SoftAP transmitters, individually selectable.",
         "3 additional BLE service UUID advertisements; full FFFA Remote ID emission already available.",
