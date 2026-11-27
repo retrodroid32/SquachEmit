@@ -61,6 +61,7 @@ jobs:
       - name: Build S3 LAB firmware and stage complete flash layout
         run: |
           set -euo pipefail
+          printf '#pragma once\n#define SQE_BUILD_SHA "%s"\n' "$(git rev-parse HEAD)" > include/sqe_build_identity.h
           pio run -e esp32-s3-devkitc-1
           BOOT_APP0="$(find "$HOME/.platformio/packages/framework-arduinoespressif32/tools/partitions" -name boot_app0.bin -print -quit)"
           test -n "$BOOT_APP0"
@@ -90,6 +91,7 @@ jobs:
           arduino-cli lib install "NimBLE-Arduino@2.5.1"
       - name: Build Waveshare ESP32-C5 touch firmware
         run: |
+          printf '#pragma once\n#define SQE_BUILD_SHA "%s"\n' "$(git rev-parse HEAD)" > include/sqe_build_identity.h
           arduino-cli compile --fqbn "esp32:esp32:esp32c5:FlashSize=16M,PSRAM=enabled,PartitionScheme=app3M_fat9M_16MB" \
             --build-property "build.extra_flags=-DSQE_WAVESHARE_C5=1 -I${GITHUB_WORKSPACE}/include" \
             --libraries "${GITHUB_WORKSPACE}/lib" \
@@ -111,6 +113,7 @@ jobs:
       - name: Compile CYD 3.2 ST7798 ESP32-WROOM firmware
         run: |
           set -euo pipefail
+          printf '#pragma once\n#define SQE_BUILD_SHA "%s"\n' "$(git rev-parse HEAD)" > include/sqe_build_identity.h
           pio run -e cyd32-st7798
           cp "$(find "$HOME/.platformio/packages/framework-arduinoespressif32/tools/partitions" -name boot_app0.bin -print -quit)" .pio/build/cyd32-st7798/ota_init.bin
           test "$(stat -c%s .pio/build/cyd32-st7798/ota_init.bin)" -eq 8192
