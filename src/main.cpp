@@ -6,6 +6,7 @@
 #include <esp_wifi.h>
 #include <NimBLEDevice.h>
 #include "scenarios.h"
+#include "sqe_build_identity.h"
 #include "rid_wifi_pack.h"
 #include "ap_mac_lifecycle.h"
 #include "identity.h"
@@ -565,6 +566,7 @@ static void help() {
   Serial.println("HELP                  commands");
   Serial.println("LIST                  show all supported cases");
   Serial.println("CATALOG               case count and ordered ID digest (FNV1A32)");
+  Serial.println("BUILD                 exact source commit SHA (CI builds)");
   Serial.println("RUN <ID> [seconds]    transmit 3..30s; default is selected TX time (CYD3.2) or 12s");
   Serial.println("SUITE                 run each case with 2.4s off-air gaps");
   Serial.println("STOP                  stop current case/suite immediately");
@@ -661,6 +663,10 @@ static void command(String cmd) {
   }
   if (cmd.equalsIgnoreCase("HELP") || cmd == "?") { help(); return; }
   if (cmd.equalsIgnoreCase("LIST")) { listCases(); return; }
+  if (cmd.equalsIgnoreCase("BUILD")) {
+    Serial.printf("BUILD,SHA,%s\n", SQE_BUILD_SHA);
+    return;
+  }
   if (cmd.equalsIgnoreCase("CATALOG")) {
     Serial.printf("CATALOG,%u,%08lX\n",(unsigned)kScenarioCount,
       (unsigned long)catalogHash());
@@ -765,6 +771,9 @@ void setup() {
 #else
   Serial.printf("BOOT,SquachEmit,v1.1.0,ESP32-S3,%u-CASES\n", (unsigned)kScenarioCount);
 #endif
+  Serial.printf("BUILD,SHA,%s\n",SQE_BUILD_SHA);
+  Serial.printf("CATALOG,%u,%08lX\n",(unsigned)kScenarioCount,
+    (unsigned long)catalogHash());
   help();
 }
 
