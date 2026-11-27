@@ -282,3 +282,58 @@ all normal exact-MAC and receiver SHA scoring requirements remain intact.
 CSV files created by earlier Workbench versions may label a Freenove
 receiver as CYD 2.8 due to the receiver menu selection; correct receiver
 metadata and use the actually flashed firmware SHAs before scoring.
+
+## November 27, 2026 — SquachEmit-only audit corrections (PR #118)
+
+These changes affect only **SquachEmit** and its browser/desktop tools. They
+do not modify, deploy or require a merge of the SquachWatch repository.
+
+* **Physical emitter catalog verification.** Workbench sends `LIST` before a
+  manual or batch RUN and compares the received case IDs to the chosen tests.
+  New SquachEmit firmware terminates `LIST` with
+  `LIST_END,<count>,<8-hex-ID-FNV1a>` for truncation detection. Old firmware
+  remains supported using a bounded quiet-period fallback. If the connected
+  firmware cannot prove support for a selected ID, that run is blocked rather
+  than silently counted. The normal 362-case mainline firmware is therefore
+  not confused with the distinct 369-case R14.39 LAB build (draft PR #113).
+* **Exact build identity.** CI firmware reports `BUILD,SHA,<40-character Git
+  commit>` and `CATALOG,<count>,<hash>` at boot and by serial request.
+  Browser Workbench compares the connected source SHA to any manually entered
+  SHA and blocks contradictory runs or history backfill. Local, manually
+  compiled firmware explicitly reports `UNSTAMPED` instead of inventing a
+  commit. A valid text SHA alone is not physical firmware authentication.
+* **Two separate retry modes.** `Remaining` excludes transmissions with
+  emitter `TRUTH END ok`. `Retest receiver-unverified` excludes only
+  complete, classified receiver observations *from the same board, receiver
+  SHA and emitter SHA*. Import the CSV before using either mode. Neither
+  mode infers a receiver PASS from transmitter success.
+* **Receiver transport diagnostics.** New trial notes count complete USB LOG
+  snapshots and timeouts, and a matched trial reports an approximate
+  *host-observed response bound* including USB/scan/polling delay, not an
+  accurate on-air first-detection latency. The `latency_ms` field deliberately
+  remains blank unless separately verified.
+* **Negative controls.** No automatic `NONE` is inferred from absent LOG
+  rows. A manually scored complete `NONE` case requires a note describing
+  continuous receiver scanning evidence. The present SquachWatch LOG table
+  does not independently certify receiver scan health, so automation cannot
+  safely infer true negatives without a separate scan-health protocol.
+* **Command handling.** Firmware rejects malformed duration tokens rather
+  than allowing Arduino `String.toInt()` to accept a prefix such as `5oops`.
+  An `END` notification now follows a request to stop the previous radio
+  emission instead of preceding it. Complete RF shutdown still requires
+  hardware validation.
+* **Provenance.** Editing an imported Workbench row no longer silently
+  relabels its receiver board or overwrites an existing firmware SHA.
+  Review imported files before retesting; provenance from a mislabeled CSV
+  cannot be automatically repaired by the browser.
+
+**Out of scope without SquachWatch modification or physical RF measurement:**
+proving uninterrupted scanner health for automatic true negatives, certifying
+that a synthetic manufacturer/UUID fixture reproduces an authentic device,
+and measuring true end-to-end detection latency. Those cannot be honestly
+inferred from successful `TRUTH END` and snapshot logs alone. Desktop
+native-state display is not an exact physical LCD framebuffer mirror.
+
+Do not merge R14.39's seven additional RF cases into stable firmware or
+change any upstream detector expected behavior without separate approval and
+hardware validation.
