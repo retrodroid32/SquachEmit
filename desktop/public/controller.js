@@ -286,7 +286,9 @@
       return;
     }
     if(result.kind==='error'){
+      if(!s.active)return; // Ignore unsolicited errors after stop/disconnect.
       cancelFrameTimers(role);s.waiting=false;s.failures++;
+      s.assembler.reset(); // Never apply deltas against an invalidated image.
       s.lastFrameSequence=0;s.lastFrame=false;
       get('dc-canvas-'+role).hidden=true;
       get('dc-placeholder-'+role).hidden=false;
