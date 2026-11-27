@@ -57,6 +57,24 @@ assert.equal(core.batchPlan(allCases,'WIFI').length,253);
 assert.equal(new Set(fullPlan.map(x=>x.id)).size,369);
 assert.deepEqual(fullPlan.map(x=>x.id),core.batchPlan(allCases,'all').map(x=>x.id));
 assert.throws(()=>core.batchPlan(allCases,'unknown'),/scope/);
+const retestRows=[
+  {id:fullPlan[0].id,emission:'ok',window:'complete',observed:'DRONE'},
+  {id:fullPlan[1].id,emission:'ok',window:'',observed:'DRONE'},
+  {id:fullPlan[2].id,emission:'ok',window:'',observed:''},
+  {id:fullPlan[3].id,emission:'pending',window:'',observed:''}
+];
+const needsReceiver=core.receiverRetestPlan(allCases,retestRows);
+assert.equal(needsReceiver.length,368);
+assert.ok(!needsReceiver.some(c=>c.id===fullPlan[0].id));
+assert.ok(needsReceiver.some(c=>c.id===fullPlan[1].id));
+assert.ok(needsReceiver.some(c=>c.id===fullPlan[2].id));
+assert.ok(needsReceiver.some(c=>c.id===fullPlan[3].id));
+const stableCases=JSON.parse(fs.readFileSync('tests/cases.json','utf8'));
+assert.equal(stableCases.length,362);
+assert.notEqual(core.catalogHash(stableCases),core.catalogHash(allCases),
+  '362 and 369 catalogs must have distinct capability fingerprints');
+assert.equal(core.catalogHash([{id:'A'}]),'CDDCDF65');
+
 const alreadyTransmitted=[
   {id:fullPlan[0].id,emission:'ok'},
   {id:fullPlan[1].id,emission:'pending'},
@@ -286,9 +304,15 @@ assert.ok(app.includes("endBatch('AUTOMATION HALTED at case '"),
   'unconfirmed transmitter attempts must HALT with a resumable checkpoint');
 assert.ok(app.includes("This signal is NOT counted as complete"),
   'failed attempts must not increment the completed counter');
+assert.ok(app.includes("probeEmitterCatalog()") && app.includes("sendEmitter('LIST')"),
+  'batch and individual tests must check actual transmitter capabilities');
+assert.ok(app.includes("core.receiverRetestPlan(cases,trials)"),
+  'operator must be able to retest emission-successful but unverified receiver cases');
+assert.ok(app.includes("receiver:old.receiver||ui.receiverBoard.value"),
+  'manual edits must not relabel imported hardware evidence');
 assert.ok(app.includes("core.remainingEmitterPlan(cases,trials)"),
   'remaining-run UI must use successful TRUTH END records from trial ledger');
-assert.ok(app.includes("if(ui.batchScope.value==='missing' && !trials.length)"),
+assert.ok(app.includes("if((ui.batchScope.value==='missing'||ui.batchScope.value==='unverified') && !trials.length)"),
   'remaining-run UI must require a prior ledger import');
 const html=fs.readFileSync('workbench/index.html','utf8');
 assert.match(html,/id="applyShas"/);
@@ -301,6 +325,7 @@ assert.match(html,/FREENOVE-S3-3\.5/);
 assert.match(html,/id="receiverLibrary"/);
 assert.match(html,/369 cases/);
 assert.match(html,/Remaining \(not END ok in imported\/current trial ledger\)/);
+assert.match(html,/Retest receiver-unverified/);
 assert.match(app,/fork_expectations\.json/);
 assert.match(app,/FREENOVE-S3-3\.5/);
 assert.match(app,/cases\.length===369/);
