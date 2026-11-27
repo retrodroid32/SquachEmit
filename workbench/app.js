@@ -10,7 +10,7 @@
   if(!core||!runner) throw new Error('Workbench core or runner-v2.js missing');
   function byId(id){var el=document.getElementById(id);if(!el)throw new Error('Missing '+id);return el;}
   var ids=['securityNotice','scoredCount','pendingCount','recall','precision','latency',
-    'runId','receiverBoard','receiverSha','emitterSha','applyShas','shaNotice',
+    'runId','receiverBoard','receiverLibrary','receiverSha','emitterSha','applyShas','shaNotice',
     'emitState','emitConnect',
     'emitDisconnect','caseSelect','caseDetails','duration','authorization','runCase',
     'stopCase','runFeedback','emitLog','recvState','recvConnect','recvDisconnect','receiverBaud',
@@ -22,7 +22,7 @@
     'batchProgress','batchCount','batchCurrent'];
   var ui={};
   ids.forEach(function(id){ui[id]=byId(id);});
-  var catalog={},cases=[],trials=[],selectedTrial=-1;
+  var catalog={},cases=[],baseCases=[],forkProfile=null,trials=[],selectedTrial=-1;
   var devices={emitter:{port:null,reader:null,reading:null,buffer:'',log:'',baud:115200},
                receiver:{port:null,reader:null,reading:null,buffer:'',log:'',baud:2000000,
                  parser:core.newWatchLogParser(),lastSnapshot:null,pending:null,
@@ -36,12 +36,14 @@
   var transmitting=false;
   var batch={active:false,queue:[],index:0,completed:0,current:null,
     duration:8,gap:5,timer:null,endTimer:null,failures:0,unverified:0,
+    receiverLogUnavailable:false,
     paused:false,pauseRequested:false,
     message:'Ready to start'};
   var emitterWrites=Promise.resolve();
   var receiverWrites=Promise.resolve();
   var receiverMirror=false;
   var preparingBatch=false;
+  var emitterCatalogIds=null,emitterCatalogProbe=null,emitterBuildSha=null;
   var desktopMode=(new URLSearchParams(window.location.search)).get('desktop')==='1';
   function desktopEvent(type,detail){
     if(desktopMode)window.dispatchEvent(new CustomEvent('sqe:'+type,{detail:detail}));
@@ -72,7 +74,7 @@
     if(!c){text('caseDetails','Select a catalog case to inspect its expected classification.');}
     else{
       text('caseDetails',core.signalName(c)+'\nID: '+c.id+' · '+c.carrier+
-        '\nSQUACHWATCH EXPECTED: '+c.expected+
+        '\nSQUACHWATCH EXPECTED ('+ui.receiverLibrary.value.toUpperCase()+'): '+c.expected+
         '\n'+c.description+
         (c.id.startsWith('OUI-')?
         '\nCAUTION: selected case transmits a registered vendor MAC prefix; this is NOT proof of a genuine device or Remote ID.':''));
@@ -181,9 +183,10 @@
     ui.recvConnect.disabled=receiver||opening.receiver;
     ui.recvDisconnect.disabled=!receiver||opening.receiver;
     ui.receiverBaud.disabled=receiver||opening.receiver;
+    ui.receiverLibrary.disabled=trials.length>0 || batch.active || startingRun || transmitting || preparingBatch;
     ui.pollNow.disabled=!receiver;
     var duration=Number(ui.duration.value);
-    ui.runCase.disabled=!connected||batch.active||startingRun||awaitingBegin||transmitting||
+    ui.runCase.disabled=!connected||batch.active||preparingBatch||startingRun||awaitingBegin||transmitting||
       !catalog[ui.caseSelect.value]||!ui.authorization.checked||
       !Number.isInteger(duration)||duration<3||duration>30;
     ui.runCase.textContent=startingRun?'Preparing receiver…':
@@ -206,7 +209,7 @@
   function updateBatchUi(){
     var ready=!!devices.emitter.port&&!!devices.receiver.port&&
       !opening.emitter&&!opening.receiver&&ui.authorization.checked&&
-      !startingRun&&!awaitingBegin&&!transmitting&&cases.length===238;
+      !startingRun&&!awaitingBegin&&!transmitting&&cases.length===369;
     var duration=Number(ui.batchDuration.value),gap=Number(ui.batchGap.value);
     var valid=Number.isInteger(duration)&&duration>=3&&duration<=30&&
       Number.isInteger(gap)&&gap>=3&&gap<=30;
@@ -218,11 +221,11 @@
     ['batchScope','batchDuration','batchGap','caseSelect','duration'].forEach(function(id){
       ui[id].disabled=batch.active;
     });
-    ui.batchProgress.max=batch.queue.length||cases.length||238;
+    ui.batchProgress.max=batch.queue.length||cases.length||369;
     ui.batchProgress.value=batch.completed;
-    text('batchCount',batch.completed+' / '+(batch.queue.length||cases.length||238)+
-      ' completed · '+batch.failures+' transmitter failures · '+
-      batch.unverified+' unverified recoveries'+
+    text('batchCount',batch.completed+' / '+(batch.queue.length||cases.length||369)+
+      ' completed · '+batch.failures+' failed attempts · '+
+      batch.unverified+' unverified cases'+
       (batch.active?(batch.paused?' · PAUSED':batch.pauseRequested?' · PAUSING':' · RUNNING'):''));
     text('batchCurrent',batch.message);
   }
@@ -250,6 +253,11 @@
     ui.autoDetectionFeed.textContent=d.autoLog;
     ui.autoDetectionFeed.scrollTop=ui.autoDetectionFeed.scrollHeight;
   }
+  function logEvidenceSummary(t) {
+    return ' USB LOG snapshots during run: '+(t._logSnapshots||0)+
+      '; timeouts: '+(t._logTimeouts||0)+
+      '; pre-run baseline: '+(t._baseline?'present':'missing')+'.';
+  }
   function finishAutoMatch(t) {
     if(!t._autoHit || t._autoCandidate || t._manual || t.emission!=='ok')return false;
     t.observed=t._autoHit.observed;
@@ -258,12 +266,27 @@
     t.notes='AUTO SquachWatch LOG: fresh exact MAC '+t._autoHit.mac+
       ', class '+t._autoHit.observed+', RSSI '+t._autoHit.rssi+
       ' dBm, hits '+t._autoHit.hits+', receiver snapshot '+new Date(t._autoHit.finishedAt).toISOString()+
-      '. Emission END ok reported; polling cadence is not precise detection latency.';
+      '. Emission END ok reported; receiver snapshot is a host-side '+
+      'detection observation, not a synchronized first-hit timestamp. '+
+      'Host-observed response bound: '+Math.max(0,t._autoHit.finishedAt-t._startedAt)+
+      ' ms (includes BLE/Wi-Fi scan and USB LOG polling delay; NOT true RF latency).'+
+      logEvidenceSummary(t);
     return true;
   }
   function onWatchSnapshot(snapshot) {
     var d=devices.receiver;
     d.lastSnapshot=snapshot;
+    // LOG completion is evidence of transport availability, not automatic
+    // proof that a receiver's Wi-Fi/BLE scanning was healthy.
+    for(var j=trials.length-1;j>=0;j--){
+      var active=trials[j];
+      if(active._epoch===epoch && active._receiverSession===d.session &&
+         active._startedAt && snapshot.requestedAt>=active._startedAt &&
+         (!active._endedAt||snapshot.requestedAt<=active._endedAt+5000)){
+        active._logSnapshots=(active._logSnapshots||0)+1;
+        break;
+      }
+    }
     desktopEvent('snapshot',{rows:snapshot.rows.slice(0,20).map(function(r){
       return {type:r.type,mac:r.mac,rssi:r.rssi,hits:r.hits,state:r.state};
     }),rowCount:snapshot.rows.length,when:snapshot.finishedAt});
@@ -326,7 +349,8 @@
           ' dBm, state '+hit.state+'; '+(usableBaseline?
             'entry already existed in the baseline without proof of a new hit. ':
             'pre-test LOG baseline unavailable. ')+
-          'Receiver classification observed, but this run is NOT scored.';
+          'Receiver classification observed, but this run is NOT scored.'+
+          logEvidenceSummary(t);
       }
       matchedLog(new Date(hit.finishedAt).toLocaleTimeString()+
         '  '+t.id+'  ACTUAL '+hit.observed+'  MAC '+hit.mac+
@@ -418,6 +442,15 @@
       if(d.pending===pending){
         d.pending=null;d.parser.cancel();
         autoStatus('LOG response timed out. Confirm SquachWatch serial baud and connection.');
+        for(var n=trials.length-1;n>=0;n--){
+          var t=trials[n];
+          if(t._epoch===epoch && t._receiverSession===d.session &&
+             t._startedAt && Date.now()>=t._startedAt &&
+             (!t._endedAt||Date.now()<=t._endedAt+5000)){
+            t._logTimeouts=(t._logTimeouts||0)+1;
+            break;
+          }
+        }
         pending.resolve(null);
       }
     },3800);
@@ -492,9 +525,10 @@
       endBatch('Automation stopped: device disconnected.',true);return;
     }
     if(batch.index>=batch.queue.length){
-      endBatch('Automation complete: '+batch.completed+' cases; '+
-        batch.failures+' transmitter failures; '+batch.unverified+
-        ' unverified recoveries. Review receiver evidence and export CSV.',false);
+      endBatch('Automation complete: '+batch.completed+' / '+batch.queue.length+
+        ' cases with confirmed SquachEmit TRUTH END; '+
+        batch.failures+' failed attempts (including earlier retries); '+batch.unverified+
+        ' unverified cases. Review receiver evidence and export CSV.',false);
       return;
     }
     var c=batch.queue[batch.index];
@@ -504,7 +538,9 @@
     chooseCase();
     batch.message='CASE '+(batch.index+1)+' / '+batch.queue.length+
       '\n'+core.signalName(c)+'\n'+c.id+
-      '\nSquachWatch expected: '+c.expected+'\nPreparing receiver baseline…';
+      '\nSquachWatch expected: '+c.expected+'\n'+
+      (batch.receiverLogUnavailable?'UNVERIFIED MODE: receiver LOG unsupported/unavailable':
+        'Preparing receiver baseline…');
     updateBatchUi();
     void run(true);
   }
@@ -513,10 +549,23 @@
     runToken++; // cancel stale asynchronous preflight before any next case
     var last=batch.current;
     if(last.finished)return;
+    // Do not silently skip a test when the transmitter never confirms RUN,
+    // reports an error, or fails to finish. The CSV is created from actual
+    // TRUTH records, whereas the queue index represents attempted cases.
+    // Advancing on failure previously made "369 complete" possible with
+    // substantially fewer transmitted trials in the exported CSV.
+    if(failed){
+      batch.failures++;
+      endBatch('AUTOMATION HALTED at case '+(batch.index+1)+' / '+
+        batch.queue.length+' ('+last.id+'): '+reason+
+        '. This signal is NOT counted as complete. The checkpoint retains '+
+        'this case for an explicit retry after checking the transmitter. '+
+        'Export the trial CSV before resuming.',true);
+      return;
+    }
     last.finished=true;
     if(batch.endTimer!==null){clearTimeout(batch.endTimer);batch.endTimer=null;}
-    if(failed)batch.failures++;
-    if(last.noBaseline||failed)batch.unverified++;
+    if(last.noBaseline)batch.unverified++;
     batch.completed++;batch.index++;batch.current=null;
     saveBatchCheckpoint();
     // Missing BEGIN/END is not evidence that RF was never on. Request an
@@ -572,21 +621,66 @@
     const duration=Number(ui.batchDuration.value),gap=Number(ui.batchGap.value);
     if(!Number.isInteger(duration)||duration<3||duration>30||
        !Number.isInteger(gap)||gap<3||gap>30)return;
-    const queue=core.batchPlan(cases,ui.batchScope.value);
-    if(!queue.length)return;
+    if(ui.batchScope.value==='unverified' &&
+       (!validSha(ui.receiverSha.value)||!validSha(ui.emitterSha.value))){
+      batch.message='Receiver-unverified retest requires both firmware SHAs, so results '+
+        'from a different receiver or firmware are not silently excluded.';
+      updateBatchUi();return;
+    }
+    if((ui.batchScope.value==='missing'||ui.batchScope.value==='unverified') && !trials.length){
+      batch.message='Import your previous trial CSV first. Remaining cases '+
+        'are calculated only from observed successful transmitter END events.';
+      updateBatchUi();return;
+    }
+    const queue=ui.batchScope.value==='missing' ?
+      core.remainingEmitterPlan(cases,trials):
+      ui.batchScope.value==='unverified' ? core.receiverRetestPlan(cases,trials,{receiver:ui.receiverBoard.value,
+        receiverSha:ui.receiverSha.value.trim(),emitterSha:ui.emitterSha.value.trim()}) :
+      core.batchPlan(cases,ui.batchScope.value);
+    if(!queue.length){
+      batch.message='No remaining cases in the selected scope. Check imported CSV.';
+      updateBatchUi();return;
+    }
+    if(ui.batchScope.value==='unverified' && !window.confirm(
+      'Retest '+queue.length+' cases without a prior complete verified receiver observation. '+
+      'This includes cases with successful emission but missing receiver proof.'))return;
+    if(ui.batchScope.value==='missing' && !window.confirm(
+      'Run '+queue.length+' remaining transmitter cases out of '+cases.length+
+      '? This omits case IDs with recorded TRUTH END ok from the current/imported '+
+      'ledger, regardless of the receiver label. Confirm the imported CSV was '+
+      'captured with the intended SquachEmit firmware and hardware. Receiver '+
+      'detection results are not inferred.'))return;
     preparingBatch=true;
+    batch.receiverLogUnavailable=false;
     const token=runToken;
     updateBatchUi();
     try{
-      if(!await pauseReceiverMirrorForDetection()){
-        batch.message='Receiver mirror OFF could not be sent. Full automated '+
-          'accuracy testing requires actual receiver LOG evidence. '+
-          'Single-case RUN remains available.';
-        return;
+      const supported=await probeEmitterCatalog();
+      if(!supported){batch.message='Connected emitter LIST unavailable; no RF sent.';updateBatchUi();return;}
+      if(emitterBuildSha && ui.emitterSha.value.trim() &&
+          ui.emitterSha.value.trim().toLowerCase()!==emitterBuildSha){
+        batch.message='Emitter SHA does not match connected firmware; no RF started.';
+        notice(batch.message,true);updateBatchUi();return;
+      }
+      const missing=queue.filter(c=>!supported.has(c.id));
+      if(missing.length){
+        batch.message='Firmware catalog mismatch: connected transmitter supports '+supported.size+
+          ' IDs; unsupported selected cases: '+missing.map(c=>c.id).join(', ')+
+          '. Flash matching LAB firmware before running this scope.';
+        notice(batch.message,true);updateBatchUi();return;
+      }
+      var mirrorReady=await pauseReceiverMirrorForDetection();
+      if(!mirrorReady){
+        if(!window.confirm('SquachWatch mirror could not be paused. '+
+          'Its LOG data cannot be independently verified. Run the selected '+
+          'transmitter test sequence UNVERIFIED instead? No receiver PASS/FAIL '+
+          'will be inferred. Click Cancel to leave all RF transmissions off.'))return;
+        batch.receiverLogUnavailable=true;
+        stopWatchPolling();
       }
       if(token!==runToken||!devices.emitter.port||!devices.receiver.port)return;
-      let snapshot=devices.receiver.lastSnapshot;
-      if(!snapshot||Date.now()-snapshot.finishedAt>5000){
+      let snapshot=batch.receiverLogUnavailable?null:devices.receiver.lastSnapshot;
+      if(!batch.receiverLogUnavailable && (!snapshot||Date.now()-snapshot.finishedAt>5000)){
         batch.message='Requesting a fresh receiver LOG baseline after mirror pause...';
         updateBatchUi();
         let timer=null;
@@ -597,9 +691,14 @@
           ]);
         }finally{if(timer!==null)clearTimeout(timer);}
         if(!snapshot){
-          batch.message='SquachWatch LOG unavailable after automatic mirror pause. '+
-            'Check receiver USB, or run a single signal without verified scoring.';
-          return;
+          batch.message='SquachWatch USB is connected but no valid structured LOG '+
+            'snapshot arrived. Check baud and receiver firmware LOG command support.';
+          updateBatchUi();
+          if(!window.confirm(batch.message+' Continue as TRANSMITTER-ONLY / '+
+            'UNVERIFIED batch? RF signals will transmit but receiver PASS/FAIL '+
+            'cannot be scored. Click Cancel to leave all transmitters idle.'))return;
+          batch.receiverLogUnavailable=true;
+          stopWatchPolling();
         }
       }
       if(token!==runToken||!devices.emitter.port||!devices.receiver.port)return;
@@ -612,6 +711,11 @@
       batch.queue=queue;batch.index=0;batch.completed=0;batch.failures=0;batch.unverified=0;
       batch.duration=duration;batch.gap=gap;batch.active=true;batch.current=null;
       batch.paused=false;batch.pauseRequested=false;saveBatchCheckpoint();
+      if(batch.receiverLogUnavailable){
+        batch.message='UNVERIFIED TRANSMITTER-ONLY MODE. Receiver LOG is unavailable. '+
+          'Check each detection on SquachWatch manually; exported trials remain UNTESTED.';
+        autoStatus(batch.message);
+      }
       startBatchStep();
     }finally{preparingBatch=false;updateBatchUi();}
   }
@@ -633,6 +737,7 @@
       t._receiverSession=devices.receiver.port?devices.receiver.session:-1;
       t._mac=core.normalizeMac(event.mac);
       t._startedAt=Date.now();
+      t._logSnapshots=0;t._logTimeouts=0;
       var receiver=devices.receiver;
       // UI-controlled runs have a dedicated LOG preflight baseline.
       // Externally started tests can use a recently completed poll.
@@ -668,6 +773,7 @@
           }
           trials[i]._endedAt=Date.now();
           if(trials[i].emission==='failed')trials[i].window='incomplete';
+          if(!provisionalNotes)trials[i].notes+=logEvidenceSummary(trials[i]);
           else if(finishAutoMatch(trials[i])){
             matchedLog(new Date().toLocaleTimeString()+'  '+trials[i].id+
               '  FINAL '+core.status(trials[i],catalog)+
@@ -694,7 +800,8 @@
       }
       redrawTrials();selectTrial();
       if(event.event==='END'&&event.status==='ok'&&
-         devices.receiver.port&&!receiverMirror){
+         devices.receiver.port&&!receiverMirror&&
+         !(batch.active&&batch.receiverLogUnavailable)){
         // Explicit post-transmit snapshot: an RF hit may only reach the
         // receiver LOG near the end of an 8-second test. A row marked
         // "gone" is still useful evidence when it appeared after baseline.
@@ -721,6 +828,35 @@
       append(role,'[serial line too long; discarded incomplete row]\n');
     }
     lines.forEach(function(line){
+      if(role==='emitter'){
+        const build=/^BUILD,SHA,([a-fA-F0-9]{40}|UNSTAMPED)$/.exec(line.trim());
+        if(build){
+          emitterBuildSha=build[1]==='UNSTAMPED'?null:build[1].toLowerCase();
+          if(emitterBuildSha){
+            if(!ui.emitterSha.value.trim())ui.emitterSha.value=emitterBuildSha;
+            else if(ui.emitterSha.value.trim().toLowerCase()!==emitterBuildSha)
+              notice('Emitter SHA mismatch: entered '+ui.emitterSha.value.trim()+
+                ' but connected hardware reports '+emitterBuildSha+'. Correct SHA before scoring.',true);
+          }
+        }
+      }
+      if(role==='emitter' && emitterCatalogProbe){
+        const footer=/^LIST_END,([0-9]{1,5}),([A-Fa-f0-9]{8})$/.exec(line.trim());
+        if(footer){
+          emitterCatalogProbe.footerCount=Number(footer[1]);
+          emitterCatalogProbe.footerHash=footer[2].toUpperCase();
+          emitterCatalogProbe.newProtocol=true;
+        }
+        if(/^CATALOG,[0-9]{1,5},[A-Fa-f0-9]{8}$/.test(line.trim()))
+          emitterCatalogProbe.newProtocol=true;
+        if(/^BUILD,SHA,/.test(line.trim()))
+          emitterCatalogProbe.newProtocol=true;
+        const match=/^CASE,([A-Z0-9_-]+),/.exec(line);
+        if(match){
+          emitterCatalogProbe.ids.add(match[1]);
+          emitterCatalogProbe.lastLineAt=Date.now();
+        }
+      }
       if(desktopMode&&role==='receiver'&&line.startsWith('UI ')){
         // PR #233 receiver state telemetry is separate from LOG evidence.
         desktopEvent('receiver-ui',{role:role,line:line});
@@ -785,7 +921,10 @@
         throw new Error('Unsupported baud rate.');
       await port.open({baudRate:baud});
       var d=devices[role];d.port=port;d.baud=baud;d.buffer='';
-      if(role==='emitter'){epoch++;transmitting=false;cancelRunAck();}
+      if(role==='emitter'){
+         epoch++;transmitting=false;cancelRunAck();
+         emitterCatalogIds=null;emitterCatalogProbe=null;emitterBuildSha=null;
+       }
       else d.session++;
       opening[role]=false;updateButtons();
       append(role,'\n[connected at '+baud+' baud; '+
@@ -807,6 +946,7 @@
     if(batch.active)endBatch('Automation stopped: '+role+' disconnected.',role==='receiver');
     if(role==='receiver')stopWatchPolling();
     if(role==='emitter'){
+      emitterCatalogIds=null;emitterCatalogProbe=null;emitterBuildSha=null;
       runToken++;devices.receiver.preRun=null;
       transmitting=false;cancelRunAck();
       runProgress('Transmitter disconnected. Connect again to run a case.');
@@ -837,8 +977,49 @@
     emitterWrites=pending.then(function(){},function(){});
     return pending;
   }
+  async function probeEmitterCatalog(){
+    if(emitterCatalogIds)return emitterCatalogIds;
+    if(!devices.emitter.port)return null;
+    if(emitterCatalogProbe)return emitterCatalogProbe.promise;
+    // Legacy and new firmware both provide LIST; never trust an entered SHA
+    // as a substitute for real connected transmitter case capabilities.
+    const probe={ids:new Set(),lastLineAt:0,promise:null,
+      footerCount:null,footerHash:null,newProtocol:!!emitterBuildSha};
+    emitterCatalogProbe=probe;
+    probe.promise=(async function(){
+      // New firmware reports its actual CI source SHA. Older versions will
+      // ignore BUILD; LIST remains compatible with both catalog sizes.
+      await sendEmitter('BUILD');
+      await sendEmitter('CATALOG');
+      if(!(await sendEmitter('LIST')))return null;
+      const begun=Date.now();
+      while(Date.now()-begun<8000){
+        await new Promise(resolve=>setTimeout(resolve,125));
+        if(emitterCatalogProbe!==probe||!devices.emitter.port)return null;
+        if(probe.footerCount!==null){
+          const hash=core.catalogHash(Array.from(probe.ids).map(id=>({id:id})));
+          if(probe.ids.size!==probe.footerCount ||
+             hash!==probe.footerHash){
+            notice('Emitter LIST was incomplete/corrupt (count or hash mismatch); no RF sent.',true);
+            return null;
+          }
+          emitterCatalogIds=new Set(probe.ids);
+          return emitterCatalogIds;
+        }
+        if(!probe.newProtocol && probe.ids.size &&
+           Date.now()-probe.lastLineAt>=800){
+          // Previous SquachEmit firmware has no LIST_END trailer.
+          emitterCatalogIds=new Set(probe.ids);
+          return emitterCatalogIds;
+        }
+      }
+      return null;
+    })();
+    try{return await probe.promise;}
+    finally{if(emitterCatalogProbe===probe)emitterCatalogProbe=null;}
+  }
   async function run(fromBatch){
-    if(batch.active&&!fromBatch)return;
+    if((batch.active||preparingBatch)&&!fromBatch)return;
     if(fromBatch&&(!batch.active||!batch.current||batch.current.id!==ui.caseSelect.value))return;
     var c=catalog[ui.caseSelect.value],duration=Number(ui.duration.value);
     if(startingRun||awaitingBegin||transmitting||!c||!ui.authorization.checked||
@@ -848,8 +1029,26 @@
     updateButtons();
     runProgress('Preparing to transmit '+c.id+'…');
     try{
+      const supported=await probeEmitterCatalog();
+      if(token!==runToken||!devices.emitter.port)return;
+      if(emitterBuildSha && ui.emitterSha.value.trim() &&
+          ui.emitterSha.value.trim().toLowerCase()!==emitterBuildSha){
+        runProgress('Entered emitter SHA differs from connected firmware; no RF sent.');
+        if(fromBatch)advanceBatch('Emitter SHA mismatch',true,true);
+        return;
+      }
+      if(!supported||!supported.has(c.id)){
+        runProgress(!supported?'Emitter LIST unavailable; no RF sent.':
+          'Selected case is unsupported by connected emitter; no RF sent.');
+        if(fromBatch)advanceBatch('Firmware catalog unsupported or unavailable',true,true);
+        return;
+      }
       var receiver=devices.receiver,baseline=null;
-      var receiverLogsReady=await pauseReceiverMirrorForDetection();
+      // A receiver firmware lacking structured LOG cannot verify RF hits.
+      // A user-approved transmitter-only batch skips repeated 3.8s LOG
+      // timeouts, and explicitly denies any stale snapshot as a baseline.
+      var noBatchLog=!!(fromBatch&&batch.receiverLogUnavailable);
+      var receiverLogsReady=noBatchLog?false:await pauseReceiverMirrorForDetection();
       if(token!==runToken||!devices.emitter.port)return;
       if(receiver.port&&receiverLogsReady){
         var now=Date.now();
@@ -860,7 +1059,7 @@
           baseline=receiver.lastSnapshot;
           runProgress('Using fresh SquachWatch baseline; sending RUN…');
         }else{
-          runProgress('Refreshing SquachWatch LOG baseline (max 1.2 seconds)…');
+          runProgress('Refreshing SquachWatch LOG baseline (1.2s manual / 4.2s batch)…');
           var timer;
           try{
             baseline=await Promise.race([
@@ -870,9 +1069,16 @@
               })
             ]);
           }finally{if(timer)clearTimeout(timer);}
+          // One bounded recovery before giving up on this case's baseline.
+          // This improves scoreability when the Freenove LOG response was
+          // delayed by scanning/UI work. A retry never creates evidence.
+          if(fromBatch && !baseline && token===runToken && receiver.port){
+            runProgress('Receiver LOG baseline late; retrying once (max 3.8 seconds)…');
+            baseline=await requestWatchSnapshot();
+          }
         }
         if(token!==runToken || !devices.emitter.port)return;
-        // An intermittent LOG timeout cannot halt a 238-signal suite.
+        // An intermittent LOG timeout cannot halt a 369-signal suite.
         // The individual case remains UNTESTED unless independent receiver
         // evidence is subsequently captured with a complete baseline.
         if(fromBatch&&!baseline){
@@ -889,7 +1095,8 @@
             'its detection cannot be auto-scored without a fresh baseline.');
         }
       }else{
-        receiver.preRun=null;
+        receiver.preRun=noBatchLog?{id:c.id,snapshot:null,expiresAt:Date.now()+5000}:null;
+        if(fromBatch&&noBatchLog && batch.current)batch.current.noBaseline=true;
         if(receiver.port&&!receiverLogsReady)
           autoStatus('RUN permitted without verified LOG: receiver classification '+
             'remains UNTESTED without independent detection evidence.');
@@ -929,14 +1136,33 @@
       // Preserve the unique per-trial run ID rather than replacing it with
       // the session prefix when saving an observation.
       run_id:old.run_id,
-      receiver:ui.receiverBoard.value,
-      receiver_sha:ui.receiverSha.value.trim()||old.receiver_sha,
-      emitter_sha:ui.emitterSha.value.trim()||old.emitter_sha,
+      // Never relabel imported Freenove/CYD evidence or replace a
+      // recorded firmware identity when the current form uses a different
+      // board or SHA. Cross-device edits previously corrupted provenance.
+      receiver:old.receiver||ui.receiverBoard.value,
+      receiver_sha:old.receiver_sha||
+        (old.receiver===ui.receiverBoard.value?ui.receiverSha.value.trim():''),
+      emitter_sha:old.emitter_sha||ui.emitterSha.value.trim(),
       emission:old.seq==null?(ui.emissionStatus.value||old.emission):old.emission,
       window:ui.listenWindow.value||'',
       observed:ui.observed.value,latency_ms:ui.latencyMs.value.trim(),
       notes:ui.evidenceNotes.value.trim()
     });
+    if(result.window==='complete'&&result.emission==='ok'&&
+       result.observed==='NONE'){
+      if(old._autoHit){
+        text('observationNotice','Cannot set NONE: an attributable verified '+
+          'exact-MAC receiver detection already exists for this trial.');
+        return;
+      }
+      // Emitter-generated notes are NOT manual scan-health evidence.
+      if(!/SCAN-VERIFIED:\s*.{20,}/i.test(result.notes)){
+        text('observationNotice','To score NONE, append SCAN-VERIFIED: followed '+
+          'by at least 20 characters of independent uninterrupted scan-window '+
+          'evidence. An empty LOG alone does not qualify.');
+        return;
+      }
+    }
     if(result.window==='complete'&&result.emission==='ok'&&!result.observed){
       text('observationNotice','Choose a receiver classification or NONE for a complete listening window.');return;
     }
@@ -963,23 +1189,37 @@
     document.body.appendChild(anchor);anchor.click();anchor.remove();
     setTimeout(function(){URL.revokeObjectURL(url);},1000);
   }
+  function applyReceiverLibrary(){
+    if(trials.length || batch.active)throw Error('Export and clear the existing trial ledger before switching receiver libraries');
+    if(!forkProfile || baseCases.length!==369)throw Error('Receiver catalog is not available');
+    cases=core.receiverCatalog(baseCases,ui.receiverLibrary.value,forkProfile);
+    cases.sort(function(a,b){return a.id.localeCompare(b.id);});
+    catalog={};
+    cases.forEach(function(c){catalog[c.id]=c;});
+  }
   async function loadCases(){
     try{
       var response=await fetch('./cases.json',{cache:'no-store'});
       if(!response.ok)throw new Error('HTTP '+response.status);
       var data=await response.json();
-      if(!Array.isArray(data)||data.length!==238)
-        throw new Error('Expected exactly 238 current firmware catalog cases');
+      var forkResponse=await fetch('./fork_expectations.json',{cache:'no-store'});
+      if(!forkResponse.ok)throw new Error('Missing source-pinned fork expectations (HTTP '+forkResponse.status+')');
+      forkProfile=await forkResponse.json();
+      if(forkProfile.schema!==1 || forkProfile.baseline_expected_source!=='tests/cases.json' ||
+         !forkProfile.signature_blob_sha || Object.keys(forkProfile.overrides||{}).length!==19)
+        throw new Error('Unexpected receiver fork expectation profile');
+      if(!Array.isArray(data)||data.length!==369)
+        throw new Error('Expected exactly 369 current firmware catalog cases');
       var ids=new Set();
       data.forEach(function(c){
         if(!c||typeof c.id!=='string'||ids.has(c.id)||
            !/^[A-Z0-9][A-Z0-9_-]{1,100}$/.test(c.id)||!c.expected)
           throw new Error('Invalid or duplicated case in catalog');
         core.signalName(c); // fail closed if device name is missing
-        ids.add(c.id);catalog[c.id]=c;
+        ids.add(c.id);
       });
-      cases=data;
-      cases.sort(function(a,b){return a.id.localeCompare(b.id);});
+      baseCases=data;
+      applyReceiverLibrary();
       desktopEvent('catalog',{cases:cases});
       ui.caseSelect.replaceChildren(option('','Choose a test case…'));
       cases.forEach(function(c){
@@ -990,7 +1230,7 @@
       ui.observed.replaceChildren(option('','Not evaluated'));
       values.forEach(function(s){ui.observed.appendChild(option(s,s));});
       chooseCase();redrawTrials();updateBatchUi();
-      notice('Loaded the 238-case catalog. No hardware is connected or transmitting.',false);
+      notice('Loaded 369 synthetic test cases for '+ui.receiverLibrary.options[ui.receiverLibrary.selectedIndex].text+'. Nothing is transmitting.',false);
     }catch(e){
       notice('Catalog could not load: '+e.message+'. Run the published workbench site or the build-installer static output.',true);
       ui.caseSelect.replaceChildren(option('','Case catalog unavailable'));
@@ -999,6 +1239,10 @@
   function applySessionShas(){
     var receiverSha=ui.receiverSha.value.trim();
     var emitterSha=ui.emitterSha.value.trim();
+    if(emitterBuildSha && emitterSha.toLowerCase()!==emitterBuildSha){
+      text('shaNotice','Connected emitter reports '+emitterBuildSha+
+        ', not '+emitterSha+'. Do not overwrite trial provenance.');return;
+    }
     if(!validSha(receiverSha)||!validSha(emitterSha)){
       text('shaNotice','Enter real 7–40-character hexadecimal commit SHAs for both boards first.');
       return;
@@ -1029,6 +1273,33 @@
     notice('Verified firmware SHAs recorded for '+candidates.length+
       ' trial(s). Receiver results were preserved; no detections were invented.',false);
   }
+  // Fork's Freenove ESP32-S3 target is built with SERIAL_BAUD=115200.
+  // Preserve a connected receiver port's selected speed until disconnected.
+  ui.receiverBoard.addEventListener('change',function(){
+    if(devices.receiver.port || opening.receiver)return;
+    ui.receiverBaud.value=ui.receiverBoard.value==='FREENOVE-S3-3.5'?'115200':'2000000';
+    notice('Receiver selected: '+ui.receiverBoard.value+
+      ' · suggested serial baud '+ui.receiverBaud.value+
+      '. Confirm the receiver firmware settings before connecting.',false);
+    updateButtons();
+  });
+  ui.receiverLibrary.addEventListener('change',function(){
+    if(trials.length || batch.active || preparingBatch || transmitting){
+      notice('Export and clear trial ledger before switching receiver library.',true);
+      return;
+    }
+    if(!baseCases.length || !forkProfile)return;
+    var old=ui.caseSelect.value;
+    applyReceiverLibrary();
+    ui.caseSelect.replaceChildren(option('','Choose a test case…'));
+    cases.forEach(function(c){
+      ui.caseSelect.appendChild(option(c.id,core.signalName(c)+'  ['+c.id+']'));
+    });
+    if(catalog[old])ui.caseSelect.value=old;
+    chooseCase();redrawTrials();updateBatchUi();
+    notice('Receiver expectations set to '+ui.receiverLibrary.value+
+      '. Transmitted RF patterns and case IDs are unchanged.',false);
+  });
   ui.applyShas.addEventListener('click',applySessionShas);
   ['receiverSha','emitterSha'].forEach(function(id){
     ui[id].addEventListener('input',function(){
@@ -1069,6 +1340,9 @@
     if(!window.confirm('Resume '+(cp.ids.length-cp.index)+' cases? Previous receiver observations are not restored. Confirm authorized attended testing.'))return;
     batch.queue=cp.ids.map(id=>catalog[id]);batch.index=cp.index;batch.completed=cp.completed;
     batch.duration=cp.duration;batch.gap=cp.gap;batch.failures=cp.failures;batch.unverified=cp.unverified;
+    batch.receiverLogUnavailable=!devices.receiver.lastSnapshot;
+    if(batch.receiverLogUnavailable && !window.confirm('Receiver LOG is unavailable. ' +
+      'Resume this checkpoint as TRANSMITTER-ONLY / UNVERIFIED?'))return;
     batch.active=true;batch.paused=false;batch.pauseRequested=false;batch.current=null;
     batch.message='Manual checkpoint resume; new receiver baseline required';
     saveBatchCheckpoint();startBatchStep();
@@ -1113,9 +1387,12 @@
       var seen=new Set(trials.map(trialKey));
       var labels=new Set(cases.map(function(c){return c.expected;})
         .concat(['NONE','ALPR','CAMERA','DEAUTH','EVILTWIN','RING','AXON']));
+      if(ui.receiverLibrary.value==='fork' && imported.length &&
+         !window.confirm('Import '+imported.length+
+           ' records using fork-specific expectations? CSV files do not store receiver-library version. Only proceed if these records were captured against your fork.'))return;
       imported.forEach(function(row){
         if(!catalog[row.id])throw new Error('Unknown case: '+row.id);
-        if(!['CYD-2.8','CYD-3.2'].includes(row.receiver))
+        if(!['CYD-2.8','CYD-3.2','FREENOVE-S3-3.5'].includes(row.receiver))
           throw new Error('Unknown receiver board');
         if(!row.run_id)throw new Error('A run ID is required');
         if(row.observed&&!labels.has(row.observed))
