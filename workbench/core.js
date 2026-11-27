@@ -301,6 +301,32 @@
     });
   }
 
+  // Mirror the firmware CATALOG ID-only FNV-1a capability fingerprint.
+  // The digest protects against accidental catalog mismatches, not tampering.
+  function catalogHash(all) {
+    if(!Array.isArray(all))throw Error('Invalid scenario catalog');
+    var hash=2166136261;
+    all.forEach(function(c){
+      if(!c||!CASE_ID.test(c.id))throw Error('Invalid scenario ID');
+      for(var i=0;i<c.id.length;i++){
+        hash=Math.imul((hash^c.id.charCodeAt(i))>>>0,16777619)>>>0;
+      }
+      hash=Math.imul((hash^10)>>>0,16777619)>>>0;
+    });
+    return hash.toString(16).toUpperCase().padStart(8,'0');
+  }
+  // A verified receiving window may have no detection. Positive evidence
+  // requires an attributable exact-MAC hit; no-hit needs independent proof
+  // the receiver scanned uninterrupted and every LOG snapshot was complete.
+  function receiverRetestPlan(all,rows) {
+    if(!Array.isArray(rows))throw Error('Invalid trial ledger');
+    var successful=new Set(rows.filter(function(t){
+      return t && trim(t.emission).toLowerCase()==='ok' &&
+        trim(t.window).toLowerCase()==='complete' &&
+        trim(t.observed) && CASE_ID.test(trim(t.id));
+    }).map(function(t){return t.id;}));
+    return batchPlan(all,'all').filter(function(c){return !successful.has(c.id);});
+  }
   // Friendly labels describe the synthetic fixture, not proof of actual hardware.
   // Technical case IDs and expected receiver classifications never change.
   function signalName(c) {
@@ -450,7 +476,7 @@
     parseWatchLogRow:parseWatchLogRow,newWatchLogParser:newWatchLogParser,
     matchWatchDetection:matchWatchDetection,
     findUnverifiedWatchObservation:findUnverifiedWatchObservation,
-    signalName:signalName,batchPlan:batchPlan,remainingEmitterPlan:remainingEmitterPlan,receiverCatalog:receiverCatalog,
+    signalName:signalName,batchPlan:batchPlan,remainingEmitterPlan:remainingEmitterPlan,receiverRetestPlan:receiverRetestPlan,catalogHash:catalogHash,receiverCatalog:receiverCatalog,
     status:status,pendingReason:pendingReason,score:score,makeTrial:makeTrial,applyEnd:applyEnd,
     exportCsv:exportCsv,parseCsv:parseCsv};
 });
