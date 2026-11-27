@@ -831,6 +831,16 @@
         }
       }
       if(role==='emitter' && emitterCatalogProbe){
+        const footer=/^LIST_END,([0-9]{1,5}),([A-Fa-f0-9]{8})$/.exec(line.trim());
+        if(footer){
+          emitterCatalogProbe.footerCount=Number(footer[1]);
+          emitterCatalogProbe.footerHash=footer[2].toUpperCase();
+          emitterCatalogProbe.newProtocol=true;
+        }
+        if(/^CATALOG,[0-9]{1,5},[A-Fa-f0-9]{8}$/.test(line.trim()))
+          emitterCatalogProbe.newProtocol=true;
+        if(/^BUILD,SHA,/.test(line.trim()))
+          emitterCatalogProbe.newProtocol=true;
         const match=/^CASE,([A-Z0-9_-]+),/.exec(line);
         if(match){
           emitterCatalogProbe.ids.add(match[1]);
@@ -963,18 +973,32 @@
     if(emitterCatalogProbe)return emitterCatalogProbe.promise;
     // Legacy and new firmware both provide LIST; never trust an entered SHA
     // as a substitute for real connected transmitter case capabilities.
-    const probe={ids:new Set(),lastLineAt:0,promise:null};
+    const probe={ids:new Set(),lastLineAt:0,promise:null,
+      footerCount:null,footerHash:null,newProtocol:false};
     emitterCatalogProbe=probe;
     probe.promise=(async function(){
       // New firmware reports its actual CI source SHA. Older versions will
       // ignore BUILD; LIST remains compatible with both catalog sizes.
       await sendEmitter('BUILD');
+      await sendEmitter('CATALOG');
       if(!(await sendEmitter('LIST')))return null;
       const begun=Date.now();
       while(Date.now()-begun<8000){
         await new Promise(resolve=>setTimeout(resolve,125));
         if(emitterCatalogProbe!==probe||!devices.emitter.port)return null;
-        if(probe.ids.size&&Date.now()-probe.lastLineAt>=800){
+        if(probe.footerCount!==null){
+          const hash=core.catalogHash(Array.from(probe.ids).map(id=>({id:id})));
+          if(probe.ids.size!==probe.footerCount ||
+             hash!==probe.footerHash){
+            notice('Emitter LIST was incomplete/corrupt (count or hash mismatch); no RF sent.',true);
+            return null;
+          }
+          emitterCatalogIds=new Set(probe.ids);
+          return emitterCatalogIds;
+        }
+        if(!probe.newProtocol && probe.ids.size &&
+           Date.now()-probe.lastLineAt>=800){
+          // Previous SquachEmit firmware has no LIST_END trailer.
           emitterCatalogIds=new Set(probe.ids);
           return emitterCatalogIds;
         }
