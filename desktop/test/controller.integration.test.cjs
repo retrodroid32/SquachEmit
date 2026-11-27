@@ -125,6 +125,12 @@ test('Windows rail renders authentic USB frame and translates canvas pointer to 
   await drain();
   receive('MIRROR READY RGB332 320x240');
   await drain();
+  // A transient capture error must discard stale LCD pixels and resync
+  // rather than keeping a previous alert frame marked live.
+  receive('MIRROR BEGIN 10 2 1 RGB332');
+  receive('MIRROR ROW 10 0 !!!');
+  assert.equal(canvas.hidden,true,'corrupt capture hides stale prior frame');
+  assert.equal(elements.get('dc-placeholder-receiver').hidden,false);
   const oldOff=commands.filter(([r,c])=>r==='receiver'&&c==='MIRROR OFF').length;
   windowEvents.get('sqe:mirror-paused')({detail:{role:'receiver',
     reason:'Paused for exact-MAC LOG capture'}});
