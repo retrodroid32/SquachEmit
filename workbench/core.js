@@ -318,12 +318,20 @@
   // A verified receiving window may have no detection. Positive evidence
   // requires an attributable exact-MAC hit; no-hit needs independent proof
   // the receiver scanned uninterrupted and every LOG snapshot was complete.
-  function receiverRetestPlan(all,rows) {
+  function receiverRetestPlan(all,rows,identity) {
     if(!Array.isArray(rows))throw Error('Invalid trial ledger');
+    // Retest planning must never suppress an unverified Freenove case
+    // because a different receiver or firmware build once detected it.
+    var proof=identity||null;
     var successful=new Set(rows.filter(function(t){
-      return t && trim(t.emission).toLowerCase()==='ok' &&
-        trim(t.window).toLowerCase()==='complete' &&
-        trim(t.observed) && CASE_ID.test(trim(t.id));
+      if(!t || trim(t.emission).toLowerCase()!=='ok' ||
+         trim(t.window).toLowerCase()!=='complete' ||
+         !trim(t.observed) || !CASE_ID.test(trim(t.id)))return false;
+      if(!proof)return true; // historical caller compatibility
+      return !!proof.receiver && !!proof.receiverSha && !!proof.emitterSha &&
+        t.receiver===proof.receiver &&
+        trim(t.receiver_sha).toLowerCase()===trim(proof.receiverSha).toLowerCase() &&
+        trim(t.emitter_sha).toLowerCase()===trim(proof.emitterSha).toLowerCase();
     }).map(function(t){return t.id;}));
     return batchPlan(all,'all').filter(function(c){return !successful.has(c.id);});
   }
