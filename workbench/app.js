@@ -43,6 +43,7 @@
   var receiverWrites=Promise.resolve();
   var receiverMirror=false;
   var preparingBatch=false;
+  var emitterCatalogIds=null,emitterCatalogProbe=null;
   var desktopMode=(new URLSearchParams(window.location.search)).get('desktop')==='1';
   function desktopEvent(type,detail){
     if(desktopMode)window.dispatchEvent(new CustomEvent('sqe:'+type,{detail:detail}));
@@ -590,18 +591,22 @@
     const duration=Number(ui.batchDuration.value),gap=Number(ui.batchGap.value);
     if(!Number.isInteger(duration)||duration<3||duration>30||
        !Number.isInteger(gap)||gap<3||gap>30)return;
-    if(ui.batchScope.value==='missing' && !trials.length){
+    if((ui.batchScope.value==='missing'||ui.batchScope.value==='unverified') && !trials.length){
       batch.message='Import your previous trial CSV first. Remaining cases '+
         'are calculated only from observed successful transmitter END events.';
       updateBatchUi();return;
     }
     const queue=ui.batchScope.value==='missing' ?
       core.remainingEmitterPlan(cases,trials):
+      ui.batchScope.value==='unverified' ? core.receiverRetestPlan(cases,trials) :
       core.batchPlan(cases,ui.batchScope.value);
     if(!queue.length){
       batch.message='No remaining cases in the selected scope. Check imported CSV.';
       updateBatchUi();return;
     }
+    if(ui.batchScope.value==='unverified' && !window.confirm(
+      'Retest '+queue.length+' cases without a prior complete verified receiver observation. '+
+      'This includes cases with successful emission but missing receiver proof.'))return;
     if(ui.batchScope.value==='missing' && !window.confirm(
       'Run '+queue.length+' remaining transmitter cases out of '+cases.length+
       '? This omits case IDs with recorded TRUTH END ok from the current/imported '+
@@ -613,6 +618,15 @@
     const token=runToken;
     updateBatchUi();
     try{
+      const supported=await probeEmitterCatalog();
+      if(!supported){batch.message='Connected emitter LIST unavailable; no RF sent.';updateBatchUi();return;}
+      const missing=queue.filter(c=>!supported.has(c.id));
+      if(missing.length){
+        batch.message='Firmware catalog mismatch: connected transmitter supports '+supported.size+
+          ' IDs; unsupported selected cases: '+missing.map(c=>c.id).join(', ')+
+          '. Flash matching LAB firmware before running this scope.';
+        notice(batch.message,true);updateBatchUi();return;
+      }
       var mirrorReady=await pauseReceiverMirrorForDetection();
       if(!mirrorReady){
         if(!window.confirm('SquachWatch mirror could not be paused. '+
@@ -770,6 +784,13 @@
       append(role,'[serial line too long; discarded incomplete row]\n');
     }
     lines.forEach(function(line){
+      if(role==='emitter' && emitterCatalogProbe){
+        const match=/^CASE,([A-Z0-9_-]+),/.exec(line);
+        if(match){
+          emitterCatalogProbe.ids.add(match[1]);
+          emitterCatalogProbe.lastLineAt=Date.now();
+        }
+      }
       if(desktopMode&&role==='receiver'&&line.startsWith('UI ')){
         // PR #233 receiver state telemetry is separate from LOG evidence.
         desktopEvent('receiver-ui',{role:role,line:line});
@@ -834,7 +855,10 @@
         throw new Error('Unsupported baud rate.');
       await port.open({baudRate:baud});
       var d=devices[role];d.port=port;d.baud=baud;d.buffer='';
-      if(role==='emitter'){epoch++;transmitting=false;cancelRunAck();}
+      if(role==='emitter'){
+         epoch++;transmitting=false;cancelRunAck();
+         emitterCatalogIds=null;emitterCatalogProbe=null;
+       }
       else d.session++;
       opening[role]=false;updateButtons();
       append(role,'\n[connected at '+baud+' baud; '+
@@ -856,6 +880,7 @@
     if(batch.active)endBatch('Automation stopped: '+role+' disconnected.',role==='receiver');
     if(role==='receiver')stopWatchPolling();
     if(role==='emitter'){
+      emitterCatalogIds=null;emitterCatalogProbe=null;
       runToken++;devices.receiver.preRun=null;
       transmitting=false;cancelRunAck();
       runProgress('Transmitter disconnected. Connect again to run a case.');
@@ -886,6 +911,30 @@
     emitterWrites=pending.then(function(){},function(){});
     return pending;
   }
+  async function probeEmitterCatalog(){
+    if(emitterCatalogIds)return emitterCatalogIds;
+    if(!devices.emitter.port)return null;
+    if(emitterCatalogProbe)return emitterCatalogProbe.promise;
+    // Legacy and new firmware both provide LIST; never trust an entered SHA
+    // as a substitute for real connected transmitter case capabilities.
+    const probe={ids:new Set(),lastLineAt:0,promise:null};
+    emitterCatalogProbe=probe;
+    probe.promise=(async function(){
+      if(!(await sendEmitter('LIST')))return null;
+      const begun=Date.now();
+      while(Date.now()-begun<8000){
+        await new Promise(resolve=>setTimeout(resolve,125));
+        if(emitterCatalogProbe!==probe||!devices.emitter.port)return null;
+        if(probe.ids.size&&Date.now()-probe.lastLineAt>=800){
+          emitterCatalogIds=new Set(probe.ids);
+          return emitterCatalogIds;
+        }
+      }
+      return null;
+    })();
+    try{return await probe.promise;}
+    finally{if(emitterCatalogProbe===probe)emitterCatalogProbe=null;}
+  }
   async function run(fromBatch){
     if(batch.active&&!fromBatch)return;
     if(fromBatch&&(!batch.active||!batch.current||batch.current.id!==ui.caseSelect.value))return;
@@ -897,6 +946,14 @@
     updateButtons();
     runProgress('Preparing to transmit '+c.id+'…');
     try{
+      const supported=await probeEmitterCatalog();
+      if(token!==runToken||!devices.emitter.port)return;
+      if(!supported||!supported.has(c.id)){
+        runProgress(!supported?'Emitter LIST unavailable; no RF sent.':
+          'Selected case is unsupported by connected emitter; no RF sent.');
+        if(fromBatch)advanceBatch('Firmware catalog unsupported or unavailable',true,true);
+        return;
+      }
       var receiver=devices.receiver,baseline=null;
       // A receiver firmware lacking structured LOG cannot verify RF hits.
       // A user-approved transmitter-only batch skips repeated 3.8s LOG
