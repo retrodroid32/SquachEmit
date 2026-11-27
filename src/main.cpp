@@ -429,8 +429,12 @@ static void stopTx() {
 }
 
 static void finish(const char* status = "ok") {
-  if (g_active) truth("END", g_active, status);
+  // Report END only *after* asking the radio to stop; a pre-stop END
+  // previously allowed the host to begin its next scenario while the
+  // previous Wi-Fi/BLE transmission was still being torn down.
+  const Scenario* finished = g_active;
   stopTx();
+  if (finished) truth("END", finished, status);
   g_active = nullptr;
   g_started = 0;
 }
@@ -536,6 +540,18 @@ static bool startScenario(const Scenario* s, uint32_t duration = kDefaultMs) {
   return true;
 }
 
+static uint32_t catalogHash() {
+  // FNV-1a over each ASCII case ID followed by LF, in firmware LIST order.
+  // An ID-only digest is a capability check, not a cryptographic signature.
+  uint32_t h=2166136261UL;
+  for(size_t i=0;i<kScenarioCount;++i) {
+    for(const char* p=kScenarios[i].id;*p;++p) {
+      h ^= (uint8_t)*p; h *= 16777619UL;
+    }
+    h ^= 10U; h *= 16777619UL;
+  }
+  return h;
+}
 static void listCases() {
   for (size_t i = 0; i < kScenarioCount; ++i)
     Serial.printf("CASE,%s,%s,%s,%s\n", kScenarios[i].id,
@@ -548,6 +564,7 @@ static void help() {
   Serial.printf("SquachEmit LAB | %u cases | 115200 8N1 | all RF tests time-limited\n", (unsigned)kScenarioCount);
   Serial.println("HELP                  commands");
   Serial.println("LIST                  show all supported cases");
+  Serial.println("CATALOG               case count and ordered ID digest (FNV1A32)");
   Serial.println("RUN <ID> [seconds]    transmit 3..30s; default is selected TX time (CYD3.2) or 12s");
   Serial.println("SUITE                 run each case with 2.4s off-air gaps");
   Serial.println("STOP                  stop current case/suite immediately");
@@ -644,6 +661,11 @@ static void command(String cmd) {
   }
   if (cmd.equalsIgnoreCase("HELP") || cmd == "?") { help(); return; }
   if (cmd.equalsIgnoreCase("LIST")) { listCases(); return; }
+  if (cmd.equalsIgnoreCase("CATALOG")) {
+    Serial.printf("CATALOG,%u,%08lX\n",(unsigned)kScenarioCount,
+      (unsigned long)catalogHash());
+    return;
+  }
   if (cmd.equalsIgnoreCase("STOP")) { cancelAll(); return; }
 #if defined(SQE_CYD32)
   if (cmd.equalsIgnoreCase("PUSH ON")) { cyd32UiSetFramePush(true); return; }
@@ -707,8 +729,13 @@ static void command(String cmd) {
     uint32_t duration = selectedDurationMs();
     if (space >= 0) {
       const String seconds = cmd.substring(space + 1);
-      const long sec = seconds.toInt();
-      if (sec < 3 || sec > 30 || seconds.length() == 0) {
+      // Arduino String.toInt() accepts partial tokens such as "5oops";
+      // reject malformed durations rather than silently emitting RF.
+      bool digits=!seconds.isEmpty();
+      for(size_t i=0;i<seconds.length();++i)
+        if(seconds[i]<'0'||seconds[i]>'9') { digits=false; break; }
+      const long sec = digits ? seconds.toInt() : -1;
+      if (!digits || sec < 3 || sec > 30) {
         Serial.println("ERROR,seconds_must_be_3_to_30"); return;
       }
       duration = (uint32_t)sec * 1000UL;
