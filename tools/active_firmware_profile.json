@@ -3,49 +3,52 @@
   "scenario_count": 369,
   "firmware_sources": {
     "SquachEmit.ino": "90b4205813a2f7885bc1e12ce7431eebf7249f45",
-    "include": "684d29da60ec6c21fc6551658d5a0908e25d41ca",
+    "include": "bf3e4c11c6058d098b0053e4665ca56c9c3e72e7",
     "lib": "bbb71a1b441d98f3ada5d709c4b67a1c3395d161",
     "platformio.ini": "c3ff3725248b4c67d60da6903982515031c501f6",
-    "src": "a8c6fb7521ca3f304fc3553720d413b9804e9e85"
+    "src": "5f153c576a2742e1e9c2124bd3710e83ab5a01ec"
   },
   "builds": {
     "cyd32-st7798": {
-      "title": "SquachEmit v1.1.0 CYD 3.2 ST7798 R14.39 LAB — 369 Fork/Upstream RF Cases",
-      "version": "v1.1.0 MAINLINE · 369 cases",
-      "summary": "R14.39 LAB 369 synthetic BLE/Wi-Fi cases. Adds two fork-specific 28-bit MA-M drone-prefix test beacons (Inspired Flight and ZeroZero) and five exact BLE serial-module-name advertisements. Keeps upstream v1.50 defaults and records 19 fork-specific expected results separately; source tests do not prove actual receiver detection. Preserves working R14.38 gear/settings BACK navigation. No unauthorized radio transmission. SHA-256 multi-part firmware flashing for CYD 3.2 ST7798.",
+      "title": "SquachEmit v1.1.0 CYD 3.2 ST7798 R14.41 AUDIT LAB — 369 RF Cases",
+      "version": "v1.1.0 LAB · 369 cases",
+      "summary": "R14.41 AUDIT LAB CYD 3.2 ST7798: 369 synthetic BLE/Wi-Fi emissions including seven fork-only fixtures from R14.39. CI-stamped BUILD source SHA, CATALOG count/ID fingerprint and checked LIST_END guard against truncated USB catalogs. Strict RUN duration/overflow validation; END follows radio-stop request. Original RF profiles, OUI readback and UI preserved. Physical detection accuracy and continuous receiver scan-health require hardware validation. SHA-256 multi-part firmware flashing.",
       "highlights": [
-        "369 selectable bounded RF tests: 362 prior fixtures plus two 28-bit drone prefixes and five BLE names.",
-        "Source-pinned upstream v1.50 220/220 static matches retained; 19 fork-only expectation overrides recorded separately.",
-        "Inspired Flight and ZeroZero 28-bit Wi-Fi AP MAC prefixes applied with exact high-nibble matching.",
-        "Five additional BLE-name tests under SERIAL MODULES: BT04, JDY-09, JDY-10, JDY-17, SPP-C.",
-        "R14.38 navigation behavior unchanged; RF receiver testing still pending.",
-        "Case-unique addresses; transmitter remains operator-triggered and time-limited."
+        "All 369 selectable synthetic case IDs, including seven fork detection fixture additions.",
+        "Serial BUILD/SHA, CATALOG and LIST_END protocol to verify connected transmitter identity.",
+        "Reject partial/oversized RUN arguments and report TRUTH END after radio shutdown request.",
+        "Keep fork-only Skimmer BLE and Inspired Flight / ZeroZero Wi-Fi OUI case coverage.",
+        "Maintain verified Wi-Fi SoftAP MAC/OUI readback and single bounded AP-start retry.",
+        "LAB firmware is distinct from current 362-case mainline: do not confuse the two.",
+        "True receiver scan-health, physical RF behavior and exact detection latency remain hardware verification gates."
       ]
     },
     "c5-waveshare-28": {
-      "title": "SquachEmit v1.1.0 Waveshare ESP32-C5 2.8 R14.39 LAB — 369 Fork/Upstream RF Cases",
-      "version": "v1.1.0 MAINLINE · 369 cases",
-      "summary": "R14.39 LAB 369 synthetic BLE/Wi-Fi cases. Adds two fork-specific 28-bit MA-M drone-prefix test beacons (Inspired Flight and ZeroZero) and five exact BLE serial-module-name advertisements. Keeps upstream v1.50 defaults and records 19 fork-specific expected results separately; source tests do not prove actual receiver detection. Preserves working R14.38 gear/settings BACK navigation. No unauthorized radio transmission. SHA-256 multi-part firmware flashing for Waveshare ESP32-C5 2.8.",
+      "title": "SquachEmit v1.1.0 Waveshare C5 2.8 R14.41 AUDIT LAB — 369 RF Cases",
+      "version": "v1.1.0 LAB · 369 cases",
+      "summary": "R14.41 AUDIT LAB Waveshare C5 2.8: 369 synthetic BLE/Wi-Fi emissions including seven fork-only fixtures from R14.39. CI-stamped BUILD source SHA, CATALOG count/ID fingerprint and checked LIST_END guard against truncated USB catalogs. Strict RUN duration/overflow validation; END follows radio-stop request. Original RF profiles, OUI readback and UI preserved. Physical detection accuracy and continuous receiver scan-health require hardware validation. SHA-256 multi-part firmware flashing.",
       "highlights": [
-        "369 selectable bounded RF tests: 362 prior fixtures plus two 28-bit drone prefixes and five BLE names.",
-        "Source-pinned upstream v1.50 220/220 static matches retained; 19 fork-only expectation overrides recorded separately.",
-        "Inspired Flight and ZeroZero 28-bit Wi-Fi AP MAC prefixes applied with exact high-nibble matching.",
-        "Five additional BLE-name tests under SERIAL MODULES: BT04, JDY-09, JDY-10, JDY-17, SPP-C.",
-        "R14.38 navigation behavior unchanged; RF receiver testing still pending.",
-        "Case-unique addresses; transmitter remains operator-triggered and time-limited."
+        "All 369 selectable synthetic case IDs, including seven fork detection fixture additions.",
+        "Serial BUILD/SHA, CATALOG and LIST_END protocol to verify connected transmitter identity.",
+        "Reject partial/oversized RUN arguments and report TRUTH END after radio shutdown request.",
+        "Keep fork-only Skimmer BLE and Inspired Flight / ZeroZero Wi-Fi OUI case coverage.",
+        "Maintain verified Wi-Fi SoftAP MAC/OUI readback and single bounded AP-start retry.",
+        "LAB firmware is distinct from current 362-case mainline: do not confuse the two.",
+        "True receiver scan-health, physical RF behavior and exact detection latency remain hardware verification gates."
       ]
     },
     "s3-devkit": {
-      "title": "SquachEmit v1.1.0 ESP32-S3 DevKit R14.39 LAB — 369 Fork/Upstream RF Cases",
-      "version": "v1.1.0 MAINLINE · 369 cases",
-      "summary": "R14.39 LAB 369 synthetic BLE/Wi-Fi cases. Adds two fork-specific 28-bit MA-M drone-prefix test beacons (Inspired Flight and ZeroZero) and five exact BLE serial-module-name advertisements. Keeps upstream v1.50 defaults and records 19 fork-specific expected results separately; source tests do not prove actual receiver detection. Preserves working R14.38 gear/settings BACK navigation. No unauthorized radio transmission. SHA-256 multi-part firmware flashing for ESP32-S3 DevKit.",
+      "title": "SquachEmit v1.1.0 ESP32-S3 DevKit R14.41 AUDIT LAB — 369 RF Cases",
+      "version": "v1.1.0 LAB · 369 cases",
+      "summary": "R14.41 AUDIT LAB ESP32-S3 DevKit: 369 synthetic BLE/Wi-Fi emissions including seven fork-only fixtures from R14.39. CI-stamped BUILD source SHA, CATALOG count/ID fingerprint and checked LIST_END guard against truncated USB catalogs. Strict RUN duration/overflow validation; END follows radio-stop request. Original RF profiles, OUI readback and UI preserved. Physical detection accuracy and continuous receiver scan-health require hardware validation. SHA-256 multi-part firmware flashing.",
       "highlights": [
-        "369 selectable bounded RF tests: 362 prior fixtures plus two 28-bit drone prefixes and five BLE names.",
-        "Source-pinned upstream v1.50 220/220 static matches retained; 19 fork-only expectation overrides recorded separately.",
-        "Inspired Flight and ZeroZero 28-bit Wi-Fi AP MAC prefixes applied with exact high-nibble matching.",
-        "Five additional BLE-name tests under SERIAL MODULES: BT04, JDY-09, JDY-10, JDY-17, SPP-C.",
-        "R14.38 navigation behavior unchanged; RF receiver testing still pending.",
-        "Case-unique addresses; transmitter remains operator-triggered and time-limited."
+        "All 369 selectable synthetic case IDs, including seven fork detection fixture additions.",
+        "Serial BUILD/SHA, CATALOG and LIST_END protocol to verify connected transmitter identity.",
+        "Reject partial/oversized RUN arguments and report TRUTH END after radio shutdown request.",
+        "Keep fork-only Skimmer BLE and Inspired Flight / ZeroZero Wi-Fi OUI case coverage.",
+        "Maintain verified Wi-Fi SoftAP MAC/OUI readback and single bounded AP-start retry.",
+        "LAB firmware is distinct from current 362-case mainline: do not confuse the two.",
+        "True receiver scan-health, physical RF behavior and exact detection latency remain hardware verification gates."
       ]
     }
   }
