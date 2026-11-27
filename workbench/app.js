@@ -1040,9 +1040,13 @@
       // Preserve the unique per-trial run ID rather than replacing it with
       // the session prefix when saving an observation.
       run_id:old.run_id,
-      receiver:ui.receiverBoard.value,
-      receiver_sha:ui.receiverSha.value.trim()||old.receiver_sha,
-      emitter_sha:ui.emitterSha.value.trim()||old.emitter_sha,
+      // Never relabel imported Freenove/CYD evidence or replace a
+      // recorded firmware identity when the current form uses a different
+      // board or SHA. Cross-device edits previously corrupted provenance.
+      receiver:old.receiver||ui.receiverBoard.value,
+      receiver_sha:old.receiver_sha||
+        (old.receiver===ui.receiverBoard.value?ui.receiverSha.value.trim():''),
+      emitter_sha:old.emitter_sha||ui.emitterSha.value.trim(),
       emission:old.seq==null?(ui.emissionStatus.value||old.emission):old.emission,
       window:ui.listenWindow.value||'',
       observed:ui.observed.value,latency_ms:ui.latencyMs.value.trim(),
