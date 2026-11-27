@@ -56,6 +56,7 @@ static uint32_t g_playlistAt=0;
 static size_t g_suiteNext = 0;
 static uint32_t g_suiteAt = 0;
 static String g_line;
+static bool g_lineOverflow = false;
 static char g_address[18] = "";
 static uint32_t g_radioIdentity = 0;
 
@@ -784,9 +785,14 @@ void loop() {
   while (Serial.available() > 0) {
     const int ch = Serial.read();
     if (ch == '\n' || ch == '\r') {
-      if (g_line.length()) { command(g_line); g_line = ""; }
-    } else if (ch >= 32 && ch <= 126 && g_line.length() < 100) {
-      g_line += (char)ch;
+      if(g_lineOverflow) {
+        Serial.println("ERROR,command_too_long");
+        g_lineOverflow=false;
+        g_line="";
+      } else if(g_line.length()) { command(g_line); g_line=""; }
+    } else if (ch >= 32 && ch <= 126) {
+      if(g_line.length()<100 && !g_lineOverflow)g_line+=(char)ch;
+      else g_lineOverflow=true; // reject whole line, not a valid prefix
     }
   }
   const uint32_t now = millis();
