@@ -14,6 +14,10 @@ class BootCatalogCountTest(unittest.TestCase):
         self.assertIn('catalogHash()', src)
         self.assertIn('for(size_t i=0;i<seconds.length();++i)', src)
         self.assertIn("seconds[i]<'0'||seconds[i]>'9'", src)
+        self.assertIn('static bool g_lineOverflow = false;', src)
+        self.assertIn('Serial.println("ERROR,command_too_long")', src)
+        self.assertIn('else g_lineOverflow=true;', src)
+
         stop_section = src.split('static void finish(const char* status = "ok")', 1)[1].split('static void cancelAll()', 1)[0]
         self.assertLess(stop_section.index('stopTx();'), stop_section.index('truth("END"'),
                         "TRUTH END must not precede radio shutdown")
