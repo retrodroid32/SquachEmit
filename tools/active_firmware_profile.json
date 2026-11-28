@@ -6,49 +6,49 @@
     "include": "bf3e4c11c6058d098b0053e4665ca56c9c3e72e7",
     "lib": "bbb71a1b441d98f3ada5d709c4b67a1c3395d161",
     "platformio.ini": "c3ff3725248b4c67d60da6903982515031c501f6",
-    "src": "5f153c576a2742e1e9c2124bd3710e83ab5a01ec"
+    "src": "71906078df4d8d1e90e36be58fb59021f26ff5c9"
   },
   "builds": {
     "cyd32-st7798": {
-      "title": "SquachEmit v1.1.0 CYD 3.2 ST7798 R14.41 AUDIT LAB — 369 RF Cases",
-      "version": "v1.1.0 LAB · 369 cases",
-      "summary": "R14.41 AUDIT LAB CYD 3.2 ST7798: 369 synthetic BLE/Wi-Fi emissions including seven fork-only fixtures from R14.39. CI-stamped BUILD source SHA, CATALOG count/ID fingerprint and checked LIST_END guard against truncated USB catalogs. Strict RUN duration/overflow validation; END follows radio-stop request. Original RF profiles, OUI readback and UI preserved. Physical detection accuracy and continuous receiver scan-health require hardware validation. SHA-256 multi-part firmware flashing.",
+      "title": "SquachEmit v1.1.0 CYD 3.2 ST7798 R14.42 EVIDENCE + BUFFER SAFETY LAB — 369 RF Cases",
+      "version": "v1.1.0 R14.42 LAB · 369 cases",
+      "summary": "R14.42 LAB CYD 3.2 ST7798: retained all 369 synthetic BLE/Wi-Fi emissions and the source-authenticated USB CATALOG/BUILD protocol. Corrected CYD 3.2 speech-bubble wrapping to fit its 32-byte detail buffer; tightened Windows receiver evidence scoring, CSV validity and checkpoint recovery; added fork/upstream expected-label selection and Freenove support. Production RF, receiver scan-health, LCD mirroring and hardware operation remain unverified. SHA-256 multi-part firmware flashing.",
       "highlights": [
-        "All 369 selectable synthetic case IDs, including seven fork detection fixture additions.",
-        "Serial BUILD/SHA, CATALOG and LIST_END protocol to verify connected transmitter identity.",
-        "Reject partial/oversized RUN arguments and report TRUTH END after radio shutdown request.",
-        "Keep fork-only Skimmer BLE and Inspired Flight / ZeroZero Wi-Fi OUI case coverage.",
-        "Maintain verified Wi-Fi SoftAP MAC/OUI readback and single bounded AP-start retry.",
-        "LAB firmware is distinct from current 362-case mainline: do not confuse the two.",
-        "True receiver scan-health, physical RF behavior and exact detection latency remain hardware verification gates."
+        "369 selectable synthetic RF test cases, unchanged from R14.41 LAB baseline.",
+        "CYD 3.2 memory-safety correction: do not write 64 bytes into the 32-byte bubble detail buffer.",
+        "Explicit independent scan-window proof required before scoring receiver NONE; empty LOG never proves a negative.",
+        "Standalone scorer supports Freenove and 19 fork-only expected categories, independently of upstream v1.50.",
+        "Windows mirror session, stale-frame and capture-progress recovery hardened; desktop regression tests enabled.",
+        "BUILD source SHA and CATALOG/LIST_END fingerprints still required for USB source identity.",
+        "Physical RF fidelity, continuous scan health and exact hardware LCD accuracy require device validation."
       ]
     },
     "c5-waveshare-28": {
-      "title": "SquachEmit v1.1.0 Waveshare C5 2.8 R14.41 AUDIT LAB — 369 RF Cases",
-      "version": "v1.1.0 LAB · 369 cases",
-      "summary": "R14.41 AUDIT LAB Waveshare C5 2.8: 369 synthetic BLE/Wi-Fi emissions including seven fork-only fixtures from R14.39. CI-stamped BUILD source SHA, CATALOG count/ID fingerprint and checked LIST_END guard against truncated USB catalogs. Strict RUN duration/overflow validation; END follows radio-stop request. Original RF profiles, OUI readback and UI preserved. Physical detection accuracy and continuous receiver scan-health require hardware validation. SHA-256 multi-part firmware flashing.",
+      "title": "SquachEmit v1.1.0 Waveshare C5 2.8 R14.42 EVIDENCE + BUFFER SAFETY LAB — 369 RF Cases",
+      "version": "v1.1.0 R14.42 LAB · 369 cases",
+      "summary": "R14.42 LAB Waveshare C5 2.8: retained all 369 synthetic BLE/Wi-Fi emissions and the source-authenticated USB CATALOG/BUILD protocol. Corrected CYD 3.2 speech-bubble wrapping to fit its 32-byte detail buffer; tightened Windows receiver evidence scoring, CSV validity and checkpoint recovery; added fork/upstream expected-label selection and Freenove support. Production RF, receiver scan-health, LCD mirroring and hardware operation remain unverified. SHA-256 multi-part firmware flashing.",
       "highlights": [
-        "All 369 selectable synthetic case IDs, including seven fork detection fixture additions.",
-        "Serial BUILD/SHA, CATALOG and LIST_END protocol to verify connected transmitter identity.",
-        "Reject partial/oversized RUN arguments and report TRUTH END after radio shutdown request.",
-        "Keep fork-only Skimmer BLE and Inspired Flight / ZeroZero Wi-Fi OUI case coverage.",
-        "Maintain verified Wi-Fi SoftAP MAC/OUI readback and single bounded AP-start retry.",
-        "LAB firmware is distinct from current 362-case mainline: do not confuse the two.",
-        "True receiver scan-health, physical RF behavior and exact detection latency remain hardware verification gates."
+        "369 selectable synthetic RF test cases, unchanged from R14.41 LAB baseline.",
+        "CYD 3.2 memory-safety correction: do not write 64 bytes into the 32-byte bubble detail buffer.",
+        "Explicit independent scan-window proof required before scoring receiver NONE; empty LOG never proves a negative.",
+        "Standalone scorer supports Freenove and 19 fork-only expected categories, independently of upstream v1.50.",
+        "Windows mirror session, stale-frame and capture-progress recovery hardened; desktop regression tests enabled.",
+        "BUILD source SHA and CATALOG/LIST_END fingerprints still required for USB source identity.",
+        "Physical RF fidelity, continuous scan health and exact hardware LCD accuracy require device validation."
       ]
     },
     "s3-devkit": {
-      "title": "SquachEmit v1.1.0 ESP32-S3 DevKit R14.41 AUDIT LAB — 369 RF Cases",
-      "version": "v1.1.0 LAB · 369 cases",
-      "summary": "R14.41 AUDIT LAB ESP32-S3 DevKit: 369 synthetic BLE/Wi-Fi emissions including seven fork-only fixtures from R14.39. CI-stamped BUILD source SHA, CATALOG count/ID fingerprint and checked LIST_END guard against truncated USB catalogs. Strict RUN duration/overflow validation; END follows radio-stop request. Original RF profiles, OUI readback and UI preserved. Physical detection accuracy and continuous receiver scan-health require hardware validation. SHA-256 multi-part firmware flashing.",
+      "title": "SquachEmit v1.1.0 ESP32-S3 DevKit R14.42 EVIDENCE + BUFFER SAFETY LAB — 369 RF Cases",
+      "version": "v1.1.0 R14.42 LAB · 369 cases",
+      "summary": "R14.42 LAB ESP32-S3 DevKit: retained all 369 synthetic BLE/Wi-Fi emissions and the source-authenticated USB CATALOG/BUILD protocol. Corrected CYD 3.2 speech-bubble wrapping to fit its 32-byte detail buffer; tightened Windows receiver evidence scoring, CSV validity and checkpoint recovery; added fork/upstream expected-label selection and Freenove support. Production RF, receiver scan-health, LCD mirroring and hardware operation remain unverified. SHA-256 multi-part firmware flashing.",
       "highlights": [
-        "All 369 selectable synthetic case IDs, including seven fork detection fixture additions.",
-        "Serial BUILD/SHA, CATALOG and LIST_END protocol to verify connected transmitter identity.",
-        "Reject partial/oversized RUN arguments and report TRUTH END after radio shutdown request.",
-        "Keep fork-only Skimmer BLE and Inspired Flight / ZeroZero Wi-Fi OUI case coverage.",
-        "Maintain verified Wi-Fi SoftAP MAC/OUI readback and single bounded AP-start retry.",
-        "LAB firmware is distinct from current 362-case mainline: do not confuse the two.",
-        "True receiver scan-health, physical RF behavior and exact detection latency remain hardware verification gates."
+        "369 selectable synthetic RF test cases, unchanged from R14.41 LAB baseline.",
+        "CYD 3.2 memory-safety correction: do not write 64 bytes into the 32-byte bubble detail buffer.",
+        "Explicit independent scan-window proof required before scoring receiver NONE; empty LOG never proves a negative.",
+        "Standalone scorer supports Freenove and 19 fork-only expected categories, independently of upstream v1.50.",
+        "Windows mirror session, stale-frame and capture-progress recovery hardened; desktop regression tests enabled.",
+        "BUILD source SHA and CATALOG/LIST_END fingerprints still required for USB source identity.",
+        "Physical RF fidelity, continuous scan health and exact hardware LCD accuracy require device validation."
       ]
     }
   }
