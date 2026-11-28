@@ -183,7 +183,7 @@
     // separate documented receiver scan continuity for any counted absence.
     if (observed === 'NONE' && !/SCAN-VERIFIED:\s*.{20,}/i.test(trim(row.notes)))
       return 'UNTESTED';
-    if (expected === 'NONE' return observed === 'NONE' ? 'TN' : 'FP';
+    if (expected === 'NONE') return observed === 'NONE' ? 'TN' : 'FP';
     if (observed === 'NONE') return 'FN';
     return observed === expected ? 'TP' : 'WRONG';
   }
