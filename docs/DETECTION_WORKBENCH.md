@@ -334,3 +334,24 @@ native-state display is not an exact physical LCD framebuffer mirror.
 Do not merge R14.39's seven additional RF cases into stable firmware or
 change any upstream detector expected behavior without separate approval and
 hardware validation.
+
+## Offline CSV scoring — choose the matching receiver library
+
+The standalone scorer defaults to pinned upstream v1.50 expectations. Select the
+fork-specific 19-case expectation overlay for hardware actually running the
+SquachWatch fork; the same on-air fixture is not necessarily expected to
+classify identically on both libraries.
+
+```sh
+python tools/score_trials.py trials.csv --receiver-library upstream --output upstream.md
+python tools/score_trials.py trials.csv --receiver-library fork --output fork.md
+```
+
+The exported CSV must identify the receiver board and exact firmware SHAs.
+A blank LOG snapshot is **not** evidence of a true negative. Manually observed
+`NONE` requires `SCAN-VERIFIED:` and at least 20 characters documenting the
+independent uninterrupted receiver scan-health evidence for that listening
+window. This is a human attestation, not a receiver telemetry guarantee.
+Unknown evidence remains `UNTESTED`; neither scorer generates receiver hits
+from SquachEmit transmission truth. The offline scorer recognizes the
+Freenove S3 3.5 receiver in addition to the two classic CYDs.
