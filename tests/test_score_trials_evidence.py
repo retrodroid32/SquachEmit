@@ -39,6 +39,18 @@ class TrialEvidenceScoringTests(unittest.TestCase):
         row = {**self.base, "id": "BLE-FLOCK-MFG", "observed": "FLOCK"}
         self.assertEqual(scorer.score_rows([row], self.cases)[0]["result"], "TP")
 
+    def test_fork_overrides_do_not_modify_upstream_expected(self):
+        upstream = scorer.receiver_cases("upstream")
+        fork = scorer.receiver_cases("fork")
+        self.assertEqual(len(upstream), 369)
+        self.assertEqual(len(fork), 369)
+        self.assertEqual(upstream["FORK-BLE-SKIM-BT04"]["expected"], "NONE")
+        self.assertEqual(fork["FORK-BLE-SKIM-BT04"]["expected"], "SKIMMER")
+        self.assertEqual(upstream["BLE-FLOCK-MFG"]["expected"],
+                         fork["BLE-FLOCK-MFG"]["expected"])
+        with self.assertRaises(ValueError):
+            scorer.receiver_cases("unknown")
+
     def test_invalid_shas_cannot_count_positive(self):
         row = {**self.base, "id": "BLE-FLOCK-MFG", "observed": "FLOCK"}
         for invalid in ("unknown", "x" * 40, "a" * 41, ""):
