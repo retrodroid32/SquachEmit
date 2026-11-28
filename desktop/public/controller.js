@@ -272,7 +272,12 @@
   }
   function onMirror({role,line}){
     if(!mirrors[role])return;
-    const s=mirrors[role],result=s.assembler.feed(line);
+    const s=mirrors[role];
+    // After a timeout, pause, or stop, late USB bytes belong to an obsolete
+    // capture. Never publish or decode them as the next live screen.
+    if(/^MIRROR (?:BEGIN|DELTA|ROW|END)(?: |$)/.test(line) &&
+       (!s.active||!s.ready||!s.waiting))return;
+    const result=s.assembler.feed(line);
     if(result.kind==='info'){
       if(/^MIRROR DIAG/.test(result.message)){
         mirrorNote(role,result.message);
