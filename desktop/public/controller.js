@@ -27,7 +27,7 @@
   for(const role of ['receiver','emitter']){
     mirrors[role]={active:false,waiting:false,lastFrame:false,lastFrameSequence:0,failures:0,
       assembler:new codec.MirrorAssembler(),timeout:null,next:null,handshake:null,animation:null,ready:false,
-      frameStartedAt:0,lastRowAt:0,progressRows:0,
+      frameStartedAt:0,lastRowAt:0,progressRows:0,session:0,
       touchDown:false,touchAt:0,touchTimer:null,pendingUp:null,lastPoint:{x:0,y:0},
       lastMove:0};
   }
@@ -109,6 +109,7 @@
   function resetRole(role){
     const s=mirrors[role];
     cancelFrameTimers(role);
+    ++s.session;
     s.active=false;s.waiting=false;s.ready=false;s.failures=0;
     s.frameStartedAt=0;s.lastRowAt=0;s.progressRows=0;
     s.lastFrame=false;s.lastFrameSequence=0;
@@ -162,20 +163,21 @@
     if(!s.active||!s.ready||s.waiting||!isConnected(role,state)||
        (role==='receiver'&&state.testActive))return;
     s.waiting=true;s.frameStartedAt=Date.now();s.lastRowAt=s.frameStartedAt;s.progressRows=0;
+    const session=s.session;
     // Firmware sends a full keyframe unless it recognizes the last complete
     // screen the PC actually accepted. A dropped frame can never corrupt
     // a later delta. SquachWatch's existing firmware retains FRAME syntax.
     const request=(role==='emitter'&&s.lastFrameSequence)?
       'MIRROR FRAME '+s.lastFrameSequence:'MIRROR FRAME';
     const ok=await api.send(role,request);
+    if(!s.active||!s.waiting||s.session!==session)return;
     if(!ok){
       s.waiting=false;
       info(role,'Cannot request USB frame. Verify connection and LAB firmware.');
       return;
     }
-    if(!s.active)return;
     const watchdog=()=>{
-      if(!s.active||!s.waiting)return;
+      if(!s.active||!s.waiting||s.session!==session)return;
       const now=Date.now(), absolute=now-s.frameStartedAt, idle=now-s.lastRowAt;
       // Large authentic LCD keyframes take longer than one fixed timeout.
       // Continue only while genuine row progress arrives, with a hard ceiling.
@@ -217,8 +219,10 @@
       }
       const s=mirrors.emitter;
       resetRole('emitter');s.active=true;
+      const session=s.session;
       info('emitter','Requesting real navigation state (not LCD pixels)…');
       const ok=await api.send('emitter','UI ON');
+      if(!s.active||s.session!==session)return;
       if(!ok){resetRole('emitter');info('emitter','UI ON failed.');return;}
       mirrorNote('emitter','Checking firmware UI STATE support at 115200 baud…');
       s.handshake=setTimeout(()=>{
@@ -249,8 +253,10 @@
     const s=mirrors[role];
     resetRole(role);
     s.active=true;
+    const session=s.session;
     info(role,'Enabling opt-in USB mirroring…');
     const ok=await api.send(role,'MIRROR ON');
+    if(!s.active||s.session!==session)return;
     if(!ok){resetRole(role);info(role,'MIRROR ON command rejected or unavailable.');return;}
     mirrorNote(role,'Waiting for MIRROR READY from '+names[role]+' firmware…');
     // A successful USB write is NOT an acknowledgment from the actual device.
