@@ -11,12 +11,15 @@ import argparse
 import csv
 import json
 import math
+import re
 import statistics
 from collections import Counter, defaultdict
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
-RECEIVERS = {"CYD-2.8", "CYD-3.2"}
+RECEIVERS = {"CYD-2.8", "CYD-3.2", "FREENOVE-S3-3.5"}
+SHA_RE = re.compile(r"^[0-9a-f]{7,40}$", re.I)
+SCAN_PROOF_RE = re.compile(r"SCAN-VERIFIED:\s*.{20,}", re.I | re.S)
 MORE_LABELS = {"ALPR", "CAMERA", "DEAUTH", "EVILTWIN", "RING", "AXON"}
 
 
@@ -31,6 +34,8 @@ def classify(row: dict, expected: str) -> str:
     if emission == "failed" or window == "incomplete":
         return "EXCLUDED"
     if emission != "ok" or window != "complete" or not observed:
+        return "UNTESTED"
+    if observed == "NONE" and not SCAN_PROOF_RE.search(row.get("notes") or ""):
         return "UNTESTED"
     if expected == "NONE":
         return "TN" if observed == "NONE" else "FP"
@@ -68,10 +73,10 @@ def score_rows(rows: list[dict], cases: dict) -> list[dict]:
         result = classify(trial, cases[sid]["expected"])
         if result in {"TP", "TN", "FN", "FP", "WRONG"}:
             # Hardware and code versions are required for defensible measurements.
-            if not (trial.get("receiver_sha") or "").strip():
-                raise ValueError(f"row {index}: receiver_sha required for counted trial")
-            if not (trial.get("emitter_sha") or "").strip():
-                raise ValueError(f"row {index}: emitter_sha required for counted trial")
+            if not SHA_RE.fullmatch((trial.get("receiver_sha") or "").strip()):
+                raise ValueError(f"row {index}: valid receiver_sha required for counted trial")
+            if not SHA_RE.fullmatch((trial.get("emitter_sha") or "").strip()):
+                raise ValueError(f"row {index}: valid emitter_sha required for counted trial")
         if result != "TP" and latency is not None:
             raise ValueError(f"row {index}: latency only applies to true-positive trials")
         trial.update(receiver=board, id=sid, observed=observed,
