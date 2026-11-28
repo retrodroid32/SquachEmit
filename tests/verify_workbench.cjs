@@ -129,8 +129,13 @@ trial.window='complete';trial.observed='FLOCK';trial.latency_ms='600';
 assert.equal(core.status(trial,catalog),'TP');
 assert.equal(core.applyEnd(trial,{...sample,event:'END',id:'OUI-DJI-04A85A'}),false);
 const wrong={...trial,observed:'DRONE',latency_ms:''};
-const fn={...trial,observed:'NONE',latency_ms:''};
-const goodNone={...trial,id:'BLE-NEG-DRONE-UUID',observed:'NONE',latency_ms:''};
+const fn={...trial,observed:'NONE',latency_ms:'',notes:goodNegativeEvidence()};
+function goodNegativeEvidence(){return 'SCAN-VERIFIED: complete uninterrupted receiver scanning verified independently';}
+const goodNone={...trial,id:'BLE-NEG-DRONE-UUID',observed:'NONE',latency_ms:'',
+  notes:'SCAN-VERIFIED: receiver scan continuity independently checked for the full listening window'};
+const unsupportedNone={...goodNone,notes:'Receiver LOG had no matching entry'};
+assert.equal(core.status(unsupportedNone,catalog),'UNTESTED');
+assert.match(core.pendingReason(unsupportedNone,catalog),/SCAN-VERIFIED/);
 const badNone={...goodNone,observed:'DRONE'};
 assert.equal(core.status(wrong,catalog),'WRONG');
 assert.equal(core.status(fn,catalog),'FN');
@@ -167,6 +172,10 @@ assert.equal(parsed[0].id,'BLE-FLOCK-MFG');
 assert.equal(parsed[1].observed,'NONE');
 assert.throws(()=>core.parseCsv('bad,header\n1,2\n'),/Missing CSV column/);
 assert.throws(()=>core.parseCsv(csv.replace('emission','oops')),/Missing CSV column/);
+assert.throws(()=>core.parseCsv(csv.replace('emission,','emission,emission,')),
+  /Duplicate CSV column|CSV field count/,'duplicate evidence columns are not valid');
+assert.throws(()=>core.parseCsv(csv.replace('BLE-FLOCK-MFG','"BLE-FLOCK-MFG"FAKE')),
+  /Invalid text after quoted CSV field/,'trailing text after quoted evidence must fail');
 // Actual SquachWatch master LOG command response, not arbitrary debug-text guesses.
 assert.equal(core.parseWatchLogCount('[log] 2 rows, newest first'),2);
 assert.equal(core.parseWatchLogCount('[log] 0 rows, newest first'),0);

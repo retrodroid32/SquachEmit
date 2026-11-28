@@ -113,3 +113,13 @@ test('delta to missing baseline or wrong size fails closed; full frame restores 
   assert.equal(asm.feed('MIRROR DELTA 19 18 1 1 RGB565').kind,'error',
     'reconnecting requires fresh full keyframe');
 });
+
+test('MIRROR PROGRESS must match pending sequence and frame size',()=>{
+  const a=new MirrorAssembler();
+  a.feed('MIRROR BEGIN 50 2 2 RGB332');
+  assert.deepEqual(a.feed('MIRROR PROGRESS 50 1/2'),{kind:'progress',sequence:50,rows:1,total:2});
+  assert.equal(a.feed('MIRROR PROGRESS 51 2/2').kind,'error');
+  a.invalidate();
+  assert.equal(a.pending,null);
+  assert.equal(a.last,null);
+});

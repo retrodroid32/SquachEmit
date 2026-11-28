@@ -23,6 +23,8 @@ jobs:
       - run: node --test tests/runner_v2.test.cjs
       - run: node --check workbench/app.js
       - run: node tests/verify_workbench.cjs
+      - name: Exercise Windows mirror and USB controller regressions on every PR
+        run: node --test desktop/test/*.test.cjs
       - run: g++ -std=c++11 -Wall -Wextra -Werror tests/test_identity.cpp -o /tmp/sqe_identity && /tmp/sqe_identity
       - run: python tools/generate_vectors.py && git diff --exit-code tests/offline_vectors.json
       - name: Fetch pinned SquachWatch decoder for native verification

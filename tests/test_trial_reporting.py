@@ -14,15 +14,19 @@ class TrialReportingTests(unittest.TestCase):
     def row(self, sid, observed, receiver="CYD-2.8", run_id="a",
             emission="ok", window="complete", latency_ms=""):
         return {"run_id": run_id, "receiver": receiver,
-                "receiver_sha": "watch-1.22", "emitter_sha": "lab-1234",
+                "receiver_sha": "a" * 40, "emitter_sha": "b" * 40,
                 "id": sid, "emission": emission, "window": window,
-                "observed": observed, "latency_ms": latency_ms}
+                "observed": observed, "latency_ms": latency_ms,
+                "notes": ("SCAN-VERIFIED: uninterrupted receiver scan health independently checked"
+                          if observed == "NONE" and window == "complete" else "")}
 
     def test_no_imaginary_successes(self):
         self.assertEqual(classify(self.row("P", ""), "DRONE"), "UNTESTED")
         self.assertEqual(classify(self.row("P", "DRONE", emission="failed"), "DRONE"), "EXCLUDED")
         self.assertEqual(classify(self.row("N", "NONE", window="incomplete"), "NONE"), "EXCLUDED")
         self.assertEqual(classify(self.row("P", "NONE"), "DRONE"), "FN")
+        unaudited = {**self.row("P", "NONE"), "notes": ""}
+        self.assertEqual(classify(unaudited, "DRONE"), "UNTESTED")
 
     def test_separate_receivers_and_wrong_class(self):
         rows = [
