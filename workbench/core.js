@@ -179,7 +179,11 @@
     var c = catalog[trim(row.id)];
     if (!c || !trim(c.expected)) return 'UNTESTED';
     var expected = trim(c.expected).toUpperCase();
-    if (expected === 'NONE') return observed === 'NONE' ? 'TN' : 'FP';
+    // A user-entered NONE is not a verified negative by itself. Require
+    // separate documented receiver scan continuity for any counted absence.
+    if (observed === 'NONE' && !/SCAN-VERIFIED:\s*.{20,}/i.test(trim(row.notes)))
+      return 'UNTESTED';
+    if (expected === 'NONE' return observed === 'NONE' ? 'TN' : 'FP';
     if (observed === 'NONE') return 'FN';
     return observed === expected ? 'TP' : 'WRONG';
   }
@@ -190,6 +194,9 @@
     if(trim(row.emission).toLowerCase()!=='ok')return 'Waiting for actual SquachEmit TRUTH END (ok)';
     if(trim(row.window).toLowerCase()!=='complete')return 'Waiting for a verified complete receiver window';
     if(!trim(row.observed))return 'No receiver observation recorded yet';
+    if(trim(row.observed).toUpperCase()==='NONE' &&
+       !/SCAN-VERIFIED:\s*.{20,}/i.test(trim(row.notes)))
+      return 'No independent SCAN-VERIFIED receiver continuity evidence for NONE';
     var receiver=HEX_SHA.test(trim(row.receiver_sha));
     var emitter=HEX_SHA.test(trim(row.emitter_sha));
     if(!receiver && !emitter)return 'Missing/invalid SquachWatch and SquachEmit firmware SHAs';
