@@ -103,6 +103,15 @@ test('Windows rail renders authentic USB frame and translates canvas pointer to 
     255,0,0,255,0,0,255,255
   ]);
   assert.equal(elements.get('dc-placeholder-receiver').hidden,true);
+  // A legacy MIRROR READY without SEQBASE must keep bare FRAME requests.
+  const legacyCount=commands.filter(([r,c])=>r==='receiver'&&c==='MIRROR FRAME').length;
+  for(const [id,timer] of Array.from(timers)){
+    if(timer.ms===800){timers.delete(id);timer.fn();}
+  }
+  await drain();
+  assert.equal(commands.filter(([r,c])=>r==='receiver'&&c==='MIRROR FRAME').length,legacyCount+1);
+  assert.equal(commands.some(([r,c])=>r==='receiver'&&c==='MIRROR FRAME 9'),false,
+    'legacy receivers must not get unsupported sequence arguments');
   canvas.listeners.pointerdown({pointerId:4,clientX:1,clientY:0,
     preventDefault(){}});
   await drain();
@@ -123,8 +132,18 @@ test('Windows rail renders authentic USB frame and translates canvas pointer to 
   // test. The UI must hide the old pixels without issuing a duplicate OFF.
   click('mirror-on','receiver');
   await drain();
-  receive('MIRROR READY RGB332 320x240');
+  receive('MIRROR READY RGB332 320x240 SEQBASE');
   await drain();
+  const seqStart=commands.length;
+  receive('MIRROR BEGIN 10 2 1 RGB332');
+  receive('MIRROR ROW 10 0 '+Buffer.from([0xe0,0x03]).toString('base64'));
+  receive('MIRROR END 10');
+  for(const [id,timer] of Array.from(timers)){
+    if(timer.ms===800){timers.delete(id);timer.fn();}
+  }
+  await drain();
+  assert.ok(commands.slice(seqStart).some(([r,c])=>r==='receiver'&&c==='MIRROR FRAME 10'),
+    'SEQBASE receivers must receive the last completed frame sequence');
   // A transient capture error must discard stale LCD pixels and resync
   // rather than keeping a previous alert frame marked live.
   receive('MIRROR BEGIN 10 2 1 RGB332');
