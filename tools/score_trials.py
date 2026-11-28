@@ -25,7 +25,7 @@ MORE_LABELS = {"ALPR", "CAMERA", "DEAUTH", "EVILTWIN", "RING", "AXON"}
 
 def receiver_cases(receiver_library: str) -> dict:
     """Load source-pinned expected classes without modifying fixture catalog."""
-    cases = receiver_cases(args.receiver_library)
+    cases = {x["id"]: x for x in json.loads((ROOT / "tests" / "cases.json").read_text())}
     if receiver_library == "upstream":
         return cases
     if receiver_library != "fork":
@@ -165,7 +165,7 @@ def main() -> None:
                      help="Choose the v1.50 upstream or 19-case fork expected-category overlay")
     cli.add_argument("--json", type=Path, default=None, help="Optional machine-readable report")
     args = cli.parse_args()
-    cases = {x["id"]: x for x in json.loads((ROOT / "tests" / "cases.json").read_text())}
+    cases = receiver_cases(args.receiver_library)
     with args.trials.open(newline="", encoding="utf-8") as stream:
         records = score_rows(list(csv.DictReader(stream)), cases)
     args.output.parent.mkdir(parents=True, exist_ok=True)
