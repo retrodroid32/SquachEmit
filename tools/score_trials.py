@@ -23,6 +23,23 @@ SCAN_PROOF_RE = re.compile(r"SCAN-VERIFIED:\s*.{20,}", re.I | re.S)
 MORE_LABELS = {"ALPR", "CAMERA", "DEAUTH", "EVILTWIN", "RING", "AXON"}
 
 
+def receiver_cases(receiver_library: str) -> dict:
+    """Load source-pinned expected classes without modifying fixture catalog."""
+    cases = receiver_cases(args.receiver_library)
+    if receiver_library == "upstream":
+        return cases
+    if receiver_library != "fork":
+        raise ValueError("unknown receiver library")
+    meta = json.loads((ROOT / "workbench" / "fork_expectations.json").read_text())
+    overrides = meta.get("overrides")
+    if meta.get("schema") != 1 or not isinstance(overrides, dict) or len(overrides) != 19:
+        raise ValueError("invalid fork expected-category manifest")
+    if any(sid not in cases or cases[sid]["expected"] != "NONE" for sid in overrides):
+        raise ValueError("fork overrides are not anchored to the expected upstream catalog")
+    return {sid: {**case, "expected": overrides.get(sid, case["expected"])}
+            for sid, case in cases.items()}
+
+
 def classify(row: dict, expected: str) -> str:
     emission = row.get("emission", "").strip().lower()
     window = row.get("window", "").strip().lower()
@@ -144,16 +161,20 @@ def main() -> None:
     cli = argparse.ArgumentParser(description=__doc__)
     cli.add_argument("trials", type=Path, nargs="?", default=ROOT / "tests" / "trials.csv")
     cli.add_argument("--output", type=Path, default=ROOT / "tests" / "trials-report.md")
+    cli.add_argument("--receiver-library", choices=("upstream", "fork"), default="upstream",
+                     help="Choose the v1.50 upstream or 19-case fork expected-category overlay")
     cli.add_argument("--json", type=Path, default=None, help="Optional machine-readable report")
     args = cli.parse_args()
     cases = {x["id"]: x for x in json.loads((ROOT / "tests" / "cases.json").read_text())}
     with args.trials.open(newline="", encoding="utf-8") as stream:
         records = score_rows(list(csv.DictReader(stream)), cases)
     args.output.parent.mkdir(parents=True, exist_ok=True)
-    args.output.write_text(render_md(records), encoding="utf-8")
+    args.output.write_text(f"Receiver expectation library: {args.receiver_library}\n\n" +
+                           render_md(records), encoding="utf-8")
     if args.json:
         args.json.parent.mkdir(parents=True, exist_ok=True)
-        data = {"cohort": "synthetic RF only", "per_receiver": {
+        data = {"cohort": "synthetic RF only", "receiver_library": args.receiver_library,
+                "per_receiver": {
             board: summarize([r for r in records if r["receiver"] == board])
             for board in sorted(RECEIVERS)}, "trials": records}
         args.json.write_text(json.dumps(data, indent=2) + "\n", encoding="utf-8")
