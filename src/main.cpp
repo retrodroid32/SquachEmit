@@ -6,6 +6,7 @@
 #include <esp_wifi.h>
 #include <NimBLEDevice.h>
 #include "scenarios.h"
+#include "sqe_build_identity.h"
 #include "rid_wifi_pack.h"
 #include "ap_mac_lifecycle.h"
 #include "identity.h"
@@ -55,6 +56,7 @@ static uint32_t g_playlistAt=0;
 static size_t g_suiteNext = 0;
 static uint32_t g_suiteAt = 0;
 static String g_line;
+static bool g_lineOverflow = false;
 static char g_address[18] = "";
 static uint32_t g_radioIdentity = 0;
 
@@ -429,8 +431,12 @@ static void stopTx() {
 }
 
 static void finish(const char* status = "ok") {
-  if (g_active) truth("END", g_active, status);
+  // Report END only *after* asking the radio to stop; a pre-stop END
+  // previously allowed the host to begin its next scenario while the
+  // previous Wi-Fi/BLE transmission was still being torn down.
+  const Scenario* finished = g_active;
   stopTx();
+  if (finished) truth("END", finished, status);
   g_active = nullptr;
   g_started = 0;
 }
@@ -536,18 +542,35 @@ static bool startScenario(const Scenario* s, uint32_t duration = kDefaultMs) {
   return true;
 }
 
+static uint32_t catalogHash() {
+  // FNV-1a over each ASCII case ID followed by LF, in firmware LIST order.
+  // An ID-only digest is a capability check, not a cryptographic signature.
+  uint32_t h=2166136261UL;
+  for(size_t i=0;i<kScenarioCount;++i) {
+    for(const char* p=kScenarios[i].id;*p;++p) {
+      h ^= (uint8_t)*p; h *= 16777619UL;
+    }
+    h ^= 10U; h *= 16777619UL;
+  }
+  return h;
+}
 static void listCases() {
   for (size_t i = 0; i < kScenarioCount; ++i)
     Serial.printf("CASE,%s,%s,%s,%s\n", kScenarios[i].id,
                   (kScenarios[i].kind == Kind::WifiAp ||
                    kScenarios[i].kind == Kind::WifiRemoteId) ? "WIFI" : "BLE",
                   kScenarios[i].expected, kScenarios[i].description);
+  // A complete LIST ends in a count and ordered-ID fingerprint.
+  Serial.printf("LIST_END,%u,%08lX\n",(unsigned)kScenarioCount,
+    (unsigned long)catalogHash());
 }
 
 static void help() {
   Serial.printf("SquachEmit LAB | %u cases | 115200 8N1 | all RF tests time-limited\n", (unsigned)kScenarioCount);
   Serial.println("HELP                  commands");
   Serial.println("LIST                  show all supported cases");
+  Serial.println("CATALOG               case count and ordered ID digest (FNV1A32)");
+  Serial.println("BUILD                 exact source commit SHA (CI builds)");
   Serial.println("RUN <ID> [seconds]    transmit 3..30s; default is selected TX time (CYD3.2) or 12s");
   Serial.println("SUITE                 run each case with 2.4s off-air gaps");
   Serial.println("STOP                  stop current case/suite immediately");
@@ -644,6 +667,15 @@ static void command(String cmd) {
   }
   if (cmd.equalsIgnoreCase("HELP") || cmd == "?") { help(); return; }
   if (cmd.equalsIgnoreCase("LIST")) { listCases(); return; }
+  if (cmd.equalsIgnoreCase("BUILD")) {
+    Serial.printf("BUILD,SHA,%s\n", SQE_BUILD_SHA);
+    return;
+  }
+  if (cmd.equalsIgnoreCase("CATALOG")) {
+    Serial.printf("CATALOG,%u,%08lX\n",(unsigned)kScenarioCount,
+      (unsigned long)catalogHash());
+    return;
+  }
   if (cmd.equalsIgnoreCase("STOP")) { cancelAll(); return; }
 #if defined(SQE_CYD32)
   if (cmd.equalsIgnoreCase("PUSH ON")) { cyd32UiSetFramePush(true); return; }
@@ -707,8 +739,13 @@ static void command(String cmd) {
     uint32_t duration = selectedDurationMs();
     if (space >= 0) {
       const String seconds = cmd.substring(space + 1);
-      const long sec = seconds.toInt();
-      if (sec < 3 || sec > 30 || seconds.length() == 0) {
+      // Arduino String.toInt() accepts partial tokens such as "5oops";
+      // reject malformed durations rather than silently emitting RF.
+      bool digits=!seconds.isEmpty();
+      for(size_t i=0;i<seconds.length();++i)
+        if(seconds[i]<'0'||seconds[i]>'9') { digits=false; break; }
+      const long sec = digits ? seconds.toInt() : -1;
+      if (!digits || sec < 3 || sec > 30) {
         Serial.println("ERROR,seconds_must_be_3_to_30"); return;
       }
       duration = (uint32_t)sec * 1000UL;
@@ -738,6 +775,9 @@ void setup() {
 #else
   Serial.printf("BOOT,SquachEmit,v1.1.0,ESP32-S3,%u-CASES\n", (unsigned)kScenarioCount);
 #endif
+  Serial.printf("BUILD,SHA,%s\n",SQE_BUILD_SHA);
+  Serial.printf("CATALOG,%u,%08lX\n",(unsigned)kScenarioCount,
+    (unsigned long)catalogHash());
   help();
 }
 
@@ -745,9 +785,14 @@ void loop() {
   while (Serial.available() > 0) {
     const int ch = Serial.read();
     if (ch == '\n' || ch == '\r') {
-      if (g_line.length()) { command(g_line); g_line = ""; }
-    } else if (ch >= 32 && ch <= 126 && g_line.length() < 100) {
-      g_line += (char)ch;
+      if(g_lineOverflow) {
+        Serial.println("ERROR,command_too_long");
+        g_lineOverflow=false;
+        g_line="";
+      } else if(g_line.length()) { command(g_line); g_line=""; }
+    } else if (ch >= 32 && ch <= 126) {
+      if(g_line.length()<100 && !g_lineOverflow)g_line+=(char)ch;
+      else g_lineOverflow=true; // reject whole line, not a valid prefix
     }
   }
   const uint32_t now = millis();

@@ -40,10 +40,10 @@ test('desktop is local only with restricted renderer and USB chooser',()=>{
   assert.doesNotMatch(s,/disable-web-security|allowRunningInsecureContent:true/);
   assert.doesNotMatch(s,/nodeIntegration:true/);
 });
-test('all 172 device-first names are compatible with the existing Workbench',()=>{
+test('all 369 device-first names are compatible with the existing Workbench',()=>{
   const all=JSON.parse(read('tests/cases.json'));
   const core=require('../../workbench/core.js');
-  assert.equal(all.length,172);
+  assert.equal(all.length,369);
   for(const c of all){
     const name=core.signalName(c);
     assert.ok(name.includes(' — ')&&name.length>6,c.id);
@@ -89,7 +89,7 @@ test('real SquachWatch mirror never prevents user-triggered SquachEmit transmiss
   assert.match(wb,/async function pauseReceiverMirrorForDetection\(/);
   assert.match(wb,/const off=await sendReceiver\('MIRROR OFF'\)/);
   assert.match(wb,/receiverMirror=false;\s*if\(devices\.receiver\.port\)startWatchPolling\(\)/);
-  assert.match(wb,/var receiverLogsReady=await pauseReceiverMirrorForDetection\(\)/);
+  assert.match(wb,/var mirrorReady=await pauseReceiverMirrorForDetection\(\)/);
   assert.match(wb,/async function startBatch\(\)/);
   assert.match(wb,/snapshot=await Promise\.race\(/);
   assert.match(wb,/desktopEvent\('mirror-paused'/);

@@ -17,7 +17,7 @@ EXPECTED={
 class ForkOuiCoverage(unittest.TestCase):
     def test_exact_catalog_and_fork_source_pin(self):
         cases=json.loads((ROOT/"tests/cases.json").read_text())
-        self.assertEqual(len(cases),362)
+        self.assertEqual(len(cases),369)
         byid={x["id"]:x for x in cases}
         self.assertEqual(len(byid),len(cases))
         actual=[x for x in cases if x["id"].startswith("FORK-OUI-")]

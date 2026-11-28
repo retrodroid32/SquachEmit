@@ -20,14 +20,14 @@ class PublicReleaseTests(unittest.TestCase):
 
     def test_profile_versions_match_release_name_and_test_count(self):
         p=json.loads((ROOT/'tools/active_firmware_profile.json').read_text())
-        self.assertEqual(p['scenario_count'],362)
-        self.assertEqual(len(json.loads((ROOT/'tests/cases.json').read_text())),362)
+        self.assertEqual(p['scenario_count'],369)
+        self.assertEqual(len(json.loads((ROOT/'tests/cases.json').read_text())),369)
         self.assertEqual(set(p['builds']),{'cyd32-st7798','c5-waveshare-28','s3-devkit'})
         for board,record in p['builds'].items():
             with self.subTest(board=board):
                 self.assertIn(VERSION,record['title'])
                 self.assertIn(VERSION,record['version'])
-                self.assertIn('362',record['summary'])
+                self.assertIn('369',record['summary'])
                 self.assertIn('SHA-256',record['summary'])
                 self.assertGreaterEqual(len(record['highlights']),4)
 

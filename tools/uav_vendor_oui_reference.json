@@ -299,6 +299,28 @@
       "registered": "2019-07-02",
       "source": "https://maclookup.app/macaddress/6cdffbe",
       "ssid": "SQE-LAB-FIMI-6CDFFBE"
+    },
+    {
+      "id": "OUI-INSPFLIGHT-34B5F32",
+      "brand": "INSPIRED_FLIGHT",
+      "vendor": "Inspired Flight",
+      "prefixHex": "34B5F32",
+      "bits": 28,
+      "expected": "DRONE",
+      "registered": "fork table only; independent registry not verified",
+      "source": "retrodroid32/SquachWatch-CYD master src/signatures.cpp blob 1f63a08ce3eba4148d557312bb0d1abe8b18545c",
+      "ssid": "SQE-LAB-IFLIGHT-34B5F32"
+    },
+    {
+      "id": "OUI-ZEROZERO-C863144",
+      "brand": "ZEROZERO",
+      "vendor": "ZeroZero Robotics",
+      "prefixHex": "C863144",
+      "bits": 28,
+      "expected": "DRONE",
+      "registered": "fork table only; independent registry not verified",
+      "source": "retrodroid32/SquachWatch-CYD master src/signatures.cpp blob 1f63a08ce3eba4148d557312bb0d1abe8b18545c",
+      "ssid": "SQE-LAB-ZEROZERO-C863144"
     }
   ]
 }

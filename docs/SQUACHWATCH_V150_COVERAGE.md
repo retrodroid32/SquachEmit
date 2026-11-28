@@ -124,3 +124,29 @@ SquachEmit now adds **10 individually selectable, bounded Wi-Fi AP OUI fixtures*
 ## R14.37 actual firmware transmission catalog
 
 The LAB transmitter adds all 111 remaining individual upstream v1.50.0 Wi-Fi OUI entries as bounded, selectable 2.4 GHz SoftAP cases. These cases use the registered prefix plus a deterministic synthetic suffix, then the firmware reads back the active AP BSSID before declaring BEGIN. Three BLE-service UUID cases (1101, FE6C, FEB8) are emitted as legacy BLE advertisements; FFFA is exercised by the existing full BLE Remote ID transport case BLE-DRONE. These are candidate transmissions, not actual commercial devices or physical receiver PASS results. The **362-case** catalog is 172 original + 66 upstream v1.50 + 10 fork-only + 111 OUI + 3 BLE UUID. Manifest lookup-fixture mapping is **220/220**, but full behavioral/parser coverage remains separate and incomplete. Hardware RF validation and LAB publication are mandatory next gates.
+
+## R14.39 fork-specific transmitter additions (SquachEmit only)
+
+Receiver snapshots: upstream `skizzophrenic/SquachWatch-CYD` tag v1.50.0 and fork
+`retrodroid32/SquachWatch-CYD` master signature table blob
+`1f63a08ce3eba4148d557312bb0d1abe8b18545c`.
+**No modifications to either SquachWatch repository.**
+
+- Catalog **369** tests, up from 362: added two exact 28-bit Wi-Fi MA-M AP BSSID
+  fixtures for Inspired Flight `34B5F32` and ZeroZero `C863144`, plus five
+  BLE advertised-name tests: `BT04`, `JDY-09`, `JDY-10`, `JDY-17`,
+  `SPP-C`. No Bluetooth Classic inquiry is emitted.
+- Existing Autel, Hubsan, Yuneec, Quantum Systems and FIMI 28-bit tests
+  already transmit the correct prefixes, but their upstream v1.50 expected
+  result is NONE while the fork's MA-M parser expects DRONE.
+- Existing BT05, JDY-08, JDY-16, MLT-BT and linvor name tests are recognized
+  as SKIMMER by the fork, and existing Meta-Tech (company 0x058E) and Flipper
+  (0x0E29) manufacturer-ID tests are recognized by the fork even though the
+  v1.50 receiver expects NONE.
+- `tests/squachwatch_fork_expectations.json` contains **19 explicit fork
+  expectation overrides**. `tests/cases.json` retains the v1.50 baseline.
+  The Workbench's baseline expectation must not be mistaken for the fork's
+  expected result until the receiver-version selector is added.
+- This expands the emitter's fork signature candidates without changing
+  default device classifications in v1.50. Firmware compilation/native source
+  checks do not substitute for SquachWatch physical receiver observations.

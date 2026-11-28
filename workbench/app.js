@@ -43,6 +43,7 @@
   var receiverWrites=Promise.resolve();
   var receiverMirror=false;
   var preparingBatch=false;
+  var emitterCatalogIds=null,emitterCatalogProbe=null,emitterBuildSha=null;
   var desktopMode=(new URLSearchParams(window.location.search)).get('desktop')==='1';
   function desktopEvent(type,detail){
     if(desktopMode)window.dispatchEvent(new CustomEvent('sqe:'+type,{detail:detail}));
@@ -185,7 +186,7 @@
     ui.receiverLibrary.disabled=trials.length>0 || batch.active || startingRun || transmitting || preparingBatch;
     ui.pollNow.disabled=!receiver;
     var duration=Number(ui.duration.value);
-    ui.runCase.disabled=!connected||batch.active||startingRun||awaitingBegin||transmitting||
+    ui.runCase.disabled=!connected||batch.active||preparingBatch||startingRun||awaitingBegin||transmitting||
       !catalog[ui.caseSelect.value]||!ui.authorization.checked||
       !Number.isInteger(duration)||duration<3||duration>30;
     ui.runCase.textContent=startingRun?'Preparing receiver…':
@@ -252,6 +253,11 @@
     ui.autoDetectionFeed.textContent=d.autoLog;
     ui.autoDetectionFeed.scrollTop=ui.autoDetectionFeed.scrollHeight;
   }
+  function logEvidenceSummary(t) {
+    return ' USB LOG snapshots during run: '+(t._logSnapshots||0)+
+      '; timeouts: '+(t._logTimeouts||0)+
+      '; pre-run baseline: '+(t._baseline?'present':'missing')+'.';
+  }
   function finishAutoMatch(t) {
     if(!t._autoHit || t._autoCandidate || t._manual || t.emission!=='ok')return false;
     t.observed=t._autoHit.observed;
@@ -260,12 +266,27 @@
     t.notes='AUTO SquachWatch LOG: fresh exact MAC '+t._autoHit.mac+
       ', class '+t._autoHit.observed+', RSSI '+t._autoHit.rssi+
       ' dBm, hits '+t._autoHit.hits+', receiver snapshot '+new Date(t._autoHit.finishedAt).toISOString()+
-      '. Emission END ok reported; polling cadence is not precise detection latency.';
+      '. Emission END ok reported; receiver snapshot is a host-side '+
+      'detection observation, not a synchronized first-hit timestamp. '+
+      'Host-observed response bound: '+Math.max(0,t._autoHit.finishedAt-t._startedAt)+
+      ' ms (includes BLE/Wi-Fi scan and USB LOG polling delay; NOT true RF latency).'+
+      logEvidenceSummary(t);
     return true;
   }
   function onWatchSnapshot(snapshot) {
     var d=devices.receiver;
     d.lastSnapshot=snapshot;
+    // LOG completion is evidence of transport availability, not automatic
+    // proof that a receiver's Wi-Fi/BLE scanning was healthy.
+    for(var j=trials.length-1;j>=0;j--){
+      var active=trials[j];
+      if(active._epoch===epoch && active._receiverSession===d.session &&
+         active._startedAt && snapshot.requestedAt>=active._startedAt &&
+         (!active._endedAt||snapshot.requestedAt<=active._endedAt+5000)){
+        active._logSnapshots=(active._logSnapshots||0)+1;
+        break;
+      }
+    }
     desktopEvent('snapshot',{rows:snapshot.rows.slice(0,20).map(function(r){
       return {type:r.type,mac:r.mac,rssi:r.rssi,hits:r.hits,state:r.state};
     }),rowCount:snapshot.rows.length,when:snapshot.finishedAt});
@@ -328,7 +349,8 @@
           ' dBm, state '+hit.state+'; '+(usableBaseline?
             'entry already existed in the baseline without proof of a new hit. ':
             'pre-test LOG baseline unavailable. ')+
-          'Receiver classification observed, but this run is NOT scored.';
+          'Receiver classification observed, but this run is NOT scored.'+
+          logEvidenceSummary(t);
       }
       matchedLog(new Date(hit.finishedAt).toLocaleTimeString()+
         '  '+t.id+'  ACTUAL '+hit.observed+'  MAC '+hit.mac+
@@ -420,6 +442,15 @@
       if(d.pending===pending){
         d.pending=null;d.parser.cancel();
         autoStatus('LOG response timed out. Confirm SquachWatch serial baud and connection.');
+        for(var n=trials.length-1;n>=0;n--){
+          var t=trials[n];
+          if(t._epoch===epoch && t._receiverSession===d.session &&
+             t._startedAt && Date.now()>=t._startedAt &&
+             (!t._endedAt||Date.now()<=t._endedAt+5000)){
+            t._logTimeouts=(t._logTimeouts||0)+1;
+            break;
+          }
+        }
         pending.resolve(null);
       }
     },3800);
@@ -590,18 +621,29 @@
     const duration=Number(ui.batchDuration.value),gap=Number(ui.batchGap.value);
     if(!Number.isInteger(duration)||duration<3||duration>30||
        !Number.isInteger(gap)||gap<3||gap>30)return;
-    if(ui.batchScope.value==='missing' && !trials.length){
+    if(ui.batchScope.value==='unverified' &&
+       (!validSha(ui.receiverSha.value)||!validSha(ui.emitterSha.value))){
+      batch.message='Receiver-unverified retest requires both firmware SHAs, so results '+
+        'from a different receiver or firmware are not silently excluded.';
+      updateBatchUi();return;
+    }
+    if((ui.batchScope.value==='missing'||ui.batchScope.value==='unverified') && !trials.length){
       batch.message='Import your previous trial CSV first. Remaining cases '+
         'are calculated only from observed successful transmitter END events.';
       updateBatchUi();return;
     }
     const queue=ui.batchScope.value==='missing' ?
       core.remainingEmitterPlan(cases,trials):
+      ui.batchScope.value==='unverified' ? core.receiverRetestPlan(cases,trials,{receiver:ui.receiverBoard.value,
+        receiverSha:ui.receiverSha.value.trim(),emitterSha:ui.emitterSha.value.trim()}) :
       core.batchPlan(cases,ui.batchScope.value);
     if(!queue.length){
       batch.message='No remaining cases in the selected scope. Check imported CSV.';
       updateBatchUi();return;
     }
+    if(ui.batchScope.value==='unverified' && !window.confirm(
+      'Retest '+queue.length+' cases without a prior complete verified receiver observation. '+
+      'This includes cases with successful emission but missing receiver proof.'))return;
     if(ui.batchScope.value==='missing' && !window.confirm(
       'Run '+queue.length+' remaining transmitter cases out of '+cases.length+
       '? This omits case IDs with recorded TRUTH END ok from the current/imported '+
@@ -613,6 +655,20 @@
     const token=runToken;
     updateBatchUi();
     try{
+      const supported=await probeEmitterCatalog();
+      if(!supported){batch.message='Connected emitter LIST unavailable; no RF sent.';updateBatchUi();return;}
+      if(emitterBuildSha && ui.emitterSha.value.trim() &&
+          ui.emitterSha.value.trim().toLowerCase()!==emitterBuildSha){
+        batch.message='Emitter SHA does not match connected firmware; no RF started.';
+        notice(batch.message,true);updateBatchUi();return;
+      }
+      const missing=queue.filter(c=>!supported.has(c.id));
+      if(missing.length){
+        batch.message='Firmware catalog mismatch: connected transmitter supports '+supported.size+
+          ' IDs; unsupported selected cases: '+missing.map(c=>c.id).join(', ')+
+          '. Flash matching LAB firmware before running this scope.';
+        notice(batch.message,true);updateBatchUi();return;
+      }
       var mirrorReady=await pauseReceiverMirrorForDetection();
       if(!mirrorReady){
         if(!window.confirm('SquachWatch mirror could not be paused. '+
@@ -681,6 +737,7 @@
       t._receiverSession=devices.receiver.port?devices.receiver.session:-1;
       t._mac=core.normalizeMac(event.mac);
       t._startedAt=Date.now();
+      t._logSnapshots=0;t._logTimeouts=0;
       var receiver=devices.receiver;
       // UI-controlled runs have a dedicated LOG preflight baseline.
       // Externally started tests can use a recently completed poll.
@@ -716,6 +773,7 @@
           }
           trials[i]._endedAt=Date.now();
           if(trials[i].emission==='failed')trials[i].window='incomplete';
+          if(!provisionalNotes)trials[i].notes+=logEvidenceSummary(trials[i]);
           else if(finishAutoMatch(trials[i])){
             matchedLog(new Date().toLocaleTimeString()+'  '+trials[i].id+
               '  FINAL '+core.status(trials[i],catalog)+
@@ -770,6 +828,35 @@
       append(role,'[serial line too long; discarded incomplete row]\n');
     }
     lines.forEach(function(line){
+      if(role==='emitter'){
+        const build=/^BUILD,SHA,([a-fA-F0-9]{40}|UNSTAMPED)$/.exec(line.trim());
+        if(build){
+          emitterBuildSha=build[1]==='UNSTAMPED'?null:build[1].toLowerCase();
+          if(emitterBuildSha){
+            if(!ui.emitterSha.value.trim())ui.emitterSha.value=emitterBuildSha;
+            else if(ui.emitterSha.value.trim().toLowerCase()!==emitterBuildSha)
+              notice('Emitter SHA mismatch: entered '+ui.emitterSha.value.trim()+
+                ' but connected hardware reports '+emitterBuildSha+'. Correct SHA before scoring.',true);
+          }
+        }
+      }
+      if(role==='emitter' && emitterCatalogProbe){
+        const footer=/^LIST_END,([0-9]{1,5}),([A-Fa-f0-9]{8})$/.exec(line.trim());
+        if(footer){
+          emitterCatalogProbe.footerCount=Number(footer[1]);
+          emitterCatalogProbe.footerHash=footer[2].toUpperCase();
+          emitterCatalogProbe.newProtocol=true;
+        }
+        if(/^CATALOG,[0-9]{1,5},[A-Fa-f0-9]{8}$/.test(line.trim()))
+          emitterCatalogProbe.newProtocol=true;
+        if(/^BUILD,SHA,/.test(line.trim()))
+          emitterCatalogProbe.newProtocol=true;
+        const match=/^CASE,([A-Z0-9_-]+),/.exec(line);
+        if(match){
+          emitterCatalogProbe.ids.add(match[1]);
+          emitterCatalogProbe.lastLineAt=Date.now();
+        }
+      }
       if(desktopMode&&role==='receiver'&&line.startsWith('UI ')){
         // PR #233 receiver state telemetry is separate from LOG evidence.
         desktopEvent('receiver-ui',{role:role,line:line});
@@ -834,7 +921,10 @@
         throw new Error('Unsupported baud rate.');
       await port.open({baudRate:baud});
       var d=devices[role];d.port=port;d.baud=baud;d.buffer='';
-      if(role==='emitter'){epoch++;transmitting=false;cancelRunAck();}
+      if(role==='emitter'){
+         epoch++;transmitting=false;cancelRunAck();
+         emitterCatalogIds=null;emitterCatalogProbe=null;emitterBuildSha=null;
+       }
       else d.session++;
       opening[role]=false;updateButtons();
       append(role,'\n[connected at '+baud+' baud; '+
@@ -856,6 +946,7 @@
     if(batch.active)endBatch('Automation stopped: '+role+' disconnected.',role==='receiver');
     if(role==='receiver')stopWatchPolling();
     if(role==='emitter'){
+      emitterCatalogIds=null;emitterCatalogProbe=null;emitterBuildSha=null;
       runToken++;devices.receiver.preRun=null;
       transmitting=false;cancelRunAck();
       runProgress('Transmitter disconnected. Connect again to run a case.');
@@ -886,8 +977,49 @@
     emitterWrites=pending.then(function(){},function(){});
     return pending;
   }
+  async function probeEmitterCatalog(){
+    if(emitterCatalogIds)return emitterCatalogIds;
+    if(!devices.emitter.port)return null;
+    if(emitterCatalogProbe)return emitterCatalogProbe.promise;
+    // Legacy and new firmware both provide LIST; never trust an entered SHA
+    // as a substitute for real connected transmitter case capabilities.
+    const probe={ids:new Set(),lastLineAt:0,promise:null,
+      footerCount:null,footerHash:null,newProtocol:!!emitterBuildSha};
+    emitterCatalogProbe=probe;
+    probe.promise=(async function(){
+      // New firmware reports its actual CI source SHA. Older versions will
+      // ignore BUILD; LIST remains compatible with both catalog sizes.
+      await sendEmitter('BUILD');
+      await sendEmitter('CATALOG');
+      if(!(await sendEmitter('LIST')))return null;
+      const begun=Date.now();
+      while(Date.now()-begun<8000){
+        await new Promise(resolve=>setTimeout(resolve,125));
+        if(emitterCatalogProbe!==probe||!devices.emitter.port)return null;
+        if(probe.footerCount!==null){
+          const hash=core.catalogHash(Array.from(probe.ids).map(id=>({id:id})));
+          if(probe.ids.size!==probe.footerCount ||
+             hash!==probe.footerHash){
+            notice('Emitter LIST was incomplete/corrupt (count or hash mismatch); no RF sent.',true);
+            return null;
+          }
+          emitterCatalogIds=new Set(probe.ids);
+          return emitterCatalogIds;
+        }
+        if(!probe.newProtocol && probe.ids.size &&
+           Date.now()-probe.lastLineAt>=800){
+          // Previous SquachEmit firmware has no LIST_END trailer.
+          emitterCatalogIds=new Set(probe.ids);
+          return emitterCatalogIds;
+        }
+      }
+      return null;
+    })();
+    try{return await probe.promise;}
+    finally{if(emitterCatalogProbe===probe)emitterCatalogProbe=null;}
+  }
   async function run(fromBatch){
-    if(batch.active&&!fromBatch)return;
+    if((batch.active||preparingBatch)&&!fromBatch)return;
     if(fromBatch&&(!batch.active||!batch.current||batch.current.id!==ui.caseSelect.value))return;
     var c=catalog[ui.caseSelect.value],duration=Number(ui.duration.value);
     if(startingRun||awaitingBegin||transmitting||!c||!ui.authorization.checked||
@@ -897,6 +1029,20 @@
     updateButtons();
     runProgress('Preparing to transmit '+c.id+'…');
     try{
+      const supported=await probeEmitterCatalog();
+      if(token!==runToken||!devices.emitter.port)return;
+      if(emitterBuildSha && ui.emitterSha.value.trim() &&
+          ui.emitterSha.value.trim().toLowerCase()!==emitterBuildSha){
+        runProgress('Entered emitter SHA differs from connected firmware; no RF sent.');
+        if(fromBatch)advanceBatch('Emitter SHA mismatch',true,true);
+        return;
+      }
+      if(!supported||!supported.has(c.id)){
+        runProgress(!supported?'Emitter LIST unavailable; no RF sent.':
+          'Selected case is unsupported by connected emitter; no RF sent.');
+        if(fromBatch)advanceBatch('Firmware catalog unsupported or unavailable',true,true);
+        return;
+      }
       var receiver=devices.receiver,baseline=null;
       // A receiver firmware lacking structured LOG cannot verify RF hits.
       // A user-approved transmitter-only batch skips repeated 3.8s LOG
@@ -913,7 +1059,7 @@
           baseline=receiver.lastSnapshot;
           runProgress('Using fresh SquachWatch baseline; sending RUN…');
         }else{
-          runProgress('Refreshing SquachWatch LOG baseline (max 1.2 seconds)…');
+          runProgress('Refreshing SquachWatch LOG baseline (1.2s manual / 4.2s batch)…');
           var timer;
           try{
             baseline=await Promise.race([
@@ -923,6 +1069,13 @@
               })
             ]);
           }finally{if(timer)clearTimeout(timer);}
+          // One bounded recovery before giving up on this case's baseline.
+          // This improves scoreability when the Freenove LOG response was
+          // delayed by scanning/UI work. A retry never creates evidence.
+          if(fromBatch && !baseline && token===runToken && receiver.port){
+            runProgress('Receiver LOG baseline late; retrying once (max 3.8 seconds)…');
+            baseline=await requestWatchSnapshot();
+          }
         }
         if(token!==runToken || !devices.emitter.port)return;
         // An intermittent LOG timeout cannot halt a 369-signal suite.
@@ -983,14 +1136,33 @@
       // Preserve the unique per-trial run ID rather than replacing it with
       // the session prefix when saving an observation.
       run_id:old.run_id,
-      receiver:ui.receiverBoard.value,
-      receiver_sha:ui.receiverSha.value.trim()||old.receiver_sha,
-      emitter_sha:ui.emitterSha.value.trim()||old.emitter_sha,
+      // Never relabel imported Freenove/CYD evidence or replace a
+      // recorded firmware identity when the current form uses a different
+      // board or SHA. Cross-device edits previously corrupted provenance.
+      receiver:old.receiver||ui.receiverBoard.value,
+      receiver_sha:old.receiver_sha||
+        (old.receiver===ui.receiverBoard.value?ui.receiverSha.value.trim():''),
+      emitter_sha:old.emitter_sha||ui.emitterSha.value.trim(),
       emission:old.seq==null?(ui.emissionStatus.value||old.emission):old.emission,
       window:ui.listenWindow.value||'',
       observed:ui.observed.value,latency_ms:ui.latencyMs.value.trim(),
       notes:ui.evidenceNotes.value.trim()
     });
+    if(result.window==='complete'&&result.emission==='ok'&&
+       result.observed==='NONE'){
+      if(old._autoHit){
+        text('observationNotice','Cannot set NONE: an attributable verified '+
+          'exact-MAC receiver detection already exists for this trial.');
+        return;
+      }
+      // Emitter-generated notes are NOT manual scan-health evidence.
+      if(!/SCAN-VERIFIED:\s*.{20,}/i.test(result.notes)){
+        text('observationNotice','To score NONE, append SCAN-VERIFIED: followed '+
+          'by at least 20 characters of independent uninterrupted scan-window '+
+          'evidence. An empty LOG alone does not qualify.');
+        return;
+      }
+    }
     if(result.window==='complete'&&result.emission==='ok'&&!result.observed){
       text('observationNotice','Choose a receiver classification or NONE for a complete listening window.');return;
     }
@@ -1067,6 +1239,10 @@
   function applySessionShas(){
     var receiverSha=ui.receiverSha.value.trim();
     var emitterSha=ui.emitterSha.value.trim();
+    if(emitterBuildSha && emitterSha.toLowerCase()!==emitterBuildSha){
+      text('shaNotice','Connected emitter reports '+emitterBuildSha+
+        ', not '+emitterSha+'. Do not overwrite trial provenance.');return;
+    }
     if(!validSha(receiverSha)||!validSha(emitterSha)){
       text('shaNotice','Enter real 7–40-character hexadecimal commit SHAs for both boards first.');
       return;

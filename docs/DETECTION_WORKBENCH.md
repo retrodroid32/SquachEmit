@@ -1,37 +1,34 @@
-# SquachEmit Detection Workbench (PR #36)
+# SquachEmit Detection Workbench
 
-The [Detection Workbench](https://retrodroid32.github.io/SquachEmit/workbench/)
-is a proposed **static, browser-local** test dashboard for measuring how often
-SquachWatch actually detects SquachEmit test scenarios. The GitHub Pages URL
-will become available **only after this PR is approved and merged**, followed by
-a successful Pages deployment. No server receives logs, MAC addresses,
-device serial numbers, or other captured RF information.
+The [public Detection Workbench](https://retrodroid32.github.io/SquachEmit/workbench/)
+is a browser-local tool for conducting controlled synthetic SquachEmit RF tests
+against SquachWatch receivers. It is already publicly deployed. Trial records,
+MAC addresses, receiver observations and firmware SHAs remain in the local
+browser unless the operator explicitly exports a CSV.
 
-## Testing this draft PR before merge
+## Local preview of an unmerged SquachEmit PR
 
-GitHub CI on PR #36 creates the downloadable artifact
-`squachemit-detection-workbench-review-preview`. Open the PR's successful
-Actions run, download that artifact and extract it to a folder on your PC.
-From **PowerShell**, inside the extracted folder, run:
+For an unmerged change, check out that SquachEmit branch and, from the project
+root, run:
 
 ```powershell
 py -m http.server 8000
 ```
 
-Open `http://localhost:8000/workbench/` in desktop Chrome or Edge.
-Localhost is a trustworthy origin for Web Serial. This preview intentionally
-does **not** change or deploy the public firmware installer, and it includes
-**no firmware binaries**. Disconnect any other serial console before
-connecting either board.
+Then open `http://localhost:8000/workbench/` in desktop Chrome or Edge.
+The local page loads Workbench source from the checked-out branch; the public
+website continues to serve the latest approved deployment. No RF transmission
+starts merely by opening either page.
 
 ## Hardware and browser
 
 - Desktop Chrome or Edge, HTTPS (or localhost), USB data cables.
 - Connect **SquachEmit** over Web Serial at **115,200 baud**.
-- Connect a *separate* **SquachWatch** at **2,000,000 baud** (selectable).
-  Its existing firmware supports the read-only serial **`LOG`** command,
-  returning a structured table of type, MAC, RSSI, hits, state and first-seen
-  time. **No SquachWatch firmware change is required.**
+- Connect a *separate* **SquachWatch** receiver at its firmware's actual baud:
+  **2,000,000 for CYD 2.8** or **115,200 for Freenove 3.5** in the tested setup.
+  The read-only **`LOG`** command must return a structured table of real type,
+  MAC, RSSI, hits, state and first-seen time; some older firmware does not
+  implement that interface. This PR changes SquachEmit only.
 - Once connected, the Workbench automatically requests a `LOG` snapshot
   approximately every 1.5 seconds. It displays matched receiver evidence
   and automatically fills the observed type if a **new** table row has the
@@ -282,3 +279,79 @@ all normal exact-MAC and receiver SHA scoring requirements remain intact.
 CSV files created by earlier Workbench versions may label a Freenove
 receiver as CYD 2.8 due to the receiver menu selection; correct receiver
 metadata and use the actually flashed firmware SHAs before scoring.
+
+## November 27, 2026 — SquachEmit-only audit corrections (PR #118)
+
+These changes affect only **SquachEmit** and its browser/desktop tools. They
+do not modify, deploy or require a merge of the SquachWatch repository.
+
+* **Physical emitter catalog verification.** Workbench sends `LIST` before a
+  manual or batch RUN and compares the received case IDs to the chosen tests.
+  New SquachEmit firmware terminates `LIST` with
+  `LIST_END,<count>,<8-hex-ID-FNV1a>` for truncation detection. Old firmware
+  remains supported using a bounded quiet-period fallback. If the connected
+  firmware cannot prove support for a selected ID, that run is blocked rather
+  than silently counted. The normal 362-case mainline firmware is therefore
+  not confused with the distinct 369-case R14.39 LAB build (draft PR #113).
+* **Exact build identity.** CI firmware reports `BUILD,SHA,<40-character Git
+  commit>` and `CATALOG,<count>,<hash>` at boot and by serial request.
+  Browser Workbench compares the connected source SHA to any manually entered
+  SHA and blocks contradictory runs or history backfill. Local, manually
+  compiled firmware explicitly reports `UNSTAMPED` instead of inventing a
+  commit. A valid text SHA alone is not physical firmware authentication.
+* **Two separate retry modes.** `Remaining` excludes transmissions with
+  emitter `TRUTH END ok`. `Retest receiver-unverified` excludes only
+  complete, classified receiver observations *from the same board, receiver
+  SHA and emitter SHA*. Import the CSV before using either mode. Neither
+  mode infers a receiver PASS from transmitter success.
+* **Receiver transport diagnostics.** New trial notes count complete USB LOG
+  snapshots and timeouts, and a matched trial reports an approximate
+  *host-observed response bound* including USB/scan/polling delay, not an
+  accurate on-air first-detection latency. The `latency_ms` field deliberately
+  remains blank unless separately verified.
+* **Negative controls.** No automatic `NONE` is inferred from absent LOG
+  rows. A manually scored complete `NONE` case requires a note describing
+  continuous receiver scanning evidence. The present SquachWatch LOG table
+  does not independently certify receiver scan health, so automation cannot
+  safely infer true negatives without a separate scan-health protocol.
+* **Command handling.** Firmware rejects malformed duration tokens rather
+  than allowing Arduino `String.toInt()` to accept a prefix such as `5oops`.
+  An `END` notification now follows a request to stop the previous radio
+  emission instead of preceding it. Complete RF shutdown still requires
+  hardware validation.
+* **Provenance.** Editing an imported Workbench row no longer silently
+  relabels its receiver board or overwrites an existing firmware SHA.
+  Review imported files before retesting; provenance from a mislabeled CSV
+  cannot be automatically repaired by the browser.
+
+**Out of scope without SquachWatch modification or physical RF measurement:**
+proving uninterrupted scanner health for automatic true negatives, certifying
+that a synthetic manufacturer/UUID fixture reproduces an authentic device,
+and measuring true end-to-end detection latency. Those cannot be honestly
+inferred from successful `TRUTH END` and snapshot logs alone. Desktop
+native-state display is not an exact physical LCD framebuffer mirror.
+
+Do not merge R14.39's seven additional RF cases into stable firmware or
+change any upstream detector expected behavior without separate approval and
+hardware validation.
+
+## Offline CSV scoring — choose the matching receiver library
+
+The standalone scorer defaults to pinned upstream v1.50 expectations. Select the
+fork-specific 19-case expectation overlay for hardware actually running the
+SquachWatch fork; the same on-air fixture is not necessarily expected to
+classify identically on both libraries.
+
+```sh
+python tools/score_trials.py trials.csv --receiver-library upstream --output upstream.md
+python tools/score_trials.py trials.csv --receiver-library fork --output fork.md
+```
+
+The exported CSV must identify the receiver board and exact firmware SHAs.
+A blank LOG snapshot is **not** evidence of a true negative. Manually observed
+`NONE` requires `SCAN-VERIFIED:` and at least 20 characters documenting the
+independent uninterrupted receiver scan-health evidence for that listening
+window. This is a human attestation, not a receiver telemetry guarantee.
+Unknown evidence remains `UNTESTED`; neither scorer generates receiver hits
+from SquachEmit transmission truth. The offline scorer recognizes the
+Freenove S3 3.5 receiver in addition to the two classic CYDs.

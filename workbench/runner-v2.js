@@ -1,67 +1,55 @@
-/* SquachEmit Test Suite 2.0 — pure, side-effect-free checkpoint contract.
- * No serial access. Restoring a checkpoint NEVER authorizes radio transmission.
- * The operator must explicitly confirm a new run in the Workbench.
- */
-(function(root,factory){
-  const api=factory();
-  if(typeof module==='object'&&module.exports)module.exports=api;
-  if(root)root.SQETestSuiteV2=api;
-})(typeof window==='undefined'?null:window,function(){
-  'use strict';
-  // Keep the checkpoint bound aligned with the firmware catalog; no auto-resume of RF.
-  const MAX_CASES=65535;
-  const CASE_RE=/^[A-Z0-9][A-Z0-9_-]{1,100}$/;
-  const VERSION=1;
-  const KEY='sqe-test-suite-v2-checkpoint';
-  function createSnapshot(batch) {
-    if(!batch||!Array.isArray(batch.queue)||!batch.queue.length||
-       batch.queue.length>MAX_CASES)throw Error('Invalid test queue');
-    const ids=batch.queue.map(c=>typeof c==='string'?c:c&&c.id);
-    if(ids.some(id=>typeof id!=='string'||!CASE_RE.test(id)))throw Error('Invalid case ID');
-    const index=Number(batch.index),completed=Number(batch.completed);
-    if(!Number.isInteger(index)||index<0||index>ids.length||
-       !Number.isInteger(completed)||completed<0||completed>index)
-      throw Error('Invalid checkpoint progress');
-    const duration=Number(batch.duration),gap=Number(batch.gap);
-    if(!Number.isInteger(duration)||duration<3||duration>30||
-       !Number.isInteger(gap)||gap<3||gap>30)
-      throw Error('Invalid timing');
-    return {version:VERSION,ids,index,completed,duration,gap,
-      // No radio consent, hardware handles, receiver evidence or auto-resume flags.
-      failures:Math.max(0,Math.min(1000,Number(batch.failures)||0)),
-      unverified:Math.max(0,Math.min(1000,Number(batch.unverified)||0))};
+'use strict';
+const test=require('node:test');
+const assert=require('node:assert/strict');
+const v2=require('../workbench/runner-v2.js');
+const ids=Array.from({length:248},(_,i)=>'BLE-CASE-'+String(i+1).padStart(3,'0'));
+const batch=()=>({queue:ids.map(id=>({id})),index:11,completed:11,
+  duration:8,gap:5,failures:1,unverified:2});
+function store(){const map=new Map();return {getItem:k=>map.get(k)||null,
+  setItem:(k,v)=>map.set(k,v),removeItem:k=>map.delete(k)};}
+test('valid 248-case checkpoint round trip does not hold consent or radio handles',()=>{
+  const s=store();v2.save(s,batch());const x=v2.read(s,ids);
+  assert.equal(x.ids.length,248);assert.equal(x.index,11);
+  assert.deepEqual(Object.keys(x).sort(),
+    ['completed','duration','failures','gap','ids','index','unverified','version']);
+  assert.equal('active' in x,false);assert.equal('authorized' in x,false);
+  assert.equal('receiverEvidence' in x,false);
+});
+test('reject unknown, malformed, missing and non-current catalogs',()=>{
+  const s=store();v2.save(s,batch());
+  assert.equal(v2.read(s,ids.slice(0,50)),null);
+  const x=v2.createSnapshot(batch());x.ids[4]='../../not-an-id';
+  assert.equal(v2.validateSnapshot(x,ids),null);
+  s.setItem(v2.KEY,'{broken json');assert.equal(v2.read(s,ids),null);
+});
+test('reject invalid durations, oversized queues and impossible progress',()=>{
+  for(const patch of [{index:249},{completed:12},{duration:2},{gap:31},
+    {index:-1},{queue:[]}]) {
+    assert.throws(()=>v2.createSnapshot({...batch(),...patch}));
   }
-  function validateSnapshot(snapshot,knownIds) {
-    if(!snapshot||snapshot.version!==VERSION||!Array.isArray(snapshot.ids)||
-       snapshot.ids.length<1||snapshot.ids.length>MAX_CASES||
-       !Array.isArray(knownIds))return null;
-    const known=new Set(knownIds);
-    if(snapshot.ids.some(id=>typeof id!=='string'||!CASE_RE.test(id)||!known.has(id)))
-      return null;
-    if(!Number.isInteger(snapshot.index)||snapshot.index<0||
-       snapshot.index>=snapshot.ids.length||
-       !Number.isInteger(snapshot.completed)||snapshot.completed<0||
-       snapshot.completed>snapshot.index)return null;
-    try {
-      return createSnapshot({queue:snapshot.ids,index:snapshot.index,
-        completed:snapshot.completed,duration:snapshot.duration,gap:snapshot.gap,
-        failures:snapshot.failures,unverified:snapshot.unverified});
-    }catch(_){return null;}
+  assert.throws(()=>v2.createSnapshot({...batch(),queue:Array.from({length:65536},(_,i)=>'BLE-CASE-'+i)}));
+});
+test('finished or corrupt checkpoints never automatically restart',()=>{
+  const s=store();const b=batch();b.index=248;b.completed=248;
+  v2.save(s,b);assert.equal(v2.read(s,ids),null);
+  v2.clear(s);assert.equal(v2.read(s,ids),null);
+});
+test('unavailable storage does not crash read/clear',()=>{
+  const bad={getItem(){throw Error('denied')},removeItem(){throw Error('denied')}};
+  assert.equal(v2.read(bad,ids),null);assert.doesNotThrow(()=>v2.clear(bad));
+});
+
+test('duplicate case IDs cannot be persisted or restored',()=>{
+  const b=batch();b.queue[2]={id:b.queue[1].id};
+  assert.throws(()=>v2.createSnapshot(b),/duplicate case ID/);
+  const x=v2.createSnapshot(batch());x.ids[2]=x.ids[1];
+  assert.equal(v2.validateSnapshot(x,ids),null);
+});
+test('corrupt or nonintegral counters fail closed',()=>{
+  for(const bad of [NaN,Infinity,-1,1.5,65536,'not-a-number']){
+    assert.throws(()=>v2.createSnapshot({...batch(),failures:bad}),/checkpoint failures/);
+    assert.throws(()=>v2.createSnapshot({...batch(),unverified:bad}),/checkpoint unverified/);
   }
-  function save(storage,batch) {
-    const data=createSnapshot(batch);
-    storage.setItem(KEY,JSON.stringify(data));
-    return data;
-  }
-  function read(storage,knownIds) {
-    try {
-      const raw=storage.getItem(KEY);
-      if(!raw||raw.length>30000)return null;
-      return validateSnapshot(JSON.parse(raw),knownIds);
-    }catch(_){return null;}
-  }
-  function clear(storage) {
-    try{storage.removeItem(KEY);}catch(_){}
-  }
-  return Object.freeze({KEY,createSnapshot,validateSnapshot,save,read,clear});
+  const x=v2.createSnapshot(batch());x.unverified=Infinity;
+  assert.equal(v2.validateSnapshot(x,ids),null);
 });

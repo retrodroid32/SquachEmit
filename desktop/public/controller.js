@@ -27,6 +27,7 @@
   for(const role of ['receiver','emitter']){
     mirrors[role]={active:false,waiting:false,lastFrame:false,lastFrameSequence:0,failures:0,
       assembler:new codec.MirrorAssembler(),timeout:null,next:null,handshake:null,animation:null,ready:false,
+      frameStartedAt:0,lastRowAt:0,progressRows:0,session:0,sequenceAck:false,
       touchDown:false,touchAt:0,touchTimer:null,pendingUp:null,lastPoint:{x:0,y:0},
       lastMove:0};
   }
@@ -108,7 +109,9 @@
   function resetRole(role){
     const s=mirrors[role];
     cancelFrameTimers(role);
+    ++s.session;
     s.active=false;s.waiting=false;s.ready=false;s.failures=0;
+    s.frameStartedAt=0;s.lastRowAt=0;s.progressRows=0;s.sequenceAck=false;
     s.lastFrame=false;s.lastFrameSequence=0;
     s.assembler.reset();
     if(role==='emitter'){local.model=null;local.receivedAt=0;}
@@ -159,22 +162,33 @@
     const s=mirrors[role],state=api.getState();
     if(!s.active||!s.ready||s.waiting||!isConnected(role,state)||
        (role==='receiver'&&state.testActive))return;
-    s.waiting=true;
-    // Firmware sends a full keyframe unless it recognizes the last complete
-    // screen the PC actually accepted. A dropped frame can never corrupt
-    // a later delta. SquachWatch's existing firmware retains FRAME syntax.
-    const request=(role==='emitter'&&s.lastFrameSequence)?
+    s.waiting=true;s.frameStartedAt=Date.now();s.lastRowAt=s.frameStartedAt;s.progressRows=0;
+    const session=s.session;
+    // Backward compatibility: legacy receiver firmware accepts only bare
+    // MIRROR FRAME. Send an acknowledged baseline sequence only when its
+    // MIRROR READY capability explicitly includes SEQBASE.
+    const request=s.sequenceAck&&s.lastFrameSequence?
       'MIRROR FRAME '+s.lastFrameSequence:'MIRROR FRAME';
     const ok=await api.send(role,request);
+    if(!s.active||!s.waiting||s.session!==session)return;
     if(!ok){
       s.waiting=false;
       info(role,'Cannot request USB frame. Verify connection and LAB firmware.');
       return;
     }
-    if(!s.active)return;
-    s.timeout=setTimeout(()=>{
-      if(!s.active||!s.waiting)return;
+    const watchdog=()=>{
+      if(!s.active||!s.waiting||s.session!==session)return;
+      const now=Date.now(), absolute=now-s.frameStartedAt, idle=now-s.lastRowAt;
+      // Large authentic LCD keyframes take longer than one fixed timeout.
+      // Continue only while genuine row progress arrives, with a hard ceiling.
+      if(absolute<120000 && idle<30000){
+        s.timeout=setTimeout(watchdog,Math.max(1000,Math.min(5000,30000-idle)));
+        return;
+      }
       s.assembler.reset();s.waiting=false;s.failures++;
+      s.lastFrameSequence=0;s.lastFrame=false;
+      get('dc-canvas-'+role).hidden=true;
+      get('dc-placeholder-'+role).hidden=false;
       if(s.failures>=3){
         info(role,'No complete LCD frame after three requests. Confirm firmware MIRROR support, '+
           'receiver PIN unlock, TFT framebuffer availability and serial baud.');
@@ -184,7 +198,8 @@
       mirrorNote(role,'No complete LCD pixels; retrying frame ('+
         s.failures+'/3). Check device mirror firmware and TFT readback.');
       s.next=setTimeout(()=>void requestMirrorFrame(role),700);
-    },role==='emitter'?(state.emitterBaud===115200?45000:16000):12000);
+    };
+    s.timeout=setTimeout(watchdog,5000);
   }
   async function startMirror(role){
     if(role==='receiver'&&receiverUi.enabled){
@@ -204,8 +219,10 @@
       }
       const s=mirrors.emitter;
       resetRole('emitter');s.active=true;
+      const session=s.session;
       info('emitter','Requesting real navigation state (not LCD pixels)…');
       const ok=await api.send('emitter','UI ON');
+      if(!s.active||s.session!==session)return;
       if(!ok){resetRole('emitter');info('emitter','UI ON failed.');return;}
       mirrorNote('emitter','Checking firmware UI STATE support at 115200 baud…');
       s.handshake=setTimeout(()=>{
@@ -236,8 +253,10 @@
     const s=mirrors[role];
     resetRole(role);
     s.active=true;
+    const session=s.session;
     info(role,'Enabling opt-in USB mirroring…');
     const ok=await api.send(role,'MIRROR ON');
+    if(!s.active||s.session!==session)return;
     if(!ok){resetRole(role);info(role,'MIRROR ON command rejected or unavailable.');return;}
     mirrorNote(role,'Waiting for MIRROR READY from '+names[role]+' firmware…');
     // A successful USB write is NOT an acknowledgment from the actual device.
@@ -259,12 +278,28 @@
   }
   function onMirror({role,line}){
     if(!mirrors[role])return;
-    const s=mirrors[role],result=s.assembler.feed(line);
+    const s=mirrors[role];
+    // After a timeout, pause, or stop, late USB bytes belong to an obsolete
+    // capture. Never publish or decode them as the next live screen.
+    if(/^MIRROR (?:BEGIN|DELTA|ROW|END|PROGRESS)(?: |$)/.test(line) &&
+       (!s.active||!s.ready||!s.waiting))return;
+    if(/^MIRROR INVALIDATE(?: |$)/.test(line)){
+      if(!s.active)return;
+      cancelFrameTimers(role);s.waiting=false;
+      s.assembler.invalidate();s.lastFrame=false;s.lastFrameSequence=0;
+      get('dc-canvas-'+role).hidden=true;
+      get('dc-placeholder-'+role).hidden=false;
+      mirrorNote(role,'Physical LCD changed — refreshing authentic baseline.');
+      if(s.ready)s.next=setTimeout(()=>void requestMirrorFrame(role),450);
+      return;
+    }
+    const result=s.assembler.feed(line);
     if(result.kind==='info'){
       if(/^MIRROR DIAG/.test(result.message)){
         mirrorNote(role,result.message);
         info(role,result.message);
       }else if(/^MIRROR READY\b/.test(result.message)&&s.active&&!s.ready){
+        s.sequenceAck=/\bSEQBASE\b/.test(result.message);
         s.ready=true;
         if(s.handshake!==null){clearTimeout(s.handshake);s.handshake=null;}
         mirrorNote(role,'Firmware acknowledged. Capturing authentic LCD pixels…');
@@ -273,7 +308,12 @@
       return;
     }
     if(result.kind==='error'){
+      if(!s.active)return; // Ignore unsolicited errors after stop/disconnect.
       cancelFrameTimers(role);s.waiting=false;s.failures++;
+      s.assembler.reset(); // Never apply deltas against an invalidated image.
+      s.lastFrameSequence=0;s.lastFrame=false;
+      get('dc-canvas-'+role).hidden=true;
+      get('dc-placeholder-'+role).hidden=false;
       info(role,result.message);
       if(/LCD_READ_UNAVAILABLE|LCD_NOT_READY|BAD_DISPLAY_SIZE/.test(result.message)){
         void stopMirror(role,true).then(()=>{
@@ -288,11 +328,25 @@
     }
     if(!s.active)return; // Never display unsolicited screen bytes.
     if(result.kind==='begin'){
+      s.progressRows=0;
+      if(!result.delta){
+        s.lastFrame=false;s.lastFrameSequence=0;
+        get('dc-canvas-'+role).hidden=true;
+        get('dc-placeholder-'+role).hidden=false;
+      }
       mirrorNote(role,'Receiving '+(result.delta?'changed rows from':'full')+
         ' physical LCD '+result.width+'×'+result.height+' '+result.format+'…');
       return;
     }
+    if(result.kind==='progress'){
+      if(result.rows>s.progressRows){
+        s.lastRowAt=Date.now();s.progressRows=result.rows;
+      }
+      return;
+    }
     if(result.kind==='row'){
+      s.lastRowAt=Date.now();
+      s.progressRows=Math.max(s.progressRows,result.rows);
       if(result.rows===result.total||result.rows%64===0){
         mirrorNote(role,'LCD capture '+result.rows+'/'+result.total+' rows…');
       }
@@ -300,6 +354,7 @@
     }
     if(result.kind==='frame'){
       cancelFrameTimers(role);s.waiting=false;s.failures=0;
+      s.frameStartedAt=0;s.lastRowAt=0;
       drawRealFrame(role,result.frame);
       // Continuous polling with device-side backpressure: changed-row
       // frames are much cheaper than full RGB565 screenshots.

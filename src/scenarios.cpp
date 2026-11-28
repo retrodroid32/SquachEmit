@@ -379,6 +379,13 @@ const Scenario kScenarios[] = {
   {"V150-UUID-SKIMMER-1101", Kind::BleUuid, "SKIMMER", "Skim-SPP v1.50 BLE UUID 1101 | synthetic BLE service advertisement only", 4353, nullptr},
   {"V150-UUID-AXON-FE6C", Kind::BleUuid, "AXON", "Axon v1.50 BLE UUID FE6C | synthetic BLE service advertisement only", 65132, nullptr},
   {"V150-UUID-META-FEB8", Kind::BleUuid, "META", "Meta v1.50 BLE UUID FEB8 | synthetic BLE service advertisement only", 65208, nullptr},
+  {"OUI-INSPFLIGHT-34B5F32", Kind::WifiAp, "NONE", "Inspired Flight 34B5F32 | LAB OUI ONLY; NO RID | fork MA-M drone fixture", 6, "SQE-LAB-IFLIGHT-34B5F32"},
+  {"OUI-ZEROZERO-C863144", Kind::WifiAp, "NONE", "ZeroZero C863144 | LAB OUI ONLY; NO RID | fork MA-M drone fixture", 6, "SQE-LAB-ZEROZERO-C863144"},
+  {"FORK-BLE-SKIM-BT04", Kind::BleName, "NONE", "Fork-only exact Bluetooth serial-module name BT04; BLE name test, not Bluetooth Classic discovery", 0, "BT04"},
+  {"FORK-BLE-SKIM-JDY09", Kind::BleName, "NONE", "Fork-only exact Bluetooth serial-module name JDY-09; BLE name test, not Bluetooth Classic discovery", 0, "JDY-09"},
+  {"FORK-BLE-SKIM-JDY10", Kind::BleName, "NONE", "Fork-only exact Bluetooth serial-module name JDY-10; BLE name test, not Bluetooth Classic discovery", 0, "JDY-10"},
+  {"FORK-BLE-SKIM-JDY17", Kind::BleName, "NONE", "Fork-only exact Bluetooth serial-module name JDY-17; BLE name test, not Bluetooth Classic discovery", 0, "JDY-17"},
+  {"FORK-BLE-SKIM-SPPC", Kind::BleName, "NONE", "Fork-only exact Bluetooth serial-module name SPP-C; BLE name test, not Bluetooth Classic discovery", 0, "SPP-C"},
 };
 const size_t kScenarioCount = sizeof(kScenarios) / sizeof(kScenarios[0]);
 const Scenario* findScenario(const char* id) {

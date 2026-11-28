@@ -61,7 +61,7 @@ inline DeviceCategory deviceCategory(const Scenario& s) {
      strcmp(id,"BLE-NEG-SNAP-ADJ")==0) return DeviceCategory::SmartGlasses;
   if(startsWith(id,"BLE-RAVEN") ||
      strcmp(id,"BLE-NEG-RAVEN-3600")==0) return DeviceCategory::Raven;
-  if(startsWith(id,"BLE-SKIM") ||
+  if(startsWith(id,"BLE-SKIM") || startsWith(id,"FORK-BLE-SKIM-") ||
      strcmp(id,"BLE-NEG-JDY16-EXTRA")==0) return DeviceCategory::SerialModules;
   if(startsWith(id,"BLE-HACKER") || startsWith(id,"WIFI-HACKER") ||
      strcmp(id,"BLE-NEG-FLIP-MFG")==0 ||

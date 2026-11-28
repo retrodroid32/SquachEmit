@@ -19,7 +19,7 @@ class TestFixtures(unittest.TestCase):
             self.assertIn(f'"{s["id"]}"', source)
             self.assertIn(f'"{s["expected"]}"', source)
         self.assertEqual(len({s['id'] for s in self.cases}), len(self.cases))
-        self.assertEqual(len(self.cases), 362)
+        self.assertEqual(len(self.cases), 369)
         self.assertEqual(len(self.cases), len(__import__('re').findall(r'^\s*\{"', source, __import__('re').M)))
         self.assertEqual(next(s for s in self.cases if s['id']=='BLE-GOOGLE')['expected'], 'NONE')
         self.assertLessEqual(len(self.cases), 65535)  # two-octet synthetic identity
@@ -29,7 +29,15 @@ class TestFixtures(unittest.TestCase):
         with (ROOT/'tests'/'observations.csv').open(newline='') as f:
             observed = list(csv.DictReader(f))
         self.assertEqual({s['id'] for s in observed}, {s['id'] for s in self.cases})
-        self.assertTrue(all(not s['observed'] for s in observed))
+        # R14.39 preserves seven explicitly reported field observations.
+        # These are qualitative operator reports, not proven RF accuracy.
+        documented = [row for row in observed if row['observed']]
+        self.assertEqual(len(documented), 7)
+        self.assertTrue(all(row['notes'].startswith('User reported detected;')
+                            for row in documented))
+        self.assertTrue(all(not row['latency_ms'] for row in documented))
+        self.assertTrue(all(not row['observed'] for row in observed
+                            if row not in documented))
 
     def test_remote_id_31_bytes_and_fields(self):
         adv = advertisements()

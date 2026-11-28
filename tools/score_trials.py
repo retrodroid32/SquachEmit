@@ -11,13 +11,33 @@ import argparse
 import csv
 import json
 import math
+import re
 import statistics
 from collections import Counter, defaultdict
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
-RECEIVERS = {"CYD-2.8", "CYD-3.2"}
+RECEIVERS = {"CYD-2.8", "CYD-3.2", "FREENOVE-S3-3.5"}
+SHA_RE = re.compile(r"^[0-9a-f]{7,40}$", re.I)
+SCAN_PROOF_RE = re.compile(r"SCAN-VERIFIED:\s*.{20,}", re.I | re.S)
 MORE_LABELS = {"ALPR", "CAMERA", "DEAUTH", "EVILTWIN", "RING", "AXON"}
+
+
+def receiver_cases(receiver_library: str) -> dict:
+    """Load source-pinned expected classes without modifying fixture catalog."""
+    cases = {x["id"]: x for x in json.loads((ROOT / "tests" / "cases.json").read_text())}
+    if receiver_library == "upstream":
+        return cases
+    if receiver_library != "fork":
+        raise ValueError("unknown receiver library")
+    meta = json.loads((ROOT / "workbench" / "fork_expectations.json").read_text())
+    overrides = meta.get("overrides")
+    if meta.get("schema") != 1 or not isinstance(overrides, dict) or len(overrides) != 19:
+        raise ValueError("invalid fork expected-category manifest")
+    if any(sid not in cases or cases[sid]["expected"] != "NONE" for sid in overrides):
+        raise ValueError("fork overrides are not anchored to the expected upstream catalog")
+    return {sid: {**case, "expected": overrides.get(sid, case["expected"])}
+            for sid, case in cases.items()}
 
 
 def classify(row: dict, expected: str) -> str:
@@ -31,6 +51,8 @@ def classify(row: dict, expected: str) -> str:
     if emission == "failed" or window == "incomplete":
         return "EXCLUDED"
     if emission != "ok" or window != "complete" or not observed:
+        return "UNTESTED"
+    if observed == "NONE" and not SCAN_PROOF_RE.search(row.get("notes") or ""):
         return "UNTESTED"
     if expected == "NONE":
         return "TN" if observed == "NONE" else "FP"
@@ -68,10 +90,10 @@ def score_rows(rows: list[dict], cases: dict) -> list[dict]:
         result = classify(trial, cases[sid]["expected"])
         if result in {"TP", "TN", "FN", "FP", "WRONG"}:
             # Hardware and code versions are required for defensible measurements.
-            if not (trial.get("receiver_sha") or "").strip():
-                raise ValueError(f"row {index}: receiver_sha required for counted trial")
-            if not (trial.get("emitter_sha") or "").strip():
-                raise ValueError(f"row {index}: emitter_sha required for counted trial")
+            if not SHA_RE.fullmatch((trial.get("receiver_sha") or "").strip()):
+                raise ValueError(f"row {index}: valid receiver_sha required for counted trial")
+            if not SHA_RE.fullmatch((trial.get("emitter_sha") or "").strip()):
+                raise ValueError(f"row {index}: valid emitter_sha required for counted trial")
         if result != "TP" and latency is not None:
             raise ValueError(f"row {index}: latency only applies to true-positive trials")
         trial.update(receiver=board, id=sid, observed=observed,
@@ -139,16 +161,20 @@ def main() -> None:
     cli = argparse.ArgumentParser(description=__doc__)
     cli.add_argument("trials", type=Path, nargs="?", default=ROOT / "tests" / "trials.csv")
     cli.add_argument("--output", type=Path, default=ROOT / "tests" / "trials-report.md")
+    cli.add_argument("--receiver-library", choices=("upstream", "fork"), default="upstream",
+                     help="Choose the v1.50 upstream or 19-case fork expected-category overlay")
     cli.add_argument("--json", type=Path, default=None, help="Optional machine-readable report")
     args = cli.parse_args()
-    cases = {x["id"]: x for x in json.loads((ROOT / "tests" / "cases.json").read_text())}
+    cases = receiver_cases(args.receiver_library)
     with args.trials.open(newline="", encoding="utf-8") as stream:
         records = score_rows(list(csv.DictReader(stream)), cases)
     args.output.parent.mkdir(parents=True, exist_ok=True)
-    args.output.write_text(render_md(records), encoding="utf-8")
+    args.output.write_text(f"Receiver expectation library: {args.receiver_library}\n\n" +
+                           render_md(records), encoding="utf-8")
     if args.json:
         args.json.parent.mkdir(parents=True, exist_ok=True)
-        data = {"cohort": "synthetic RF only", "per_receiver": {
+        data = {"cohort": "synthetic RF only", "receiver_library": args.receiver_library,
+                "per_receiver": {
             board: summarize([r for r in records if r["receiver"] == board])
             for board in sorted(RECEIVERS)}, "trials": records}
         args.json.write_text(json.dumps(data, indent=2) + "\n", encoding="utf-8")

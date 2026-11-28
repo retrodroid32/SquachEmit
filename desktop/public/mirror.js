@@ -12,6 +12,7 @@
   'use strict';
   function MirrorAssembler(){this.pending=null;this.last=null;}
   MirrorAssembler.prototype.reset=function(){this.pending=null;this.last=null;};
+  MirrorAssembler.prototype.invalidate=MirrorAssembler.prototype.reset;
   MirrorAssembler.prototype.feed=function(line){
     line=String(line||'').trim();
     if(/^MIRROR ERROR(?: |$)/.test(line)){
@@ -91,6 +92,14 @@
         pixels:f.pixels};
       return {kind:'frame',frame:{sequence:f.sequence,width:f.width,height:f.height,
         format:f.format,pixels:f.pixels,delta:f.delta,changedRows:f.rows}};
+    }
+    m=/^MIRROR PROGRESS (\d+) (\d{1,3})\/(\d{1,3})$/.exec(line);
+    if(m){
+      const sequence=Number(m[1]),rows=Number(m[2]),total=Number(m[3]);
+      const f=this.pending;
+      if(!f||f.sequence!==sequence||total!==f.height||rows>total)
+        return {kind:'error',message:'Invalid LCD capture progress'};
+      return {kind:'progress',sequence,rows,total};
     }
     return {kind:'info',message:line};
   };

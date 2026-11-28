@@ -13,10 +13,10 @@ class ExtendedVendorOuiTests(unittest.TestCase):
   entries=json.loads((ROOT/"tools/uav_vendor_oui_reference.json").read_text())["entries"]
   catalog=json.loads((ROOT/"tests/cases.json").read_text())
   by_id={x["id"]:x for x in catalog}
-  self.assertEqual(len(entries),27)
-  self.assertEqual(len(catalog),362)
-  self.assertEqual(len(by_id),362)
-  self.assertEqual(len({x["prefixHex"] for x in entries}),27)
+  self.assertEqual(len(entries),29)
+  self.assertEqual(len(catalog),369)
+  self.assertEqual(len(by_id),369)
+  self.assertEqual(len({x["prefixHex"] for x in entries}),29)
   for item in entries:
    self.assertEqual(len(item["prefixHex"])*4,item["bits"])
    self.assertIn(item["bits"],(24,28,36))
@@ -53,7 +53,7 @@ class ExtendedVendorOuiTests(unittest.TestCase):
 #include <cstring>
 int main() {
  using namespace SquachUavVendorLab;
- static_assert(kCount==27,"27 verified extensions required");
+ static_assert(kCount==29,"29 verified extensions required");
  for(size_t i=0;i<kCount;++i) {
   uint8_t mac[6]={};
   SquachIdentity::derive(0x112233445566ULL,145+i,SquachIdentity::Radio::Wifi,mac);
