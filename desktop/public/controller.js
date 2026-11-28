@@ -27,7 +27,7 @@
   for(const role of ['receiver','emitter']){
     mirrors[role]={active:false,waiting:false,lastFrame:false,lastFrameSequence:0,failures:0,
       assembler:new codec.MirrorAssembler(),timeout:null,next:null,handshake:null,animation:null,ready:false,
-      frameStartedAt:0,lastRowAt:0,progressRows:0,session:0,
+      frameStartedAt:0,lastRowAt:0,progressRows:0,session:0,sequenceAck:false,
       touchDown:false,touchAt:0,touchTimer:null,pendingUp:null,lastPoint:{x:0,y:0},
       lastMove:0};
   }
@@ -111,7 +111,7 @@
     cancelFrameTimers(role);
     ++s.session;
     s.active=false;s.waiting=false;s.ready=false;s.failures=0;
-    s.frameStartedAt=0;s.lastRowAt=0;s.progressRows=0;
+    s.frameStartedAt=0;s.lastRowAt=0;s.progressRows=0;s.sequenceAck=false;
     s.lastFrame=false;s.lastFrameSequence=0;
     s.assembler.reset();
     if(role==='emitter'){local.model=null;local.receivedAt=0;}
@@ -164,10 +164,10 @@
        (role==='receiver'&&state.testActive))return;
     s.waiting=true;s.frameStartedAt=Date.now();s.lastRowAt=s.frameStartedAt;s.progressRows=0;
     const session=s.session;
-    // Firmware sends a full keyframe unless it recognizes the last complete
-    // screen the PC actually accepted. A dropped frame can never corrupt
-    // a later delta. SquachWatch's existing firmware retains FRAME syntax.
-    const request=(role==='emitter'&&s.lastFrameSequence)?
+    // Backward compatibility: legacy receiver firmware accepts only bare
+    // MIRROR FRAME. Send an acknowledged baseline sequence only when its
+    // MIRROR READY capability explicitly includes SEQBASE.
+    const request=s.sequenceAck&&s.lastFrameSequence?
       'MIRROR FRAME '+s.lastFrameSequence:'MIRROR FRAME';
     const ok=await api.send(role,request);
     if(!s.active||!s.waiting||s.session!==session)return;
@@ -299,6 +299,7 @@
         mirrorNote(role,result.message);
         info(role,result.message);
       }else if(/^MIRROR READY\b/.test(result.message)&&s.active&&!s.ready){
+        s.sequenceAck=/\bSEQBASE\b/.test(result.message);
         s.ready=true;
         if(s.handshake!==null){clearTimeout(s.handshake);s.handshake=null;}
         mirrorNote(role,'Firmware acknowledged. Capturing authentic LCD pixels…');
