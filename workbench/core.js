@@ -179,6 +179,10 @@
     var c = catalog[trim(row.id)];
     if (!c || !trim(c.expected)) return 'UNTESTED';
     var expected = trim(c.expected).toUpperCase();
+    // A user-entered NONE is not a verified negative by itself. Require
+    // separate documented receiver scan continuity for any counted absence.
+    if (observed === 'NONE' && !/SCAN-VERIFIED:\s*.{20,}/i.test(trim(row.notes)))
+      return 'UNTESTED';
     if (expected === 'NONE') return observed === 'NONE' ? 'TN' : 'FP';
     if (observed === 'NONE') return 'FN';
     return observed === expected ? 'TP' : 'WRONG';
@@ -190,6 +194,9 @@
     if(trim(row.emission).toLowerCase()!=='ok')return 'Waiting for actual SquachEmit TRUTH END (ok)';
     if(trim(row.window).toLowerCase()!=='complete')return 'Waiting for a verified complete receiver window';
     if(!trim(row.observed))return 'No receiver observation recorded yet';
+    if(trim(row.observed).toUpperCase()==='NONE' &&
+       !/SCAN-VERIFIED:\s*.{20,}/i.test(trim(row.notes)))
+      return 'No independent SCAN-VERIFIED receiver continuity evidence for NONE';
     var receiver=HEX_SHA.test(trim(row.receiver_sha));
     var emitter=HEX_SHA.test(trim(row.emitter_sha));
     if(!receiver && !emitter)return 'Missing/invalid SquachWatch and SquachEmit firmware SHAs';
@@ -263,27 +270,30 @@
   function parseCsv(data) {
     if (typeof data!=='string'|| data.length>4000000)
       throw new Error('CSV must be under 4 MB.');
-    var all=[],row=[],val='',quoted=false;
+    var all=[],row=[],val='',quoted=false,afterQuote=false;
     var src=data.replace(/^\uFEFF/,'');
     for(var i=0;i<src.length;i++){
       var c=src[i];
       if(quoted){
         if(c==='"'&&src[i+1]==='"'){val+='"';i++;}
-        else if(c==='"')quoted=false;
+        else if(c==='"'){quoted=false;afterQuote=true;}
         else val+=c;
-      }else if(c==='"'){if(val)throw new Error('Invalid quote position.');quoted=true;}
-      else if(c===','){row.push(val);val='';}
+      }else if(c==='"'){if(val||afterQuote)throw new Error('Invalid quote position.');quoted=true;}
+      else if(c===','){row.push(val);val='';afterQuote=false;}
       else if(c==='\n'||c==='\r'){
         if(c==='\r'&&src[i+1]==='\n')i++;
-        row.push(val);val='';
+        row.push(val);val='';afterQuote=false;
         if(row.length>1||row[0])all.push(row);
         row=[];
-      }else val+=c;
+      }else if(afterQuote)throw new Error('Invalid text after quoted CSV field.');
+      else val+=c;
     }
     if(quoted)throw new Error('Unclosed CSV quote.');
     if(row.length||val){row.push(val);all.push(row);}
     if(all.length===0)throw new Error('Empty CSV.');
     var header=all.shift();
+    if(new Set(header).size!==header.length)
+      throw new Error('Duplicate CSV column.');
     CSV_HEADER.forEach(function(k){if(!header.includes(k))throw new Error('Missing CSV column '+k);});
     if(all.length>5000)throw new Error('Import limited to 5,000 trials.');
     return all.map(function(cells,i){
@@ -301,6 +311,40 @@
     });
   }
 
+  // Mirror the firmware CATALOG ID-only FNV-1a capability fingerprint.
+  // The digest protects against accidental catalog mismatches, not tampering.
+  function catalogHash(all) {
+    if(!Array.isArray(all))throw Error('Invalid scenario catalog');
+    var hash=2166136261;
+    all.forEach(function(c){
+      if(!c||!CASE_ID.test(c.id))throw Error('Invalid scenario ID');
+      for(var i=0;i<c.id.length;i++){
+        hash=Math.imul((hash^c.id.charCodeAt(i))>>>0,16777619)>>>0;
+      }
+      hash=Math.imul((hash^10)>>>0,16777619)>>>0;
+    });
+    return hash.toString(16).toUpperCase().padStart(8,'0');
+  }
+  // A verified receiving window may have no detection. Positive evidence
+  // requires an attributable exact-MAC hit; no-hit needs independent proof
+  // the receiver scanned uninterrupted and every LOG snapshot was complete.
+  function receiverRetestPlan(all,rows,identity) {
+    if(!Array.isArray(rows))throw Error('Invalid trial ledger');
+    // Retest planning must never suppress an unverified Freenove case
+    // because a different receiver or firmware build once detected it.
+    var proof=identity||null;
+    var successful=new Set(rows.filter(function(t){
+      if(!t || trim(t.emission).toLowerCase()!=='ok' ||
+         trim(t.window).toLowerCase()!=='complete' ||
+         !trim(t.observed) || !CASE_ID.test(trim(t.id)))return false;
+      if(!proof)return true; // historical caller compatibility
+      return !!proof.receiver && !!proof.receiverSha && !!proof.emitterSha &&
+        t.receiver===proof.receiver &&
+        trim(t.receiver_sha).toLowerCase()===trim(proof.receiverSha).toLowerCase() &&
+        trim(t.emitter_sha).toLowerCase()===trim(proof.emitterSha).toLowerCase();
+    }).map(function(t){return t.id;}));
+    return batchPlan(all,'all').filter(function(c){return !successful.has(c.id);});
+  }
   // Friendly labels describe the synthetic fixture, not proof of actual hardware.
   // Technical case IDs and expected receiver classifications never change.
   function signalName(c) {
@@ -404,6 +448,40 @@
     }
     return device+' — '+method;
   }
+  // Source-pinned receiver expectation overlay. Never alter the actual signal
+  // or mutate the upstream v1.50 catalog; fork-only labels affect scoring.
+  function receiverCatalog(base, profile, forkRules) {
+    if(!Array.isArray(base)||!['fork','upstream'].includes(profile))
+      throw Error('Invalid receiver catalog or profile');
+    var entries=forkRules && forkRules.overrides;
+    if(!entries||typeof entries!=='object'||Array.isArray(entries))
+      throw Error('Missing fork receiver expectation table');
+    var index=Object.create(null);
+    base.forEach(function(c){
+      if(!c||typeof c.id!=='string'||index[c.id])
+        throw Error('Duplicate or missing scenario ID');
+      index[c.id]=true;
+    });
+    Object.keys(entries).forEach(function(id){
+      if(!index[id]||! /^[A-Z_]+$/.test(entries[id]))
+        throw Error('Unknown or invalid fork expectation '+id);
+    });
+    return base.map(function(c){
+      return Object.assign({},c,{expected: profile==='fork' && entries[c.id] ?
+        entries[c.id] : c.expected});
+    });
+  }
+  // Resume a partially observed hardware campaign without repeating cases
+  // whose emitter has already independently reported TRUTH END (ok).
+  // Receiver accuracy is deliberately NOT inferred from this selection.
+  function remainingEmitterPlan(all,rows) {
+    if(!Array.isArray(rows))throw Error('Invalid trial ledger');
+    var done=new Set(rows.filter(function(t){
+      return t && trim(t.emission).toLowerCase()==='ok' &&
+        typeof t.id==='string';
+    }).map(function(t){return t.id;}));
+    return batchPlan(all,'all').filter(function(c){return !done.has(c.id);});
+  }
   function batchPlan(all,scope) {
     if(!['all','BLE','WIFI'].includes(scope))throw Error('Invalid batch scope');
     return (all||[]).filter(function(c){return scope==='all'||c.carrier===scope;})
@@ -416,7 +494,7 @@
     parseWatchLogRow:parseWatchLogRow,newWatchLogParser:newWatchLogParser,
     matchWatchDetection:matchWatchDetection,
     findUnverifiedWatchObservation:findUnverifiedWatchObservation,
-    signalName:signalName,batchPlan:batchPlan,
+    signalName:signalName,batchPlan:batchPlan,remainingEmitterPlan:remainingEmitterPlan,receiverRetestPlan:receiverRetestPlan,catalogHash:catalogHash,receiverCatalog:receiverCatalog,
     status:status,pendingReason:pendingReason,score:score,makeTrial:makeTrial,applyEnd:applyEnd,
     exportCsv:exportCsv,parseCsv:parseCsv};
 });

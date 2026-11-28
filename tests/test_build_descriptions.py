@@ -56,7 +56,7 @@ class BuildDescriptionTests(unittest.TestCase):
                 desc = site.describe_source_profile(profile, board, 'a' * 40)
                 self.assertTrue(desc['notes_verified_for_sha'])
                 self.assertIn('369', desc['title'])
-                self.assertIn('MAINLINE', desc['version_label'])
+                self.assertIn('LAB', desc['version_label'])
                 self.assertIn('aaaaaaaa', desc['version_label'])
                 self.assertIn('369', desc['summary'])
                 self.assertIn('SHA-256', desc['summary'])

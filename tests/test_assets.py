@@ -29,7 +29,15 @@ class TestFixtures(unittest.TestCase):
         with (ROOT/'tests'/'observations.csv').open(newline='') as f:
             observed = list(csv.DictReader(f))
         self.assertEqual({s['id'] for s in observed}, {s['id'] for s in self.cases})
-        self.assertTrue(all(not s['observed'] for s in observed))
+        # R14.39 preserves seven explicitly reported field observations.
+        # These are qualitative operator reports, not proven RF accuracy.
+        documented = [row for row in observed if row['observed']]
+        self.assertEqual(len(documented), 7)
+        self.assertTrue(all(row['notes'].startswith('User reported detected;')
+                            for row in documented))
+        self.assertTrue(all(not row['latency_ms'] for row in documented))
+        self.assertTrue(all(not row['observed'] for row in observed
+                            if row not in documented))
 
     def test_remote_id_31_bytes_and_fields(self):
         adv = advertisements()

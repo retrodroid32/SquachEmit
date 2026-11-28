@@ -125,6 +125,12 @@ test('Windows rail renders authentic USB frame and translates canvas pointer to 
   await drain();
   receive('MIRROR READY RGB332 320x240');
   await drain();
+  // A transient capture error must discard stale LCD pixels and resync
+  // rather than keeping a previous alert frame marked live.
+  receive('MIRROR BEGIN 10 2 1 RGB332');
+  receive('MIRROR ROW 10 0 !!!');
+  assert.equal(canvas.hidden,true,'corrupt capture hides stale prior frame');
+  assert.equal(elements.get('dc-placeholder-receiver').hidden,false);
   const oldOff=commands.filter(([r,c])=>r==='receiver'&&c==='MIRROR OFF').length;
   windowEvents.get('sqe:mirror-paused')({detail:{role:'receiver',
     reason:'Paused for exact-MAC LOG capture'}});
@@ -134,6 +140,12 @@ test('Windows rail renders authentic USB frame and translates canvas pointer to 
   assert.equal(commands.filter(([r,c])=>r==='receiver'&&c==='MIRROR OFF').length,oldOff,
     'detection runner, not UI, owns the already-sent MIRROR OFF');
 
+  // Late bytes after the receiver's detection-test pause must not render
+  // a stale screenshot as if the physical LCD were streaming live.
+  receive('MIRROR BEGIN 42 2 1 RGB332');
+  receive('MIRROR ROW 42 0 '+Buffer.from([0xe0,0x03]).toString('base64'));
+  receive('MIRROR END 42');
+  assert.equal(canvas.hidden,true,'late USB frame after pause must stay hidden');
   // Independent SquachEmit panel is PC-drawn. No TFT screenshot command.
   click('mirror-on','emitter');
   await drain();

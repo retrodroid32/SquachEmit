@@ -656,7 +656,7 @@ void bubbleLine(const char* source,char* dest,size_t cap,int font,int maxPx){
 // Preserve full long joke wording on a small ST7798 by wrapping at a
 // whole-word boundary. Only use second line when a single font-2 line
 // exceeds the available 282 px. No scrolling or long redraw work.
-void speechWrap(const char* phrase,char first[64],char second[64],int maxPx){
+void speechWrap(const char* phrase,char first[64],char second[32],int maxPx){
   second[0]='\0';
   if(!phrase||!phrase[0])return;
   lcd.setTextFont(2);lcd.setTextSize(1);
@@ -670,7 +670,9 @@ void speechWrap(const char* phrase,char first[64],char second[64],int maxPx){
     const int w1=lcd.textWidth(whole);
     const int w2=lcd.textWidth(whole+i+1);
     whole[i]=saved;
-    if(w1>maxPx||w2>maxPx)continue;
+    // The secondary bubble buffer is 32 bytes, not 64. Skip any split
+    // that would truncate the tail or write beyond that buffer.
+    if(w1>maxPx||w2>maxPx||strlen(whole+i+1)>=32)continue;
     const int wider=w1>w2?w1:w2;
     const int difference=w1>w2?w1-w2:w2-w1;
     const int score=wider*4+difference;
@@ -679,7 +681,7 @@ void speechWrap(const char* phrase,char first[64],char second[64],int maxPx){
   if(best>=0){
     whole[best]='\0';
     snprintf(first,64,"%s",whole);
-    snprintf(second,64,"%s",whole+best+1);
+    snprintf(second,32,"%s",whole+best+1);
   }
 }
 void speechBubble(const char* active,bool suite){

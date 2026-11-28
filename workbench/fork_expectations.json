@@ -1,0 +1,30 @@
+{
+  "schema": 1,
+  "source": "retrodroid32/SquachWatch-CYD",
+  "source_ref": "master",
+  "signature_blob_sha": "1f63a08ce3eba4148d557312bb0d1abe8b18545c",
+  "baseline": "skizzophrenic/SquachWatch-CYD v1.50.0",
+  "baseline_expected_source": "tests/cases.json",
+  "scope": "Fork-only expected category overrides. On-air physical verification is pending; all unaffected cases retain v1.50 expected. A Bluetooth name test does not use Bluetooth Classic inquiry.",
+  "overrides": {
+    "OUI-AUTEL-EC5BCDE": "DRONE",
+    "OUI-HUBSAN-98AAFC7": "DRONE",
+    "OUI-YUNEEC-E0B6F58": "DRONE",
+    "OUI-QUANTUM-AC86D17": "DRONE",
+    "OUI-FIMI-6CDFFBE": "DRONE",
+    "OUI-INSPFLIGHT-34B5F32": "DRONE",
+    "OUI-ZEROZERO-C863144": "DRONE",
+    "BLE-SKIM-BT05": "SKIMMER",
+    "BLE-SKIM-JDY08": "SKIMMER",
+    "BLE-SKIM-JDY16": "SKIMMER",
+    "BLE-SKIM-MLTBT": "SKIMMER",
+    "BLE-SKIM-LINVOR": "SKIMMER",
+    "FORK-BLE-SKIM-BT04": "SKIMMER",
+    "FORK-BLE-SKIM-JDY09": "SKIMMER",
+    "FORK-BLE-SKIM-JDY10": "SKIMMER",
+    "FORK-BLE-SKIM-JDY17": "SKIMMER",
+    "FORK-BLE-SKIM-SPPC": "SKIMMER",
+    "BLE-META-TECH": "META",
+    "BLE-HACKER-MFG": "HACKER"
+  }
+}

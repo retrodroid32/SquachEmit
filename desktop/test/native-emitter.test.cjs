@@ -20,9 +20,9 @@ test('R7 only accepts bounded, well-formed authoritative UI state records',()=>{
 test('R7 category assignment and menu order follow authoritative CYD32 category rules',()=>{
   const cases=JSON.parse(fs.readFileSync(path.resolve(__dirname,'../../tests/cases.json'),'utf8'));
   const lib=native.prepare(cases);
-  assert.equal(lib.count,172);
+  assert.equal(lib.count,369);
   assert.equal(lib.groups.length,10);
-  assert.equal(lib.groups.reduce((n,rows)=>n+rows.length,0),172);
+  assert.equal(lib.groups.reduce((n,rows)=>n+rows.length,0),369);
   assert.equal(native.categoryFor({id:'RID-DJI-MINI4PRO'}),1);
   assert.equal(native.categoryFor({id:'BLE-FLOCK-MFG'}),2);
   assert.equal(native.categoryFor({id:'BLE-AXON-NAME'}),0);
