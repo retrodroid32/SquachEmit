@@ -27,7 +27,7 @@
   for(const role of ['receiver','emitter']){
     mirrors[role]={active:false,waiting:false,lastFrame:false,lastFrameSequence:0,failures:0,
       assembler:new codec.MirrorAssembler(),timeout:null,next:null,handshake:null,animation:null,ready:false,
-      frameStartedAt:0,lastRowAt:0,
+      frameStartedAt:0,lastRowAt:0,progressRows:0,
       touchDown:false,touchAt:0,touchTimer:null,pendingUp:null,lastPoint:{x:0,y:0},
       lastMove:0};
   }
@@ -110,7 +110,7 @@
     const s=mirrors[role];
     cancelFrameTimers(role);
     s.active=false;s.waiting=false;s.ready=false;s.failures=0;
-    s.frameStartedAt=0;s.lastRowAt=0;
+    s.frameStartedAt=0;s.lastRowAt=0;s.progressRows=0;
     s.lastFrame=false;s.lastFrameSequence=0;
     s.assembler.reset();
     if(role==='emitter'){local.model=null;local.receivedAt=0;}
@@ -161,7 +161,7 @@
     const s=mirrors[role],state=api.getState();
     if(!s.active||!s.ready||s.waiting||!isConnected(role,state)||
        (role==='receiver'&&state.testActive))return;
-    s.waiting=true;s.frameStartedAt=Date.now();s.lastRowAt=s.frameStartedAt;
+    s.waiting=true;s.frameStartedAt=Date.now();s.lastRowAt=s.frameStartedAt;s.progressRows=0;
     // Firmware sends a full keyframe unless it recognizes the last complete
     // screen the PC actually accepted. A dropped frame can never corrupt
     // a later delta. SquachWatch's existing firmware retains FRAME syntax.
@@ -275,8 +275,18 @@
     const s=mirrors[role];
     // After a timeout, pause, or stop, late USB bytes belong to an obsolete
     // capture. Never publish or decode them as the next live screen.
-    if(/^MIRROR (?:BEGIN|DELTA|ROW|END)(?: |$)/.test(line) &&
+    if(/^MIRROR (?:BEGIN|DELTA|ROW|END|PROGRESS)(?: |$)/.test(line) &&
        (!s.active||!s.ready||!s.waiting))return;
+    if(/^MIRROR INVALIDATE(?: |$)/.test(line)){
+      if(!s.active)return;
+      cancelFrameTimers(role);s.waiting=false;
+      s.assembler.invalidate();s.lastFrame=false;s.lastFrameSequence=0;
+      get('dc-canvas-'+role).hidden=true;
+      get('dc-placeholder-'+role).hidden=false;
+      mirrorNote(role,'Physical LCD changed — refreshing authentic baseline.');
+      if(s.ready)s.next=setTimeout(()=>void requestMirrorFrame(role),450);
+      return;
+    }
     const result=s.assembler.feed(line);
     if(result.kind==='info'){
       if(/^MIRROR DIAG/.test(result.message)){
@@ -311,12 +321,25 @@
     }
     if(!s.active)return; // Never display unsolicited screen bytes.
     if(result.kind==='begin'){
+      s.progressRows=0;
+      if(!result.delta){
+        s.lastFrame=false;s.lastFrameSequence=0;
+        get('dc-canvas-'+role).hidden=true;
+        get('dc-placeholder-'+role).hidden=false;
+      }
       mirrorNote(role,'Receiving '+(result.delta?'changed rows from':'full')+
         ' physical LCD '+result.width+'×'+result.height+' '+result.format+'…');
       return;
     }
+    if(result.kind==='progress'){
+      if(result.rows>s.progressRows){
+        s.lastRowAt=Date.now();s.progressRows=result.rows;
+      }
+      return;
+    }
     if(result.kind==='row'){
       s.lastRowAt=Date.now();
+      s.progressRows=Math.max(s.progressRows,result.rows);
       if(result.rows===result.total||result.rows%64===0){
         mirrorNote(role,'LCD capture '+result.rows+'/'+result.total+' rows…');
       }
